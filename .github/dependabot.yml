@@ -1,0 +1,40 @@
+name: Dependabot
+
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+    open-pull-requests-limit: 10
+    reviewers:
+      - 'tech-lead'
+    labels:
+      - 'dependencies'
+      - 'auto-update'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    reviewers:
+      - 'tech-lead'
+    labels:
+      - 'dependencies'
+      - 'ci'
+
+  - package-ecosystem: 'npm'
+    directory: '/apps/web'
+    schedule:
+      interval: 'weekly'
+    labels:
+      - 'dependencies'
+
+  - package-ecosystem: 'npm'
+    directory: '/apps/worker'
+    schedule:
+      interval: 'weekly'
+    labels:
+      - 'dependencies'

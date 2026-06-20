@@ -1,0 +1,63 @@
+{
+  "name": "wolfkrow-tool",
+  "version": "1.0.0",
+  "description": "Personal AI assistant desktop app and PWA - self-hosted, single-user",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Wolfkrow Labs",
+  "packageManager": "[email protected]",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "turbo build",
+    "dev": "concurrently -k -n web,worker -c blue,green \"pnpm dev:web\" \"pnpm dev:worker\"",
+    "dev:web": "pnpm --filter @wolfkrow/web dev",
+    "dev:worker": "pnpm --filter @wolfkrow/worker dev",
+    "start": "concurrently -k -n web,worker -c blue,green \"pnpm start:web\" \"pnpm start:worker\"",
+    "start:web": "pnpm --filter @wolfkrow/web start",
+    "start:worker": "pnpm --filter @wolfkrow/worker start",
+    "lint": "turbo lint",
+    "lint:fix": "turbo lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:watch": "turbo test --watch",
+    "test:cov": "turbo test:cov",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "db:generate": "pnpm --filter @wolfkrow/infra db:generate",
+    "db:migrate": "pnpm --filter @wolfkrow/infra db:migrate",
+    "db:studio": "pnpm --filter @wolfkrow/infra db:studio",
+    "seed:agents": "pnpm --filter @wolfkrow/worker seed:agents",
+    "storybook": "pnpm --filter @wolfkrow/web storybook",
+    "build-storybook": "pnpm --filter @wolfkrow/web build-storybook",
+    "dist:mac": "pnpm build && electron-builder --mac",
+    "dist:win": "pnpm build && electron-builder --win",
+    "dist:linux": "pnpm build && electron-builder --linux",
+    "dist:all": "pnpm build && electron-builder -mwl",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.0.0",
+    "@commitlint/config-conventional": "^19.0.0",
+    "@playwright/test": "^1.45.0",
+    "@types/node": "^22.0.0",
+    "concurrently": "^9.0.0",
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.3.0",
+    "prettier-plugin-tailwindcss": "^0.6.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.6.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "packages/mcp-servers/*"
+  ]
+}
