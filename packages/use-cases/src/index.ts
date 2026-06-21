@@ -11,3 +11,4 @@ export * from './knowledge/index';
 export * from './memory/index';
 export * from './scheduler/index';
 export * from './harness/index';
+export * from './pipeline/index';

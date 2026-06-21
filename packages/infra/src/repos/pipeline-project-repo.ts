@@ -1,0 +1,68 @@
+import type { PipelineProjectRepo } from '@wolfkrow/domain';
+import { PipelineProject } from '@wolfkrow/domain';
+import { eq } from 'drizzle-orm';
+
+import { getDb } from '../db/client';
+import { pipelineProjects } from '../db/schema/pipeline';
+import type { PipelineMetrics } from '@wolfkrow/domain';
+
+type DbRow = typeof pipelineProjects.$inferSelect;
+
+function toEntity(row: DbRow): PipelineProject {
+  return PipelineProject.fromProps({
+    id: row.id,
+    userId: row.userId,
+    name: row.name,
+    description: row.description ?? undefined,
+    currentStage: row.currentStage,
+    status: row.status,
+    discoveryNotes: row.discoveryNotes ?? undefined,
+    specPath: row.specPath ?? undefined,
+    prdPath: row.prdPath ?? undefined,
+    approvalNotes: row.approvalNotes ?? undefined,
+    metrics: (row.metrics as unknown as PipelineMetrics) ?? { totalTokens: 0, totalCost: 0, phasesCompleted: 0, durationMs: 0 },
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    completedAt: row.completedAt ?? undefined,
+  });
+}
+
+export class DrizzlePipelineProjectRepo implements PipelineProjectRepo {
+  constructor(private readonly db = getDb()) {}
+
+  async findById(id: string): Promise<PipelineProject | null> {
+    const rows = this.db.select().from(pipelineProjects).where(eq(pipelineProjects.id, id)).all();
+    return rows[0] ? toEntity(rows[0]) : null;
+  }
+
+  async findByUserId(userId: string): Promise<PipelineProject[]> {
+    const rows = this.db.select().from(pipelineProjects).where(eq(pipelineProjects.userId, userId)).all();
+    return rows.map(toEntity);
+  }
+
+  async save(project: PipelineProject): Promise<PipelineProject> {
+    const p = project.toProps();
+    this.db.insert(pipelineProjects).values({
+      id: p.id, userId: p.userId, name: p.name, description: p.description ?? null,
+      currentStage: p.currentStage, status: p.status,
+      discoveryNotes: p.discoveryNotes ?? null, specPath: p.specPath ?? null,
+      prdPath: p.prdPath ?? null, approvalNotes: p.approvalNotes ?? null,
+      metrics: p.metrics as unknown as Record<string, unknown>,
+      createdAt: p.createdAt, updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
+    }).onConflictDoUpdate({
+      target: pipelineProjects.id,
+      set: {
+        name: p.name, description: p.description ?? null, currentStage: p.currentStage, status: p.status,
+        discoveryNotes: p.discoveryNotes ?? null, specPath: p.specPath ?? null,
+        prdPath: p.prdPath ?? null, approvalNotes: p.approvalNotes ?? null,
+        metrics: p.metrics as unknown as Record<string, unknown>,
+        updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
+      },
+    }).run();
+    return project;
+  }
+
+  async delete(id: string): Promise<void> {
+    this.db.delete(pipelineProjects).where(eq(pipelineProjects.id, id)).run();
+  }
+}
