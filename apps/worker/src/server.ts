@@ -23,6 +23,8 @@ import { enrichRoutes } from './routes/enrich';
 import { voiceRoutes } from './routes/voice';
 import { pipelineRoutes } from './routes/pipeline';
 import { schedulerRoutes } from './routes/scheduler';
+import { ptyRoutes } from './routes/pty';
+import { telegramRoutes } from './routes/telegram';
 
 export async function createServer() {
   const logger = createLogger('server');
@@ -65,6 +67,8 @@ export async function createServer() {
   await server.register(voiceRoutes, { prefix: '/voice' });
   await server.register(chatRoutes, { prefix: '/chat' });
   await server.register(mcpRoutes, { prefix: '/mcp' });
+  await server.register(ptyRoutes);
+  await server.register(telegramRoutes, { prefix: '/telegram' });
 
   server.setErrorHandler((error, request, reply) => {
     const err = error as Error & { statusCode?: number; code?: string };
