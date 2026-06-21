@@ -9,6 +9,8 @@ export { DrizzleRepo, InMemoryRepo } from './base';
 export { DrizzleUserRepo } from './user-repo';
 export { DrizzleAgentRepo } from './agent-repo';
 export { DrizzleSkillRepo } from './skill-repo';
+export { DrizzleMcpServerRepo } from './mcp-server-repo';
+export type { McpServerRecord, McpServerCreateInput } from './mcp-server-repo';
 
 import { getDb } from '../db/client';
 import { scheduledTasks, taskRuns } from '../db/schema/scheduler';

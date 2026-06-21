@@ -43,7 +43,7 @@ function TagEditor({ tags, onChange }: { tags: string[]; onChange: (t: string[])
   );
 }
 
-interface ContentTabsProps { content: string; onChange: (v: string) => void; disabled?: boolean; }
+interface ContentTabsProps { content: string; onChange: (v: string) => void; disabled: boolean | undefined; }
 
 function SkillContentTabs({ content, onChange, disabled }: ContentTabsProps) {
   return (
@@ -64,7 +64,7 @@ function SkillContentTabs({ content, onChange, disabled }: ContentTabsProps) {
   );
 }
 
-interface ActionsProps { onSave: () => void; onCancel: () => void; loading?: boolean; }
+interface ActionsProps { onSave: () => void; onCancel: () => void; loading: boolean | undefined; }
 
 function SkillFormActions({ onSave, onCancel, loading }: ActionsProps) {
   return (
