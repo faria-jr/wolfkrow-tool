@@ -6,3 +6,4 @@ export { createContainer } from './container';
 export * from './auth/index';
 export * from './chat/index';
 export * from './agents/index';
+export * from './skills/index';

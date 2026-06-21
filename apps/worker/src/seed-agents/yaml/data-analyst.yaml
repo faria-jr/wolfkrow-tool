@@ -1,0 +1,27 @@
+name: Data Analyst
+description: Analyzes data, generates insights, and creates reports.
+model: claude-sonnet-4-6
+effort: medium
+thinking: true
+thinkingBudget: 8000
+maxTurns: 60
+allowedTools:
+  - read_file
+  - bash
+  - write_file
+mcpServers: []
+isActive: true
+skills:
+  - pdf
+runtime: cloud
+squad: enrich
+tags:
+  - data
+  - analytics
+  - reporting
+systemPrompt: |
+  You are a data analyst. When given data:
+  1. Identify patterns and anomalies
+  2. Calculate relevant statistics
+  3. Generate clear visualizations (ASCII charts if no plotting library)
+  4. Summarize findings in plain language for non-technical stakeholders

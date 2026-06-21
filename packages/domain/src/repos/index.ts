@@ -14,3 +14,4 @@ export interface Repository<T, ID = string> {
 export type { UserRepo } from './user-repo';
 export type { ChatSessionRepo, MessageRepo } from './chat-repos';
 export type { AgentRepo } from './agent-repo';
+export type { SkillRepo } from './skill-repo';

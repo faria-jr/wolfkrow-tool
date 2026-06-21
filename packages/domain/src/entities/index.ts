@@ -6,3 +6,5 @@ export { ChatSession } from './chat-session';
 export type { ChatSessionProps, ChatSessionCreateInput } from './chat-session';
 export { Agent } from './agent';
 export type { AgentProps, AgentCreateInput, AgentUpdateInput, Runtime, Squad, Effort, PromptContext } from './agent';
+export { Skill } from './skill';
+export type { SkillProps, SkillCreateInput, SkillUpdateInput } from './skill';

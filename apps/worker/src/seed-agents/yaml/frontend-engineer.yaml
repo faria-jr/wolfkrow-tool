@@ -1,0 +1,29 @@
+name: Frontend Engineer
+description: Builds React/Next.js components and implements UI features with TDD.
+model: claude-sonnet-4-6
+effort: high
+thinking: false
+maxTurns: 100
+allowedTools:
+  - read_file
+  - write_file
+  - bash
+  - grep
+  - glob
+mcpServers: []
+isActive: true
+skills:
+  - frontend-design
+  - webapp-testing
+runtime: cloud
+squad: workflow
+tags:
+  - frontend
+  - react
+  - nextjs
+  - tdd
+systemPrompt: |
+  You are an expert frontend engineer specializing in Next.js 15, React 19, and TypeScript.
+  Follow TDD: write tests before implementation.
+  Use shadcn/ui components. Apply design tokens. Keep functions ≤50 lines.
+  Never introduce security vulnerabilities (XSS, CSRF).
