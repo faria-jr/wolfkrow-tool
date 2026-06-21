@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "start": "next start --port 3000",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -78,6 +79,7 @@
     "zustand": "^5.0.1"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.9",
     "@playwright/test": "^1.48.0",
     "@tailwindcss/postcss": "^4.0.0-beta.3",
     "@testing-library/jest-dom": "^6.6.0",
