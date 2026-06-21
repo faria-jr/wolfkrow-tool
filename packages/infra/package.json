@@ -32,6 +32,10 @@
     "./auth/jwt": {
       "types": "./dist/auth/jwt.d.ts",
       "default": "./dist/auth/jwt.js"
+    },
+    "./secrets/keytar-adapter": {
+      "types": "./dist/secrets/keytar-adapter.d.ts",
+      "default": "./dist/secrets/keytar-adapter.js"
     }
   },
   "files": [

@@ -34,3 +34,5 @@ export { ScheduledTask } from './scheduled-task';
 export type { ScheduledTaskProps, ScheduledTaskCreateInput, TaskStatus } from './scheduled-task';
 export { TaskRun } from './task-run';
 export type { TaskRunProps, TaskRunCreateInput, TaskRunStatus, TaskRunMetrics } from './task-run';
+export { Secret } from './secret';
+export type { SecretProps, SecretCreateInput, SecretUpdateInput, SecretCategory, SecretRepo } from './secret';
