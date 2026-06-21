@@ -16,3 +16,4 @@ export type { ChatSessionRepo, MessageRepo } from './chat-repos';
 export type { AgentRepo } from './agent-repo';
 export type { SkillRepo } from './skill-repo';
 export type { KnowledgeDocRepo, KnowledgeChunkRepo, ChunkSearchResult, KeywordSearchResult } from './knowledge-repos';
+export type { SemanticMemoryRepo, DailySummaryRepo, MemorySearchResult } from './memory-repos';

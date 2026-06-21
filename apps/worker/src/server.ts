@@ -16,6 +16,7 @@ import { authPlugin } from './plugins/auth';
 import { chatRoutes } from './routes/chat';
 import { healthRoutes } from './routes/health';
 import { knowledgeRoutes } from './routes/knowledge';
+import { memoryRoutes } from './routes/memory';
 import { mcpRoutes } from './routes/mcp';
 import { schedulerRoutes } from './routes/scheduler';
 
@@ -52,6 +53,7 @@ export async function createServer() {
 
   await server.register(healthRoutes, { prefix: '/health' });
   await server.register(knowledgeRoutes, { prefix: '/api' });
+  await server.register(memoryRoutes, { prefix: '/api' });
   await server.register(schedulerRoutes, { prefix: '/scheduler' });
   await server.register(chatRoutes, { prefix: '/chat' });
   await server.register(mcpRoutes, { prefix: '/mcp' });
