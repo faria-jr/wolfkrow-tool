@@ -15,6 +15,8 @@ export { DrizzleAuthAuditRepo } from './auth-audit-repo';
 export type { AuthAuditEntry, AuthAuditAction } from './auth-audit-repo';
 export { DrizzleMcpToolRegistryRepo } from './mcp-tool-registry-repo';
 export type { McpToolRecord } from './mcp-tool-registry-repo';
+export { DrizzleKnowledgeDocRepo } from './knowledge-doc-repo';
+export { DrizzleKnowledgeChunkRepo } from './knowledge-chunk-repo';
 
 import { getDb } from '../db/client';
 import { scheduledTasks, taskRuns } from '../db/schema/scheduler';

@@ -7,3 +7,4 @@ export * from './auth/index';
 export * from './chat/index';
 export * from './agents/index';
 export * from './skills/index';
+export * from './knowledge/index';

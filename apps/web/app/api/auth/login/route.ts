@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (result.status === 'locked') {
-    audit.log({ userId: result.userId, action: 'login.fail', ip, userAgent: ua });
+    audit.log({ userId: undefined, action: 'login.fail', ip, userAgent: ua });
     return Response.json({ status: 'locked', lockedUntil: result.lockedUntil }, { status: 423 });
   }
   if (result.status === 'requires_totp') {

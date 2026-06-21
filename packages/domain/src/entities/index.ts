@@ -8,3 +8,7 @@ export { Agent } from './agent';
 export type { AgentProps, AgentCreateInput, AgentUpdateInput, Runtime, Squad, Effort, PromptContext } from './agent';
 export { Skill } from './skill';
 export type { SkillProps, SkillCreateInput, SkillUpdateInput } from './skill';
+export { KnowledgeDocument } from './knowledge-document';
+export type { KnowledgeDocumentProps, KnowledgeDocumentCreateInput, DocumentStatus, EmbeddingModel, DocumentMetadata } from './knowledge-document';
+export { KnowledgeChunk } from './knowledge-chunk';
+export type { KnowledgeChunkProps, KnowledgeChunkCreateInput, ChunkMetadata, ChunkSourceType } from './knowledge-chunk';

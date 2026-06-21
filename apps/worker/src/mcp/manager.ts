@@ -141,7 +141,11 @@ class McpManagerImpl implements McpManager {
       if (!serverRecord) return;
       new DrizzleMcpToolRegistryRepo().upsertMany(
         serverRecord.id,
-        state.tools.map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
+        state.tools.map((t) => ({
+          name: t.name,
+          ...(t.description !== undefined ? { description: t.description } : {}),
+          ...(t.inputSchema !== undefined ? { inputSchema: t.inputSchema } : {}),
+        })),
       );
     } catch {
       logger.warn({ name: state.config.name }, 'Failed to persist tool registry');

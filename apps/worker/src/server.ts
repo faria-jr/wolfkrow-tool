@@ -5,6 +5,7 @@
  */
 
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify from 'fastify';
@@ -14,6 +15,7 @@ import { createLogger } from './logger';
 import { authPlugin } from './plugins/auth';
 import { chatRoutes } from './routes/chat';
 import { healthRoutes } from './routes/health';
+import { knowledgeRoutes } from './routes/knowledge';
 import { mcpRoutes } from './routes/mcp';
 import { schedulerRoutes } from './routes/scheduler';
 
@@ -46,8 +48,10 @@ export async function createServer() {
   });
 
   await server.register(authPlugin);
+  await server.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } });
 
   await server.register(healthRoutes, { prefix: '/health' });
+  await server.register(knowledgeRoutes, { prefix: '/api' });
   await server.register(schedulerRoutes, { prefix: '/scheduler' });
   await server.register(chatRoutes, { prefix: '/chat' });
   await server.register(mcpRoutes, { prefix: '/mcp' });
