@@ -26,6 +26,7 @@ import { schedulerRoutes } from './routes/scheduler';
 import { ptyRoutes } from './routes/pty';
 import { telegramRoutes } from './routes/telegram';
 import { vaultRoutes } from './routes/vault';
+import { usageRoutes } from './routes/usage';
 
 export async function createServer() {
   const logger = createLogger('server');
@@ -71,6 +72,7 @@ export async function createServer() {
   await server.register(ptyRoutes);
   await server.register(telegramRoutes, { prefix: '/telegram' });
   await server.register(vaultRoutes, { prefix: '/vault' });
+  await server.register(usageRoutes, { prefix: '/usage' });
 
   server.setErrorHandler((error, request, reply) => {
     const err = error as Error & { statusCode?: number; code?: string };

@@ -210,7 +210,7 @@ importers:
         specifier: ^1.8.10
         version: 1.8.11(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       recharts:
-        specifier: ^2.13.0
+        specifier: ^2.15.4
         version: 2.15.4(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       remark-gfm:
         specifier: ^4.0.0

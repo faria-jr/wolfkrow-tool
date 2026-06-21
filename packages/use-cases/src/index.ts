@@ -15,3 +15,4 @@ export * from './pipeline/index';
 export * from './enrich/index';
 export * from './workflow/index';
 export * from './vault/index';
+export * from './usage/index';
