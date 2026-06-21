@@ -26,6 +26,8 @@ export { DrizzleHarnessSprintRepo } from './harness-sprint-repo';
 export { DrizzleHarnessRoundRepo } from './harness-round-repo';
 export { DrizzlePipelineProjectRepo } from './pipeline-project-repo';
 export { DrizzlePipelinePhaseRepo } from './pipeline-phase-repo';
+export { DrizzleEnrichSessionRepo } from './enrich-session-repo';
+export { DrizzleWorkflowRunRepo } from './workflow-run-repo';
 
 import { getDb } from '../db/client';
 import { scheduledTasks, taskRuns } from '../db/schema/scheduler';
