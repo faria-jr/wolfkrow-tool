@@ -31,7 +31,9 @@ export default defineConfig({
         'app/**/not-found.tsx',
         'app/**/page.tsx',
         'app/api/**',
+        'app/.well-known/**',
         'middleware.ts',
+        'lib/auth.ts',
       ],
       // M0 baseline — §1.3 target 70 (auth 80): sobe quando componentes custom
       // (ChatView A.3, AgentFormModal N.1...) ganharem testes RTL.

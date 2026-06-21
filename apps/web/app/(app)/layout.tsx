@@ -1,14 +1,19 @@
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+
+import { AutoLock } from '@/components/common/auto-lock';
 import { Sidebar } from '@/components/common/sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { getSession } from '@/lib/auth';
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
-  // TODO: Server Component: verificar session via cookie
-  // const session = await getSession();
-  // if (!session) redirect('/login');
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const session = await getSession(cookieStore.get('session')?.value);
+  if (!session) redirect('/login');
 
-  // Placeholder — substitui pela verificação real quando auth for implementado
   return (
     <SidebarProvider defaultOpen>
+      <AutoLock />
       <Sidebar />
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
