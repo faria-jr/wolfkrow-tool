@@ -21,6 +21,9 @@ export { DrizzleSemanticMemoryRepo } from './semantic-memory-repo';
 export { DrizzleDailySummaryRepo } from './daily-summary-repo';
 export { DrizzleScheduledTaskRepo } from './scheduled-task-repo';
 export { DrizzleTaskRunRepo } from './task-run-repo';
+export { DrizzleHarnessProjectRepo } from './harness-project-repo';
+export { DrizzleHarnessSprintRepo } from './harness-sprint-repo';
+export { DrizzleHarnessRoundRepo } from './harness-round-repo';
 
 import { getDb } from '../db/client';
 import { scheduledTasks, taskRuns } from '../db/schema/scheduler';

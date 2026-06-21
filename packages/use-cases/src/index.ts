@@ -10,3 +10,4 @@ export * from './skills/index';
 export * from './knowledge/index';
 export * from './memory/index';
 export * from './scheduler/index';
+export * from './harness/index';

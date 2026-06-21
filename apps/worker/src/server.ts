@@ -18,6 +18,7 @@ import { healthRoutes } from './routes/health';
 import { knowledgeRoutes } from './routes/knowledge';
 import { memoryRoutes } from './routes/memory';
 import { mcpRoutes } from './routes/mcp';
+import { harnessRoutes } from './routes/harness';
 import { schedulerRoutes } from './routes/scheduler';
 
 export async function createServer() {
@@ -55,6 +56,7 @@ export async function createServer() {
   await server.register(knowledgeRoutes, { prefix: '/api' });
   await server.register(memoryRoutes, { prefix: '/api' });
   await server.register(schedulerRoutes, { prefix: '/scheduler' });
+  await server.register(harnessRoutes, { prefix: '/harness' });
   await server.register(chatRoutes, { prefix: '/chat' });
   await server.register(mcpRoutes, { prefix: '/mcp' });
 
