@@ -4,3 +4,4 @@ export { ConsoleLogger, NoopLogger } from './logger';
 export type { AppContainer } from './container';
 export { createContainer } from './container';
 export * from './auth/index';
+export * from './chat/index';
