@@ -10,4 +10,5 @@ export * from './ai-providers/index';
 export * from './auth/jwt';
 export * from './auth/keypair-store';
 export * from './auth/bcrypt-hasher';
+export * from './auth/otplib-totp';
 export * from './repos';

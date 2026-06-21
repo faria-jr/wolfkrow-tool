@@ -7,12 +7,13 @@ import {
   type PasswordHasher,
   PasswordHash,
   PlainPassword,
+  type TotpVerifier,
   UnauthorizedError,
   type UserRepo,
 } from '@wolfkrow/domain';
 import { describe, expect, it } from 'vitest';
 
-import { LoginUseCase, RegisterUseCase } from '../index';
+import { LoginUseCase, RegisterUseCase, VerifyTotpUseCase } from '../index';
 
 class InMemoryUserRepo implements UserRepo {
   private readonly users = new Map<string, User>();
@@ -124,5 +125,60 @@ describe('LoginUseCase', () => {
   it('throws when no owner registered', async () => {
     const { login } = setup();
     await expect(login().execute({ password: PW('Abcdef12') })).rejects.toThrow(UnauthorizedError);
+  });
+});
+
+const VALID_CODE = '123456';
+
+class FakeTotp implements TotpVerifier {
+  verify(_secret: string, code: string): boolean {
+    return code === VALID_CODE;
+  }
+  generateSecret(account: string) {
+    return { secret: 'S', otpauthUrl: `otpauth://totp/Wolfkrow:${account}` };
+  }
+}
+
+describe('VerifyTotpUseCase', () => {
+  async function registerAndEnableTotp(repo: UserRepo): Promise<string> {
+    const register = new RegisterUseCase(repo, new FakeHasher());
+    await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
+    const owner = await repo.findOwner();
+    await repo.save(owner!.enableTotp('SECRET'));
+    return owner!.id;
+  }
+
+  it('succeeds with the correct code', async () => {
+    const { repo } = setup();
+    const userId = await registerAndEnableTotp(repo);
+
+    const out = await new VerifyTotpUseCase(repo, new FakeTotp()).execute({
+      userId,
+      code: VALID_CODE,
+    });
+    expect(out.userId).toBe(userId);
+  });
+
+  it('throws on invalid code', async () => {
+    const { repo } = setup();
+    const userId = await registerAndEnableTotp(repo);
+
+    await expect(
+      new VerifyTotpUseCase(repo, new FakeTotp()).execute({ userId, code: '000000' }),
+    ).rejects.toThrow(UnauthorizedError);
+  });
+
+  it('throws when TOTP not enabled', async () => {
+    const { repo } = setup();
+    await new RegisterUseCase(repo, new FakeHasher()).execute({
+      password: PW('Abcdef12'),
+      displayName: undefined,
+      email: undefined,
+    });
+    const owner = await repo.findOwner();
+
+    await expect(
+      new VerifyTotpUseCase(repo, new FakeTotp()).execute({ userId: owner!.id, code: VALID_CODE }),
+    ).rejects.toThrow(UnauthorizedError);
   });
 });
