@@ -11,22 +11,38 @@
 
 import websocket from '@fastify/websocket';
 import { randomUUID } from 'crypto';
+import { z } from 'zod';
 
 import type { FastifyInstance } from 'fastify';
 import { ptyServer } from '../pty/server';
+import { validate } from '../validation';
 
 type ClientMsg =
   | { type: 'input'; data: string }
   | { type: 'resize'; cols: number; rows: number }
   | { type: 'kill' };
 
+const createBody = z.object({
+  id: z.string().min(1).max(64).optional(),
+  cols: z.coerce.number().int().min(10).max(500).default(80),
+  rows: z.coerce.number().int().min(5).max(200).default(24),
+  cwd: z.string().max(1024).optional(),
+  env: z.record(z.string(), z.string()).optional(),
+});
+
 export async function ptyRoutes(server: FastifyInstance) {
   await server.register(websocket);
 
   // POST /pty — create session, returns { sessionId }
-  server.post('/pty', async (_req, reply) => {
-    const sessionId = randomUUID();
-    ptyServer.create(sessionId, { cols: 80, rows: 24 });
+  server.post<{ Body: unknown }>('/pty', async (req, reply) => {
+    const parsed = validate(createBody, req.body ?? {});
+    const sessionId = parsed.id ?? randomUUID();
+    ptyServer.create(sessionId, {
+      cols: parsed.cols,
+      rows: parsed.rows,
+      ...(parsed.cwd ? { cwd: parsed.cwd } : {}),
+      ...(parsed.env ? { env: parsed.env } : {}),
+    });
     return reply.send({ sessionId });
   });
 

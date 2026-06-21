@@ -2,6 +2,8 @@
  * Global rules routes — S.3.
  */
 
+import { z } from 'zod';
+
 import { DrizzleGlobalRuleRepo } from '@wolfkrow/infra/repos';
 import {
   ListRulesUseCase,
@@ -12,8 +14,24 @@ import {
   BuildSystemPromptUseCase,
 } from '@wolfkrow/use-cases';
 
+import { validate } from '../validation';
 import type { AuthFastifyInstance } from '../types/fastify';
 import type { RuleKind } from '@wolfkrow/domain';
+
+const createBody = z.object({
+  kind: z.enum(['behavior', 'soul', 'user', 'custom']),
+  title: z.string().min(1).max(128),
+  body: z.string().min(1).max(8192),
+  enabled: z.boolean().default(true),
+  sortOrder: z.number().int().min(0).max(999).default(0),
+});
+
+const updateBody = createBody.partial().omit({ kind: true });
+
+const buildPromptBody = z.object({
+  agentSystemPrompt: z.string().max(65536).optional(),
+  skillDescriptions: z.array(z.string().max(4096)).max(50).optional(),
+});
 
 function getUserId(req: { user?: { userId?: string } }): string {
   return req.user?.userId ?? 'default';
@@ -28,9 +46,6 @@ export async function rulesRoutes(server: AuthFastifyInstance) {
   const deleteUC = new DeleteRuleUseCase(repo);
   const buildUC = new BuildSystemPromptUseCase(repo);
 
-  type CreateBody = { kind: RuleKind; title: string; body: string; enabled?: boolean; sortOrder?: number };
-  type UpdateBody = { title?: string; body?: string; enabled?: boolean; sortOrder?: number };
-
   // GET /rules — list all
   server.get('/', async (req, reply) => {
     const rules = await listUC.execute(getUserId(req as { user?: { userId?: string } }));
@@ -38,15 +53,30 @@ export async function rulesRoutes(server: AuthFastifyInstance) {
   });
 
   // POST /rules — create
-  server.post<{ Body: CreateBody }>('/', async (req, reply) => {
+  server.post<{ Body: unknown }>('/', async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
-    const rule = await createUC.execute({ userId, ...req.body });
+    const parsed = validate(createBody, req.body);
+    const rule = await createUC.execute({
+      userId,
+      kind: parsed.kind as RuleKind,
+      title: parsed.title,
+      body: parsed.body,
+      enabled: parsed.enabled,
+      sortOrder: parsed.sortOrder,
+    });
     return reply.status(201).send({ rule: rule.toProps() });
   });
 
   // PATCH /rules/:id — update
-  server.patch<{ Params: { id: string }; Body: UpdateBody }>('/:id', async (req, reply) => {
-    const rule = await updateUC.execute({ id: req.params.id, ...req.body });
+  server.patch<{ Params: { id: string }; Body: unknown }>('/:id', async (req, reply) => {
+    const parsed = validate(updateBody, req.body);
+    const rule = await updateUC.execute({
+      id: req.params.id,
+      ...(parsed.title !== undefined ? { title: parsed.title } : {}),
+      ...(parsed.body !== undefined ? { body: parsed.body } : {}),
+      ...(parsed.enabled !== undefined ? { enabled: parsed.enabled } : {}),
+      ...(parsed.sortOrder !== undefined ? { sortOrder: parsed.sortOrder } : {}),
+    });
     return reply.send({ rule: rule.toProps() });
   });
 
@@ -62,13 +92,15 @@ export async function rulesRoutes(server: AuthFastifyInstance) {
     return reply.send({ ok: true });
   });
 
-  // POST /rules/build-prompt — build system prompt for user
-  server.post<{ Body: { agentSystemPrompt?: string; skillDescriptions?: string[] } }>(
-    '/build-prompt',
-    async (req, reply) => {
-      const userId = getUserId(req as { user?: { userId?: string } });
-      const prompt = await buildUC.execute({ userId, ...req.body });
-      return reply.send({ prompt });
-    },
-  );
+  // POST /rules/build-prompt
+  server.post<{ Body: unknown }>('/build-prompt', async (req, reply) => {
+    const userId = getUserId(req as { user?: { userId?: string } });
+    const parsed = validate(buildPromptBody, req.body ?? {});
+    const prompt = await buildUC.execute({
+      userId,
+      ...(parsed.agentSystemPrompt !== undefined ? { agentSystemPrompt: parsed.agentSystemPrompt } : {}),
+      ...(parsed.skillDescriptions !== undefined ? { skillDescriptions: parsed.skillDescriptions } : {}),
+    });
+    return reply.send({ prompt });
+  });
 }

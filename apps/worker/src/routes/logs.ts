@@ -2,42 +2,49 @@
  * Log streaming routes — SSE live tail. S.3.
  */
 
+import { z } from 'zod';
+
 import type { AuthFastifyInstance } from '../types/fastify';
 import { logBus } from '../log/bus';
 import type { LogEntry } from '../log/bus';
+import { validate } from '../validation';
+
+const logQuery = z.object({
+  level: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).optional(),
+  module: z.string().max(64).optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+});
+
+const streamQuery = z.object({
+  level: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).optional(),
+  module: z.string().max(64).optional(),
+});
 
 export async function logsRoutes(server: AuthFastifyInstance) {
-  // GET /logs/history?limit=100 — recent log entries
-  server.get<{ Querystring: { limit?: string; level?: string; module?: string } }>(
+  // GET /logs/history?limit=&level=&module=
+  server.get<{ Querystring: unknown }>(
     '/history',
     async (req, reply) => {
-      const limit = Number(req.query.limit ?? 100);
-      let entries = logBus.history(Math.min(limit, 500));
+      const { level, module: mod, limit } = validate(logQuery, req.query);
+      let entries = logBus.history(limit);
 
-      if (req.query.level) {
-        const lvl = req.query.level.toLowerCase();
-        entries = entries.filter((e) => e.level?.toString().toLowerCase() === lvl);
-      }
-      if (req.query.module) {
-        const mod = req.query.module.toLowerCase();
-        entries = entries.filter((e) => e.module?.toString().toLowerCase().includes(mod));
-      }
+      if (level) entries = entries.filter((e) => e.level?.toString().toLowerCase() === level);
+      if (mod) entries = entries.filter((e) => e.module?.toString().toLowerCase().includes(mod));
 
       return reply.send({ entries });
     },
   );
 
   // GET /logs/stream — SSE live tail
-  server.get<{ Querystring: { level?: string; module?: string } }>(
+  server.get<{ Querystring: unknown }>(
     '/stream',
     async (req, reply) => {
+      const { level: levelFilter, module: moduleFilter } = validate(streamQuery, req.query);
+
       reply.raw.setHeader('Content-Type', 'text/event-stream');
       reply.raw.setHeader('Cache-Control', 'no-cache');
       reply.raw.setHeader('Connection', 'keep-alive');
       reply.raw.flushHeaders?.();
-
-      const levelFilter = req.query.level?.toLowerCase();
-      const moduleFilter = req.query.module?.toLowerCase();
 
       function send(entry: LogEntry) {
         if (levelFilter && entry.level?.toString().toLowerCase() !== levelFilter) return;
@@ -45,7 +52,6 @@ export async function logsRoutes(server: AuthFastifyInstance) {
         reply.raw.write(`data: ${JSON.stringify(entry)}\n\n`);
       }
 
-      // Send recent history first
       for (const entry of logBus.history(50)) send(entry);
 
       const unsub = logBus.subscribe(send);

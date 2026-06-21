@@ -3,6 +3,7 @@
  * N.4: SPEC-004 ingest pipeline with parse→chunk→embed→store.
  */
 
+import { z } from 'zod';
 import {
   DrizzleKnowledgeChunkRepo,
   DrizzleKnowledgeDocRepo,
@@ -24,8 +25,15 @@ import { randomUUID } from 'node:crypto';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { parseByMimeType } from '../knowledge/parsers/index';
 import { semanticChunk, rawChunk } from '../knowledge/chunker';
+import { validate } from '../validation';
 
 const VOYAGE_API_KEY = process.env['VOYAGE_API_KEY'] ?? '';
+
+const searchBody = z.object({
+  query: z.string().min(1).max(512),
+  limit: z.number().int().min(1).max(100).optional(),
+  documentIds: z.array(z.string().max(128)).max(50).optional(),
+});
 
 function makeEmbedder() {
   return new VoyageEmbedder(VOYAGE_API_KEY);
@@ -36,12 +44,6 @@ function makeRepos() {
     docRepo: new DrizzleKnowledgeDocRepo(),
     chunkRepo: new DrizzleKnowledgeChunkRepo(),
   };
-}
-
-interface SearchBody {
-  query: string;
-  limit?: number;
-  documentIds?: string[];
 }
 
 export async function knowledgeRoutes(app: AuthFastifyInstance) {
@@ -110,19 +112,18 @@ export async function knowledgeRoutes(app: AuthFastifyInstance) {
     return reply.send({ deleted: true });
   });
 
-  app.post<{ Body: SearchBody }>('/knowledge/search', {
+  app.post<{ Body: unknown }>('/knowledge/search', {
     onRequest: [app.authenticate],
   }, async (req, reply) => {
-    const body = req.body;
-    if (!body?.query) return reply.code(400).send({ error: 'query required' });
+    const { query, limit, documentIds } = validate(searchBody, req.body);
 
     const { chunkRepo } = makeRepos();
     const uc = new SearchKnowledgeUseCase(chunkRepo, makeEmbedder());
     const result = await uc.execute({
       userId: (req as unknown as { user: { userId: string } }).user.userId,
-      query: body.query,
-      ...(body.limit !== undefined ? { limit: body.limit } : {}),
-      ...(body.documentIds !== undefined ? { documentIds: body.documentIds } : {}),
+      query,
+      ...(limit !== undefined ? { limit } : {}),
+      ...(documentIds !== undefined ? { documentIds } : {}),
     });
 
     return reply.send({

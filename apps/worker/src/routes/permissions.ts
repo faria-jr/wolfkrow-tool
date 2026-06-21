@@ -2,6 +2,8 @@
  * Permissions + Audit routes — S.3.
  */
 
+import { z } from 'zod';
+
 import { DrizzleAuditLogRepo } from '@wolfkrow/infra/repos';
 import {
   ResolvePermissionUseCase,
@@ -9,7 +11,28 @@ import {
   QueryAuditLogUseCase,
 } from '@wolfkrow/use-cases';
 
+import { validate } from '../validation';
 import type { AuthFastifyInstance } from '../types/fastify';
+
+const resolveBody = z.object({
+  tool: z.string().min(1).max(128),
+  allowedTools: z.array(z.string().max(128)).max(200).default([]),
+  blockedTools: z.array(z.string().max(128)).max(200).optional(),
+});
+
+const recordBody = z.object({
+  action: z.string().min(1).max(128),
+  resourceType: z.string().min(1).max(64),
+  resourceId: z.string().max(128).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+const auditQuery = z.object({
+  action: z.string().max(128).optional(),
+  resourceType: z.string().max(64).optional(),
+  since: z.string().datetime().optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(50),
+});
 
 function getUserId(req: { user?: { userId?: string } }): string {
   return req.user?.userId ?? 'default';
@@ -21,13 +44,9 @@ export async function permissionsRoutes(server: AuthFastifyInstance) {
   const recordUC = new RecordAuditEntryUseCase(auditRepo as never);
   const queryUC = new QueryAuditLogUseCase(auditRepo as never);
 
-  type ResolveBody = { tool: string; allowedTools?: string[]; blockedTools?: string[] };
-  type RecordBody = { action: string; resourceType: string; resourceId?: string; metadata?: Record<string, unknown> };
-  type AuditQuery = { action?: string; resourceType?: string; since?: string; limit?: string };
-
   // POST /permissions/resolve — check if a tool is allowed
-  server.post<{ Body: ResolveBody }>('/resolve', async (req, reply) => {
-    const { tool, allowedTools = [], blockedTools } = req.body;
+  server.post<{ Body: unknown }>('/resolve', async (req, reply) => {
+    const { tool, allowedTools, blockedTools } = validate(resolveBody, req.body);
     const result = resolveUC.execute({
       agent: { allowedTools, ...(blockedTools ? { blockedTools } : {}) },
       tool,
@@ -36,25 +55,30 @@ export async function permissionsRoutes(server: AuthFastifyInstance) {
   });
 
   // POST /permissions/audit — record audit entry
-  server.post<{ Body: RecordBody }>('/audit', async (req, reply) => {
+  server.post<{ Body: unknown }>('/audit', async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
+    const parsed = validate(recordBody, req.body);
     recordUC.execute({
       userId,
-      ...req.body,
+      action: parsed.action,
+      resourceType: parsed.resourceType,
       ip: req.ip,
+      ...(parsed.resourceId !== undefined ? { resourceId: parsed.resourceId } : {}),
+      ...(parsed.metadata !== undefined ? { metadata: parsed.metadata } : {}),
     });
     return reply.send({ ok: true });
   });
 
   // GET /permissions/audit — query audit log
-  server.get<{ Querystring: AuditQuery }>('/audit', async (req, reply) => {
+  server.get<{ Querystring: unknown }>('/audit', async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
+    const { action, resourceType, since, limit } = validate(auditQuery, req.query);
     const entries = queryUC.execute({
       userId,
-      ...(req.query.action ? { action: req.query.action } : {}),
-      ...(req.query.resourceType ? { resourceType: req.query.resourceType } : {}),
-      ...(req.query.since ? { since: new Date(req.query.since) } : {}),
-      ...(req.query.limit ? { limit: Number(req.query.limit) } : {}),
+      ...(action ? { action } : {}),
+      ...(resourceType ? { resourceType } : {}),
+      ...(since ? { since: new Date(since) } : {}),
+      limit,
     });
     return reply.send({ entries });
   });

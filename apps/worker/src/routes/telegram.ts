@@ -2,10 +2,16 @@
  * Telegram management routes — B.5.
  */
 
+import { z } from 'zod';
 import keytar from 'keytar';
 
 import type { AuthFastifyInstance } from '../types/fastify';
 import { telegramBridge } from '../telegram/bridge';
+import { validate } from '../validation';
+
+const pairBody = z.object({
+  userId: z.string().min(1).max(128),
+});
 
 export async function telegramRoutes(server: AuthFastifyInstance) {
   // POST /telegram/start — start bridge with stored token
@@ -29,9 +35,8 @@ export async function telegramRoutes(server: AuthFastifyInstance) {
   });
 
   // POST /telegram/pair — generate pairing code for current user
-  server.post<{ Body: { userId: string } }>('/pair', async (req, reply) => {
-    const { userId } = req.body;
-    if (!userId) return reply.status(400).send({ error: 'userId required' });
+  server.post<{ Body: unknown }>('/pair', async (req, reply) => {
+    const { userId } = validate(pairBody, req.body);
     const code = telegramBridge.generatePairingCode(userId);
     return reply.send({ code });
   });

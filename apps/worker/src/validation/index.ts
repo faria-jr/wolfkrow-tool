@@ -10,7 +10,7 @@
  * refactor of all type generics.
  */
 
-import { z, type ZodSchema } from 'zod';
+import { z, type ZodTypeDef, type ZodType } from 'zod';
 
 export { z };
 export * from './schemas';
@@ -27,8 +27,11 @@ export class ValidationError extends Error {
 /**
  * Parse `input` with `schema` and return the typed result.
  * Throws `ValidationError` (statusCode 400) on failure.
+ *
+ * Uses `ZodType<T, Def, unknown>` (input=unknown) so TypeScript infers T from
+ * the OUTPUT type only — this ensures `.default()` fields appear as non-optional.
  */
-export function validate<T>(schema: ZodSchema<T>, input: unknown): T {
+export function validate<T>(schema: ZodType<T, ZodTypeDef, unknown>, input: unknown): T {
   const result = schema.safeParse(input);
   if (!result.success) {
     const msg = result.error.errors
