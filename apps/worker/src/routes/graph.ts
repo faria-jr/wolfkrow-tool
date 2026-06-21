@@ -1,22 +1,28 @@
 /**
- * Knowledge graph routes — S.5
+ * Knowledge graph routes — S.5 (SPEC-022)
  *
- * GET  /graph              — full graph (nodes + edges) for user
- * POST /graph/ingest       — ingest text and extract entities
- * GET  /graph/:id          — neighborhood of a node (depth=1 default)
- * DELETE /graph/:id        — delete node (cascade edges)
+ * All routes require authentication (Bearer JWT). userId is taken from the
+ * verified token — there is no 'default' fallback, so each tenant's graph
+ * is isolated.
+ *
+ * GET    /graph              — full graph (nodes + edges) for user
+ * POST   /graph/ingest       — ingest text and extract entities
+ * GET    /graph/:id          — neighborhood of a node (depth query, default 1)
+ * DELETE /graph/:id          — delete node (cascade edges), 404 if missing
  */
 
+import { GraphIngest } from '../knowledge/graph-ingest';
+import { MGraph } from '../knowledge/mgraph';
 import type { AuthFastifyInstance } from '../types/fastify';
-import { mgraph } from '../knowledge/mgraph';
-import { graphIngest } from '../knowledge/graph-ingest';
 
-function getUserId(req: { user?: { userId?: string } }): string {
-  return req.user?.userId ?? 'default';
+function userIdOf(req: { user?: { userId?: string } }): string {
+  const userId = req.user?.userId;
+  if (!userId) throw new Error('unreachable: authenticate must populate req.user');
+  return userId;
 }
 
 interface IngestBody {
-  text: string;
+  text?: string;
   sourceId?: string;
   sourceLabel?: string;
 }
@@ -26,22 +32,27 @@ interface NeighborhoodQuery {
 }
 
 export async function graphRoutes(server: AuthFastifyInstance) {
+  const auth = { onRequest: [server.authenticate] };
+
   // GET /graph — full graph
-  server.get('/', async (req, reply) => {
-    const userId = getUserId(req as { user?: { userId?: string } });
-    const nodes = mgraph.listNodes(userId);
-    const edges = mgraph.listEdges(userId);
+  server.get('/', auth, async (req, reply) => {
+    const userId = userIdOf(req);
+    const graph = new MGraph();
+    const nodes = graph.listNodes(userId);
+    const edges = graph.listEdges(userId);
     return reply.send({ nodes, edges });
   });
 
   // POST /graph/ingest
-  server.post<{ Body: IngestBody }>('/ingest', async (req, reply) => {
-    const userId = getUserId(req as { user?: { userId?: string } });
-    const { text, sourceId, sourceLabel } = req.body;
-    if (!text?.trim()) {
+  server.post<{ Body: IngestBody }>('/ingest', auth, async (req, reply) => {
+    const userId = userIdOf(req);
+    const body = req.body ?? {};
+    const { text, sourceId, sourceLabel } = body;
+    if (!text || !text.trim()) {
       return reply.status(400).send({ error: 'text is required' });
     }
-    const result = graphIngest.ingest({
+    const graph = new MGraph();
+    const result = new GraphIngest(graph).ingest({
       userId,
       text,
       ...(sourceId !== undefined ? { sourceId } : {}),
@@ -54,22 +65,26 @@ export async function graphRoutes(server: AuthFastifyInstance) {
     });
   });
 
-  // GET /graph/:id — neighborhood
+  // GET /graph/:id — neighborhood / expand
   server.get<{ Params: { id: string }; Querystring: NeighborhoodQuery }>(
     '/:id',
+    auth,
     async (req, reply) => {
-      const userId = getUserId(req as { user?: { userId?: string } });
+      const userId = userIdOf(req);
       const depth = Math.min(parseInt(req.query.depth ?? '1', 10) || 1, 3);
-      const neighborhood = mgraph.neighborhood(userId, req.params.id, depth);
+      const graph = new MGraph();
+      const neighborhood = graph.neighborhood(userId, req.params.id, depth);
       if (!neighborhood) return reply.status(404).send({ error: 'Node not found' });
       return reply.send(neighborhood);
     },
   );
 
-  // DELETE /graph/:id
-  server.delete<{ Params: { id: string } }>('/:id', async (req, reply) => {
-    const userId = getUserId(req as { user?: { userId?: string } });
-    mgraph.deleteNode(userId, req.params.id);
+  // DELETE /graph/:id — cascade edges, 404 if missing
+  server.delete<{ Params: { id: string } }>('/:id', auth, async (req, reply) => {
+    const userId = userIdOf(req);
+    const graph = new MGraph();
+    const deleted = graph.deleteNode(userId, req.params.id);
+    if (!deleted) return reply.status(404).send({ error: 'Node not found' });
     return reply.send({ ok: true });
   });
 }

@@ -6,7 +6,8 @@
     "paths": {
       "@wolfkrow/infra": ["../../packages/infra/src/index.ts"],
       "@wolfkrow/infra/repos": ["../../packages/infra/src/repos/index.ts"],
-      "drizzle-orm": ["../../node_modules/.pnpm/drizzle-orm@0.36.4_@types+better-sqlite3@7.6.13_@types+react@19.2.17_better-sqlite3@12.11.1_react@19.2.7/node_modules/drizzle-orm"]
+      "drizzle-orm": ["../../node_modules/.pnpm/drizzle-orm@0.36.4_@types+better-sqlite3@7.6.13_@types+react@19.2.17_better-sqlite3@12.11.1_react@19.2.7/node_modules/drizzle-orm"],
+      "drizzle-orm/better-sqlite3": ["../../node_modules/.pnpm/drizzle-orm@0.36.4_@types+better-sqlite3@7.6.13_@types+react@19.2.17_better-sqlite3@12.11.1_react@19.2.7/node_modules/drizzle-orm/better-sqlite3"]
     }
   },
   "include": ["src/**/*"]

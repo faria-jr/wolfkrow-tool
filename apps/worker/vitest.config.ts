@@ -38,6 +38,12 @@ export default defineConfig({
         __dirname,
         '../../node_modules/.pnpm/drizzle-orm@0.36.4_@types+better-sqlite3@7.6.13_@types+react@19.2.17_better-sqlite3@12.11.1_react@19.2.7/node_modules/drizzle-orm'
       ),
+      // better-sqlite3 is a transitive dep of @wolfkrow/infra; alias it so
+      // worker tests can spin up an in-memory SQLite without adding a runtime dep.
+      'better-sqlite3': path.resolve(
+        __dirname,
+        '../../node_modules/.pnpm/better-sqlite3@12.11.1/node_modules/better-sqlite3'
+      ),
     },
   },
 });
