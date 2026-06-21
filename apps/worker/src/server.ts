@@ -32,6 +32,7 @@ import { rulesRoutes } from './routes/rules';
 import { permissionsRoutes } from './routes/permissions';
 import { tasksRoutes } from './routes/tasks';
 import { graphRoutes } from './routes/graph';
+import { sidecarRoutes } from './routes/sidecar';
 
 export async function createServer() {
   const logger = createLogger('server');
@@ -83,6 +84,7 @@ export async function createServer() {
   await server.register(permissionsRoutes, { prefix: '/permissions' });
   await server.register(tasksRoutes, { prefix: '/tasks' });
   await server.register(graphRoutes, { prefix: '/graph' });
+  await server.register(sidecarRoutes, { prefix: '/sidecar' });
 
   server.setErrorHandler((error, request, reply) => {
     const err = error as Error & { statusCode?: number; code?: string };
