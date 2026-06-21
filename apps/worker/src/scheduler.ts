@@ -14,11 +14,11 @@ export interface Task {
   name: string;
   cronExpression: string;
   prompt: string;
-  agentId: string | null;
+  agentId: string | undefined;
 }
 
 export interface TaskExecutor {
-  execute(task: Task): Promise<{
+  execute(task: { id: string; name: string; prompt: string; agentId: string | undefined }): Promise<{
     status: 'awaiting_review' | 'validated' | 'rejected';
     output?: Record<string, unknown>;
     error?: string;
@@ -90,7 +90,7 @@ export class Scheduler {
     name: string;
     cronExpression: string;
     prompt: string;
-    agentId: string | null;
+    agentId: string | null | undefined;
   }): Promise<void> {
     const runId = this.generateId();
     const startedAt = this.now();
@@ -108,9 +108,8 @@ export class Scheduler {
       const result = await this.executor.execute({
         id: task.id,
         name: task.name,
-        cronExpression: task.cronExpression,
         prompt: task.prompt,
-        agentId: task.agentId,
+        agentId: task.agentId ?? undefined,
       });
 
       this.repository.completeRun(runId, {

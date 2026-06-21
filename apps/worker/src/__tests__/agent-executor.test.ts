@@ -3,7 +3,6 @@ import keytar from 'keytar';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { createAgentExecutor, type AgentExecutorOptions } from '../agent-executor';
-import type { Task } from '../scheduler';
 import { createTestAIProviderFactory } from '../test-utils/ai-provider';
 
 const mockProvider: AIProvider = {
@@ -36,12 +35,11 @@ function createExecutor(options: AgentExecutorOptions = {}): ReturnType<typeof c
   });
 }
 
-const baseTask: Task = {
+const baseTask = {
   id: 'task-1',
   name: 'Test task',
-  cronExpression: '0 0 * * *',
   prompt: 'Say hello',
-  agentId: null,
+  agentId: undefined,
 };
 
 describe('AgentExecutor', () => {

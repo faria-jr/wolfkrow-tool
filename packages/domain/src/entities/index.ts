@@ -16,3 +16,7 @@ export { SemanticMemory } from './semantic-memory';
 export type { SemanticMemoryProps, SemanticMemoryCreateInput, MemorySource } from './semantic-memory';
 export { DailySummary } from './daily-summary';
 export type { DailySummaryProps, DailySummaryCreateInput } from './daily-summary';
+export { ScheduledTask } from './scheduled-task';
+export type { ScheduledTaskProps, ScheduledTaskCreateInput, TaskStatus } from './scheduled-task';
+export { TaskRun } from './task-run';
+export type { TaskRunProps, TaskRunCreateInput, TaskRunStatus, TaskRunMetrics } from './task-run';

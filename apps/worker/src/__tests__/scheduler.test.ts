@@ -79,9 +79,8 @@ describe('Scheduler', () => {
     expect(executor.execute).toHaveBeenCalledWith({
       id: 'task-1',
       name: 'Daily sync',
-      cronExpression: '0 0 * * *',
       prompt: 'Run daily sync',
-      agentId: null,
+      agentId: undefined,
     });
     expect(repository.createRun).toHaveBeenCalledWith(
       expect.objectContaining({

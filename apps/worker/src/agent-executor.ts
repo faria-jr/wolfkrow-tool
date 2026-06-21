@@ -14,8 +14,9 @@ import {
 import { eq } from 'drizzle-orm';
 import keytar from 'keytar';
 
+import type { TaskExecutor } from '@wolfkrow/use-cases';
+
 import type { Logger } from './logger';
-import type { Task, TaskExecutor } from './scheduler';
 
 export interface AgentExecutorOptions {
   provider?: string;
@@ -35,7 +36,7 @@ export function createAgentExecutor(options: AgentExecutorOptions = {}): TaskExe
   const serviceName = options.keytarService ?? KEYTAR_SERVICE;
 
   return {
-    async execute(task: Task) {
+    async execute(task: { id: string; name: string; prompt: string; agentId: string | undefined }) {
       const db = getDb();
 
       let agent: typeof Schema.agents.$inferSelect | undefined;
