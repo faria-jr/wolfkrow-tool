@@ -32,6 +32,7 @@
     "db:migrate": "pnpm --filter @wolfkrow/infra db:migrate",
     "db:studio": "pnpm --filter @wolfkrow/infra db:studio",
     "seed:agents": "pnpm --filter @wolfkrow/worker seed:agents",
+    "migrate:lionclaw": "pnpm --filter @wolfkrow/worker exec tsx ../../scripts/migrate-lionclaw.ts",
     "storybook": "pnpm --filter @wolfkrow/web storybook",
     "build-storybook": "pnpm --filter @wolfkrow/web build-storybook",
     "dist:mac": "pnpm build && electron-builder --mac",
