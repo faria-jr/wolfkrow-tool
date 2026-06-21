@@ -29,6 +29,8 @@ We use ADRs to document significant architectural decisions. See [README.md](./R
 - [ADR-0023](./0023-eslint-prettier-husky.md) — ESLint + Prettier + Husky
 - [ADR-0024](./0024-yaml-seed-agents.md) — YAML for seed agents
 - [ADR-0025](./0025-domain-events-bus.md) — Domain events bus
+- [ADR-0026](./0026-worker-process-vs-electron-renderer.md) — Worker Node (Cenário A) vs Next renderer no Electron (Cenário B)
+- [ADR-0027](./0027-workflow-feature-decision.md) — Workflow: feature viva ou schema morto (proposto)
 
 ## Process
 

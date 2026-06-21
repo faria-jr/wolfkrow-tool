@@ -16,6 +16,16 @@ Technical specifications for each feature/component of Wolfkrow Tool.
 - [SPEC-010](./SPEC-010-telegram-bridge.md) — Telegram bridge
 - [SPEC-011](./SPEC-011-vault-secrets.md) — Vault (secrets via keytar)
 - [SPEC-012](./SPEC-012-electron-wrapper.md) — Electron wrapper
+- [SPEC-013](./SPEC-013-sub-agents.md) — Sub-Agents (custom AI personas)
+- [SPEC-014](./SPEC-014-skills-seed-agents.md) — Skills + Seed-Agents (YAML)
+- [SPEC-015](./SPEC-015-memory-dreaming.md) — Memory pipeline + Dreaming
+- [SPEC-016](./SPEC-016-enrich-workflow.md) — Enrich pipeline + Workflow
+- [SPEC-017](./SPEC-017-pty-codeburn.md) — PTY / CodeBurn (terminal)
+- [SPEC-018](./SPEC-018-usage-pricing.md) — Usage + Pricing calculator
+- [SPEC-019](./SPEC-019-logs.md) — Logs (live tail)
+- [SPEC-020](./SPEC-020-permissions-audit.md) — Permissions + Audit log
+- [SPEC-021](./SPEC-021-rules.md) — Rules (global editable rules) — **gap fechado**
+- [SPEC-022](./SPEC-022-graph-view.md) — Graph view (knowledge graph) — **gap fechado**
 
 ## Format
 
