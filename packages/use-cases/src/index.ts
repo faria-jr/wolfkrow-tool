@@ -5,3 +5,4 @@ export type { AppContainer } from './container';
 export { createContainer } from './container';
 export * from './auth/index';
 export * from './chat/index';
+export * from './agents/index';

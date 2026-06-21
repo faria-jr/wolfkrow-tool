@@ -4,3 +4,5 @@ export { Message } from './message';
 export type { MessageRole, MessageProps, MessageCreateInput } from './message';
 export { ChatSession } from './chat-session';
 export type { ChatSessionProps, ChatSessionCreateInput } from './chat-session';
+export { Agent } from './agent';
+export type { AgentProps, AgentCreateInput, AgentUpdateInput, Runtime, Squad, Effort, PromptContext } from './agent';

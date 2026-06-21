@@ -7,6 +7,7 @@ import { and, eq, lte } from 'drizzle-orm';
 export type { Entity } from './base';
 export { DrizzleRepo, InMemoryRepo } from './base';
 export { DrizzleUserRepo } from './user-repo';
+export { DrizzleAgentRepo } from './agent-repo';
 
 import { getDb } from '../db/client';
 import { scheduledTasks, taskRuns } from '../db/schema/scheduler';
