@@ -1,29 +1,43 @@
+import { decodeJwt } from 'jose';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const PUBLIC_ROUTES = ['/login', '/onboarding', '/unlock'];
-const PUBLIC_API_ROUTES = ['/api/auth/login', '/api/auth/totp', '/api/auth/setup', '/api/health'];
+const PUBLIC_API_ROUTES = [
+  '/api/auth/login',
+  '/api/auth/setup',
+  '/api/auth/totp',
+  '/api/health',
+  '/.well-known',
+];
+const PUBLIC_ASSETS = ['/_next', '/icons', '/fonts', '/manifest.json', '/sw.js'];
+
+function isPublic(pathname: string): boolean {
+  return (
+    PUBLIC_ROUTES.some((p) => pathname.startsWith(p)) ||
+    PUBLIC_API_ROUTES.some((p) => pathname.startsWith(p)) ||
+    PUBLIC_ASSETS.some((p) => pathname.startsWith(p)) ||
+    pathname === '/favicon.ico'
+  );
+}
+
+/** Gate rápido (decode + exp). Validação de assinatura no layout server-side. */
+function isValidSession(token: string | undefined): boolean {
+  if (!token) return false;
+  try {
+    const payload = decodeJwt(token);
+    return payload.exp !== undefined && payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Allow public routes
-  if (
-    PUBLIC_ROUTES.some((route) => pathname.startsWith(route)) ||
-    PUBLIC_API_ROUTES.some((route) => pathname.startsWith(route)) ||
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/icons') ||
-    pathname.startsWith('/fonts') ||
-    pathname.startsWith('/manifest.json') ||
-    pathname.startsWith('/sw.js') ||
-    pathname === '/favicon.ico'
-  ) {
+  if (isPublic(pathname)) {
     return NextResponse.next();
   }
 
-  // Check session cookie
-  const sessionCookie = request.cookies.get('wolfkrow_session')?.value;
-
-  if (!sessionCookie) {
+  if (!isValidSession(request.cookies.get('session')?.value)) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
@@ -34,13 +48,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for:
-     * - api routes that don't need auth (handled in PUBLIC_API_ROUTES)
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico (favicon)
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

@@ -9,6 +9,7 @@ dist/
 out/
 build/
 release/
+*.tsbuildinfo
 
 # Test coverage
 coverage/

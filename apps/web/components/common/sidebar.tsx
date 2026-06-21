@@ -37,7 +37,6 @@ type NavItem = {
   title: string;
   url: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
 };
 
 const MAIN_NAV: NavItem[] = [
@@ -65,77 +64,73 @@ const SYSTEM_NAV: NavItem[] = [
   { title: 'Logs', url: '/logs', icon: FileText },
 ];
 
+function NavMenuItem({ item, pathname }: { item: NavItem; pathname: string }) {
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        asChild
+        isActive={pathname === item.url}
+        tooltip={item.title}
+      >
+        <Link href={item.url}>
+          <item.icon className="h-4 w-4" />
+          <span>{item.title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
+
+function NavGroup({
+  label,
+  items,
+  pathname,
+}: {
+  label: string;
+  items: NavItem[];
+  pathname: string;
+}) {
+  return (
+    <SidebarGroup>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) => (
+            <NavMenuItem key={item.url} item={item} pathname={pathname} />
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
+  );
+}
+
+function SidebarBrand() {
+  return (
+    <div className="flex items-center gap-2 px-2 py-1.5">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-md">
+        <span className="text-lg font-bold text-white">W</span>
+      </div>
+      <div className="flex flex-col">
+        <span className="text-sm font-semibold">Wolfkrow</span>
+        <span className="text-xs text-muted-foreground">v1.0.0</span>
+      </div>
+    </div>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
     <>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-md">
-            <span className="text-lg font-bold text-white">W</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">Wolfkrow</span>
-            <span className="text-xs text-muted-foreground">v1.0.0</span>
-          </div>
-        </div>
+        <SidebarBrand />
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {MAIN_NAV.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Automation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {AUTOMATION_NAV.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {SYSTEM_NAV.map((item) => (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        <NavGroup label="Main" items={MAIN_NAV} pathname={pathname} />
+        <NavGroup label="Automation" items={AUTOMATION_NAV} pathname={pathname} />
+        <NavGroup label="System" items={SYSTEM_NAV} pathname={pathname} />
       </SidebarContent>
 
       <SidebarFooter>

@@ -1,0 +1,78 @@
+/**
+ * Wolfkrow background worker
+ *
+ * Runs scheduled tasks, migrations, and background jobs.
+ */
+
+import { getDb, runMigrations } from '@wolfkrow/infra';
+import { getScheduledTasksRepository } from '@wolfkrow/infra/repos';
+
+import { createAgentExecutor } from './agent-executor';
+import { config } from './config';
+import { createLogger } from './logger';
+import { loadBuiltInMcpCatalog } from './mcp/catalog';
+import { mcpManager } from './routes/mcp';
+import { Scheduler } from './scheduler';
+import { createServer } from './server';
+
+const logger = createLogger('worker');
+
+async function main(): Promise<void> {
+  logger.info('Worker starting');
+
+  runMigrations();
+  getDb();
+
+  const repository = getScheduledTasksRepository();
+  const executor = createAgentExecutor({ logger });
+  const scheduler = new Scheduler({
+    repository,
+    executor,
+    logger,
+    pollIntervalMs: config.WORKER_POLL_INTERVAL_MS,
+  });
+
+  scheduler.start();
+
+  const catalog = loadBuiltInMcpCatalog();
+  const alwaysOnServers = catalog.filter((s) => s.visibility === 'always');
+  for (const entry of alwaysOnServers) {
+    try {
+      await mcpManager.start(entry);
+      logger.info({ name: entry.name }, 'MCP server started');
+    } catch (error) {
+      logger.error({ name: entry.name, err: error }, 'Failed to start MCP server');
+    }
+  }
+
+  const server = await createServer();
+  await server.listen({ host: config.HOST, port: config.PORT });
+
+  logger.info(`Worker HTTP server listening on ${config.HOST}:${config.PORT}`);
+
+  const shutdown = (signal: string) => {
+    logger.info({ signal }, 'Shutting down worker');
+    scheduler.stop();
+    void mcpManager.stopAll();
+    void server
+      .close()
+      .then(() => process.exit(0))
+      .catch((err) => {
+        logger.error({ err }, 'Server close failed');
+        process.exit(1);
+      });
+  };
+
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+}
+
+main().catch((error) => {
+  logger.error({ err: error }, 'Worker failed to start');
+  process.exit(1);
+});
+
+export { createServer } from './server';
+export { config } from './config';
+export { createMcpManager } from './mcp/manager';
+export { loadBuiltInMcpCatalog } from './mcp/catalog';

@@ -1,0 +1,28 @@
+/**
+ * Drizzle schema — Usage (token tracking and cost analytics)
+ */
+
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+
+import { users } from './auth';
+import { id, timestamp, metadata } from './base';
+
+export const tokenUsage = sqliteTable('token_usage', {
+  id: id(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  source: text('source', {
+    enum: ['chat', 'agent', 'harness', 'pipeline', 'enrich', 'memory', 'voice', 'embedding'],
+  }).notNull(),
+  model: text('model').notNull(),
+  inputTokens: integer('input_tokens').notNull(),
+  outputTokens: integer('output_tokens').notNull(),
+  cacheReadTokens: integer('cache_read_tokens').notNull().default(0),
+  cacheWriteTokens: integer('cache_write_tokens').notNull().default(0),
+  cost: integer('cost').notNull(),
+  sessionId: text('session_id'),
+  agentId: text('agent_id'),
+  metadata: metadata(),
+  timestamp: timestamp('timestamp').notNull(),
+});
