@@ -6,6 +6,7 @@
 
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify from 'fastify';
@@ -64,6 +65,12 @@ export async function createServer() {
 
   await server.register(authPlugin);
   await server.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } });
+  await server.register(rateLimit, {
+    global: false, // opt-in per-route via config.rateLimit
+    max: 200,
+    timeWindow: '1 minute',
+    errorResponseBuilder: () => ({ error: 'Too many requests', code: 'RATE_LIMIT' }),
+  });
 
   await server.register(healthRoutes, { prefix: '/health' });
   await server.register(knowledgeRoutes, { prefix: '/api' });

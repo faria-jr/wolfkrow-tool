@@ -33,14 +33,35 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
+    const sidecarOrigin = process.env['NEXT_PUBLIC_SIDECAR_URL'] ?? 'http://localhost:5000';
+    const workerOrigin = process.env['WORKER_URL'] ?? 'http://localhost:4000';
+
+    // CSP: tight policy; add origins only as actually needed
+    const csp = [
+      "default-src 'self'",
+      `connect-src 'self' ${workerOrigin} ${sidecarOrigin} wss://localhost:4000 ws://localhost:4000`,
+      "script-src 'self' 'unsafe-eval'", // unsafe-eval needed by Next.js in dev; tighten in prod via env
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: blob:",
+      "media-src 'self' blob:",
+      `frame-src 'self' ${sidecarOrigin}`,
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "upgrade-insecure-requests",
+    ].join('; ');
+
     return [
       {
         source: '/(.*)',
         headers: [
+          { key: 'Content-Security-Policy', value: csp },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(self), microphone=(self), geolocation=()' },
+          { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
         ],
       },
       {

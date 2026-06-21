@@ -2,6 +2,8 @@
  * Vault routes — secrets metadata API. Values never leave the server.
  */
 
+import { z } from 'zod';
+
 import { DrizzleSecretRepo } from '@wolfkrow/infra/repos';
 import { KeytarSecretsAdapter } from '@wolfkrow/infra/secrets/keytar-adapter';
 import {
@@ -11,7 +13,16 @@ import {
   DeleteSecretUseCase,
 } from '@wolfkrow/use-cases';
 
+import { validate } from '../validation';
 import type { AuthFastifyInstance } from '../types/fastify';
+
+const storeBody = z.object({
+  key: z.string().min(1).max(128).regex(/^[\w.\-:/]+$/),
+  value: z.string().min(1),
+  displayName: z.string().min(1).max(128),
+  category: z.enum(['ai', 'integration', 'oauth', 'other']),
+  description: z.string().max(512).optional(),
+});
 
 function mask(value: string): string {
   if (value.length <= 4) return '••••';
@@ -31,7 +42,7 @@ export async function vaultRoutes(server: AuthFastifyInstance) {
   const getValueUC = new GetSecretValueUseCase(repo, adapter);
   const deleteUC = new DeleteSecretUseCase(repo, adapter);
 
-  type SecretBody = { key: string; value: string; displayName: string; category: 'ai' | 'integration' | 'oauth' | 'other'; description?: string; userId?: string };
+  type SecretBody = z.infer<typeof storeBody>;
 
   // GET /vault — list secrets metadata (no values)
   server.get('/', async (req, reply) => {
@@ -43,10 +54,7 @@ export async function vaultRoutes(server: AuthFastifyInstance) {
   // POST /vault — store / rotate secret
   server.post<{ Body: SecretBody }>('/', async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
-    const { key, value, displayName, category, description } = req.body;
-    if (!key || !value || !displayName || !category) {
-      return reply.status(400).send({ error: 'key, value, displayName, category required' });
-    }
+    const { key, value, displayName, category, description } = validate(storeBody, req.body);
 
     const { secret } = await storeUC.execute({
       userId,

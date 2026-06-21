@@ -13,6 +13,7 @@
 
 import { GraphIngest } from '../knowledge/graph-ingest';
 import { MGraph } from '../knowledge/mgraph';
+import { validate, graphIngestBody, neighborhoodQuery } from '../validation';
 import type { AuthFastifyInstance } from '../types/fastify';
 
 function userIdOf(req: { user?: { userId?: string } }): string {
@@ -21,15 +22,8 @@ function userIdOf(req: { user?: { userId?: string } }): string {
   return userId;
 }
 
-interface IngestBody {
-  text?: string;
-  sourceId?: string;
-  sourceLabel?: string;
-}
-
-interface NeighborhoodQuery {
-  depth?: string;
-}
+interface IngestBody { text?: string; sourceId?: string; sourceLabel?: string; }
+interface NeighborhoodQuery { depth?: string; }
 
 export async function graphRoutes(server: AuthFastifyInstance) {
   const auth = { onRequest: [server.authenticate] };
@@ -46,11 +40,7 @@ export async function graphRoutes(server: AuthFastifyInstance) {
   // POST /graph/ingest
   server.post<{ Body: IngestBody }>('/ingest', auth, async (req, reply) => {
     const userId = userIdOf(req);
-    const body = req.body ?? {};
-    const { text, sourceId, sourceLabel } = body;
-    if (!text || !text.trim()) {
-      return reply.status(400).send({ error: 'text is required' });
-    }
+    const { text, sourceId, sourceLabel } = validate(graphIngestBody, req.body ?? {});
     const graph = new MGraph();
     const result = new GraphIngest(graph).ingest({
       userId,
@@ -71,7 +61,7 @@ export async function graphRoutes(server: AuthFastifyInstance) {
     auth,
     async (req, reply) => {
       const userId = userIdOf(req);
-      const depth = Math.min(parseInt(req.query.depth ?? '1', 10) || 1, 3);
+      const { depth } = validate(neighborhoodQuery, req.query);
       const graph = new MGraph();
       const neighborhood = graph.neighborhood(userId, req.params.id, depth);
       if (!neighborhood) return reply.status(404).send({ error: 'Node not found' });
