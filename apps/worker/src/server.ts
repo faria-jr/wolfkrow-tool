@@ -27,6 +27,9 @@ import { ptyRoutes } from './routes/pty';
 import { telegramRoutes } from './routes/telegram';
 import { vaultRoutes } from './routes/vault';
 import { usageRoutes } from './routes/usage';
+import { logsRoutes } from './routes/logs';
+import { rulesRoutes } from './routes/rules';
+import { permissionsRoutes } from './routes/permissions';
 
 export async function createServer() {
   const logger = createLogger('server');
@@ -73,6 +76,9 @@ export async function createServer() {
   await server.register(telegramRoutes, { prefix: '/telegram' });
   await server.register(vaultRoutes, { prefix: '/vault' });
   await server.register(usageRoutes, { prefix: '/usage' });
+  await server.register(logsRoutes, { prefix: '/logs' });
+  await server.register(rulesRoutes, { prefix: '/rules' });
+  await server.register(permissionsRoutes, { prefix: '/permissions' });
 
   server.setErrorHandler((error, request, reply) => {
     const err = error as Error & { statusCode?: number; code?: string };

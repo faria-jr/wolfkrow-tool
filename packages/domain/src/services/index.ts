@@ -6,3 +6,5 @@ export type { AIStreamPort, AIStreamChunk, AICompletionOptions, AICompletionResu
 export type { EmbeddingPort } from './embedding-port';
 export { PricingCalculator, Money, defaultPricingCalculator } from './pricing-calculator';
 export type { PricingTier, TokenUsage } from './pricing-calculator';
+export { PermissionResolver, defaultPermissionResolver } from './permission-resolver';
+export type { PermissionResult, AgentPermissions } from './permission-resolver';

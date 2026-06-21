@@ -36,3 +36,5 @@ export { TaskRun } from './task-run';
 export type { TaskRunProps, TaskRunCreateInput, TaskRunStatus, TaskRunMetrics } from './task-run';
 export { Secret } from './secret';
 export type { SecretProps, SecretCreateInput, SecretUpdateInput, SecretCategory, SecretRepo } from './secret';
+export { GlobalRule } from './global-rule';
+export type { GlobalRuleProps, GlobalRuleCreateInput, RuleKind, GlobalRuleRepo } from './global-rule';
