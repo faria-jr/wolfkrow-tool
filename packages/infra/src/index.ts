@@ -8,6 +8,7 @@ export * from './seed/built-in-mcps';
 export * from './seed/built-in-skills';
 export * from './ai-providers/index';
 export * from './auth/jwt';
+export { checkRateLimit, clearRateLimitStore } from './auth/rate-limiter';
 export * from './auth/keypair-store';
 export * from './auth/bcrypt-hasher';
 export * from './auth/otplib-totp';

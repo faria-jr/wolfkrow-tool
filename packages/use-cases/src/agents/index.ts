@@ -8,3 +8,5 @@ export { DuplicateAgentUseCase } from './duplicate-agent';
 export type { DuplicateAgentInput, DuplicateAgentOutput } from './duplicate-agent';
 export { ListAgentsUseCase } from './list-agents';
 export type { ListAgentsInput, ListAgentsOutput } from './list-agents';
+export { SyncAgentsToOrchestratorUseCase } from './sync-agents';
+export type { SyncAgentsInput, SyncAgentsOutput } from './sync-agents';

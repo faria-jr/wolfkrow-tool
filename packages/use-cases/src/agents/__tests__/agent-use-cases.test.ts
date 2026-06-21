@@ -7,6 +7,7 @@ import {
   DeleteAgentUseCase,
   DuplicateAgentUseCase,
   ListAgentsUseCase,
+  SyncAgentsToOrchestratorUseCase,
   UpdateAgentUseCase,
 } from '../index';
 
@@ -196,5 +197,34 @@ describe('ListAgentsUseCase', () => {
     const uc = new ListAgentsUseCase(repo);
     const result = await uc.execute({ userId: 'u-nobody' });
     expect(result.agents).toHaveLength(0);
+  });
+});
+
+describe('SyncAgentsToOrchestratorUseCase', () => {
+  let repo: InMemoryAgentRepo;
+  beforeEach(async () => {
+    repo = new InMemoryAgentRepo();
+    await new CreateAgentUseCase(repo).execute({ ...baseInput, name: 'a1', userId: 'u1', runtime: 'cloud' });
+    await new CreateAgentUseCase(repo).execute({ ...baseInput, name: 'a2', userId: 'u1', runtime: 'local' });
+  });
+
+  it('updates all agents to target runtime', async () => {
+    const uc = new SyncAgentsToOrchestratorUseCase(repo);
+    const out = await uc.execute({ userId: 'u1', targetRuntime: 'codex', targetModel: undefined });
+    expect(out.synced).toBe(2);
+    out.agents.forEach((a) => expect(a.runtime).toBe('codex'));
+  });
+
+  it('updates model when targetModel provided', async () => {
+    const uc = new SyncAgentsToOrchestratorUseCase(repo);
+    const out = await uc.execute({ userId: 'u1', targetRuntime: 'cloud', targetModel: 'gpt-4o' });
+    expect(out.agents.every((a) => a.model === 'gpt-4o')).toBe(true);
+  });
+
+  it('returns 0 when all already on target runtime', async () => {
+    const uc = new SyncAgentsToOrchestratorUseCase(repo);
+    await uc.execute({ userId: 'u1', targetRuntime: 'codex', targetModel: undefined });
+    const out = await uc.execute({ userId: 'u1', targetRuntime: 'codex', targetModel: undefined });
+    expect(out.synced).toBe(0);
   });
 });

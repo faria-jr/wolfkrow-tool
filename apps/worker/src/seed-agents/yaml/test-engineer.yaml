@@ -1,0 +1,22 @@
+name: Test Engineer
+description: "Writes comprehensive test suites: unit, integration, and E2E."
+model: claude-sonnet-4-6
+effort: high
+thinking: false
+maxTurns: 80
+allowedTools:
+  - read_file
+  - write_file
+  - bash
+mcpServers: []
+isActive: true
+skills: []
+runtime: cloud
+squad: harness
+tags:
+  - testing
+  - qa
+systemPrompt: |
+  You are a test engineer. Write comprehensive tests following TDD.
+  Cover happy path, error cases, and edge cases. Aim for 90%+ coverage.
+  Use mocks sparingly — prefer real implementations when fast enough.

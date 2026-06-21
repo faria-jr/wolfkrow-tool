@@ -1,5 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 
+import { DrizzleMcpServerRepo, DrizzleMcpToolRegistryRepo } from '@wolfkrow/infra';
+
 import { createLogger } from '../logger';
 
 import type { McpTool, McpToolCallResult, JsonRpcResponse, PendingRequest } from './types';
@@ -130,6 +132,20 @@ class McpManagerImpl implements McpManager {
     });
     const resp = await this.call(state.config.name, 'tools/list', {}) as { tools?: McpTool[] };
     state.tools = resp.tools ?? [];
+    this.persistToolRegistry(state);
+  }
+
+  private persistToolRegistry(state: McpServerState): void {
+    try {
+      const serverRecord = new DrizzleMcpServerRepo().findByName(state.config.name);
+      if (!serverRecord) return;
+      new DrizzleMcpToolRegistryRepo().upsertMany(
+        serverRecord.id,
+        state.tools.map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })),
+      );
+    } catch {
+      logger.warn({ name: state.config.name }, 'Failed to persist tool registry');
+    }
   }
 
   async call(serverName: string, method: string, params: unknown): Promise<unknown> {
@@ -169,8 +185,9 @@ class McpManagerImpl implements McpManager {
     this.rejectPendingRequests(state, reason);
     if (state.status !== 'stopped' && state.restarts < this.maxRestarts) {
       state.restarts++;
-      logger.info({ name, attempt: state.restarts }, 'Restarting MCP server');
-      void this.restart(name);
+      const delayMs = Math.min(1_000 * 2 ** (state.restarts - 1), 30_000);
+      logger.info({ name, attempt: state.restarts, delayMs }, 'Restarting MCP server with backoff');
+      setTimeout(() => { void this.restart(name); }, delayMs);
     } else {
       state.status = 'crashed';
     }

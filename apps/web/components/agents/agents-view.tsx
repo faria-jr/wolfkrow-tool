@@ -1,12 +1,13 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import type { AgentData } from './agent-form-modal';
 import { AgentFormModal } from './agent-form-modal';
 import { AgentList } from './agent-list';
 import type { AgentFormValues } from './schema';
+import { SyncAgentsModal } from './sync-agents-modal';
 
 import { Button } from '@/components/ui/button';
 
@@ -25,6 +26,7 @@ async function fetchAgents(): Promise<AgentData[]> {
 export function AgentsView() {
   const [agents, setAgents] = useState<AgentData[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [syncOpen, setSyncOpen] = useState(false);
   const [editing, setEditing] = useState<AgentData | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -62,7 +64,10 @@ export function AgentsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={() => setSyncOpen(true)}>
+          <RefreshCw className="mr-2 h-4 w-4" />Sync to orchestrator
+        </Button>
         <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
           <Plus className="mr-2 h-4 w-4" />New agent
         </Button>
@@ -74,6 +79,12 @@ export function AgentsView() {
         onSubmit={handleSubmit}
         {...(editing !== null ? { agent: editing } : {})}
         loading={saving}
+      />
+      <SyncAgentsModal
+        open={syncOpen}
+        onClose={() => setSyncOpen(false)}
+        onSynced={() => { void loadAgents(); }}
+        agentCount={agents.length}
       />
     </div>
   );

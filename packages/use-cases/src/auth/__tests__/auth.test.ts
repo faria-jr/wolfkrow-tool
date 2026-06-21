@@ -13,7 +13,15 @@ import {
 } from '@wolfkrow/domain';
 import { describe, expect, it } from 'vitest';
 
-import { LoginUseCase, RegisterUseCase, VerifyTotpUseCase } from '../index';
+import {
+  DisableTotpUseCase,
+  EnableTotpUseCase,
+  LoginUseCase,
+  RegisterUseCase,
+  SetupTotpUseCase,
+  UnlockSessionUseCase,
+  VerifyTotpUseCase,
+} from '../index';
 
 class InMemoryUserRepo implements UserRepo {
   private readonly users = new Map<string, User>();
@@ -138,6 +146,105 @@ class FakeTotp implements TotpVerifier {
     return { secret: 'S', otpauthUrl: `otpauth://totp/Wolfkrow:${account}` };
   }
 }
+
+describe('UnlockSessionUseCase', () => {
+  it('succeeds with correct password', async () => {
+    const { repo, hasher, register } = setup();
+    await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
+    const out = await new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({ password: PW('Abcdef12') });
+    expect(out.userId).toBeTruthy();
+  });
+
+  it('throws on wrong password', async () => {
+    const { repo, hasher, register } = setup();
+    await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
+    await expect(
+      new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({ password: PW('Wrong123') }),
+    ).rejects.toThrow(UnauthorizedError);
+  });
+
+  it('throws when no owner', async () => {
+    const { repo, hasher } = setup();
+    await expect(
+      new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({ password: PW('Abcdef12') }),
+    ).rejects.toThrow(UnauthorizedError);
+  });
+});
+
+describe('SetupTotpUseCase', () => {
+  it('returns secret and otpauthUrl', async () => {
+    const { repo, register } = setup();
+    await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
+    const owner = await repo.findOwner();
+    const out = await new SetupTotpUseCase(repo, new FakeTotp()).execute({ userId: owner!.id });
+    expect(out.secret).toBeTruthy();
+    expect(out.otpauthUrl).toContain('otpauth://');
+  });
+});
+
+describe('EnableTotpUseCase', () => {
+  it('enables TOTP with valid code', async () => {
+    const { repo, register } = setup();
+    await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
+    const owner = await repo.findOwner();
+    await new EnableTotpUseCase(repo, new FakeTotp()).execute({ userId: owner!.id, secret: 'S', code: VALID_CODE });
+    const updated = await repo.findById(owner!.id);
+    expect(updated?.totpEnabled).toBe(true);
+  });
+
+  it('throws on invalid code', async () => {
+    const { repo, register } = setup();
+    await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
+    const owner = await repo.findOwner();
+    await expect(
+      new EnableTotpUseCase(repo, new FakeTotp()).execute({ userId: owner!.id, secret: 'S', code: '000000' }),
+    ).rejects.toThrow(UnauthorizedError);
+  });
+});
+
+describe('DisableTotpUseCase', () => {
+  it('disables TOTP with valid password and code', async () => {
+    const { repo, hasher, register } = setup();
+    await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
+    const owner = await repo.findOwner();
+    await repo.save(owner!.enableTotp('SECRET'));
+    await new DisableTotpUseCase(repo, hasher, new FakeTotp(), new LockoutPolicyCtor()).execute({
+      userId: owner!.id,
+      password: PW('Abcdef12'),
+      code: VALID_CODE,
+    });
+    const updated = await repo.findById(owner!.id);
+    expect(updated?.totpEnabled).toBe(false);
+  });
+
+  it('throws on wrong password', async () => {
+    const { repo, hasher, register } = setup();
+    await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
+    const owner = await repo.findOwner();
+    await repo.save(owner!.enableTotp('SECRET'));
+    await expect(
+      new DisableTotpUseCase(repo, hasher, new FakeTotp(), new LockoutPolicyCtor()).execute({
+        userId: owner!.id,
+        password: PW('Wrong123'),
+        code: VALID_CODE,
+      }),
+    ).rejects.toThrow(UnauthorizedError);
+  });
+
+  it('throws on invalid TOTP code when TOTP enabled', async () => {
+    const { repo, hasher, register } = setup();
+    await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
+    const owner = await repo.findOwner();
+    await repo.save(owner!.enableTotp('SECRET'));
+    await expect(
+      new DisableTotpUseCase(repo, hasher, new FakeTotp(), new LockoutPolicyCtor()).execute({
+        userId: owner!.id,
+        password: PW('Abcdef12'),
+        code: '000000',
+      }),
+    ).rejects.toThrow(UnauthorizedError);
+  });
+});
 
 describe('VerifyTotpUseCase', () => {
   async function registerAndEnableTotp(repo: UserRepo): Promise<string> {

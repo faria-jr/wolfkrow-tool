@@ -1,5 +1,5 @@
 /**
- * POST /api/auth/logout — limpa o cookie de sessão e loga no audit trail.
+ * POST /api/auth/lock — bloqueia a sessão (limpa cookie e loga 'lock').
  */
 
 import { DrizzleAuthAuditRepo } from '@wolfkrow/infra';
@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
   const ua = request.headers.get('user-agent') ?? undefined;
 
   if (session) {
-    audit.log({ userId: session.userId, action: 'logout', ip, userAgent: ua });
+    audit.log({ userId: session.userId, action: 'lock', ip, userAgent: ua });
   }
 
   cookieStore.delete('session');
-  return Response.json({ success: true });
+  return Response.json({ locked: true });
 }

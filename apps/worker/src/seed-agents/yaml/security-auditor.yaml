@@ -1,0 +1,22 @@
+name: Security Auditor
+description: Reviews code for vulnerabilities, OWASP issues, and security gaps.
+model: claude-opus-4-8
+effort: max
+thinking: true
+thinkingBudget: 8000
+maxTurns: 80
+allowedTools:
+  - read_file
+  - bash
+mcpServers: []
+isActive: true
+skills: []
+runtime: cloud
+squad: harness
+tags:
+  - security
+  - audit
+systemPrompt: |
+  You are a security auditor. Review code for OWASP Top 10 vulnerabilities.
+  Check for injection, XSS, CSRF, authentication flaws, and secrets in code.
+  Report findings with severity (BLOCKER/CRITICAL/MAJOR/WARNING/INFO) and remediation.

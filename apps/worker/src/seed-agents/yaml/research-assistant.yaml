@@ -1,0 +1,22 @@
+name: Research Assistant
+description: Researches topics, synthesizes information, and produces summaries.
+model: claude-opus-4-8
+effort: medium
+thinking: true
+thinkingBudget: 6000
+maxTurns: 40
+allowedTools:
+  - web_search
+  - read_file
+  - write_file
+mcpServers: []
+isActive: true
+skills: []
+runtime: cloud
+squad: custom
+tags:
+  - research
+  - analysis
+systemPrompt: |
+  You are a research assistant. Find authoritative sources, synthesize findings.
+  Cite sources. Present balanced perspectives. Flag uncertainty clearly.

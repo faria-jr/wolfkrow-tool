@@ -4,7 +4,7 @@
  * Runs scheduled tasks, migrations, and background jobs.
  */
 
-import { getDb, runMigrations } from '@wolfkrow/infra';
+import { DrizzleMcpServerRepo, getDb, runMigrations } from '@wolfkrow/infra';
 import { getScheduledTasksRepository } from '@wolfkrow/infra/repos';
 
 import { createAgentExecutor } from './agent-executor';
@@ -16,6 +16,26 @@ import { Scheduler } from './scheduler';
 import { createServer } from './server';
 
 const logger = createLogger('worker');
+
+async function startMcpsAsync(): Promise<void> {
+  const catalogEntries = loadBuiltInMcpCatalog().filter((s) => s.visibility === 'always');
+  const dbEntries = new DrizzleMcpServerRepo()
+    .findActive()
+    .filter((r) => !catalogEntries.some((c) => c.name === r.name))
+    .map((r) => ({ name: r.name, command: r.command, args: r.args, env: r.env }));
+
+  const toStart = [...catalogEntries, ...dbEntries];
+  await Promise.allSettled(
+    toStart.map(async (entry) => {
+      try {
+        await mcpManager.start(entry);
+        logger.info({ name: entry.name }, 'MCP server started');
+      } catch (error) {
+        logger.error({ name: entry.name, err: error }, 'Failed to start MCP server');
+      }
+    }),
+  );
+}
 
 async function main(): Promise<void> {
   logger.info('Worker starting');
@@ -34,21 +54,12 @@ async function main(): Promise<void> {
 
   scheduler.start();
 
-  const catalog = loadBuiltInMcpCatalog();
-  const alwaysOnServers = catalog.filter((s) => s.visibility === 'always');
-  for (const entry of alwaysOnServers) {
-    try {
-      await mcpManager.start(entry);
-      logger.info({ name: entry.name }, 'MCP server started');
-    } catch (error) {
-      logger.error({ name: entry.name, err: error }, 'Failed to start MCP server');
-    }
-  }
-
+  // HTTP first — MCPs start async after server is ready (G5 fix)
   const server = await createServer();
   await server.listen({ host: config.HOST, port: config.PORT });
-
   logger.info(`Worker HTTP server listening on ${config.HOST}:${config.PORT}`);
+
+  void startMcpsAsync();
 
   const shutdown = (signal: string) => {
     logger.info({ signal }, 'Shutting down worker');

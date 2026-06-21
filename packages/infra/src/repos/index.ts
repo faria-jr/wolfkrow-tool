@@ -11,6 +11,10 @@ export { DrizzleAgentRepo } from './agent-repo';
 export { DrizzleSkillRepo } from './skill-repo';
 export { DrizzleMcpServerRepo } from './mcp-server-repo';
 export type { McpServerRecord, McpServerCreateInput } from './mcp-server-repo';
+export { DrizzleAuthAuditRepo } from './auth-audit-repo';
+export type { AuthAuditEntry, AuthAuditAction } from './auth-audit-repo';
+export { DrizzleMcpToolRegistryRepo } from './mcp-tool-registry-repo';
+export type { McpToolRecord } from './mcp-tool-registry-repo';
 
 import { getDb } from '../db/client';
 import { scheduledTasks, taskRuns } from '../db/schema/scheduler';

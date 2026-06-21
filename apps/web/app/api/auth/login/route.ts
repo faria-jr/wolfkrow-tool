@@ -1,25 +1,52 @@
 /**
  * POST /api/auth/login — LoginUseCase (bcrypt + lockout) → JWT se success.
- *
- * A.1: auth real. Se requires_totp → 200 com challenge (frontend pede código).
- * Se locked → 423. Password fraco/ausente → 400/401 (não chama use-case).
+ * Rate limit: 10/min por IP. Audit log em todas as saídas.
  */
 
-
 import { LockoutPolicy, PlainPassword, UnauthorizedError, ValidationError } from '@wolfkrow/domain';
-import { BcryptHasher, createToken, DrizzleUserRepo, loadOrCreateKeyPair } from '@wolfkrow/infra';
+import {
+  BcryptHasher,
+  checkRateLimit,
+  createToken,
+  DrizzleAuthAuditRepo,
+  DrizzleUserRepo,
+  loadOrCreateKeyPair,
+} from '@wolfkrow/infra';
 import { LoginUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
+import type { NextRequest } from 'next/server';
 
 interface LoginBody {
   password: string;
 }
 
-function buildLoginUseCase(): LoginUseCase {
-  return new LoginUseCase(new DrizzleUserRepo(), new BcryptHasher(), new LockoutPolicy());
+const audit = new DrizzleAuthAuditRepo();
+
+async function setSessionCookie(userId: string): Promise<void> {
+  const { privateKey } = await loadOrCreateKeyPair();
+  const token = await createToken({ sub: userId, userId }, privateKey);
+  const store = await cookies();
+  store.set('session', token, {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7,
+  });
 }
 
-export async function POST(request: Request) {
+function getIp(request: NextRequest): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+}
+
+export async function POST(request: NextRequest) {
+  const ip = getIp(request);
+  const ua = request.headers.get('user-agent') ?? undefined;
+
+  if (!checkRateLimit(`login:${ip}`)) {
+    return Response.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const body = (await request.json().catch(() => null)) as LoginBody | null;
   if (!body?.password) {
     return Response.json({ error: 'Password is required' }, { status: 400 });
@@ -34,9 +61,10 @@ export async function POST(request: Request) {
 
   let result;
   try {
-    result = await buildLoginUseCase().execute({ password });
+    result = await new LoginUseCase(new DrizzleUserRepo(), new BcryptHasher(), new LockoutPolicy()).execute({ password });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
+      audit.log({ userId: undefined, action: 'login.fail', ip, userAgent: ua });
       return Response.json({ error: 'Invalid credentials' }, { status: 401 });
     }
     if (error instanceof ValidationError) {
@@ -46,6 +74,7 @@ export async function POST(request: Request) {
   }
 
   if (result.status === 'locked') {
+    audit.log({ userId: result.userId, action: 'login.fail', ip, userAgent: ua });
     return Response.json({ status: 'locked', lockedUntil: result.lockedUntil }, { status: 423 });
   }
   if (result.status === 'requires_totp') {
@@ -53,18 +82,6 @@ export async function POST(request: Request) {
   }
 
   await setSessionCookie(result.userId);
+  audit.log({ userId: result.userId, action: 'login.success', ip, userAgent: ua });
   return Response.json({ status: 'success', userId: result.userId });
-}
-
-async function setSessionCookie(userId: string): Promise<void> {
-  const { privateKey } = await loadOrCreateKeyPair();
-  const token = await createToken({ sub: userId, userId }, privateKey);
-  const store = await cookies();
-  store.set('session', token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 24,
-  });
 }
