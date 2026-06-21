@@ -1,0 +1,70 @@
+appId: com.wolfkrow.tool
+productName: Wolfkrow
+copyright: "Copyright © 2024-2025 Wolfkrow Labs"
+
+directories:
+  output: dist-electron
+  buildResources: resources
+
+files:
+  - apps/wrapper/dist/**/*
+  - apps/web/.next/standalone/**/*
+  - apps/worker/dist/**/*
+  - node_modules/**/*
+  - "!node_modules/**/test*"
+  - "!node_modules/**/.git"
+  - resources/**/*
+
+extraResources:
+  - from: resources
+    to: resources
+    filter:
+      - "*.png"
+      - "*.icns"
+      - "*.ico"
+
+mac:
+  category: public.app-category.productivity
+  icon: resources/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.inherit.plist
+  notarize: false
+  target:
+    - target: dmg
+      arch: [x64, arm64]
+
+win:
+  icon: resources/icon.ico
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+
+linux:
+  category: Utility
+  icon: resources/icon.png
+  target:
+    - target: AppImage
+      arch: [x64, arm64]
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
+dmg:
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
+
+publish:
+  provider: github
+  owner: wolfkrow-labs
+  repo: wolfkrow-tool
+  releaseType: release
+
+afterSign: scripts/notarize.js
