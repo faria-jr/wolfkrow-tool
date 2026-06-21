@@ -45,6 +45,7 @@ const MAIN_NAV: NavItem[] = [
   { title: 'Skills', url: '/skills', icon: Sparkles },
   { title: 'MCP Servers', url: '/mcp', icon: Network },
   { title: 'Knowledge', url: '/knowledge', icon: BookOpen },
+  { title: 'Graph', url: '/graph', icon: Network },
   { title: 'Tasks', url: '/tasks', icon: ListTodo },
 ];
 
