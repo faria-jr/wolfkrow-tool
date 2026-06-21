@@ -31,6 +31,7 @@ import { logsRoutes } from './routes/logs';
 import { rulesRoutes } from './routes/rules';
 import { permissionsRoutes } from './routes/permissions';
 import { tasksRoutes } from './routes/tasks';
+import { graphRoutes } from './routes/graph';
 
 export async function createServer() {
   const logger = createLogger('server');
@@ -81,6 +82,7 @@ export async function createServer() {
   await server.register(rulesRoutes, { prefix: '/rules' });
   await server.register(permissionsRoutes, { prefix: '/permissions' });
   await server.register(tasksRoutes, { prefix: '/tasks' });
+  await server.register(graphRoutes, { prefix: '/graph' });
 
   server.setErrorHandler((error, request, reply) => {
     const err = error as Error & { statusCode?: number; code?: string };
