@@ -5,7 +5,7 @@
  */
 
 import type { ScheduledTasksRepository } from '@wolfkrow/infra/repos';
-import { parseExpression } from 'cron-parser';
+import cronParser from 'cron-parser';
 
 import type { Logger } from './logger';
 
@@ -135,7 +135,7 @@ export class Scheduler {
   }
 
   private getNextRunAt(cronExpression: string, startDate: Date): Date {
-    const interval = parseExpression(cronExpression, { utc: true, currentDate: startDate });
+    const interval = cronParser.parseExpression(cronExpression, { utc: true, currentDate: startDate });
     return interval.next().toDate();
   }
 }

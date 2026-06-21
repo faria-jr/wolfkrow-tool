@@ -1,13 +1,7 @@
-import dynamic from 'next/dynamic';
+import { GraphView } from '@/components/graph/graph-view';
 
-import { Skeleton } from '@/components/ui/skeleton';
-
-// Graph UI + D3 are client-only and lazy-loaded (SPEC-022 §4).
-const GraphView = dynamic(() => import('@/components/graph/graph-view'), {
-  ssr: false,
-  loading: () => <Skeleton className="h-[600px] w-full rounded-lg" />,
-});
-
+// GraphView is a client component; D3 is lazy-loaded inside GraphCanvas
+// via dynamic import, so it stays out of the initial bundle (SPEC-022 §4).
 export default function GraphPage() {
   return (
     <div className="flex flex-col gap-4 p-4">

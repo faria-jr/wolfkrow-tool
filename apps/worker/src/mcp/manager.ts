@@ -191,7 +191,13 @@ class McpManagerImpl implements McpManager {
       state.restarts++;
       const delayMs = Math.min(1_000 * 2 ** (state.restarts - 1), 30_000);
       logger.info({ name, attempt: state.restarts, delayMs }, 'Restarting MCP server with backoff');
-      setTimeout(() => { void this.restart(name); }, delayMs);
+      setTimeout(() => {
+        void this.restart(name).catch((err) => {
+          logger.error({ name, err }, 'MCP restart failed');
+          state.status = 'crashed';
+          state.lastError = (err as Error).message;
+        });
+      }, delayMs);
     } else {
       state.status = 'crashed';
     }
