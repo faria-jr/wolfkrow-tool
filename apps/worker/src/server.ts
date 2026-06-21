@@ -20,6 +20,7 @@ import { memoryRoutes } from './routes/memory';
 import { mcpRoutes } from './routes/mcp';
 import { harnessRoutes } from './routes/harness';
 import { enrichRoutes } from './routes/enrich';
+import { voiceRoutes } from './routes/voice';
 import { pipelineRoutes } from './routes/pipeline';
 import { schedulerRoutes } from './routes/scheduler';
 
@@ -61,6 +62,7 @@ export async function createServer() {
   await server.register(harnessRoutes, { prefix: '/harness' });
   await server.register(pipelineRoutes, { prefix: '/pipeline' });
   await server.register(enrichRoutes, { prefix: '/enrich' });
+  await server.register(voiceRoutes, { prefix: '/voice' });
   await server.register(chatRoutes, { prefix: '/chat' });
   await server.register(mcpRoutes, { prefix: '/mcp' });
 
