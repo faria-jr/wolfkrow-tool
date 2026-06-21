@@ -2,7 +2,7 @@
  * Drizzle schema — Audit log (comprehensive trail)
  */
 
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 import { users } from './auth';
 import { id, timestamp, metadata } from './base';
@@ -51,4 +51,9 @@ export const auditLog = sqliteTable('audit_log', {
   ip: text('ip'),
   userAgent: text('user_agent'),
   timestamp: timestamp('timestamp').notNull(),
-});
+},
+(t) => ({
+  userIdIdx: index('audit_log_user_id_idx').on(t.userId),
+  timestampIdx: index('audit_log_timestamp_idx').on(t.timestamp),
+  actionIdx: index('audit_log_action_idx').on(t.action),
+}));

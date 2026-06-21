@@ -2,7 +2,7 @@
  * Drizzle schema — Auth tables (users, sessions, audit)
  */
 
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { index, sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 import { id, timestamp, metadata } from './base';
 
@@ -22,25 +22,32 @@ export const users = sqliteTable('users', {
   updatedAt: timestamp('updated_at').notNull(),
 });
 
-export const authAuditLog = sqliteTable('auth_audit_log', {
-  id: id(),
-  userId: text('user_id').references(() => users.id),
-  action: text('action', {
-    enum: [
-      'login.success',
-      'login.fail',
-      'totp.success',
-      'totp.fail',
-      'logout',
-      'lock',
-      'unlock',
-      'totp.enable',
-      'totp.disable',
-      'password.change',
-    ],
-  }).notNull(),
-  ip: text('ip'),
-  userAgent: text('user_agent'),
-  metadata: metadata(),
-  timestamp: timestamp('timestamp').notNull(),
-});
+export const authAuditLog = sqliteTable(
+  'auth_audit_log',
+  {
+    id: id(),
+    userId: text('user_id').references(() => users.id),
+    action: text('action', {
+      enum: [
+        'login.success',
+        'login.fail',
+        'totp.success',
+        'totp.fail',
+        'logout',
+        'lock',
+        'unlock',
+        'totp.enable',
+        'totp.disable',
+        'password.change',
+      ],
+    }).notNull(),
+    ip: text('ip'),
+    userAgent: text('user_agent'),
+    metadata: metadata(),
+    timestamp: timestamp('timestamp').notNull(),
+  },
+  (t) => ({
+    userIdIdx: index('auth_audit_log_user_id_idx').on(t.userId),
+    timestampIdx: index('auth_audit_log_timestamp_idx').on(t.timestamp),
+  }),
+);
