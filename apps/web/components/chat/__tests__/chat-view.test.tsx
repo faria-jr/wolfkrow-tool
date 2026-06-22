@@ -88,7 +88,7 @@ describe('ChatView', () => {
     render(<ChatView />);
     await user.type(screen.getByLabelText('Chat input'), 'hello');
     await user.click(screen.getByLabelText('Send'));
-    expect(screen.getByText('hello')).toBeTruthy();
+    expect(screen.getAllByText('hello').length).toBeGreaterThan(0);
   });
 
   it('streams assistant response text', async () => {
@@ -146,5 +146,62 @@ describe('ChatView', () => {
     render(<ChatView />);
     expect(screen.getByRole('alert')).toBeTruthy();
     expect(screen.getByText('mic denied')).toBeTruthy();
+  });
+
+  it('shows "New Chat" heading initially (#9)', () => {
+    render(<ChatView />);
+    expect(screen.getByRole('heading', { name: 'New Chat' })).toBeTruthy();
+  });
+
+  it('updates heading from first user message (#9)', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetch).mockResolvedValue(makeSSEResponse([sseEvent({ type: 'done' })]));
+    render(<ChatView />);
+    await user.type(screen.getByLabelText('Chat input'), 'my first message');
+    await user.click(screen.getByLabelText('Send'));
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'my first message' })).toBeTruthy());
+  });
+
+  it('has a clear button (#10)', () => {
+    render(<ChatView />);
+    expect(screen.getByRole('button', { name: /clear/i })).toBeTruthy();
+  });
+
+  it('clear button opens confirm dialog (#10)', async () => {
+    const user = userEvent.setup();
+    render(<ChatView />);
+    await user.click(screen.getByRole('button', { name: /clear/i }));
+    expect(screen.getByRole('alertdialog')).toBeTruthy();
+  });
+
+  it('confirming clear removes messages (#10)', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetch).mockResolvedValue(
+      makeSSEResponse([sseEvent({ type: 'text', content: 'Hi!' }), sseEvent({ type: 'done' })]),
+    );
+    render(<ChatView />);
+    await user.type(screen.getByLabelText('Chat input'), 'hello');
+    await user.click(screen.getByLabelText('Send'));
+    await waitFor(() => expect(screen.getAllByText('hello').length).toBeGreaterThan(0));
+    await user.click(screen.getByRole('button', { name: /clear/i }));
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
+    await waitFor(() => expect(screen.queryByText('hello')).toBeNull());
+    expect(screen.getByText('Start a conversation')).toBeTruthy();
+  });
+
+  it('shows AskQuestionDialog when ask_question SSE event received (#11)', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetch).mockResolvedValue(
+      makeSSEResponse([
+        sseEvent({ type: 'text', content: 'Let me ask:' }),
+        sseEvent({ type: 'ask_question', prompt: 'What do you mean?' }),
+        sseEvent({ type: 'done' }),
+      ]),
+    );
+    render(<ChatView />);
+    await user.type(screen.getByLabelText('Chat input'), 'tell me something');
+    await user.click(screen.getByLabelText('Send'));
+    await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy());
+    expect(screen.getByText('What do you mean?')).toBeTruthy();
   });
 });

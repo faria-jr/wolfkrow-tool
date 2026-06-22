@@ -46,4 +46,30 @@ describe('ChatMessage', () => {
     const { container } = render(<ChatMessage message={msg({ role: 'assistant', toolCalls: [] })} />);
     expect(container.querySelector('[role="article"]')).toBeNull();
   });
+
+  it('renders bold markdown in assistant messages (#36)', () => {
+    const { container } = render(<ChatMessage message={msg({ role: 'assistant', content: '**bold text**' })} />);
+    expect(container.querySelector('strong')).toBeTruthy();
+  });
+
+  it('renders code block in assistant messages (#36)', () => {
+    const { container } = render(
+      <ChatMessage message={msg({ role: 'assistant', content: '```\ncode here\n```' })} />,
+    );
+    expect(container.querySelector('pre')).toBeTruthy();
+  });
+
+  it('renders inline code in assistant messages (#36)', () => {
+    const { container } = render(
+      <ChatMessage message={msg({ role: 'assistant', content: 'Use `code` inline' })} />,
+    );
+    expect(container.querySelector('code')).toBeTruthy();
+  });
+
+  it('user message renders as plain text, not markdown (#36)', () => {
+    const { container } = render(
+      <ChatMessage message={msg({ role: 'user', content: '**not bold**' })} />,
+    );
+    expect(container.querySelector('strong')).toBeNull();
+  });
 });
