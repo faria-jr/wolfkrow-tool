@@ -3,8 +3,6 @@
  */
 
 
-import { DrizzleSecretRepo } from '@wolfkrow/infra/repos';
-import { KeytarSecretsAdapter } from '@wolfkrow/infra/secrets/keytar-adapter';
 import {
   ListSecretsUseCase,
   StoreSecretUseCase,
@@ -13,6 +11,7 @@ import {
 } from '@wolfkrow/use-cases';
 import { z } from 'zod';
 
+import { getAdapters, getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
@@ -34,8 +33,8 @@ function getUserId(req: { user?: { userId?: string } }): string {
 }
 
 export async function vaultRoutes(server: AuthFastifyInstance) {
-  const repo = new DrizzleSecretRepo();
-  const adapter = new KeytarSecretsAdapter();
+  const repo = getRepos().secret;
+  const adapter = getAdapters().secrets;
 
   const listUC = new ListSecretsUseCase(repo);
   const storeUC = new StoreSecretUseCase(repo, adapter);

@@ -11,11 +11,6 @@ import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
 import {
-  DrizzleKnowledgeChunkRepo,
-  DrizzleKnowledgeDocRepo,
-  VoyageEmbedder,
-} from '@wolfkrow/infra';
-import {
   DeleteDocumentUseCase,
   IngestDocumentUseCase,
   ListDocumentsUseCase,
@@ -24,13 +19,11 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
-
+import { getAdapters, getRepos } from '../container';
 import { semanticChunk, rawChunk } from '../knowledge/chunker';
 import { parseByMimeType } from '../knowledge/parsers/index';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
-
-const VOYAGE_API_KEY = process.env['VOYAGE_API_KEY'] ?? '';
 
 const searchBody = z.object({
   query: z.string().min(1).max(512),
@@ -39,13 +32,14 @@ const searchBody = z.object({
 });
 
 function makeEmbedder() {
-  return new VoyageEmbedder(VOYAGE_API_KEY);
+  return getAdapters().embedder;
 }
 
 function makeRepos() {
+  const r = getRepos();
   return {
-    docRepo: new DrizzleKnowledgeDocRepo(),
-    chunkRepo: new DrizzleKnowledgeChunkRepo(),
+    docRepo: r.knowledgeDoc,
+    chunkRepo: r.knowledgeChunk,
   };
 }
 

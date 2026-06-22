@@ -1,8 +1,9 @@
+import type { SecretsAdapter } from '@wolfkrow/domain';
 import keytar from 'keytar';
 
 const SERVICE = 'wolfkrow-tool';
 
-export class KeytarSecretsAdapter {
+export class KeytarSecretsAdapter implements SecretsAdapter {
   async get(key: string): Promise<string | null> {
     return keytar.getPassword(SERVICE, key);
   }

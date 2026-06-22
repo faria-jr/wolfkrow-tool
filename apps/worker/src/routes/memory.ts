@@ -4,7 +4,6 @@
  */
 
 import type { MemorySearchResult, SemanticMemory } from '@wolfkrow/domain';
-import { DrizzleDailySummaryRepo, DrizzleSemanticMemoryRepo, VoyageEmbedder } from '@wolfkrow/infra';
 import {
   AddMemoryUseCase,
   DeleteMemoryUseCase,
@@ -14,19 +13,19 @@ import {
 } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import { getAdapters, getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 
-const VOYAGE_API_KEY = process.env['VOYAGE_API_KEY'] ?? '';
-
 function makeRepos() {
+  const r = getRepos();
   return {
-    memoryRepo: new DrizzleSemanticMemoryRepo(),
-    summaryRepo: new DrizzleDailySummaryRepo(),
+    memoryRepo: r.semanticMemory,
+    summaryRepo: r.dailySummary,
   };
 }
 
 function makeEmbedder() {
-  return new VoyageEmbedder(VOYAGE_API_KEY);
+  return getAdapters().embedder;
 }
 
 interface AddMemoryBody {
@@ -90,7 +89,7 @@ async function handleDeleteMemory(req: FastifyRequest<{ Params: { id: string } }
 
 async function handleGetSummaries(req: FastifyRequest, reply: FastifyReply) {
   const userId = (req as unknown as { user: { userId: string } }).user.userId;
-  const summaries = await new DrizzleDailySummaryRepo().findByUserId(userId);
+  const summaries = await getRepos().dailySummary.findByUserId(userId);
   return reply.send({ summaries: summaries.map((s) => s.toProps()) });
 }
 

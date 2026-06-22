@@ -4,6 +4,7 @@ export type { TotpSecret, TotpVerifier } from './totp-verifier';
 export { TokenEstimator } from './token-estimator';
 export type { AIStreamPort, AIStreamChunk, AICompletionOptions, AICompletionResult, AIChatMessage, AIChatRole } from './ai-stream-port';
 export type { EmbeddingPort } from './embedding-port';
+export type { SecretsAdapter } from './secrets-port';
 export { PricingCalculator, Money, defaultPricingCalculator } from './pricing-calculator';
 export type { PricingTier, TokenUsage } from './pricing-calculator';
 export { PermissionResolver, defaultPermissionResolver } from './permission-resolver';
