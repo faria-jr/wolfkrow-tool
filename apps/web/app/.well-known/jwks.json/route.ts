@@ -4,7 +4,7 @@
  * Worker valida tokens via createRemoteJWKSet(this URL) — config JWKS_URL.
  */
 
-import { loadOrCreateKeyPair } from '@wolfkrow/infra';
+import { loadOrCreateKeyPair } from '@/lib/auth';
 
 export async function GET() {
   const { publicJwk } = await loadOrCreateKeyPair();

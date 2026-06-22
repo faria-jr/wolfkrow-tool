@@ -2,11 +2,11 @@
  * POST /api/knowledge/search — hybrid semantic + keyword search
  */
 
-import { DrizzleKnowledgeChunkRepo, VoyageEmbedder } from '@wolfkrow/infra';
 import { SearchKnowledgeUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
+import { getAdapters, getRepos } from '@/lib/container';
 
 interface SearchBody {
   query: string;
@@ -22,10 +22,9 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as SearchBody | null;
   if (!body?.query) return Response.json({ error: 'query required' }, { status: 400 });
 
-  const apiKey = process.env['VOYAGE_API_KEY'] ?? '';
   const uc = new SearchKnowledgeUseCase(
-    new DrizzleKnowledgeChunkRepo(),
-    new VoyageEmbedder(apiKey),
+    getRepos().knowledgeChunk,
+    getAdapters().embedder,
   );
 
   const result = await uc.execute({

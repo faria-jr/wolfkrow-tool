@@ -1,6 +1,6 @@
 'use client';
 
-import type { McpServerRecord } from '@wolfkrow/infra';
+import type { McpServerRecord } from '@wolfkrow/domain';
 import { TrashIcon } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';

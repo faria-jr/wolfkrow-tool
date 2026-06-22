@@ -4,23 +4,19 @@
  */
 
 import { NotFoundError, UnauthorizedError } from '@wolfkrow/domain';
-import {
-  createToken,
-  DrizzleAuthAuditRepo,
-  DrizzleUserRepo,
-  loadOrCreateKeyPair,
-  OtplibTotp,
-} from '@wolfkrow/infra';
 import { VerifyTotpUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
+
+import { createToken, loadOrCreateKeyPair } from '@/lib/auth';
+import { getAdapters, getRepos } from '@/lib/container';
 
 interface TotpBody {
   userId: string;
   code: string;
 }
 
-const audit = new DrizzleAuthAuditRepo();
+const audit = getRepos().authAudit;
 
 async function setSessionCookie(userId: string): Promise<void> {
   const { privateKey } = await loadOrCreateKeyPair();
@@ -49,7 +45,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const out = await new VerifyTotpUseCase(new DrizzleUserRepo(), new OtplibTotp()).execute({
+    const out = await new VerifyTotpUseCase(getRepos().user, getAdapters().totp).execute({
       userId: body.userId,
       code: body.code,
     });

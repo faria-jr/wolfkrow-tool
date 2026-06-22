@@ -3,22 +3,18 @@
  */
 
 import { LockoutPolicy, PlainPassword, UnauthorizedError } from '@wolfkrow/domain';
-import {
-  BcryptHasher,
-  createToken,
-  DrizzleAuthAuditRepo,
-  DrizzleUserRepo,
-  loadOrCreateKeyPair,
-} from '@wolfkrow/infra';
 import { UnlockSessionUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
+
+import { createToken, loadOrCreateKeyPair } from '@/lib/auth';
+import { getAdapters, getRepos } from '@/lib/container';
 
 interface UnlockBody {
   password: string;
 }
 
-const audit = new DrizzleAuthAuditRepo();
+const audit = getRepos().authAudit;
 
 async function setSessionCookie(userId: string): Promise<void> {
   const { privateKey } = await loadOrCreateKeyPair();
@@ -51,8 +47,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const out = await new UnlockSessionUseCase(
-      new DrizzleUserRepo(),
-      new BcryptHasher(),
+      getRepos().user,
+      getAdapters().hasher,
       new LockoutPolicy(),
     ).execute({ password });
     await setSessionCookie(out.userId);

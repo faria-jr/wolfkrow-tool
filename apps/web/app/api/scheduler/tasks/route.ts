@@ -1,15 +1,15 @@
-import { DrizzleScheduledTaskRepo } from '@wolfkrow/infra';
 import { CreateScheduledTaskUseCase, ListScheduledTasksUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
+import { getRepos } from '@/lib/container';
 
 export async function GET() {
   const cookieStore = await cookies();
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const repo = new DrizzleScheduledTaskRepo();
+  const repo = getRepos().scheduledTask;
   const { tasks } = await new ListScheduledTasksUseCase(repo).execute({ userId: session.userId });
   return Response.json({ tasks: tasks.map((t) => t.toProps()) });
 }
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     return Response.json({ error: 'name, cronExpression, and prompt are required' }, { status: 400 });
   }
 
-  const repo = new DrizzleScheduledTaskRepo();
+  const repo = getRepos().scheduledTask;
   const uc = new CreateScheduledTaskUseCase(repo);
   const result = await uc.execute({
     userId: session.userId,

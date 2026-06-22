@@ -1,6 +1,14 @@
 import { loadOrCreateKeyPair } from '@wolfkrow/infra';
 import { jwtVerify } from 'jose';
 
+/**
+ * Auth-infra bridge (FIX-007): web routes must not import `@wolfkrow/infra`
+ * directly. These JWT / rate-limit / keypair helpers are infra utilities (not
+ * adapter instances), so this module is the single web file that re-exports
+ * them. Routes import them from `@/lib/auth`.
+ */
+export { checkRateLimit, createToken, loadOrCreateKeyPair } from '@wolfkrow/infra';
+
 export interface SessionPayload {
   sub: string;
   userId: string;

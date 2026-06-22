@@ -2,13 +2,13 @@
  * POST /api/auth/logout — limpa o cookie de sessão e loga no audit trail.
  */
 
-import { DrizzleAuthAuditRepo } from '@wolfkrow/infra';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
 import { getSession } from '@/lib/auth';
+import { getRepos } from '@/lib/container';
 
-const audit = new DrizzleAuthAuditRepo();
+const audit = getRepos().authAudit;
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();

@@ -8,8 +8,9 @@ import {
   PlainPassword,
   type ValidationError as ValidationErrorType,
 } from '@wolfkrow/domain';
-import { BcryptHasher, DrizzleUserRepo } from '@wolfkrow/infra';
 import { RegisterUseCase } from '@wolfkrow/use-cases';
+
+import { getAdapters, getRepos } from '@/lib/container';
 
 interface SetupBody {
   password: string;
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     return Response.json({ error: msg }, { status: 400 });
   }
 
-  const register = new RegisterUseCase(new DrizzleUserRepo(), new BcryptHasher());
+  const register = new RegisterUseCase(getRepos().user, getAdapters().hasher);
   try {
     const out = await register.execute({
       password,

@@ -3,19 +3,19 @@
  */
 
 import { LockoutPolicy, PlainPassword, UnauthorizedError } from '@wolfkrow/domain';
-import { BcryptHasher, DrizzleAuthAuditRepo, DrizzleUserRepo, OtplibTotp } from '@wolfkrow/infra';
 import { DisableTotpUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
 import { getSession } from '@/lib/auth';
+import { getAdapters, getRepos } from '@/lib/container';
 
 interface Body {
   password: string;
   code: string | undefined;
 }
 
-const audit = new DrizzleAuthAuditRepo();
+const audit = getRepos().authAudit;
 
 function getClientInfo(request: NextRequest): { ip: string | undefined; ua: string | undefined } {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined;
@@ -44,9 +44,9 @@ export async function POST(request: NextRequest) {
 
   try {
     await new DisableTotpUseCase(
-      new DrizzleUserRepo(),
-      new BcryptHasher(),
-      new OtplibTotp(),
+      getRepos().user,
+      getAdapters().hasher,
+      getAdapters().totp,
       new LockoutPolicy(),
     ).execute({ userId: session.userId, password: parsed.password, code: parsed.code });
     audit.log({ userId: session.userId, action: 'totp.disable', ip, userAgent: ua });

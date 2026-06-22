@@ -1,8 +1,8 @@
-import { DrizzleTaskRunRepo } from '@wolfkrow/infra';
 import { ReviewTaskRunUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
+import { getRepos } from '@/lib/container';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -18,7 +18,7 @@ export async function POST(req: Request, { params }: Params) {
     return Response.json({ error: 'verdict must be "validated" or "rejected"' }, { status: 400 });
   }
 
-  const repo = new DrizzleTaskRunRepo();
+  const repo = getRepos().taskRun;
   const uc = new ReviewTaskRunUseCase(repo);
   const result = await uc.execute({
     runId: id,

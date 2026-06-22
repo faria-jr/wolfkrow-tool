@@ -1,10 +1,8 @@
-import { DrizzleSemanticMemoryRepo, VoyageEmbedder } from '@wolfkrow/infra';
 import { SearchMemoryUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
-
-const VOYAGE_API_KEY = process.env['VOYAGE_API_KEY'] ?? '';
+import { getAdapters, getRepos } from '@/lib/container';
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
@@ -14,8 +12,8 @@ export async function POST(req: Request) {
   const body = (await req.json()) as { query?: string; limit?: number };
   if (!body.query) return Response.json({ error: 'query required' }, { status: 400 });
 
-  const repo = new DrizzleSemanticMemoryRepo();
-  const embedder = new VoyageEmbedder(VOYAGE_API_KEY);
+  const repo = getRepos().semanticMemory;
+  const embedder = getAdapters().embedder;
   const uc = new SearchMemoryUseCase(repo, embedder);
   const result = await uc.execute({
     userId: session.userId,

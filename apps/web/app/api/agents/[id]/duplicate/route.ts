@@ -3,11 +3,11 @@
  */
 
 import { NotFoundError } from '@wolfkrow/domain';
-import { DrizzleAgentRepo } from '@wolfkrow/infra';
 import { DuplicateAgentUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
+import { getRepos } from '@/lib/container';
 
 interface Ctx { params: Promise<{ id: string }>; }
 
@@ -22,7 +22,7 @@ export async function POST(request: Request, ctx: Ctx) {
   if (!newName) return Response.json({ error: 'newName is required' }, { status: 400 });
 
   try {
-    const { agent } = await new DuplicateAgentUseCase(new DrizzleAgentRepo()).execute({ id, userId: session.userId, newName });
+    const { agent } = await new DuplicateAgentUseCase(getRepos().agent).execute({ id, userId: session.userId, newName });
     return Response.json({ agent: agent.toProps() }, { status: 201 });
   } catch (err) {
     if (err instanceof NotFoundError) return Response.json({ error: err.message }, { status: 404 });

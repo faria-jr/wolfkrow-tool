@@ -1,18 +1,16 @@
 import type { MemorySource } from '@wolfkrow/domain';
-import { DrizzleSemanticMemoryRepo, VoyageEmbedder } from '@wolfkrow/infra';
 import { AddMemoryUseCase, ListMemoriesUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
-
-const VOYAGE_API_KEY = process.env['VOYAGE_API_KEY'] ?? '';
+import { getAdapters, getRepos } from '@/lib/container';
 
 export async function GET() {
   const cookieStore = await cookies();
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const repo = new DrizzleSemanticMemoryRepo();
+  const repo = getRepos().semanticMemory;
   const { memories } = await new ListMemoriesUseCase(repo).execute({ userId: session.userId });
   return Response.json({ memories: memories.map((m) => m.toProps()) });
 }
@@ -30,8 +28,8 @@ export async function POST(req: Request) {
   };
   if (!body.content) return Response.json({ error: 'content required' }, { status: 400 });
 
-  const repo = new DrizzleSemanticMemoryRepo();
-  const embedder = new VoyageEmbedder(VOYAGE_API_KEY);
+  const repo = getRepos().semanticMemory;
+  const embedder = getAdapters().embedder;
   const uc = new AddMemoryUseCase(repo, embedder);
   const result = await uc.execute({
     userId: session.userId,

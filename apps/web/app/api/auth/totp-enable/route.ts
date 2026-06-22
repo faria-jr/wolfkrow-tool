@@ -3,19 +3,19 @@
  */
 
 import { UnauthorizedError } from '@wolfkrow/domain';
-import { DrizzleAuthAuditRepo, DrizzleUserRepo, OtplibTotp } from '@wolfkrow/infra';
 import { EnableTotpUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
 import { getSession } from '@/lib/auth';
+import { getAdapters, getRepos } from '@/lib/container';
 
 interface Body {
   secret: string;
   code: string;
 }
 
-const audit = new DrizzleAuthAuditRepo();
+const audit = getRepos().authAudit;
 
 function getClientInfo(request: NextRequest): { ip: string | undefined; ua: string | undefined } {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined;
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   if (bodyOrErr instanceof Response) return bodyOrErr;
 
   try {
-    await new EnableTotpUseCase(new DrizzleUserRepo(), new OtplibTotp()).execute({
+    await new EnableTotpUseCase(getRepos().user, getAdapters().totp).execute({
       userId: session.userId,
       secret: bodyOrErr.secret,
       code: bodyOrErr.code,

@@ -1,7 +1,7 @@
-import { DrizzleMcpServerRepo } from '@wolfkrow/infra';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
+import { getRepos } from '@/lib/container';
 
 interface Params { params: Promise<{ id: string }>; }
 
@@ -14,7 +14,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
   if (!body) return Response.json({ error: 'Invalid body' }, { status: 400 });
 
-  const repo = new DrizzleMcpServerRepo();
+  const repo = getRepos().mcpServer;
   const existing = repo.findById(id);
   if (!existing || existing.userId !== session.userId) {
     return Response.json({ error: 'Not found' }, { status: 404 });
@@ -32,7 +32,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const repo = new DrizzleMcpServerRepo();
+  const repo = getRepos().mcpServer;
   const existing = repo.findById(id);
   if (!existing || existing.userId !== session.userId) {
     return Response.json({ error: 'Not found' }, { status: 404 });

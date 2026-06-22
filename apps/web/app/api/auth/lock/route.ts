@@ -2,13 +2,13 @@
  * POST /api/auth/lock — bloqueia a sessão (limpa cookie e loga 'lock').
  */
 
-import { DrizzleAuthAuditRepo } from '@wolfkrow/infra';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
 import { getSession } from '@/lib/auth';
+import { getRepos } from '@/lib/container';
 
-const audit = new DrizzleAuthAuditRepo();
+const audit = getRepos().authAudit;
 
 export async function POST(request: NextRequest) {
   const cookieStore = await cookies();

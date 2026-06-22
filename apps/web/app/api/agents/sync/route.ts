@@ -3,11 +3,11 @@
  */
 
 import type { Runtime } from '@wolfkrow/domain';
-import { DrizzleAgentRepo } from '@wolfkrow/infra';
 import { SyncAgentsToOrchestratorUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
+import { getRepos } from '@/lib/container';
 
 interface SyncBody {
   targetRuntime: Runtime;
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Valid targetRuntime required' }, { status: 400 });
   }
 
-  const out = await new SyncAgentsToOrchestratorUseCase(new DrizzleAgentRepo()).execute({
+  const out = await new SyncAgentsToOrchestratorUseCase(getRepos().agent).execute({
     userId: session.userId,
     targetRuntime: body.targetRuntime,
     targetModel: body.targetModel,

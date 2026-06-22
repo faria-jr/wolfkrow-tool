@@ -4,23 +4,18 @@
  */
 
 import { LockoutPolicy, PlainPassword, UnauthorizedError, ValidationError } from '@wolfkrow/domain';
-import {
-  BcryptHasher,
-  checkRateLimit,
-  createToken,
-  DrizzleAuthAuditRepo,
-  DrizzleUserRepo,
-  loadOrCreateKeyPair,
-} from '@wolfkrow/infra';
 import { LoginUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
+
+import { checkRateLimit, createToken, loadOrCreateKeyPair } from '@/lib/auth';
+import { getAdapters, getRepos } from '@/lib/container';
 
 interface LoginBody {
   password: string;
 }
 
-const audit = new DrizzleAuthAuditRepo();
+const audit = getRepos().authAudit;
 
 async function setSessionCookie(userId: string): Promise<void> {
   const { privateKey } = await loadOrCreateKeyPair();
@@ -63,7 +58,7 @@ export async function POST(request: NextRequest) {
 
   let result;
   try {
-    result = await new LoginUseCase(new DrizzleUserRepo(), new BcryptHasher(), new LockoutPolicy()).execute({ password: passwordOrErr });
+    result = await new LoginUseCase(getRepos().user, getAdapters().hasher, new LockoutPolicy()).execute({ password: passwordOrErr });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       audit.log({ userId: undefined, action: 'login.fail', ip, userAgent: ua });
