@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
 
+import { DailySummary } from '../entities/daily-summary';
+import { EnrichSession } from '../entities/enrich-session';
 import { GlobalRule } from '../entities/global-rule';
-import { KnowledgeDocument } from '../entities/knowledge-document';
-import { KnowledgeChunk } from '../entities/knowledge-chunk';
-import { ScheduledTask } from '../entities/scheduled-task';
-import { Secret } from '../entities/secret';
-import { SemanticMemory } from '../entities/semantic-memory';
 import { HarnessProject } from '../entities/harness-project';
 import { HarnessRound } from '../entities/harness-round';
 import { HarnessSprint } from '../entities/harness-sprint';
-import { PipelineProject } from '../entities/pipeline-project';
+import { KnowledgeChunk } from '../entities/knowledge-chunk';
+import { KnowledgeDocument } from '../entities/knowledge-document';
 import { PipelinePhase } from '../entities/pipeline-phase';
+import { PipelineProject } from '../entities/pipeline-project';
+import { ScheduledTask } from '../entities/scheduled-task';
+import { Secret } from '../entities/secret';
+import { SemanticMemory } from '../entities/semantic-memory';
 import { TaskRun } from '../entities/task-run';
 import { WorkflowRun } from '../entities/workflow-run';
-import { DailySummary } from '../entities/daily-summary';
-import { EnrichSession } from '../entities/enrich-session';
 import { ValidationError } from '../errors/domain-error';
 
 // ─── GlobalRule ───────────────────────────────────────────────────────────────
@@ -458,7 +458,7 @@ describe('TaskRun', () => {
     const now = new Date();
     const tr = TaskRun.create({ taskId: 't1' })
       .start(now)
-      .complete('awaiting_review', { result: 'ok' }, undefined, { tokens: 500, cost: 0.01 }, now);
+      .complete('awaiting_review', { output: { result: 'ok' }, metrics: { tokens: 500, cost: 0.01 }, now });
     expect(tr.status).toBe('awaiting_review');
     expect(tr.output).toEqual({ result: 'ok' });
     expect(tr.metrics?.tokens).toBe(500);

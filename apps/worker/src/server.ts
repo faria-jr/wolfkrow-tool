@@ -10,68 +10,33 @@ import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import Fastify from 'fastify';
+import type { FastifyInstance } from 'fastify';
 
 import { config } from './config';
 import { createLogger } from './logger';
 import { authPlugin } from './plugins/auth';
 import { chatRoutes } from './routes/chat';
+import { enrichRoutes } from './routes/enrich';
+import { graphRoutes } from './routes/graph';
+import { harnessRoutes } from './routes/harness';
 import { healthRoutes } from './routes/health';
 import { knowledgeRoutes } from './routes/knowledge';
-import { memoryRoutes } from './routes/memory';
-import { mcpRoutes } from './routes/mcp';
-import { harnessRoutes } from './routes/harness';
-import { enrichRoutes } from './routes/enrich';
-import { voiceRoutes } from './routes/voice';
-import { pipelineRoutes } from './routes/pipeline';
-import { schedulerRoutes } from './routes/scheduler';
-import { ptyRoutes } from './routes/pty';
-import { telegramRoutes } from './routes/telegram';
-import { vaultRoutes } from './routes/vault';
-import { usageRoutes } from './routes/usage';
 import { logsRoutes } from './routes/logs';
-import { rulesRoutes } from './routes/rules';
+import { mcpRoutes } from './routes/mcp';
+import { memoryRoutes } from './routes/memory';
 import { permissionsRoutes } from './routes/permissions';
-import { tasksRoutes } from './routes/tasks';
-import { graphRoutes } from './routes/graph';
+import { pipelineRoutes } from './routes/pipeline';
+import { ptyRoutes } from './routes/pty';
+import { rulesRoutes } from './routes/rules';
+import { schedulerRoutes } from './routes/scheduler';
 import { sidecarRoutes } from './routes/sidecar';
+import { tasksRoutes } from './routes/tasks';
+import { telegramRoutes } from './routes/telegram';
+import { usageRoutes } from './routes/usage';
+import { vaultRoutes } from './routes/vault';
+import { voiceRoutes } from './routes/voice';
 
-export async function createServer() {
-  const logger = createLogger('server');
-
-  const server = Fastify({
-    loggerInstance: logger,
-    trustProxy: true,
-  });
-
-  await server.register(cors, {
-    origin: config.NODE_ENV === 'development' ? true : ['http://localhost:3000'],
-    credentials: true,
-  });
-
-  await server.register(swagger, {
-    openapi: {
-      info: {
-        title: 'Wolfkrow Worker API',
-        description: 'Background worker API for Wolfkrow',
-        version: '1.0.0',
-      },
-      servers: [{ url: `http://${config.HOST}:${config.PORT}` }],
-    },
-  });
-
-  await server.register(swaggerUi, {
-    routePrefix: '/docs',
-  });
-
-  await server.register(authPlugin);
-  await server.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } });
-  await server.register(rateLimit, {
-    global: false, // opt-in per-route via config.rateLimit
-    max: 200,
-    timeWindow: '1 minute',
-    errorResponseBuilder: () => ({ error: 'Too many requests', code: 'RATE_LIMIT' }),
-  });
-
+async function registerRoutes(server: FastifyInstance) {
   await server.register(healthRoutes, { prefix: '/health' });
   await server.register(knowledgeRoutes, { prefix: '/api' });
   await server.register(memoryRoutes, { prefix: '/api' });
@@ -92,6 +57,44 @@ export async function createServer() {
   await server.register(tasksRoutes, { prefix: '/tasks' });
   await server.register(graphRoutes, { prefix: '/graph' });
   await server.register(sidecarRoutes, { prefix: '/sidecar' });
+}
+
+async function registerPlugins(server: FastifyInstance) {
+  await server.register(cors, {
+    origin: config.NODE_ENV === 'development' ? true : ['http://localhost:3000'],
+    credentials: true,
+  });
+  await server.register(swagger, {
+    openapi: {
+      info: {
+        title: 'Wolfkrow Worker API',
+        description: 'Background worker API for Wolfkrow',
+        version: '1.0.0',
+      },
+      servers: [{ url: `http://${config.HOST}:${config.PORT}` }],
+    },
+  });
+  await server.register(swaggerUi, { routePrefix: '/docs' });
+  await server.register(authPlugin);
+  await server.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } });
+  await server.register(rateLimit, {
+    global: false,
+    max: 200,
+    timeWindow: '1 minute',
+    errorResponseBuilder: () => ({ error: 'Too many requests', code: 'RATE_LIMIT' }),
+  });
+}
+
+export async function createServer() {
+  const logger = createLogger('server');
+  const server = Fastify({ loggerInstance: logger, trustProxy: true });
+
+  // Fastify() typed with a pino Logger generic; helpers use the default
+  // FastifyInstance — the instance is structurally compatible (only the
+  // logger generic differs), so assert once at the wiring boundary.
+  const app = server as unknown as FastifyInstance;
+  await registerPlugins(app);
+  await registerRoutes(app);
 
   server.setErrorHandler((error, request, reply) => {
     const err = error as Error & { statusCode?: number; code?: string };

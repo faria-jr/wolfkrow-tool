@@ -3,6 +3,8 @@
  * B.3: AI-driven spec validation and enrichment.
  */
 
+import { readFile } from 'node:fs/promises';
+
 import { DrizzleEnrichSessionRepo, aiProviderFactory } from '@wolfkrow/infra';
 import {
   CancelEnrichSessionUseCase,
@@ -12,11 +14,11 @@ import {
   RunEnricherUseCase,
   RunValidatorUseCase,
 } from '@wolfkrow/use-cases';
-import { readFile } from 'node:fs/promises';
+import type { ValidatorAgent, EnricherAgent } from '@wolfkrow/use-cases';
 import keytar from 'keytar';
 
 import type { AuthFastifyInstance } from '../types/fastify';
-import type { ValidatorAgent, EnricherAgent } from '@wolfkrow/use-cases';
+
 
 async function getApiKey(): Promise<string> {
   const key = await keytar.getPassword('wolfkrow', 'anthropic-api-key');
@@ -58,6 +60,12 @@ function createEnricher(): EnricherAgent {
   };
 }
 
+async function loadSpec(specContent: string | undefined, specPath: string | null | undefined): Promise<string> {
+  if (specContent) return specContent;
+  if (!specPath) return '';
+  try { return await readFile(specPath, 'utf8'); } catch { return ''; }
+}
+
 interface CreateBody { userId: string; specPath: string; validatorAgentId?: string; enricherAgentId?: string; }
 interface RunBody { specContent?: string; }
 interface EnricherRunBody { specContent?: string; validatorOutput: string; }
@@ -87,12 +95,7 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
   server.post<{ Params: { id: string }; Body: RunBody }>('/sessions/:id/validate', async (req, reply) => {
     const session = await makeRepo().findById(req.params.id);
     if (!session) return reply.status(404).send({ error: 'Not found' });
-
-    let specContent = req.body.specContent ?? '';
-    if (!specContent && session.specPath) {
-      try { specContent = await readFile(session.specPath, 'utf8'); } catch { specContent = ''; }
-    }
-
+    const specContent = await loadSpec(req.body.specContent, session.specPath);
     const { session: updated, output } = await new RunValidatorUseCase(makeRepo(), createValidator()).execute({
       sessionId: session.id, specContent,
     });
@@ -102,12 +105,7 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
   server.post<{ Params: { id: string }; Body: EnricherRunBody }>('/sessions/:id/enrich', async (req, reply) => {
     const session = await makeRepo().findById(req.params.id);
     if (!session) return reply.status(404).send({ error: 'Not found' });
-
-    let specContent = req.body.specContent ?? '';
-    if (!specContent && session.specPath) {
-      try { specContent = await readFile(session.specPath, 'utf8'); } catch { specContent = ''; }
-    }
-
+    const specContent = await loadSpec(req.body.specContent, session.specPath);
     const { session: updated, output } = await new RunEnricherUseCase(makeRepo(), createEnricher()).execute({
       sessionId: session.id, specContent, validatorOutput: req.body.validatorOutput,
     });

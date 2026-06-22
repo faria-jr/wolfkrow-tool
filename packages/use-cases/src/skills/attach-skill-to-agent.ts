@@ -1,5 +1,6 @@
 import { NotFoundError, type Agent } from '@wolfkrow/domain';
 import type { SkillRepo, AgentRepo } from '@wolfkrow/domain';
+
 import type { UseCase } from '../use-case';
 
 export interface AttachSkillInput { skillId: string; agentId: string; }

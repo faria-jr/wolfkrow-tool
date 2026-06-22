@@ -6,15 +6,21 @@
 import keytar from 'keytar';
 
 import type { AuthFastifyInstance } from '../types/fastify';
-import { WhisperSttProvider } from '../voice/whisper';
 import { ElevenLabsTtsProvider } from '../voice/elevenlabs';
+import { WhisperSttProvider } from '../voice/whisper';
 
 async function getKey(name: string): Promise<string | null> {
   return keytar.getPassword('wolfkrow', name);
 }
 
+type RawReply = { raw: { write: (b: Buffer) => void; end: () => void } };
+
+async function streamAudioToResponse(stream: AsyncIterable<Buffer>, reply: RawReply): Promise<void> {
+  for await (const chunk of stream) reply.raw.write(chunk);
+  reply.raw.end();
+}
+
 export async function voiceRoutes(server: AuthFastifyInstance) {
-  // POST /voice/transcribe — multipart audio → text
   server.post('/transcribe', async (req, reply) => {
     const apiKey = await getKey('openai-api-key');
     if (!apiKey) return reply.status(503).send({ error: 'OpenAI API key not configured' });
@@ -23,14 +29,11 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
     if (!data) return reply.status(400).send({ error: 'No file uploaded' });
 
     const buffer = await data.toBuffer();
-    const mimeType = data.mimetype || 'audio/webm';
-
     const stt = new WhisperSttProvider(apiKey);
-    const result = await stt.transcribe(buffer, mimeType);
+    const result = await stt.transcribe(buffer, data.mimetype || 'audio/webm');
     return { text: result.text, durationMs: result.durationMs };
   });
 
-  // POST /voice/synthesize — text → audio/mpeg stream
   server.post<{ Body: { text: string; voice?: string; provider?: string; model?: string } }>(
     '/synthesize',
     async (req, reply) => {
@@ -53,7 +56,6 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
     },
   );
 
-  // POST /voice/synthesize/stream — streaming TTS
   server.post<{ Body: { text: string; voice?: string } }>(
     '/synthesize/stream',
     async (req, reply) => {
@@ -64,9 +66,7 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
       if (!apiKey) return reply.status(503).send({ error: 'ElevenLabs API key not configured' });
 
       const tts = new ElevenLabsTtsProvider(apiKey);
-
-      reply.header('Content-Type', 'audio/mpeg');
-      reply.header('Transfer-Encoding', 'chunked');
+      reply.header('Content-Type', 'audio/mpeg').header('Transfer-Encoding', 'chunked');
 
       if (!tts.streamSynthesize) {
         const audio = await tts.synthesize(text, voice !== undefined ? { voice } : {});
@@ -74,10 +74,7 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
       }
 
       const stream = tts.streamSynthesize(text, voice !== undefined ? { voice } : {});
-      for await (const chunk of stream) {
-        (reply.raw as { write: (b: Buffer) => void }).write(chunk);
-      }
-      (reply.raw as { end: () => void }).end();
+      await streamAudioToResponse(stream, reply);
     },
   );
 }

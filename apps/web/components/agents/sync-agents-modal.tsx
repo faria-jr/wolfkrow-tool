@@ -9,6 +9,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 type Runtime = 'cloud' | 'local' | 'codex' | 'external';
 
+interface RuntimeSelectorProps { value: Runtime; onChange: (v: Runtime) => void; }
+function RuntimeSelector({ value, onChange }: RuntimeSelectorProps) {
+  return (
+    <div className="space-y-1">
+      <Label htmlFor="sync-runtime">Target Runtime</Label>
+      <Select value={value} onValueChange={(v) => onChange(v as Runtime)}>
+        <SelectTrigger id="sync-runtime"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          <SelectItem value="cloud">Cloud (Anthropic API)</SelectItem>
+          <SelectItem value="local">Local (Ollama)</SelectItem>
+          <SelectItem value="codex">Codex (OpenAI)</SelectItem>
+          <SelectItem value="external">External</SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -51,20 +69,7 @@ export function SyncAgentsModal({ open, onClose, onSynced, agentCount }: Props) 
           <p className="text-sm text-muted-foreground">
             Update all {agentCount} agent(s) to the selected runtime.
           </p>
-          <div className="space-y-1">
-            <Label htmlFor="sync-runtime">Target Runtime</Label>
-            <Select value={runtime} onValueChange={(v) => setRuntime(v as Runtime)}>
-              <SelectTrigger id="sync-runtime">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="cloud">Cloud (Anthropic API)</SelectItem>
-                <SelectItem value="local">Local (Ollama)</SelectItem>
-                <SelectItem value="codex">Codex (OpenAI)</SelectItem>
-                <SelectItem value="external">External</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <RuntimeSelector value={runtime} onChange={setRuntime} />
           {result !== null && (
             <p className="text-sm font-medium text-green-600">{result} agent(s) updated.</p>
           )}

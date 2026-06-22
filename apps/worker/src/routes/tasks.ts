@@ -3,14 +3,15 @@
  */
 
 import { randomUUID } from 'crypto';
-import { z } from 'zod';
-import { and, eq, desc } from 'drizzle-orm';
+
 
 import { getDb } from '@wolfkrow/infra/db/client';
 import { tasks } from '@wolfkrow/infra/db/schema';
+import { and, eq, desc } from 'drizzle-orm';
+import { z } from 'zod';
 
-import { validate } from '../validation';
 import type { AuthFastifyInstance } from '../types/fastify';
+import { validate } from '../validation';
 
 const taskCreateBody = z.object({
   title: z.string().min(1).max(256),
@@ -35,6 +36,25 @@ type TaskPriority = z.infer<typeof taskCreateBody>['priority'];
 
 function getUserId(req: { user?: { userId?: string } }): string {
   return req.user?.userId ?? 'default';
+}
+
+type TaskPatch = z.infer<typeof taskPatchBody>;
+
+function applyStatusField(patch: Record<string, unknown>, status: string): void {
+  patch['status'] = status;
+  if (status === 'done') patch['completedAt'] = new Date();
+}
+
+function buildTaskPatch(body: TaskPatch): Record<string, unknown> {
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (body.title !== undefined) patch['title'] = body.title;
+  if (body.description !== undefined) patch['description'] = body.description ?? null;
+  if (body.status !== undefined) applyStatusField(patch, body.status);
+  if (body.priority !== undefined) patch['priority'] = body.priority;
+  if (body.category !== undefined) patch['category'] = body.category;
+  if (body.dueDate !== undefined) patch['dueDate'] = body.dueDate ? new Date(body.dueDate) : null;
+  if (body.tags !== undefined) patch['tags'] = body.tags;
+  return patch;
 }
 
 export async function tasksRoutes(server: AuthFastifyInstance) {
@@ -83,18 +103,7 @@ export async function tasksRoutes(server: AuthFastifyInstance) {
     '/:id',
     async (req, reply) => {
       const body = validate(taskPatchBody, req.body);
-      const patch: Record<string, unknown> = { updatedAt: new Date() };
-      if (body.title !== undefined) patch['title'] = body.title;
-      if (body.description !== undefined) patch['description'] = body.description ?? null;
-      if (body.status !== undefined) {
-        patch['status'] = body.status;
-        if (body.status === 'done') patch['completedAt'] = new Date();
-      }
-      if (body.priority !== undefined) patch['priority'] = body.priority;
-      if (body.category !== undefined) patch['category'] = body.category;
-      if (body.dueDate !== undefined) patch['dueDate'] = body.dueDate ? new Date(body.dueDate) : null;
-      if (body.tags !== undefined) patch['tags'] = body.tags;
-
+      const patch = buildTaskPatch(body);
       db.update(tasks).set(patch as never).where(eq(tasks.id, req.params.id)).run();
       const updated = db.select().from(tasks).where(eq(tasks.id, req.params.id)).get();
       return reply.send({ task: updated });

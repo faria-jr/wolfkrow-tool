@@ -5,7 +5,7 @@ import { test, expect } from '@playwright/test';
 test.use({ storageState: 'e2e/.auth/user.json' });
 
 test.describe('Chat', () => {
-  test.skip(({ browserName }) => false, 'All browsers');
+  test.skip(({ browserName: _browserName }) => false, 'All browsers');
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/chat');

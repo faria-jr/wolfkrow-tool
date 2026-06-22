@@ -55,7 +55,7 @@ class InMemoryChunkRepo implements KnowledgeChunkRepo {
       .filter(([, c]) => c.documentId === documentId)
       .forEach(([k]) => this.store.delete(k));
   }
-  async vectorSearch(embedding: number[], limit: number): Promise<ChunkSearchResult[]> {
+  async vectorSearch(_embedding: number[], limit: number): Promise<ChunkSearchResult[]> {
     return [...this.store.values()].slice(0, limit).map((chunk, i) => ({
       chunk,
       distance: i * 0.1,

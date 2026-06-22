@@ -20,5 +20,17 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", ".next", "out", "dist", "storybook-static"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "dist",
+    "storybook-static",
+    "e2e",
+    "playwright.config.ts",
+    "playwright-report",
+    "test-results",
+    "**/*.stories.tsx",
+    "**/*.stories.ts"
+  ]
 }

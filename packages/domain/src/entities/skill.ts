@@ -32,26 +32,26 @@ interface ParsedFrontmatter {
   author?: unknown;
 }
 
+function applyMetaField(meta: ParsedFrontmatter, key: string, val: string): void {
+  if (key === 'tags') {
+    const captured = /^\[([^\]]*)\]$/.exec(val)?.[1] ?? '';
+    meta.tags = captured ? captured.split(',').map((s) => s.trim()).filter(Boolean) : [];
+  } else if (key === 'isBuiltIn') {
+    meta.isBuiltIn = val === 'true';
+  } else if (key) {
+    (meta as Record<string, unknown>)[key] = val;
+  }
+}
+
 function parseFrontmatter(raw: string): { meta: ParsedFrontmatter; body: string } {
   const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw.trimStart());
   if (!match?.[1]) throw new ValidationError('content', 'Missing or invalid frontmatter (expected --- block)');
-  const yamlBlock: string = match[1];
   const body = (match[2] ?? '').trim();
   const meta: ParsedFrontmatter = {};
-  for (const line of yamlBlock.split('\n')) {
+  for (const line of match[1].split('\n')) {
     const colonIdx = line.indexOf(':');
     if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    const val = line.slice(colonIdx + 1).trim();
-    if (key === 'tags') {
-      const arrMatch = /^\[([^\]]*)\]$/.exec(val);
-      const captured = arrMatch?.[1] ?? '';
-      meta.tags = captured ? captured.split(',').map((s) => s.trim()).filter(Boolean) : [];
-    } else if (key === 'isBuiltIn') {
-      meta.isBuiltIn = val === 'true';
-    } else if (key) {
-      (meta as Record<string, unknown>)[key] = val;
-    }
+    applyMetaField(meta, line.slice(0, colonIdx).trim(), line.slice(colonIdx + 1).trim());
   }
   return { meta, body };
 }

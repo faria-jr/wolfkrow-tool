@@ -9,11 +9,13 @@
  *                    { type: 'exit', code: number }
  */
 
-import websocket from '@fastify/websocket';
 import { randomUUID } from 'crypto';
+
+import websocket from '@fastify/websocket';
+import type { WebSocket } from '@fastify/websocket';
+import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import type { FastifyInstance } from 'fastify';
 import { ptyServer } from '../pty/server';
 import { validate } from '../validation';
 
@@ -30,10 +32,39 @@ const createBody = z.object({
   env: z.record(z.string(), z.string()).optional(),
 });
 
+function handlePtyMessage(id: string, raw: Buffer | string): void {
+  try {
+    const msg = JSON.parse(raw.toString()) as ClientMsg;
+    if (msg.type === 'input') {
+      ptyServer.write(id, msg.data);
+    } else if (msg.type === 'resize') {
+      ptyServer.resize(id, msg.cols, msg.rows);
+    } else if (msg.type === 'kill') {
+      ptyServer.kill(id);
+    }
+  } catch { /* ignore malformed */ }
+}
+
+function handlePtyWs(socket: WebSocket, id: string): void {
+  if (!ptyServer.has(id)) { socket.close(1008, 'Session not found'); return; }
+
+  const offData = ptyServer.onData(id, (data) => {
+    if (socket.readyState === socket.OPEN) socket.send(JSON.stringify({ type: 'output', data }));
+  });
+  const offExit = ptyServer.onExit(id, (code) => {
+    if (socket.readyState === socket.OPEN) {
+      socket.send(JSON.stringify({ type: 'exit', code }));
+      socket.close(1000, 'Process exited');
+    }
+  });
+
+  socket.on('message', (raw: Buffer | string) => { handlePtyMessage(id, raw); });
+  socket.on('close', () => { offData(); offExit(); ptyServer.kill(id); });
+}
+
 export async function ptyRoutes(server: FastifyInstance) {
   await server.register(websocket);
 
-  // POST /pty — create session, returns { sessionId }
   server.post<{ Body: unknown }>('/pty', async (req, reply) => {
     const parsed = validate(createBody, req.body ?? {});
     const sessionId = parsed.id ?? randomUUID();
@@ -46,58 +77,14 @@ export async function ptyRoutes(server: FastifyInstance) {
     return reply.send({ sessionId });
   });
 
-  // DELETE /pty/:id — kill session
   server.delete<{ Params: { id: string } }>('/pty/:id', async (req, reply) => {
     ptyServer.kill(req.params.id);
     return reply.send({ ok: true });
   });
 
-  // WS /pty/:id — bidirectional terminal bridge
   server.get<{ Params: { id: string } }>(
     '/pty/:id',
     { websocket: true },
-    (socket, req) => {
-      const { id } = req.params;
-
-      if (!ptyServer.has(id)) {
-        socket.close(1008, 'Session not found');
-        return;
-      }
-
-      // PTY → browser
-      const offData = ptyServer.onData(id, (data) => {
-        if (socket.readyState === socket.OPEN) {
-          socket.send(JSON.stringify({ type: 'output', data }));
-        }
-      });
-
-      const offExit = ptyServer.onExit(id, (code) => {
-        if (socket.readyState === socket.OPEN) {
-          socket.send(JSON.stringify({ type: 'exit', code }));
-          socket.close(1000, 'Process exited');
-        }
-      });
-
-      // browser → PTY
-      socket.on('message', (raw: Buffer | string) => {
-        try {
-          const msg = JSON.parse(raw.toString()) as ClientMsg;
-          if (msg.type === 'input') {
-            ptyServer.write(id, msg.data);
-          } else if (msg.type === 'resize') {
-            ptyServer.resize(id, msg.cols, msg.rows);
-          } else if (msg.type === 'kill') {
-            ptyServer.kill(id);
-            socket.close(1000, 'Killed');
-          }
-        } catch { /* ignore malformed */ }
-      });
-
-      socket.on('close', () => {
-        offData();
-        offExit();
-        ptyServer.kill(id);
-      });
-    },
+    (socket, req) => handlePtyWs(socket, req.params.id),
   );
 }

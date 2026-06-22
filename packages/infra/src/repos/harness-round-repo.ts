@@ -1,10 +1,11 @@
-import type { HarnessRoundRepo } from '@wolfkrow/domain';
 import { HarnessRound } from '@wolfkrow/domain';
+import type { HarnessRoundRepo } from '@wolfkrow/domain';
+import type { RoundMetrics } from '@wolfkrow/domain';
 import { and, eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { harnessRounds } from '../db/schema/harness';
-import type { RoundMetrics } from '@wolfkrow/domain';
+
 
 type DbRow = typeof harnessRounds.$inferSelect;
 

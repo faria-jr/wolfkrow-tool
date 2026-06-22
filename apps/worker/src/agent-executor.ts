@@ -11,10 +11,10 @@ import {
   type AIProvider,
   type AIProviderFactory,
 } from '@wolfkrow/infra';
+import type { TaskExecutor } from '@wolfkrow/use-cases';
 import { eq } from 'drizzle-orm';
 import keytar from 'keytar';
 
-import type { TaskExecutor } from '@wolfkrow/use-cases';
 
 import type { Logger } from './logger';
 

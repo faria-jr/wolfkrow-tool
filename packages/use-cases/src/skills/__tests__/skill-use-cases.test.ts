@@ -1,14 +1,14 @@
+
+import { Skill, ValidationError, NotFoundError, Agent, type SkillProps, type SkillCreateInput } from '@wolfkrow/domain';
+import type { SkillRepo, AgentRepo } from '@wolfkrow/domain';
 import { describe, expect, it, beforeEach } from 'vitest';
 
-import { Skill, ValidationError, NotFoundError, Agent, type SkillProps } from '@wolfkrow/domain';
-import type { SkillRepo, AgentRepo } from '@wolfkrow/domain';
-
-import { CreateSkillUseCase } from '../create-skill';
-import { UpdateSkillUseCase } from '../update-skill';
-import { DeleteSkillUseCase } from '../delete-skill';
-import { ListSkillsUseCase } from '../list-skills';
 import { AttachSkillToAgentUseCase } from '../attach-skill-to-agent';
+import { CreateSkillUseCase } from '../create-skill';
+import { DeleteSkillUseCase } from '../delete-skill';
 import { DetachSkillFromAgentUseCase } from '../detach-skill-from-agent';
+import { ListSkillsUseCase } from '../list-skills';
+import { UpdateSkillUseCase } from '../update-skill';
 
 class InMemorySkillRepo implements SkillRepo {
   private store = new Map<string, Skill>();
@@ -41,14 +41,14 @@ class InMemoryAgentRepo implements AgentRepo {
 const USER = 'user-1';
 
 function makeSkill(overrides: Partial<SkillProps> = {}) {
-  return Skill.create({ userId: USER, name: 'pdf', description: 'PDF proc', content: '# PDF', tags: ['docs'], isBuiltIn: false, ...overrides });
+  return Skill.create({ userId: USER, name: 'pdf', description: 'PDF proc', content: '# PDF', tags: ['docs'], isBuiltIn: false, ...overrides } as SkillCreateInput);
 }
 
 function makeAgent() {
   return Agent.create({
-    userId: USER, name: 'my-agent', model: 'claude-sonnet-4-6', effort: 'medium',
-    thinking: false, maxTurns: 80, allowedTools: [], mcpServers: [], isActive: true,
-    skills: [], runtime: 'cloud',
+    userId: USER, name: 'my-agent', description: undefined, model: 'claude-sonnet-4-6', effort: 'medium',
+    thinking: false, thinkingBudget: undefined, maxTurns: 80, allowedTools: [], mcpServers: [],
+    isActive: true, skills: [], runtime: 'cloud', squad: undefined, systemPrompt: undefined,
   });
 }
 

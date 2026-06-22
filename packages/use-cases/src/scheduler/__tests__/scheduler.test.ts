@@ -174,7 +174,7 @@ describe('ReviewTaskRunUseCase', () => {
     runRepo = new InMemoryRunRepo();
     await taskRepo.save(ScheduledTask.create({ userId: 'u1', name: 'A', cronExpression: '0 9 * * *', prompt: 'p', timezone: 'UTC', enabled: true, description: undefined, agentId: undefined, config: {}, tags: [], lastRunAt: undefined, nextRunAt: undefined }));
     const task = [...taskRepo.store.values()][0]!;
-    await runRepo.save(TaskRun.create({ taskId: task.id }).start().complete('awaiting_review', { content: 'x' }));
+    await runRepo.save(TaskRun.create({ taskId: task.id }).start().complete('awaiting_review', { output: { content: 'x' } }));
   });
 
   it('validates a run', async () => {

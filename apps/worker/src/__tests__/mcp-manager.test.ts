@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+
 import { describe, it, expect } from 'vitest';
 
 import { createMcpManager } from '../mcp/manager';

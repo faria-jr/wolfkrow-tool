@@ -76,16 +76,19 @@ export class TaskRun {
 
   complete(
     status: 'awaiting_review' | 'validated' | 'rejected',
-    output?: Record<string, unknown>,
-    error?: string,
-    metrics?: TaskRunMetrics,
-    now = new Date(),
+    opts: {
+      output?: Record<string, unknown>;
+      error?: string;
+      metrics?: TaskRunMetrics;
+      now?: Date;
+    } = {},
   ): TaskRun {
+    const now = opts.now ?? new Date();
     return TaskRun.fromProps({
       ...this.toProps(), status, completedAt: now,
-      ...(output !== undefined ? { output } : {}),
-      ...(error !== undefined ? { error } : {}),
-      ...(metrics !== undefined ? { metrics } : {}),
+      ...(opts.output !== undefined ? { output: opts.output } : {}),
+      ...(opts.error !== undefined ? { error: opts.error } : {}),
+      ...(opts.metrics !== undefined ? { metrics: opts.metrics } : {}),
     });
   }
 

@@ -13,8 +13,8 @@
 
 import { GraphIngest } from '../knowledge/graph-ingest';
 import { MGraph } from '../knowledge/mgraph';
-import { validate, graphIngestBody, neighborhoodQuery } from '../validation';
 import type { AuthFastifyInstance } from '../types/fastify';
+import { validate, graphIngestBody, neighborhoodQuery } from '../validation';
 
 function userIdOf(req: { user?: { userId?: string } }): string {
   const userId = req.user?.userId;

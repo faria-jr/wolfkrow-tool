@@ -65,6 +65,13 @@ resources/ffmpeg/
 .claude/worktrees/
 .codex/
 
+# Claude session state (memory, scheduled tasks, scratch)
+.claude/
+
+# Generated artifacts
+**/next-env.d.ts
+apps/web/public/sw.js
+
 # OS specific
 *.pem
 *.key

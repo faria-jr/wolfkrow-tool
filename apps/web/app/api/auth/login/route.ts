@@ -35,33 +35,35 @@ async function setSessionCookie(userId: string): Promise<void> {
   });
 }
 
-function getIp(request: NextRequest): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+function getClientInfo(request: NextRequest): { ip: string; ua: string | undefined } {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  const ua = request.headers.get('user-agent') ?? undefined;
+  return { ip, ua };
+}
+
+async function parsePassword(request: NextRequest): Promise<PlainPassword | Response> {
+  const body = (await request.json().catch(() => null)) as LoginBody | null;
+  if (!body?.password) return Response.json({ error: 'Password is required' }, { status: 400 });
+  try {
+    return PlainPassword.create(body.password);
+  } catch {
+    return Response.json({ error: 'Invalid password' }, { status: 401 });
+  }
 }
 
 export async function POST(request: NextRequest) {
-  const ip = getIp(request);
-  const ua = request.headers.get('user-agent') ?? undefined;
+  const { ip, ua } = getClientInfo(request);
 
   if (!checkRateLimit(`login:${ip}`)) {
     return Response.json({ error: 'Too many requests' }, { status: 429 });
   }
 
-  const body = (await request.json().catch(() => null)) as LoginBody | null;
-  if (!body?.password) {
-    return Response.json({ error: 'Password is required' }, { status: 400 });
-  }
-
-  let password: PlainPassword;
-  try {
-    password = PlainPassword.create(body.password);
-  } catch {
-    return Response.json({ error: 'Invalid password' }, { status: 401 });
-  }
+  const passwordOrErr = await parsePassword(request);
+  if (passwordOrErr instanceof Response) return passwordOrErr;
 
   let result;
   try {
-    result = await new LoginUseCase(new DrizzleUserRepo(), new BcryptHasher(), new LockoutPolicy()).execute({ password });
+    result = await new LoginUseCase(new DrizzleUserRepo(), new BcryptHasher(), new LockoutPolicy()).execute({ password: passwordOrErr });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       audit.log({ userId: undefined, action: 'login.fail', ip, userAgent: ua });

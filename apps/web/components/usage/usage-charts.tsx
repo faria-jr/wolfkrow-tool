@@ -26,6 +26,44 @@ interface UsageSummary {
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'];
 
+function UsageSummaryCards({ summary }: { summary: UsageSummary }) {
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      <div className="rounded border p-4">
+        <p className="text-xs text-muted-foreground">Total Input Tokens</p>
+        <p className="text-2xl font-bold">{summary.totalInputTokens.toLocaleString()}</p>
+      </div>
+      <div className="rounded border p-4">
+        <p className="text-xs text-muted-foreground">Total Output Tokens</p>
+        <p className="text-2xl font-bold">{summary.totalOutputTokens.toLocaleString()}</p>
+      </div>
+      <div className="rounded border p-4">
+        <p className="text-xs text-muted-foreground">Total Cost</p>
+        <p className="text-2xl font-bold">${summary.totalCostUSD.toFixed(4)}</p>
+      </div>
+    </div>
+  );
+}
+
+interface DayDataItem { date: string; cost: number; inputTokens: number; outputTokens: number; }
+function DayChart({ data }: { data: DayDataItem[] }) {
+  if (data.length === 0) return null;
+  return (
+    <div className="rounded border p-4">
+      <h3 className="mb-4 text-sm font-semibold">Cost per Day</h3>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
+          <Tooltip formatter={(v: number) => [`$${v}`, 'Cost']} />
+          <Bar dataKey="cost" fill="#6366f1" radius={[3, 3, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export function UsageCharts() {
   const [summary, setSummary] = useState<UsageSummary | null>(null);
 
@@ -53,37 +91,8 @@ export function UsageCharts() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="rounded border p-4">
-          <p className="text-xs text-muted-foreground">Total Input Tokens</p>
-          <p className="text-2xl font-bold">{summary.totalInputTokens.toLocaleString()}</p>
-        </div>
-        <div className="rounded border p-4">
-          <p className="text-xs text-muted-foreground">Total Output Tokens</p>
-          <p className="text-2xl font-bold">{summary.totalOutputTokens.toLocaleString()}</p>
-        </div>
-        <div className="rounded border p-4">
-          <p className="text-xs text-muted-foreground">Total Cost</p>
-          <p className="text-2xl font-bold">${summary.totalCostUSD.toFixed(4)}</p>
-        </div>
-      </div>
-
-      {/* Cost per day */}
-      {dayData.length > 0 && (
-        <div className="rounded border p-4">
-          <h3 className="mb-4 text-sm font-semibold">Cost per Day</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={dayData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${v}`} />
-              <Tooltip formatter={(v: number) => [`$${v}`, 'Cost']} />
-              <Bar dataKey="cost" fill="#6366f1" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      <UsageSummaryCards summary={summary} />
+      <DayChart data={dayData} />
 
       {/* Cost by source */}
       {sourceData.length > 0 && (

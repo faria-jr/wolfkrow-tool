@@ -3,6 +3,8 @@
  * B.1: Planner→Coder→Evaluator pipeline with max rounds per feature.
  */
 
+import { readFile } from 'node:fs/promises';
+
 import { DrizzleHarnessProjectRepo, DrizzleHarnessRoundRepo, DrizzleHarnessSprintRepo, aiProviderFactory } from '@wolfkrow/infra';
 import {
   CreateHarnessProjectUseCase,
@@ -13,11 +15,12 @@ import {
   PlanSprintsUseCase,
   RunCoderRoundUseCase,
 } from '@wolfkrow/use-cases';
-import { readFile } from 'node:fs/promises';
+import type { HarnessPlanner, CoderAgent, EvaluatorAgent } from '@wolfkrow/use-cases';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import keytar from 'keytar';
 
 import type { AuthFastifyInstance } from '../types/fastify';
-import type { HarnessPlanner, CoderAgent, EvaluatorAgent } from '@wolfkrow/use-cases';
+
 
 function makeRepos() {
   return {
@@ -104,102 +107,89 @@ function createLlmEvaluator(): EvaluatorAgent {
 
 interface CreateProjectBody { userId: string; name: string; specPath: string; description?: string; maxRoundsPerFeature?: number; }
 interface PlanBody { specContent?: string; }
+type CoderBody = { featureIndex: number; roundNumber: number; previousFeedback?: string };
+
+const _hRepos = makeRepos();
+
+async function planHandler(req: FastifyRequest<{ Params: { id: string }; Body: PlanBody }>, reply: FastifyReply) {
+  const { projectRepo, sprintRepo } = _hRepos;
+  const project = await projectRepo.findById(req.params.id);
+  if (!project) return reply.status(404).send({ error: 'Project not found' });
+  let specContent = req.body.specContent ?? '';
+  if (!specContent && project.specPath) {
+    try { specContent = await readFile(project.specPath, 'utf8'); } catch { specContent = ''; }
+  }
+  const { sprints } = await new PlanSprintsUseCase(projectRepo, sprintRepo, createLlmPlanner()).execute({ projectId: project.id, specContent });
+  return sprints.map((s) => s.toProps());
+}
+
+async function runCoderHandler(req: FastifyRequest<{ Params: { id: string; sprintId: string }; Body: CoderBody }>, reply: FastifyReply) {
+  const { projectRepo, sprintRepo, roundRepo } = _hRepos;
+  const project = await projectRepo.findById(req.params.id);
+  if (!project) return reply.status(404).send({ error: 'Project not found' });
+  const { round } = await new RunCoderRoundUseCase(sprintRepo, roundRepo, createLlmCoder()).execute({
+    sprintId: req.params.sprintId,
+    featureIndex: req.body.featureIndex,
+    roundNumber: req.body.roundNumber,
+    coderModel: project.config.coderModel,
+    ...(req.body.previousFeedback !== undefined ? { previousFeedback: req.body.previousFeedback } : {}),
+  });
+  return round.toProps();
+}
 
 export async function harnessRoutes(server: AuthFastifyInstance) {
-  const { projectRepo, sprintRepo, roundRepo } = makeRepos();
+  const { projectRepo, sprintRepo, roundRepo } = _hRepos;
 
-  // POST /harness/projects
   server.post<{ Body: CreateProjectBody }>('/projects', async (req) => {
-    const uc = new CreateHarnessProjectUseCase(projectRepo);
-    const { project } = await uc.execute(req.body);
+    const { project } = await new CreateHarnessProjectUseCase(projectRepo).execute(req.body);
     return project.toProps();
   });
 
-  // GET /harness/projects?userId=
   server.get<{ Querystring: { userId: string } }>('/projects', async (req) => {
-    const uc = new ListHarnessProjectsUseCase(projectRepo);
-    const { projects } = await uc.execute({ userId: req.query.userId });
+    const { projects } = await new ListHarnessProjectsUseCase(projectRepo).execute({ userId: req.query.userId });
     return projects.map((p) => p.toProps());
   });
 
-  // GET /harness/projects/:id
   server.get<{ Params: { id: string } }>('/projects/:id', async (req, reply) => {
-    const uc = new GetHarnessProjectUseCase(projectRepo);
     try {
-      const { project } = await uc.execute({ projectId: req.params.id });
+      const { project } = await new GetHarnessProjectUseCase(projectRepo).execute({ projectId: req.params.id });
       return project.toProps();
     } catch {
       return reply.status(404).send({ error: 'Project not found' });
     }
   });
 
-  // DELETE /harness/projects/:id
   server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/projects/:id', async (req, reply) => {
-    const uc = new DeleteHarnessProjectUseCase(projectRepo);
     try {
-      await uc.execute({ projectId: req.params.id, userId: req.query.userId });
+      await new DeleteHarnessProjectUseCase(projectRepo).execute({ projectId: req.params.id, userId: req.query.userId });
       return reply.status(204).send();
     } catch {
       return reply.status(404).send({ error: 'Project not found' });
     }
   });
 
-  // POST /harness/projects/:id/plan
-  server.post<{ Params: { id: string }; Body: PlanBody }>('/projects/:id/plan', async (req, reply) => {
-    const project = await projectRepo.findById(req.params.id);
-    if (!project) return reply.status(404).send({ error: 'Project not found' });
+  server.post<{ Params: { id: string }; Body: PlanBody }>('/projects/:id/plan', planHandler);
 
-    let specContent = req.body.specContent ?? '';
-    if (!specContent && project.specPath) {
-      try { specContent = await readFile(project.specPath, 'utf8'); } catch { specContent = ''; }
-    }
-
-    const uc = new PlanSprintsUseCase(projectRepo, sprintRepo, createLlmPlanner());
-    const { sprints } = await uc.execute({ projectId: project.id, specContent });
-    return sprints.map((s) => s.toProps());
-  });
-
-  // POST /harness/projects/:id/sprints/:sprintId/run-coder
-  server.post<{ Params: { id: string; sprintId: string }; Body: { featureIndex: number; roundNumber: number; previousFeedback?: string } }>(
-    '/projects/:id/sprints/:sprintId/run-coder',
-    async (req, reply) => {
-      const project = await projectRepo.findById(req.params.id);
-      if (!project) return reply.status(404).send({ error: 'Project not found' });
-
-      const uc = new RunCoderRoundUseCase(sprintRepo, roundRepo, createLlmCoder());
-      const { round } = await uc.execute({
-        sprintId: req.params.sprintId,
-        featureIndex: req.body.featureIndex,
-        roundNumber: req.body.roundNumber,
-        coderModel: project.config.coderModel,
-        ...(req.body.previousFeedback !== undefined ? { previousFeedback: req.body.previousFeedback } : {}),
-      });
-      return round.toProps();
-    },
+  server.post<{ Params: { id: string; sprintId: string }; Body: CoderBody }>(
+    '/projects/:id/sprints/:sprintId/run-coder', runCoderHandler,
   );
 
-  // POST /harness/rounds/:roundId/evaluate
   server.post<{ Params: { roundId: string } }>('/rounds/:roundId/evaluate', async (req, reply) => {
-    const uc = new EvaluateRoundUseCase(roundRepo, createLlmEvaluator());
     try {
-      const result = await uc.execute({ roundId: req.params.roundId });
+      const result = await new EvaluateRoundUseCase(roundRepo, createLlmEvaluator()).execute({ roundId: req.params.roundId });
       return { ...result.round.toProps(), passed: result.passed };
     } catch {
       return reply.status(404).send({ error: 'Round not found' });
     }
   });
 
-  // GET /harness/projects/:id/sprints
   server.get<{ Params: { id: string } }>('/projects/:id/sprints', async (req, reply) => {
     const project = await projectRepo.findById(req.params.id);
     if (!project) return reply.status(404).send({ error: 'Project not found' });
-    const sprints = await sprintRepo.findByProjectId(project.id);
-    return sprints.map((s) => s.toProps());
+    return (await sprintRepo.findByProjectId(project.id)).map((s) => s.toProps());
   });
 
-  // GET /harness/sprints/:sprintId/rounds
   server.get<{ Params: { sprintId: string } }>('/sprints/:sprintId/rounds', async (req) => {
-    const rounds = await roundRepo.findBySprintId(req.params.sprintId);
-    return rounds.map((r) => r.toProps());
+    return (await roundRepo.findBySprintId(req.params.sprintId)).map((r) => r.toProps());
   });
 }

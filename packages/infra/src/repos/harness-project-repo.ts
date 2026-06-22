@@ -1,10 +1,11 @@
-import type { HarnessProjectRepo } from '@wolfkrow/domain';
 import { HarnessProject } from '@wolfkrow/domain';
+import type { HarnessProjectRepo } from '@wolfkrow/domain';
+import type { HarnessConfig, ProjectMetrics } from '@wolfkrow/domain';
 import { eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { harnessProjects } from '../db/schema/harness';
-import type { HarnessConfig, ProjectMetrics } from '@wolfkrow/domain';
+
 
 type DbRow = typeof harnessProjects.$inferSelect;
 

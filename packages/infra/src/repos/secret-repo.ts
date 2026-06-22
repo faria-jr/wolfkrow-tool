@@ -1,7 +1,7 @@
 import { Secret } from '@wolfkrow/domain';
 import type { SecretCategory, SecretRepo } from '@wolfkrow/domain';
-
 import { eq } from 'drizzle-orm';
+
 import { getDb } from '../db/client';
 import { secretsMetadata } from '../db/schema';
 

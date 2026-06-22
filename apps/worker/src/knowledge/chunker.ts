@@ -1,7 +1,7 @@
 import type { ChunkMetadata, ChunkSourceType } from '@wolfkrow/domain';
+import { toString } from 'mdast-util-to-string';
 import { remark } from 'remark';
 import remarkGfm from 'remark-gfm';
-import { toString } from 'mdast-util-to-string';
 import { visit } from 'unist-util-visit';
 
 export interface RawChunk {
@@ -20,50 +20,59 @@ function flush(chunks: RawChunk[], content: string, heading: string, type: Chunk
   if (trimmed) chunks.push({ content: trimmed, metadata: makeMetadata(type, heading, chunks.length) });
 }
 
+function resolveChunkType(nodeType: string): ChunkSourceType {
+  if (nodeType === 'code') return 'code';
+  if (nodeType === 'list') return 'list';
+  if (nodeType === 'table') return 'table';
+  return 'paragraph';
+}
+
+interface ChunkState {
+  current: string;
+  currentHeading: string;
+  currentType: ChunkSourceType;
+  chunks: RawChunk[];
+  maxSize: number;
+}
+
+function appendContent(state: ChunkState, content: string, type: ChunkSourceType): void {
+  if (state.current.length + content.length > state.maxSize && state.current.trim()) {
+    flush(state.chunks, state.current, state.currentHeading, state.currentType);
+    state.current = content;
+    state.currentType = type;
+    return;
+  }
+  if (!state.current) state.currentType = type;
+  state.current += (state.current ? '\n\n' : '') + content;
+}
+
 export function semanticChunk(text: string, maxSize = 1000): RawChunk[] {
   if (!text.trim()) return [];
 
-  const chunks: RawChunk[] = [];
+  const state: ChunkState = { current: '', currentHeading: '', currentType: 'paragraph', chunks: [], maxSize };
   const tree = remark().use(remarkGfm).parse(text);
-  let current = '';
-  let currentHeading = '';
-  let currentType: ChunkSourceType = 'paragraph';
 
   visit(tree, (node) => {
     const nodeType = node.type;
 
     if (nodeType === 'heading') {
-      if (current.trim()) {
-        flush(chunks, current, currentHeading, currentType);
-        current = '';
+      if (state.current.trim()) {
+        flush(state.chunks, state.current, state.currentHeading, state.currentType);
+        state.current = '';
       }
-      currentHeading = toString(node);
-      currentType = 'heading';
+      state.currentHeading = toString(node);
+      state.currentType = 'heading';
       return;
     }
 
     if (['paragraph', 'code', 'list', 'table'].includes(nodeType)) {
-      const content = toString(node);
-      const type: ChunkSourceType =
-        nodeType === 'code' ? 'code'
-        : nodeType === 'list' ? 'list'
-        : nodeType === 'table' ? 'table'
-        : 'paragraph';
-
-      if (current.length + content.length > maxSize && current.trim()) {
-        flush(chunks, current, currentHeading, currentType);
-        current = content;
-        currentType = type;
-      } else {
-        if (!current) currentType = type;
-        current += (current ? '\n\n' : '') + content;
-      }
+      appendContent(state, toString(node), resolveChunkType(nodeType));
     }
   });
 
-  if (current.trim()) flush(chunks, current, currentHeading, currentType);
+  if (state.current.trim()) flush(state.chunks, state.current, state.currentHeading, state.currentType);
 
-  return chunks.map((c, i) => ({ ...c, metadata: { ...c.metadata, position: i } }));
+  return state.chunks.map((c, i) => ({ ...c, metadata: { ...c.metadata, position: i } }));
 }
 
 export function rawChunk(text: string, maxSize = 1000): RawChunk[] {

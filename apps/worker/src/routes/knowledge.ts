@@ -3,7 +3,13 @@
  * N.4: SPEC-004 ingest pipeline with parse→chunk→embed→store.
  */
 
-import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
+import { createWriteStream } from 'node:fs';
+import { mkdir, unlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pipeline } from 'node:stream/promises';
+
 import {
   DrizzleKnowledgeChunkRepo,
   DrizzleKnowledgeDocRepo,
@@ -15,16 +21,13 @@ import {
   ListDocumentsUseCase,
   SearchKnowledgeUseCase,
 } from '@wolfkrow/use-cases';
-import { pipeline } from 'node:stream/promises';
-import { createWriteStream } from 'node:fs';
-import { mkdir, unlink } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { randomUUID } from 'node:crypto';
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import { z } from 'zod';
 
-import type { AuthFastifyInstance } from '../types/fastify';
-import { parseByMimeType } from '../knowledge/parsers/index';
+
 import { semanticChunk, rawChunk } from '../knowledge/chunker';
+import { parseByMimeType } from '../knowledge/parsers/index';
+import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
 const VOYAGE_API_KEY = process.env['VOYAGE_API_KEY'] ?? '';
@@ -46,51 +49,42 @@ function makeRepos() {
   };
 }
 
+async function readAndDeleteTmp(tmpPath: string): Promise<Buffer> {
+  const { readFile } = await import('node:fs/promises');
+  try {
+    return await readFile(tmpPath);
+  } finally {
+    await unlink(tmpPath).catch(() => undefined);
+  }
+}
+
+async function handleKnowledgeUpload(req: FastifyRequest, reply: FastifyReply, tmpDir: string) {
+  const userId = (req as unknown as { user: { userId: string } }).user.userId;
+  const data = await req.file();
+  if (!data) return reply.code(400).send({ error: 'No file uploaded' });
+
+  const tmpPath = join(tmpDir, `${randomUUID()}-${data.filename}`);
+  await pipeline(data.file, createWriteStream(tmpPath));
+  const buffer = await readAndDeleteTmp(tmpPath);
+
+  const parsed = await parseByMimeType(buffer, data.mimetype, data.filename);
+  const chunks = parsed.text.includes('#') ? semanticChunk(parsed.text) : rawChunk(parsed.text);
+  if (chunks.length === 0) return reply.code(422).send({ error: 'No content could be extracted from file' });
+
+  const { docRepo, chunkRepo } = makeRepos();
+  const result = await new IngestDocumentUseCase(docRepo, chunkRepo, makeEmbedder()).execute({
+    userId, filename: data.filename, mimeType: data.mimetype, size: buffer.byteLength, chunks,
+  });
+  return reply.send({ document: result.document.toProps() });
+}
+
 export async function knowledgeRoutes(app: AuthFastifyInstance) {
   const tmpDir = join(tmpdir(), 'wolfkrow-uploads');
   await mkdir(tmpDir, { recursive: true });
 
   app.post('/knowledge/upload', {
     onRequest: [app.authenticate],
-  }, async (req, reply) => {
-    const userId = (req as unknown as { user: { userId: string } }).user.userId;
-
-    const data = await req.file();
-    if (!data) return reply.code(400).send({ error: 'No file uploaded' });
-
-    const tmpPath = join(tmpDir, `${randomUUID()}-${data.filename}`);
-    await pipeline(data.file, createWriteStream(tmpPath));
-
-    const { readFile } = await import('node:fs/promises');
-    let buffer: Buffer;
-    try {
-      buffer = await readFile(tmpPath);
-    } finally {
-      await unlink(tmpPath).catch(() => undefined);
-    }
-
-    const parsed = await parseByMimeType(buffer, data.mimetype, data.filename);
-    const chunks = parsed.text.includes('#')
-      ? semanticChunk(parsed.text)
-      : rawChunk(parsed.text);
-
-    if (chunks.length === 0) {
-      return reply.code(422).send({ error: 'No content could be extracted from file' });
-    }
-
-    const { docRepo, chunkRepo } = makeRepos();
-    const uc = new IngestDocumentUseCase(docRepo, chunkRepo, makeEmbedder());
-
-    const result = await uc.execute({
-      userId,
-      filename: data.filename,
-      mimeType: data.mimetype,
-      size: buffer.byteLength,
-      chunks,
-    });
-
-    return reply.send({ document: result.document.toProps() });
-  });
+  }, async (req, reply) => handleKnowledgeUpload(req, reply, tmpDir));
 
   app.get('/knowledge/documents', {
     onRequest: [app.authenticate],

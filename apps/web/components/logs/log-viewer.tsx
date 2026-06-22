@@ -26,6 +26,26 @@ function fmtTime(ts: number) {
   return new Date(ts).toISOString().replace('T', ' ').slice(0, 23);
 }
 
+interface LogFiltersProps {
+  levelFilter: string;
+  moduleFilter: string;
+  paused: boolean;
+  onLevelChange: (v: string) => void;
+  onModuleChange: (v: string) => void;
+  onTogglePause: () => void;
+  onClear: () => void;
+}
+function LogFilters({ levelFilter, moduleFilter, paused, onLevelChange, onModuleChange, onTogglePause, onClear }: LogFiltersProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <Input placeholder="level (info/warn/error)" value={levelFilter} onChange={(e) => onLevelChange(e.target.value)} className="w-40" />
+      <Input placeholder="module filter" value={moduleFilter} onChange={(e) => onModuleChange(e.target.value)} className="w-40" />
+      <Button size="sm" variant="outline" onClick={onTogglePause}>{paused ? 'Resume' : 'Pause'}</Button>
+      <Button size="sm" variant="outline" onClick={onClear}>Clear</Button>
+    </div>
+  );
+}
+
 export function LogViewer() {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [paused, setPaused] = useState(false);
@@ -57,26 +77,15 @@ export function LogViewer() {
 
   return (
     <div className="flex h-full flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <Input
-          placeholder="level (info/warn/error)"
-          value={levelFilter}
-          onChange={(e) => setLevelFilter(e.target.value)}
-          className="w-40"
-        />
-        <Input
-          placeholder="module filter"
-          value={moduleFilter}
-          onChange={(e) => setModuleFilter(e.target.value)}
-          className="w-40"
-        />
-        <Button size="sm" variant="outline" onClick={() => setPaused((p) => !p)}>
-          {paused ? 'Resume' : 'Pause'}
-        </Button>
-        <Button size="sm" variant="outline" onClick={() => setEntries([])}>
-          Clear
-        </Button>
-      </div>
+      <LogFilters
+        levelFilter={levelFilter}
+        moduleFilter={moduleFilter}
+        paused={paused}
+        onLevelChange={setLevelFilter}
+        onModuleChange={setModuleFilter}
+        onTogglePause={() => setPaused((p) => !p)}
+        onClear={() => setEntries([])}
+      />
 
       <div className="flex-1 overflow-y-auto rounded border bg-black p-2 font-mono text-xs">
         {entries.map((e, i) => (

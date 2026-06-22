@@ -44,17 +44,7 @@ export function AudioPlayer({ src, autoPlay, onEnded }: AudioPlayerProps) {
         onLoadedMetadata={(e) => setDuration((e.target as HTMLAudioElement).duration)}
         onTimeUpdate={handleTimeUpdate}
       />
-      <button
-        onClick={handleToggle}
-        className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600"
-        aria-label={isPlaying ? 'Pause' : 'Play'}
-      >
-        {isPlaying ? (
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-        ) : (
-          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
-        )}
-      </button>
+      <PlayPauseButton isPlaying={isPlaying} onToggle={handleToggle} />
       <div className="flex-1">
         <div className="h-1.5 rounded-full bg-gray-200">
           <div className="h-1.5 rounded-full bg-blue-500 transition-all" style={{ width: `${progress}%` }} />
@@ -62,5 +52,21 @@ export function AudioPlayer({ src, autoPlay, onEnded }: AudioPlayerProps) {
       </div>
       <span className="text-xs text-gray-500">{duration > 0 ? `${Math.round(duration)}s` : ''}</span>
     </div>
+  );
+}
+
+function PlayPauseButton({ isPlaying, onToggle }: { isPlaying: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 text-white hover:bg-blue-600"
+      aria-label={isPlaying ? 'Pause' : 'Play'}
+    >
+      {isPlaying ? (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+      ) : (
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><polygon points="5,3 19,12 5,21" /></svg>
+      )}
+    </button>
   );
 }

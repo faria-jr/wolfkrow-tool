@@ -2,7 +2,6 @@
  * Vault routes — secrets metadata API. Values never leave the server.
  */
 
-import { z } from 'zod';
 
 import { DrizzleSecretRepo } from '@wolfkrow/infra/repos';
 import { KeytarSecretsAdapter } from '@wolfkrow/infra/secrets/keytar-adapter';
@@ -12,9 +11,10 @@ import {
   GetSecretValueUseCase,
   DeleteSecretUseCase,
 } from '@wolfkrow/use-cases';
+import { z } from 'zod';
 
-import { validate } from '../validation';
 import type { AuthFastifyInstance } from '../types/fastify';
+import { validate } from '../validation';
 
 const storeBody = z.object({
   key: z.string().min(1).max(128).regex(/^[\w.\-:/]+$/),

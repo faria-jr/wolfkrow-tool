@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { ValidationError } from '../errors/domain-error';
 import { Skill } from '../entities/skill';
+import { ValidationError } from '../errors/domain-error';
 
 const VALID_MD = `---
 name: pdf-processing

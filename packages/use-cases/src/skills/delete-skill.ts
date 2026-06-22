@@ -1,5 +1,6 @@
 import { NotFoundError } from '@wolfkrow/domain';
 import type { SkillRepo } from '@wolfkrow/domain';
+
 import type { UseCase } from '../use-case';
 
 export interface DeleteSkillInput { id: string; }

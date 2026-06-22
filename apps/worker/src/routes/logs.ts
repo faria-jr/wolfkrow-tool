@@ -4,9 +4,9 @@
 
 import { z } from 'zod';
 
-import type { AuthFastifyInstance } from '../types/fastify';
 import { logBus } from '../log/bus';
 import type { LogEntry } from '../log/bus';
+import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
 const logQuery = z.object({

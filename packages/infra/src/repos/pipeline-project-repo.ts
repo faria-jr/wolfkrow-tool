@@ -1,12 +1,25 @@
-import type { PipelineProjectRepo } from '@wolfkrow/domain';
 import { PipelineProject } from '@wolfkrow/domain';
+import type { PipelineProjectRepo } from '@wolfkrow/domain';
+import type { PipelineMetrics } from '@wolfkrow/domain';
 import { eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { pipelineProjects } from '../db/schema/pipeline';
-import type { PipelineMetrics } from '@wolfkrow/domain';
+
 
 type DbRow = typeof pipelineProjects.$inferSelect;
+type PipelineProjectRow = typeof pipelineProjects.$inferInsert;
+
+function toRow(p: ReturnType<PipelineProject['toProps']>): PipelineProjectRow {
+  return {
+    id: p.id, userId: p.userId, name: p.name, description: p.description ?? null,
+    currentStage: p.currentStage, status: p.status,
+    discoveryNotes: p.discoveryNotes ?? null, specPath: p.specPath ?? null,
+    prdPath: p.prdPath ?? null, approvalNotes: p.approvalNotes ?? null,
+    metrics: p.metrics as unknown as Record<string, unknown>,
+    createdAt: p.createdAt, updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
+  };
+}
 
 function toEntity(row: DbRow): PipelineProject {
   return PipelineProject.fromProps({
@@ -41,24 +54,11 @@ export class DrizzlePipelineProjectRepo implements PipelineProjectRepo {
   }
 
   async save(project: PipelineProject): Promise<PipelineProject> {
-    const p = project.toProps();
-    this.db.insert(pipelineProjects).values({
-      id: p.id, userId: p.userId, name: p.name, description: p.description ?? null,
-      currentStage: p.currentStage, status: p.status,
-      discoveryNotes: p.discoveryNotes ?? null, specPath: p.specPath ?? null,
-      prdPath: p.prdPath ?? null, approvalNotes: p.approvalNotes ?? null,
-      metrics: p.metrics as unknown as Record<string, unknown>,
-      createdAt: p.createdAt, updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
-    }).onConflictDoUpdate({
-      target: pipelineProjects.id,
-      set: {
-        name: p.name, description: p.description ?? null, currentStage: p.currentStage, status: p.status,
-        discoveryNotes: p.discoveryNotes ?? null, specPath: p.specPath ?? null,
-        prdPath: p.prdPath ?? null, approvalNotes: p.approvalNotes ?? null,
-        metrics: p.metrics as unknown as Record<string, unknown>,
-        updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
-      },
-    }).run();
+    const row = toRow(project.toProps());
+    const { id: _id, userId: _userId, createdAt: _createdAt, ...settable } = row;
+    this.db.insert(pipelineProjects).values(row)
+      .onConflictDoUpdate({ target: pipelineProjects.id, set: settable })
+      .run();
     return project;
   }
 

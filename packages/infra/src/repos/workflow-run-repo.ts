@@ -1,10 +1,11 @@
-import type { WorkflowRunRepo } from '@wolfkrow/domain';
 import { WorkflowRun } from '@wolfkrow/domain';
+import type { WorkflowRunRepo } from '@wolfkrow/domain';
+import type { WorkflowMetrics } from '@wolfkrow/domain';
 import { eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { workflowRuns } from '../db/schema/workflow';
-import type { WorkflowMetrics } from '@wolfkrow/domain';
+
 
 type DbRow = typeof workflowRuns.$inferSelect;
 

@@ -27,6 +27,52 @@ export interface UseVoiceConversationReturn {
   error: string | null;
 }
 
+async function fetchAssistantResponse(transcript: string, agentId?: string): Promise<string> {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [{ role: 'user', content: transcript }],
+      ...(agentId !== undefined ? { agentId } : {}),
+    }),
+  });
+  if (!res.ok) throw new Error('Chat API error');
+  const data = (await res.json()) as { content: string };
+  return data.content;
+}
+
+interface SpeechEndParams {
+  state: VoiceConversationState;
+  setState: (s: VoiceConversationState) => void;
+  stopRecording: () => Promise<string>;
+  addMessage: (msg: VoiceConversationMessage) => void;
+  speak: (text: string) => Promise<void>;
+  resetStt: () => void;
+  startRecording: () => Promise<void>;
+  setError: (e: string | null) => void;
+  agentId: string | undefined;
+}
+
+async function processSpeechEnd(p: SpeechEndParams): Promise<void> {
+  if (p.state !== 'listening') return;
+  p.setState('processing');
+  try {
+    const transcript = await p.stopRecording();
+    if (!transcript.trim()) { p.setState('listening'); return; }
+    p.addMessage({ role: 'user', text: transcript });
+    const assistantText = await fetchAssistantResponse(transcript, p.agentId);
+    p.addMessage({ role: 'assistant', text: assistantText });
+    p.setState('speaking');
+    await p.speak(assistantText);
+    p.setState('listening');
+    p.resetStt();
+    await p.startRecording();
+  } catch (err) {
+    p.setError(err instanceof Error ? err.message : 'Voice error');
+    p.setState('idle');
+  }
+}
+
 export function useVoiceConversation(options: UseVoiceConversationOptions = {}): UseVoiceConversationReturn {
   const [state, setState] = useState<VoiceConversationState>('idle');
   const [messages, setMessages] = useState<VoiceConversationMessage[]>([]);
@@ -40,42 +86,9 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
     options.onMessage?.(msg);
   }, [options]);
 
-  const handleSpeechEnd = useCallback(async () => {
-    if (state !== 'listening') return;
-    setState('processing');
-
-    try {
-      const transcript = await stopRecording();
-      if (!transcript.trim()) { setState('listening'); return; }
-
-      addMessage({ role: 'user', text: transcript });
-
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: transcript }],
-          ...(options.agentId !== undefined ? { agentId: options.agentId } : {}),
-        }),
-      });
-
-      if (!res.ok) throw new Error('Chat API error');
-      const data = await res.json() as { content: string };
-      const assistantText = data.content;
-
-      addMessage({ role: 'assistant', text: assistantText });
-
-      setState('speaking');
-      await speak(assistantText);
-      setState('listening');
-
-      resetStt();
-      await startRecording();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Voice error');
-      setState('idle');
-    }
-  }, [state, stopRecording, addMessage, options, speak, resetStt, startRecording]);
+  const handleSpeechEnd = useCallback(() => {
+    void processSpeechEnd({ state, setState, stopRecording, addMessage, speak, resetStt, startRecording, setError, agentId: options.agentId });
+  }, [state, stopRecording, addMessage, options.agentId, speak, resetStt, startRecording]);
 
   const { start: startVad, stop: stopVad } = useVad({
     onSpeechStart: () => {

@@ -23,6 +23,20 @@ async function fetchAgents(): Promise<AgentData[]> {
   return ((await res.json()) as { agents: AgentData[] }).agents;
 }
 
+interface ViewActionsProps { onNew: () => void; onSync: () => void; }
+function ViewActions({ onNew, onSync }: ViewActionsProps) {
+  return (
+    <div className="flex justify-end gap-2">
+      <Button variant="outline" onClick={onSync}>
+        <RefreshCw className="mr-2 h-4 w-4" />Sync to orchestrator
+      </Button>
+      <Button onClick={onNew}>
+        <Plus className="mr-2 h-4 w-4" />New agent
+      </Button>
+    </div>
+  );
+}
+
 export function AgentsView() {
   const [agents, setAgents] = useState<AgentData[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -62,17 +76,13 @@ export function AgentsView() {
     await loadAgents();
   }, [loadAgents]);
 
+  const openNew = () => { setEditing(null); setModalOpen(true); };
+  const openEdit = (a: AgentData) => { setEditing(a); setModalOpen(true); };
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => setSyncOpen(true)}>
-          <RefreshCw className="mr-2 h-4 w-4" />Sync to orchestrator
-        </Button>
-        <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
-          <Plus className="mr-2 h-4 w-4" />New agent
-        </Button>
-      </div>
-      <AgentList agents={agents} onEdit={(a) => { setEditing(a); setModalOpen(true); }} onDuplicate={handleDuplicate} onDelete={handleDelete} />
+      <ViewActions onNew={openNew} onSync={() => setSyncOpen(true)} />
+      <AgentList agents={agents} onEdit={openEdit} onDuplicate={handleDuplicate} onDelete={handleDelete} />
       <AgentFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -80,12 +90,7 @@ export function AgentsView() {
         {...(editing !== null ? { agent: editing } : {})}
         loading={saving}
       />
-      <SyncAgentsModal
-        open={syncOpen}
-        onClose={() => setSyncOpen(false)}
-        onSynced={() => { void loadAgents(); }}
-        agentCount={agents.length}
-      />
+      <SyncAgentsModal open={syncOpen} onClose={() => setSyncOpen(false)} onSynced={() => { void loadAgents(); }} agentCount={agents.length} />
     </div>
   );
 }

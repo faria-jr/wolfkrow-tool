@@ -17,6 +17,7 @@ import {
   ListPipelineProjectsUseCase,
   StartPhaseUseCase,
 } from '@wolfkrow/use-cases';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import keytar from 'keytar';
 
 import type { AuthFastifyInstance } from '../types/fastify';
@@ -45,22 +46,62 @@ interface StartPhaseBody { stage: string; }
 interface RunPhaseBody { userPrompt?: string; }
 interface ApproveBody { approved: boolean; notes?: string; }
 
-export async function pipelineRoutes(server: AuthFastifyInstance) {
-  const { projectRepo, phaseRepo } = makeRepos();
+const _repos = makeRepos();
 
-  // POST /pipeline/projects
+type RunParams = { id: string; phaseId: string };
+async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: RunPhaseBody }>, reply: FastifyReply) {
+  const { projectRepo, phaseRepo } = _repos;
+  const [project, phase] = await Promise.all([
+    projectRepo.findById(req.params.id),
+    phaseRepo.findById(req.params.phaseId),
+  ]);
+  if (!project || !phase) return reply.status(404).send({ error: 'Not found' });
+
+  const systemPrompt = PHASE_PROMPTS[phase.stage] ?? 'You are a helpful assistant.';
+  const userContent = req.body.userPrompt ?? `Project: ${project.name}\n${project.description ?? ''}\nDiscovery notes: ${project.discoveryNotes ?? 'N/A'}`;
+
+  const apiKey = await getApiKey();
+  const result = await aiProviderFactory.create('anthropic', apiKey).complete({
+    model: 'claude-sonnet-4-6',
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userContent }],
+    maxTokens: 4096,
+    temperature: 0.3,
+  });
+
+  const { phase: completed, project: updated } = await new CompletePhaseUseCase(projectRepo, phaseRepo).execute({
+    phaseId: phase.id, projectId: project.id, tokens: result.usage.inputTokens + result.usage.outputTokens,
+  });
+  return { phase: completed.toProps(), project: updated.toProps(), output: result.content };
+}
+
+async function approvePhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: ApproveBody }>, reply: FastifyReply) {
+  const { projectRepo, phaseRepo } = _repos;
+  try {
+    const { project, phase } = await new ApprovePipelinePhaseUseCase(projectRepo, phaseRepo).execute({
+      projectId: req.params.id, phaseId: req.params.phaseId,
+      approved: req.body.approved,
+      ...(req.body.notes !== undefined ? { notes: req.body.notes } : {}),
+    });
+    return { project: project.toProps(), phase: phase.toProps() };
+  } catch {
+    return reply.status(404).send({ error: 'Not found' });
+  }
+}
+
+export async function pipelineRoutes(server: AuthFastifyInstance) {
+  const { projectRepo, phaseRepo } = _repos;
+
   server.post<{ Body: CreateProjectBody }>('/projects', async (req) => {
     const { project } = await new CreatePipelineProjectUseCase(projectRepo).execute(req.body);
     return project.toProps();
   });
 
-  // GET /pipeline/projects?userId=
   server.get<{ Querystring: { userId: string } }>('/projects', async (req) => {
     const { projects } = await new ListPipelineProjectsUseCase(projectRepo).execute({ userId: req.query.userId });
     return projects.map((p) => p.toProps());
   });
 
-  // GET /pipeline/projects/:id
   server.get<{ Params: { id: string } }>('/projects/:id', async (req, reply) => {
     try {
       const { project } = await new GetPipelineProjectUseCase(projectRepo).execute({ projectId: req.params.id });
@@ -70,7 +111,6 @@ export async function pipelineRoutes(server: AuthFastifyInstance) {
     }
   });
 
-  // DELETE /pipeline/projects/:id
   server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/projects/:id', async (req, reply) => {
     try {
       await new DeletePipelineProjectUseCase(projectRepo).execute({ projectId: req.params.id, userId: req.query.userId });
@@ -80,7 +120,6 @@ export async function pipelineRoutes(server: AuthFastifyInstance) {
     }
   });
 
-  // POST /pipeline/projects/:id/phases — start a phase
   server.post<{ Params: { id: string }; Body: StartPhaseBody }>('/projects/:id/phases', async (req, reply) => {
     try {
       const { phase } = await new StartPhaseUseCase(projectRepo, phaseRepo).execute({
@@ -93,59 +132,11 @@ export async function pipelineRoutes(server: AuthFastifyInstance) {
     }
   });
 
-  // GET /pipeline/projects/:id/phases
   server.get<{ Params: { id: string } }>('/projects/:id/phases', async (req) => {
     const phases = await phaseRepo.findByProjectId(req.params.id);
     return phases.map((p) => p.toProps());
   });
 
-  // POST /pipeline/projects/:id/phases/:phaseId/run — AI execution
-  server.post<{ Params: { id: string; phaseId: string }; Body: RunPhaseBody }>(
-    '/projects/:id/phases/:phaseId/run',
-    async (req, reply) => {
-      const [project, phase] = await Promise.all([
-        projectRepo.findById(req.params.id),
-        phaseRepo.findById(req.params.phaseId),
-      ]);
-      if (!project || !phase) return reply.status(404).send({ error: 'Not found' });
-
-      const systemPrompt = PHASE_PROMPTS[phase.stage] ?? 'You are a helpful assistant.';
-      const userContent = req.body.userPrompt ?? `Project: ${project.name}\n${project.description ?? ''}\nDiscovery notes: ${project.discoveryNotes ?? 'N/A'}`;
-
-      const apiKey = await getApiKey();
-      const provider = aiProviderFactory.create('anthropic', apiKey);
-      const result = await provider.complete({
-        model: 'claude-sonnet-4-6',
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userContent }],
-        maxTokens: 4096,
-        temperature: 0.3,
-      });
-
-      const tokens = result.usage.inputTokens + result.usage.outputTokens;
-
-      const { phase: completed, project: updated } = await new CompletePhaseUseCase(projectRepo, phaseRepo).execute({
-        phaseId: phase.id, projectId: project.id, tokens,
-      });
-
-      return { phase: completed.toProps(), project: updated.toProps(), output: result.content };
-    },
-  );
-
-  // POST /pipeline/projects/:id/phases/:phaseId/approve
-  server.post<{ Params: { id: string; phaseId: string }; Body: ApproveBody }>(
-    '/projects/:id/phases/:phaseId/approve',
-    async (req, reply) => {
-      try {
-        const { project, phase } = await new ApprovePipelinePhaseUseCase(projectRepo, phaseRepo).execute({
-          projectId: req.params.id, phaseId: req.params.phaseId,
-          approved: req.body.approved,
-          ...(req.body.notes !== undefined ? { notes: req.body.notes } : {}),
-        });
-        return { project: project.toProps(), phase: phase.toProps() };
-      } catch {
-        return reply.status(404).send({ error: 'Not found' });
-      }
-    },
-  );
+  server.post<{ Params: RunParams; Body: RunPhaseBody }>('/projects/:id/phases/:phaseId/run', runPhaseHandler);
+  server.post<{ Params: RunParams; Body: ApproveBody }>('/projects/:id/phases/:phaseId/approve', approvePhaseHandler);
 }

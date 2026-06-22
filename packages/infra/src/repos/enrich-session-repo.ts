@@ -1,10 +1,11 @@
-import type { EnrichSessionRepo } from '@wolfkrow/domain';
 import { EnrichSession } from '@wolfkrow/domain';
+import type { EnrichSessionRepo } from '@wolfkrow/domain';
+import type { EnrichMetrics } from '@wolfkrow/domain';
 import { eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { enrichSessions } from '../db/schema/enrich';
-import type { EnrichMetrics } from '@wolfkrow/domain';
+
 
 type DbRow = typeof enrichSessions.$inferSelect;
 

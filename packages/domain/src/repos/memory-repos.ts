@@ -1,5 +1,5 @@
-import type { SemanticMemory } from '../entities/semantic-memory';
 import type { DailySummary } from '../entities/daily-summary';
+import type { SemanticMemory } from '../entities/semantic-memory';
 
 export interface MemorySearchResult {
   memory: SemanticMemory;

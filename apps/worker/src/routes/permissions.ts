@@ -2,7 +2,6 @@
  * Permissions + Audit routes — S.3.
  */
 
-import { z } from 'zod';
 
 import { DrizzleAuditLogRepo } from '@wolfkrow/infra/repos';
 import {
@@ -10,9 +9,10 @@ import {
   RecordAuditEntryUseCase,
   QueryAuditLogUseCase,
 } from '@wolfkrow/use-cases';
+import { z } from 'zod';
 
-import { validate } from '../validation';
 import type { AuthFastifyInstance } from '../types/fastify';
+import { validate } from '../validation';
 
 const resolveBody = z.object({
   tool: z.string().min(1).max(128),

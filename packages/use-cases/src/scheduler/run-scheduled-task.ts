@@ -36,14 +36,17 @@ export class RunScheduledTaskUseCase {
       });
 
       run = await this.runRepo.save(
-        run.complete(result.status, result.output, result.error),
+        run.complete(result.status, {
+          ...(result.output !== undefined ? { output: result.output } : {}),
+          ...(result.error !== undefined ? { error: result.error } : {}),
+        }),
       );
 
       const now = new Date();
       await this.taskRepo.save(task.withNextRun(now, now));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      run = await this.runRepo.save(run.complete('rejected', undefined, message));
+      run = await this.runRepo.save(run.complete('rejected', { error: message }));
     }
 
     return { run };

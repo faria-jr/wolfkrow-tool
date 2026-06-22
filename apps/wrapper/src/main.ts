@@ -12,8 +12,8 @@
  * Security: sandbox=true, contextIsolation=true, no nodeIntegration.
  */
 
-import { resolve } from 'node:path';
 import { spawn, type ChildProcess } from 'node:child_process';
+import { resolve } from 'node:path';
 
 import {
   app,
@@ -64,7 +64,7 @@ function spawnChild(name: string, cmd: string, args: string[], cwd: string): Chi
     process.stderr.write(`[${name}] ${d}`);
   });
   proc.on('exit', (code) => {
-    console.log(`[${name}] exited with code ${code ?? '?'}`);
+    console.warn(`[${name}] exited with code ${code ?? '?'}`);
   });
 
   children.push({ name, proc });

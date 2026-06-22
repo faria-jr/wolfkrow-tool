@@ -2,6 +2,9 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import sonarjs from 'eslint-plugin-sonarjs';
 import importX from 'eslint-plugin-import-x';
+import { createRequire } from 'node:module';
+const _require = createRequire(import.meta.url);
+const reactHooks = _require('eslint-plugin-react-hooks');
 import globals from 'globals';
 
 /**
@@ -24,7 +27,13 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['apps/web/app/.well-known/jwks.json/route.ts'],
+          allowDefaultProject: [
+            'apps/web/app/.well-known/jwks.json/route.ts',
+            'apps/web/.storybook/main.ts',
+            'apps/web/.storybook/preview.ts',
+            'apps/web/e2e/*.ts',
+            'apps/web/components/ui/*.stories.tsx',
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -44,12 +53,18 @@ export default tseslint.config(
       '**/*.config.ts',
       '**/postcss.config.js',
       '**/next-env.d.ts',
+      '**/test-utils/*.mjs',
+      '**/src/sw.d.ts',
+      '**/public/sw.js',
+      '**/*.stories.tsx',
+      '**/*.stories.ts',
+      'scripts/',
     ],
   },
 
   {
     files: ['**/*.{ts,tsx}'],
-    plugins: { sonarjs, import: importX },
+    plugins: { sonarjs, import: importX, 'react-hooks': reactHooks },
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -75,7 +90,7 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_' },
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/consistent-type-imports': [
         'error',
@@ -91,6 +106,10 @@ export default tseslint.config(
           alphabetize: { order: 'asc' },
         },
       ],
+
+      // — react hooks —
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
 
       // — higiene —
       'no-console': ['warn', { allow: ['warn', 'error'] }],
@@ -119,6 +138,7 @@ export default tseslint.config(
   {
     files: ['**/*.{test,spec}.{ts,tsx}', '**/__tests__/**'],
     rules: {
+      'max-lines': 'off',
       'max-lines-per-function': 'off',
       'max-nested-callbacks': 'off',
       'no-constant-binary-expression': 'off',

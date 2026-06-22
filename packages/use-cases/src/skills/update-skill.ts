@@ -1,5 +1,6 @@
 import { NotFoundError, type Skill, type SkillUpdateInput } from '@wolfkrow/domain';
 import type { SkillRepo } from '@wolfkrow/domain';
+
 import type { UseCase } from '../use-case';
 
 export interface UpdateSkillInput extends SkillUpdateInput { id: string; }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { Search } from 'lucide-react';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,22 @@ interface SearchResultItem {
   content: string;
   score: number;
   metadata: { sourceType?: string; heading?: string };
+}
+
+function SearchResultCard({ r, i }: { r: SearchResultItem; i: number }) {
+  return (
+    <div className="rounded-lg border p-4 space-y-1">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs text-muted-foreground">
+          [{i + 1}] {r.metadata.sourceType ?? 'text'}
+          {r.metadata.heading ? ` — ${r.metadata.heading}` : ''}
+        </p>
+        <span className="shrink-0 text-xs text-muted-foreground">score: {r.score.toFixed(3)}</span>
+      </div>
+      <p className="text-sm line-clamp-4">{r.content}</p>
+      <p className="text-xs text-muted-foreground font-mono">doc:{r.documentId.slice(0, 8)}…</p>
+    </div>
+  );
 }
 
 export function SearchPanel() {
@@ -59,21 +75,7 @@ export function SearchPanel() {
       )}
 
       <div className="space-y-3">
-        {results.map((r, i) => (
-          <div key={r.chunkId} className="rounded-lg border p-4 space-y-1">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-xs text-muted-foreground">
-                [{i + 1}] {r.metadata.sourceType ?? 'text'}
-                {r.metadata.heading ? ` — ${r.metadata.heading}` : ''}
-              </p>
-              <span className="shrink-0 text-xs text-muted-foreground">
-                score: {r.score.toFixed(3)}
-              </span>
-            </div>
-            <p className="text-sm line-clamp-4">{r.content}</p>
-            <p className="text-xs text-muted-foreground font-mono">doc:{r.documentId.slice(0, 8)}…</p>
-          </div>
-        ))}
+        {results.map((r, i) => <SearchResultCard key={r.chunkId} r={r} i={i} />)}
       </div>
     </div>
   );

@@ -6,6 +6,18 @@ import { getDb } from '../db/client';
 import { taskRuns } from '../db/schema/scheduler';
 
 type DbRow = typeof taskRuns.$inferSelect;
+type TaskRunMetricsRow = { tokens?: number; cost?: number; durationMs?: number; toolUses?: number } | null;
+
+function toRunRow(p: ReturnType<TaskRun['toProps']>): typeof taskRuns.$inferInsert {
+  return {
+    id: p.id, taskId: p.taskId, status: p.status,
+    startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
+    output: (p.output ?? null) as Record<string, unknown> | null,
+    error: p.error ?? null, reviewNote: p.reviewNote ?? null,
+    reviewedAt: p.reviewedAt ?? null,
+    metrics: (p.metrics ?? null) as TaskRunMetricsRow,
+  };
+}
 
 function toEntity(row: DbRow): TaskRun {
   return TaskRun.fromProps({
@@ -37,24 +49,11 @@ export class DrizzleTaskRunRepo implements TaskRunRepo {
   }
 
   async save(run: TaskRun): Promise<TaskRun> {
-    const p = run.toProps();
-    this.db.insert(taskRuns).values({
-      id: p.id, taskId: p.taskId, status: p.status,
-      startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-      output: (p.output ?? null) as Record<string, unknown> | null,
-      error: p.error ?? null, reviewNote: p.reviewNote ?? null,
-      reviewedAt: p.reviewedAt ?? null,
-      metrics: (p.metrics ?? null) as { tokens?: number; cost?: number; durationMs?: number; toolUses?: number } | null,
-    }).onConflictDoUpdate({
-      target: taskRuns.id,
-      set: {
-        status: p.status, completedAt: p.completedAt ?? null,
-        output: (p.output ?? null) as Record<string, unknown> | null,
-        error: p.error ?? null, reviewNote: p.reviewNote ?? null,
-        reviewedAt: p.reviewedAt ?? null,
-        metrics: (p.metrics ?? null) as { tokens?: number; cost?: number; durationMs?: number; toolUses?: number } | null,
-      },
-    }).run();
+    const row = toRunRow(run.toProps());
+    const { id: _id, taskId: _taskId, startedAt: _startedAt, ...settable } = row;
+    this.db.insert(taskRuns).values(row)
+      .onConflictDoUpdate({ target: taskRuns.id, set: settable })
+      .run();
     return run;
   }
 }

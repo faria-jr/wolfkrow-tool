@@ -12,6 +12,7 @@ import {
   RunScheduledTaskUseCase,
   UpdateScheduledTaskUseCase,
 } from '@wolfkrow/use-cases';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { createAgentExecutor } from '../agent-executor';
 import type { Logger } from '../logger';
@@ -39,6 +40,25 @@ interface UpdateBody {
   tags?: string[];
 }
 
+async function createTaskHandler(req: FastifyRequest<{ Body: CreateBody }>, reply: FastifyReply) {
+  const userId = (req as unknown as { user: { userId: string } }).user.userId;
+  const body = req.body;
+  if (!body?.name || !body.cronExpression || !body.prompt) {
+    return reply.code(400).send({ error: 'name, cronExpression and prompt required' });
+  }
+  const { taskRepo } = makeRepos();
+  const result = await new CreateScheduledTaskUseCase(taskRepo).execute({
+    userId,
+    name: body.name,
+    cronExpression: body.cronExpression,
+    prompt: body.prompt,
+    ...(body.description !== undefined ? { description: body.description } : {}),
+    ...(body.agentId !== undefined ? { agentId: body.agentId } : {}),
+    ...(body.tags !== undefined ? { tags: body.tags } : {}),
+  });
+  return reply.code(201).send({ task: result.task.toProps() });
+}
+
 export async function schedulerRoutes(server: AuthFastifyInstance) {
   server.get('/tasks', { preHandler: [server.authenticate] }, async (req, reply) => {
     const userId = (req as unknown as { user: { userId: string } }).user.userId;
@@ -47,25 +67,7 @@ export async function schedulerRoutes(server: AuthFastifyInstance) {
     return reply.send({ tasks: tasks.map((t) => t.toProps()), count: tasks.length });
   });
 
-  server.post<{ Body: CreateBody }>('/tasks', { preHandler: [server.authenticate] }, async (req, reply) => {
-    const userId = (req as unknown as { user: { userId: string } }).user.userId;
-    const body = req.body;
-    if (!body?.name || !body.cronExpression || !body.prompt) {
-      return reply.code(400).send({ error: 'name, cronExpression and prompt required' });
-    }
-    const { taskRepo } = makeRepos();
-    const uc = new CreateScheduledTaskUseCase(taskRepo);
-    const result = await uc.execute({
-      userId,
-      name: body.name,
-      cronExpression: body.cronExpression,
-      prompt: body.prompt,
-      ...(body.description !== undefined ? { description: body.description } : {}),
-      ...(body.agentId !== undefined ? { agentId: body.agentId } : {}),
-      ...(body.tags !== undefined ? { tags: body.tags } : {}),
-    });
-    return reply.code(201).send({ task: result.task.toProps() });
-  });
+  server.post<{ Body: CreateBody }>('/tasks', { preHandler: [server.authenticate] }, createTaskHandler);
 
   server.patch<{ Params: { id: string }; Body: UpdateBody }>('/tasks/:id', { preHandler: [server.authenticate] }, async (req, reply) => {
     const userId = (req as unknown as { user: { userId: string } }).user.userId;

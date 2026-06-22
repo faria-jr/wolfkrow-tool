@@ -15,13 +15,62 @@ export interface UseVadReturn {
   stop: () => void;
 }
 
+interface VadPipeline {
+  stream: MediaStream;
+  ctx: AudioContext;
+  analyser: AnalyserNode;
+  data: Float32Array<ArrayBuffer>;
+}
+
+async function createVadPipeline(): Promise<VadPipeline> {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const ctx = new AudioContext();
+  const source = ctx.createMediaStreamSource(stream);
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 256;
+  source.connect(analyser);
+  return { stream, ctx, analyser, data: new Float32Array(analyser.fftSize) };
+}
+
+interface DetectionOpts {
+  analyser: AnalyserNode;
+  data: Float32Array<ArrayBuffer>;
+  energyThreshold: number;
+  silenceThresholdMs: number;
+  isSpeakingRef: { current: boolean };
+  silenceTimerRef: { current: ReturnType<typeof setTimeout> | null };
+  rafRef: { current: number | null };
+  onSpeechStart: (() => void) | undefined;
+  onSpeechEnd: (() => void) | undefined;
+  setIsSpeaking: (v: boolean) => void;
+}
+
+function runDetection(o: DetectionOpts): void {
+  const tick = () => {
+    o.analyser.getFloatTimeDomainData(o.data);
+    const rms = Math.sqrt(o.data.reduce((sum, v) => sum + v * v, 0) / o.data.length);
+    if (rms > o.energyThreshold) {
+      if (o.silenceTimerRef.current) { clearTimeout(o.silenceTimerRef.current); o.silenceTimerRef.current = null; }
+      if (!o.isSpeakingRef.current) {
+        o.isSpeakingRef.current = true;
+        o.setIsSpeaking(true);
+        o.onSpeechStart?.();
+      }
+    } else if (o.isSpeakingRef.current && !o.silenceTimerRef.current) {
+      o.silenceTimerRef.current = setTimeout(() => {
+        o.isSpeakingRef.current = false;
+        o.setIsSpeaking(false);
+        o.onSpeechEnd?.();
+        o.silenceTimerRef.current = null;
+      }, o.silenceThresholdMs);
+    }
+    o.rafRef.current = requestAnimationFrame(tick);
+  };
+  o.rafRef.current = requestAnimationFrame(tick);
+}
+
 export function useVad(options: UseVadOptions = {}): UseVadReturn {
-  const {
-    silenceThresholdMs = 800,
-    energyThreshold = 0.01,
-    onSpeechStart,
-    onSpeechEnd,
-  } = options;
+  const { silenceThresholdMs = 800, energyThreshold = 0.01, onSpeechStart, onSpeechEnd } = options;
 
   const [isSpeaking, setIsSpeaking] = useState(false);
   const contextRef = useRef<AudioContext | null>(null);
@@ -44,49 +93,14 @@ export function useVad(options: UseVadOptions = {}): UseVadReturn {
   }, []);
 
   const start = useCallback(async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const { stream, ctx, analyser, data } = await createVadPipeline();
     streamRef.current = stream;
-
-    const ctx = new AudioContext();
     contextRef.current = ctx;
-
-    const source = ctx.createMediaStreamSource(stream);
-    const analyser = ctx.createAnalyser();
-    analyser.fftSize = 256;
-    source.connect(analyser);
     analyserRef.current = analyser;
-
-    const data = new Float32Array(analyser.fftSize);
-
-    function tick() {
-      analyser.getFloatTimeDomainData(data);
-      const rms = Math.sqrt(data.reduce((sum, v) => sum + v * v, 0) / data.length);
-
-      if (rms > energyThreshold) {
-        if (silenceTimerRef.current) {
-          clearTimeout(silenceTimerRef.current);
-          silenceTimerRef.current = null;
-        }
-        if (!isSpeakingRef.current) {
-          isSpeakingRef.current = true;
-          setIsSpeaking(true);
-          onSpeechStart?.();
-        }
-      } else if (isSpeakingRef.current) {
-        if (!silenceTimerRef.current) {
-          silenceTimerRef.current = setTimeout(() => {
-            isSpeakingRef.current = false;
-            setIsSpeaking(false);
-            onSpeechEnd?.();
-            silenceTimerRef.current = null;
-          }, silenceThresholdMs);
-        }
-      }
-
-      rafRef.current = requestAnimationFrame(tick);
-    }
-
-    rafRef.current = requestAnimationFrame(tick);
+    runDetection({
+      analyser, data, energyThreshold, silenceThresholdMs,
+      isSpeakingRef, silenceTimerRef, rafRef, onSpeechStart, onSpeechEnd, setIsSpeaking,
+    });
   }, [energyThreshold, silenceThresholdMs, onSpeechStart, onSpeechEnd]);
 
   useEffect(() => () => { stop(); }, [stop]);

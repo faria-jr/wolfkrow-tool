@@ -1,7 +1,7 @@
-import { eq } from 'drizzle-orm';
 
 import { GlobalRule } from '@wolfkrow/domain';
 import type { GlobalRuleRepo, RuleKind } from '@wolfkrow/domain';
+import { eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { globalRules } from '../db/schema';

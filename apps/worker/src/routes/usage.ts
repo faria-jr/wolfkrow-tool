@@ -2,10 +2,10 @@
  * Usage routes — token analytics. S.2.
  */
 
-import { z } from 'zod';
 
 import { DrizzleTokenUsageRepo } from '@wolfkrow/infra/repos';
 import { ComputeUsageUseCase, CheckBudgetUseCase } from '@wolfkrow/use-cases';
+import { z } from 'zod';
 
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';

@@ -7,49 +7,60 @@ import { Input } from '@/components/ui/input';
 
 type Status = 'idle' | 'loading' | 'error';
 
+interface ToggleParams {
+  running: boolean;
+  setStatus: (s: Status) => void;
+  setError: (e: string | null) => void;
+  setRunning: (r: boolean) => void;
+  setPairingCode: (c: string | null) => void;
+}
+async function doToggle({ running, setStatus, setError, setRunning, setPairingCode }: ToggleParams) {
+  setStatus('loading');
+  setError(null);
+  try {
+    const endpoint = running ? '/api/telegram/stop' : '/api/telegram/start';
+    const res = await fetch(endpoint, { method: 'POST' });
+    if (!res.ok) {
+      const d = (await res.json()) as { error: string };
+      throw new Error(d.error);
+    }
+    setRunning(!running);
+    if (!running) setPairingCode(null);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Error');
+  } finally {
+    setStatus('idle');
+  }
+}
+
+interface PairParams { setStatus: (s: Status) => void; setError: (e: string | null) => void; setPairingCode: (c: string | null) => void; }
+async function doPair({ setStatus, setError, setPairingCode }: PairParams) {
+  setStatus('loading');
+  setError(null);
+  try {
+    const res = await fetch('/api/telegram/pair', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: 'current' }),
+    });
+    if (!res.ok) throw new Error('Failed to generate code');
+    const d = (await res.json()) as { code: string };
+    setPairingCode(d.code);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Error');
+  } finally {
+    setStatus('idle');
+  }
+}
+
 export function TelegramSetup() {
   const [running, setRunning] = useState(false);
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  async function handleToggle() {
-    setStatus('loading');
-    setError(null);
-    try {
-      const endpoint = running ? '/api/telegram/stop' : '/api/telegram/start';
-      const res = await fetch(endpoint, { method: 'POST' });
-      if (!res.ok) {
-        const d = await res.json() as { error: string };
-        throw new Error(d.error);
-      }
-      setRunning(!running);
-      if (!running) setPairingCode(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error');
-    } finally {
-      setStatus('idle');
-    }
-  }
-
-  async function handlePair() {
-    setStatus('loading');
-    setError(null);
-    try {
-      const res = await fetch('/api/telegram/pair', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: 'current' }),
-      });
-      if (!res.ok) throw new Error('Failed to generate code');
-      const d = await res.json() as { code: string };
-      setPairingCode(d.code);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error');
-    } finally {
-      setStatus('idle');
-    }
-  }
+  const handleToggle = () => void doToggle({ running, setStatus, setError, setRunning, setPairingCode });
+  const handlePair = () => void doPair({ setStatus, setError, setPairingCode });
 
   return (
     <div className="flex flex-col gap-4 rounded-lg border p-4">
@@ -60,19 +71,14 @@ export function TelegramSetup() {
             Status: <span className={running ? 'text-green-500' : 'text-gray-400'}>{running ? 'Running' : 'Stopped'}</span>
           </p>
         </div>
-        <Button
-          onClick={() => void handleToggle()}
-          disabled={status === 'loading'}
-          variant={running ? 'destructive' : 'default'}
-          size="sm"
-        >
+        <Button onClick={handleToggle} disabled={status === 'loading'} variant={running ? 'destructive' : 'default'} size="sm">
           {running ? 'Stop' : 'Start'}
         </Button>
       </div>
 
       {running && (
         <div className="flex flex-col gap-2">
-          <Button onClick={() => void handlePair()} disabled={status === 'loading'} variant="outline" size="sm">
+          <Button onClick={handlePair} disabled={status === 'loading'} variant="outline" size="sm">
             Generate Pairing Code
           </Button>
           {pairingCode && (

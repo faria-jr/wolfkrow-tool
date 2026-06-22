@@ -2,8 +2,7 @@
  * Global rules routes — S.3.
  */
 
-import { z } from 'zod';
-
+import type { RuleKind } from '@wolfkrow/domain';
 import { DrizzleGlobalRuleRepo } from '@wolfkrow/infra/repos';
 import {
   ListRulesUseCase,
@@ -13,10 +12,11 @@ import {
   DeleteRuleUseCase,
   BuildSystemPromptUseCase,
 } from '@wolfkrow/use-cases';
+import { z } from 'zod';
 
-import { validate } from '../validation';
+
 import type { AuthFastifyInstance } from '../types/fastify';
-import type { RuleKind } from '@wolfkrow/domain';
+import { validate } from '../validation';
 
 const createBody = z.object({
   kind: z.enum(['behavior', 'soul', 'user', 'custom']),
@@ -37,14 +37,15 @@ function getUserId(req: { user?: { userId?: string } }): string {
   return req.user?.userId ?? 'default';
 }
 
+const _repo = new DrizzleGlobalRuleRepo();
+const listUC = new ListRulesUseCase(_repo);
+const createUC = new CreateRuleUseCase(_repo);
+const updateUC = new UpdateRuleUseCase(_repo);
+const toggleUC = new ToggleRuleUseCase(_repo);
+const deleteUC = new DeleteRuleUseCase(_repo);
+const buildUC = new BuildSystemPromptUseCase(_repo);
+
 export async function rulesRoutes(server: AuthFastifyInstance) {
-  const repo = new DrizzleGlobalRuleRepo();
-  const listUC = new ListRulesUseCase(repo);
-  const createUC = new CreateRuleUseCase(repo);
-  const updateUC = new UpdateRuleUseCase(repo);
-  const toggleUC = new ToggleRuleUseCase(repo);
-  const deleteUC = new DeleteRuleUseCase(repo);
-  const buildUC = new BuildSystemPromptUseCase(repo);
 
   // GET /rules — list all
   server.get('/', async (req, reply) => {

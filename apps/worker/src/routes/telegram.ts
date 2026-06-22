@@ -2,11 +2,11 @@
  * Telegram management routes — B.5.
  */
 
-import { z } from 'zod';
 import keytar from 'keytar';
+import { z } from 'zod';
 
-import type { AuthFastifyInstance } from '../types/fastify';
 import { telegramBridge } from '../telegram/bridge';
+import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
 const pairBody = z.object({

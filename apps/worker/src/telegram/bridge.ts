@@ -4,6 +4,7 @@
  */
 
 import { randomBytes } from 'crypto';
+
 import TelegramBot from 'node-telegram-bot-api';
 
 import { createLogger } from '../logger';

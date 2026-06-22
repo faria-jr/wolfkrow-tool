@@ -52,6 +52,7 @@
     "electron-builder": "^25.0.0",
     "eslint": "^9",
     "eslint-plugin-import-x": "^4",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-sonarjs": "^3",
     "globals": "^15",
     "husky": "^9.0.0",

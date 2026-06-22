@@ -1,5 +1,5 @@
-import type { ScheduledTaskRepo } from '@wolfkrow/domain';
-import { CronExpression, NotFoundError, ScheduledTask } from '@wolfkrow/domain';
+import type { ScheduledTaskRepo , ScheduledTask } from '@wolfkrow/domain';
+import { CronExpression, NotFoundError } from '@wolfkrow/domain';
 
 export interface UpdateScheduledTaskInput {
   taskId: string;
@@ -28,17 +28,20 @@ export class UpdateScheduledTaskUseCase {
 
     if (input.cronExpression) CronExpression.create(input.cronExpression);
 
-    const updated = existing.withUpdate({
-      ...(input.name !== undefined ? { name: input.name } : {}),
-      ...(input.description !== undefined ? { description: input.description } : {}),
-      ...(input.cronExpression !== undefined ? { cronExpression: input.cronExpression } : {}),
-      ...(input.prompt !== undefined ? { prompt: input.prompt } : {}),
-      ...(input.agentId !== undefined ? { agentId: input.agentId } : {}),
-      ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
-      ...(input.tags !== undefined ? { tags: input.tags } : {}),
-    });
-
+    const updated = existing.withUpdate(buildPatch(input));
     const saved = await this.repo.save(updated);
     return { task: saved };
   }
+}
+
+function buildPatch(input: UpdateScheduledTaskInput): Parameters<ScheduledTask['withUpdate']>[0] {
+  return {
+    ...(input.name !== undefined ? { name: input.name } : {}),
+    ...(input.description !== undefined ? { description: input.description } : {}),
+    ...(input.cronExpression !== undefined ? { cronExpression: input.cronExpression } : {}),
+    ...(input.prompt !== undefined ? { prompt: input.prompt } : {}),
+    ...(input.agentId !== undefined ? { agentId: input.agentId } : {}),
+    ...(input.enabled !== undefined ? { enabled: input.enabled } : {}),
+    ...(input.tags !== undefined ? { tags: input.tags } : {}),
+  };
 }

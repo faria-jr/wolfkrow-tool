@@ -1,4 +1,5 @@
 import type { Skill } from '../entities/skill';
+
 import type { Repository } from './index';
 
 export interface SkillRepo extends Repository<Skill, string> {
