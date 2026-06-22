@@ -7,7 +7,7 @@ import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
 
-const WORKER_URL = process.env['WORKER_URL'] ?? 'http://localhost:3001';
+const WORKER_URL = process.env['WORKER_URL'] ?? 'http://localhost:4000';
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();

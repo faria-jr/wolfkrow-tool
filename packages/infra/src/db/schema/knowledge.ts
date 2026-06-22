@@ -50,23 +50,3 @@ export const knowledgeChunks = sqliteTable(
     documentIdIdx: index('knowledge_chunks_document_id_idx').on(t.documentId),
   }),
 );
-
-export const knowledgeBenchmarks = sqliteTable(
-  'knowledge_benchmarks',
-  {
-    id: id(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    name: shortText('name').notNull(),
-    querySet: text('query_set', { mode: 'json' }).$type<unknown[]>().notNull(),
-    metrics: metadata(),
-    precisionAt5: integer('precision_at_5').notNull(),
-    recallAt10: integer('recall_at_10').notNull(),
-    mrr: integer('mrr').notNull(),
-    createdAt: timestamp('created_at').notNull(),
-  },
-  (t) => ({
-    userIdIdx: index('knowledge_benchmarks_user_id_idx').on(t.userId),
-  }),
-);

@@ -37,20 +37,3 @@ export const agents = sqliteTable(
     isActiveIdx: index('agents_is_active_idx').on(t.isActive),
   }),
 );
-
-export const agentSyncHistory = sqliteTable(
-  'agent_sync_history',
-  {
-    id: id(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    syncedAgentIds: text('synced_agent_ids', { mode: 'json' }).$type<string[]>().notNull(),
-    sourceOrchestrator: text('source_orchestrator').notNull(),
-    diff: metadata(),
-    createdAt: timestamp('created_at').notNull(),
-  },
-  (t) => ({
-    userIdIdx: index('agent_sync_history_user_id_idx').on(t.userId),
-  }),
-);

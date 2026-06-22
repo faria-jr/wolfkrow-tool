@@ -37,6 +37,40 @@ export function resolveDbPath(explicit?: string): string {
 }
 
 /**
+ * Whether to load the sqlite-vec extension. Disabled explicitly via
+ * `WOLFKROW_DISABLE_VEC=1` for environments that intentionally run without
+ * vector search. (FIX-020: was previously a silent `console.warn` swallow.)
+ */
+export function shouldLoadVec(): boolean {
+  return process.env.WOLFKROW_DISABLE_VEC !== '1';
+}
+
+/**
+ * Load sqlite-vec into a database connection, or throw a descriptive error.
+ * Vector search is a core feature (FIX-002 wired RAG on `vec0`); failing
+ * silently hides a broken knowledge pipeline. The error message points users
+ * at the escape hatch (`WOLFKROW_DISABLE_VEC=1`) for envs that opt out.
+ *
+ * Accepts a minimal `{ loadExtension }` surface so it is unit-testable without
+ * a real better-sqlite3 connection.
+ */
+export function loadVecExtension(
+  sqlite: { loadExtension(path: string): void },
+  vecPath: string,
+): void {
+  if (!shouldLoadVec()) return;
+  try {
+    sqlite.loadExtension(vecPath);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `sqlite-vec extension failed to load from ${vecPath}: ${detail}. ` +
+        'Vector search will not work. Set WOLFKROW_DISABLE_VEC=1 to start without it.',
+    );
+  }
+}
+
+/**
  * Get or create SQLite database instance (singleton)
  */
 export function getSqlite(dbPath?: string): Database.Database {
@@ -52,11 +86,7 @@ export function getSqlite(dbPath?: string): Database.Database {
   sqlite.pragma('foreign_keys = ON');
   sqlite.pragma('busy_timeout = 5000');
 
-  try {
-    sqlite.loadExtension(getLoadablePath());
-  } catch (error) {
-    console.warn('sqlite-vec extension not available:', error);
-  }
+  loadVecExtension(sqlite, getLoadablePath());
 
   _sqlite = sqlite;
   return sqlite;

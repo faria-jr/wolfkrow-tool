@@ -9,6 +9,7 @@ import { getScheduledTasksRepository } from '@wolfkrow/infra/repos';
 
 import { createAgentExecutor } from './agent-executor';
 import { config } from './config';
+import { installGlobalErrorHandlers } from './error-handlers';
 import { createLogger } from './logger';
 import { loadBuiltInMcpCatalog } from './mcp/catalog';
 import { mcpManager } from './routes/mcp';
@@ -16,6 +17,10 @@ import { Scheduler } from './scheduler';
 import { createServer } from './server';
 
 const logger = createLogger('worker');
+
+// FIX-020: fail loud + log on any unhandled rejection / uncaught exception so
+// the worker restarts into a known-good state instead of running half-broken.
+installGlobalErrorHandlers(logger);
 
 async function startMcpsAsync(): Promise<void> {
   const catalogEntries = loadBuiltInMcpCatalog().filter((s) => s.visibility === 'always');

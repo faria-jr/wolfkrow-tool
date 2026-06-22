@@ -1,3 +1,4 @@
+import { BudgetBanner } from '@/components/usage/budget-banner';
 import { UsageCharts } from '@/components/usage/usage-charts';
 
 export default function UsagePage() {
@@ -7,6 +8,7 @@ export default function UsagePage() {
         <h1 className="text-xl font-semibold">Usage</h1>
         <p className="text-sm text-muted-foreground">Token analytics and cost tracking</p>
       </div>
+      <BudgetBanner />
       <UsageCharts />
     </div>
   );

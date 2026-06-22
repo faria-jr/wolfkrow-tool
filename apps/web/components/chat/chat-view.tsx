@@ -9,7 +9,7 @@ import { StreamIndicator } from './stream-indicator';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:3001';
+const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
 const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
 
 interface SSEEvent {

@@ -2,9 +2,9 @@ import { existsSync, unlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { closeDb, getDb, getSqlite, resetDb } from '../db/client';
+import { closeDb, getDb, getSqlite, loadVecExtension, resetDb, shouldLoadVec } from '../db/client';
 import { runMigrations } from '../db/migrate';
 import { users, mcpServers } from '../db/schema';
 
@@ -111,5 +111,45 @@ describe('Schema basic operations (without migrations)', () => {
     expect(users.id.name).toBe('id');
     expect(users.email.name).toBe('email');
     expect(mcpServers.name.name).toBe('name');
+  });
+});
+
+describe('sqlite-vec loading (FIX-020 fail-fast)', () => {
+  const originalFlag = process.env.WOLFKROW_DISABLE_VEC;
+  const originalDbPath = process.env.WOLFKROW_DB_PATH;
+
+  beforeEach(() => {
+    delete process.env.WOLFKROW_DISABLE_VEC;
+  });
+
+  afterEach(() => {
+    if (originalFlag === undefined) delete process.env.WOLFKROW_DISABLE_VEC;
+    else process.env.WOLFKROW_DISABLE_VEC = originalFlag;
+    if (originalDbPath === undefined) delete process.env.WOLFKROW_DB_PATH;
+    else process.env.WOLFKROW_DB_PATH = originalDbPath;
+    closeDb();
+  });
+
+  it('shouldLoadVec is true by default', () => {
+    expect(shouldLoadVec()).toBe(true);
+  });
+
+  it('shouldLoadVec is false when WOLFKROW_DISABLE_VEC=1', () => {
+    process.env.WOLFKROW_DISABLE_VEC = '1';
+    expect(shouldLoadVec()).toBe(false);
+  });
+
+  it('loadVecExtension throws descriptive error when loadExtension fails', () => {
+    const failingDb = { loadExtension: () => { throw new Error('ENOENT: missing vec'); } };
+    expect(() => loadVecExtension(failingDb, '/fake/vec.node')).toThrow(/sqlite-vec/);
+    expect(() => loadVecExtension(failingDb, '/fake/vec.node')).toThrow(/WOLFKROW_DISABLE_VEC/);
+  });
+
+  it('loadVecExtension is a no-op when vec disabled (does not call loadExtension)', () => {
+    process.env.WOLFKROW_DISABLE_VEC = '1';
+    const loadExtension = vi.fn();
+    const fakeDb = { loadExtension };
+    expect(() => loadVecExtension(fakeDb, '/fake/vec.node')).not.toThrow();
+    expect(loadExtension).not.toHaveBeenCalled();
   });
 });

@@ -8,6 +8,13 @@
       "when": 1782066468682,
       "tag": "0000_crazy_master_chief",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782134637624,
+      "tag": "0001_legal_blazing_skull",
+      "breakpoints": true
     }
   ]
 }

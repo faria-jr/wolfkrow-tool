@@ -49,7 +49,7 @@
 - **Critério de aceite**: `pnpm --filter @wolfkrow/web test:cov` ≥70% linhas; auth+voice ≥80%.
 - **Esforço**: L · **Depende de**: —
 
-### [ ] FIX-003b — Desbloquear coverage infra/worker (binding nativo)
+### [x] FIX-003b — Desbloquear coverage infra/worker (binding nativo)
 - **Problema**: `better-sqlite3` compilado p/ Node ABI 127; runtime Node 24 exige 137 → `client.test.ts` e `graph.test.ts` crashe; coverage não emite.
 - **Evidência**: auditoria §5; `packages/infra/src/db/client.ts:37`.
 - **Passos**:
@@ -57,8 +57,10 @@
   2. Validar em CI: Docker image Node 24 → rebuild determinístico.
 - **Critério de aceite**: `test:cov` de infra + worker emitem coverage; ≥85%.
 - **Esforço**: S · **Depende de**: —
+- **Estado (2026-06-22)**: binding `better_sqlite3.node` (v12.11.1) **carrega OK sob Node 24** (ABI 137); `prebuild-install || node-gyp rebuild` determinístico via install script. `pnpm --filter @wolfkrow/infra test:cov` emite coverage, **exit 0**, 61/61 testes verdes. Causa-raiz (crash → sem coverage) **resolvida**. Sub-objetivo CI/Docker: ainda **não há** workflows GitHub nem Dockerfiles no repo → N/A por ora. Nota residual: infra está em ~55% linhas (gate alvo 85%) — esse gap é dívida de testes por repo (TDD-mandatory), **não** mais um blocker de binding; tratado item-a-item conforme FIX-027 e TDD rule.
 
-### [ ] FIX-033 — Typecheck vermelho (CI-blocking)
+### [x] FIX-033 — Typecheck vermelho (CI-blocking)
+- **Estado (2026-06-22)**: resolvido no commit `4291579` (Onda 0). `pnpm typecheck` 0 erros (13/13 tasks, FULL TURBO).
 - **Problema**: `pnpm typecheck` falha com 4 erros em test files **commitados** (`packages/use-cases/src/__tests__/`). Vitest passa (esbuild não tipa) mas tsc estrito barra.
 - **Evidência**:
   - `packages/use-cases/src/knowledge/__tests__/knowledge.test.ts:58` — `'embedding'` declarado, não usado (TS6133).
@@ -68,7 +70,8 @@
 - **Critério de aceite**: `pnpm typecheck` 0 erros.
 - **Esforço**: S · **Depende de**: —
 
-### [ ] FIX-034 — Lint vermelho (CI-blocking) — estabiliza FIX-015
+### [x] FIX-034 — Lint vermelho (CI-blocking) — estabiliza FIX-015
+- **Estado (2026-06-22)**: resolvido no commit `4291579` (Onda 0). `pnpm lint` → "No issues found". FIX-015 (lint residual) promovido a não-bloqueador.
 - **Problema**: `pnpm lint` falha com **100 erros** (domain 14, use-cases 17, infra 30, web 24, worker 15). ~80 são `import/order` autofixable. Resto: 1 god-file domain (587 linhas, `max-lines`), 1 `complexity` (parseFrontmatter 12), 1 `max-params` (complete 5). Promove FIX-015 a bloqueador imediato.
 - **Evidência**: `pnpm lint`; god-file em `packages/domain/src` (587 linhas); `parseFrontmatter` complexity 12; método `complete` 5 params.
 - **Passos**:
@@ -190,15 +193,17 @@
 - **Passos**: implementar estado `pending_review` + UI de review.
 - **Esforço**: M.
 
-### [ ] FIX-019 — WORKER_URL `:3001` errado em knowledge routes
+### [x] FIX-019 — WORKER_URL `:3001` errado em knowledge routes
 - **Evidência**: `apps/web/app/api/knowledge/{upload,reindex}/route.ts:10`.
 - **Passos**: alinhar p/ `:4000` (ou const compartilhada).
 - **Esforço**: S.
+- **Estado (2026-06-22)**: corrigido em **3 sites** — `knowledge/upload`, `knowledge/reindex` e `components/chat/chat-view.tsx` (este último `NEXT_PUBLIC_WORKER_URL`). Todas agora `:4000`, alinhadas às outras 10+ rotas. `grep localhost:3001` em source = 0.
 
-### [ ] FIX-020 — Sem handler `unhandledRejection`/`uncaughtException` + sqlite-vec swallowed
+### [x] FIX-020 — Sem handler `unhandledRejection`/`uncaughtException` + sqlite-vec swallowed
 - **Evidência**: `apps/worker/src/index.ts` (R5); `packages/infra/src/db/client.ts:43-47` (R6).
 - **Passos**: 1. Add handlers globais (log + graceful). 2. sqlite-vec load failure → throw (fail-fast) ou flag explícita.
 - **Esforço**: S.
+- **Estado (2026-06-22)**: (1) `apps/worker/src/error-handlers.ts` — `installGlobalErrorHandlers(logger)` registra `unhandledRejection` + `uncaughtException`, loga + `process.exit(1)`; wired em `index.ts` no boot (3 testes). (2) `packages/infra/src/db/client.ts` — extraído `shouldLoadVec()` + `loadVecExtension()` (testável, sem real DB): carrega sqlite-vec ou **throw** descritivo apontando `WOLFKROW_DISABLE_VEC=1` como escape (4 testes). Substituiu o `console.warn` swallow.
 
 ### [ ] FIX-021 — 45 casts `as unknown as` evadem `no-explicit-any`
 - **Evidência**: 27 em `infra/repos`, 17 em `worker/routes`.
@@ -230,10 +235,11 @@
 - **Passos**: externalizar p/ config/agent; passar via DI.
 - **Esforço**: S.
 
-### [ ] FIX-027 — 7 infra repos sem port no domain
+### [~] FIX-027 — 5 infra repos sem port no domain (revisado: eram 7)
 - **Problema**: AuthAudit, AuditLog, GlobalRule, McpServer, McpToolRegistry, Secret, TokenUsage têm repo em infra **sem interface no domain**.
 - **Passos**: criar `domain/repos/*.ts` p/ cada; fazer infra implementar; usar via DI.
 - **Esforço**: M · **Depende de**: FIX-007.
+- **Estado (2026-06-22)**: **2/7 já têm port** — `GlobalRuleRepo` (`domain/entities/global-rule.ts:95`) e `SecretRepo` (`domain/entities/secret.ts:107`), ambos já `implements` em infra. **5 faltam de verdade**: auth-audit, audit-log, mcp-server, mcp-tool-registry, token-usage. Anti-pattern comum: tipos inline em infra (`AuditEntry`, `McpServerRecord`, `TokenUsageRecord`...), type unions vazados do drizzle (`typeof X.$inferInsert['action']`), métodos sync. Blast radius: AuthAudit 7 callers, McpServer 4 callers, demais 1 caller. Todos em 0% coverage → RED (teste) antes do refactor.
 
 ### [ ] FIX-028 — Chat features faltantes
 - **Problema**: Title generation (#9), ConfirmDialog (#10), AskQuestionDialog (#11), Artifact detection (#36), Excalidraw inline (#34) — todos ⛔.
@@ -245,20 +251,27 @@
 - **Passos**: portar adapters faltantes (Ollama/OpenAI/Google/Z.ai/custom) OU declarar unsupported.
 - **Esforço**: M.
 
-### [ ] FIX-030 — TTS Cartesia não wired
+### [x] FIX-030 — TTS Cartesia não wired
 - **Problema**: ElevenLabs wired; Cartesia nunca usado na rota (`voice.ts:46,68` sempre ElevenLabs).
 - **Passos**: factory de provider TTS selecionável.
 - **Esforço**: S.
+- **Estado (2026-06-22)**: `apps/worker/src/voice/factory.ts` — `createTtsProvider(name, apiKey)` seleciona `ElevenLabsTtsProvider`/`CartesiaTtsProvider` (fallback ElevenLabs). Ambas rotas `/synthesize` e `/synthesize/stream` agora usam a factory + lêem `${provider}-api-key` (stream aceita `provider` no body, antes hardcodeado ElevenLabs) (3 testes).
 
-### [ ] FIX-031 — Schemas mortos
+### [x] FIX-031 — Schemas mortos
 - **Problema**: `agentSyncHistory`, `knowledge_benchmarks` migrados mas **0 refs em código**.
 - **Passos**: decidir — implementar reader/writer OU dropar tabela.
 - **Esforço**: S.
+- **Estado (2026-06-22)**: decisão **DROP** (0 refs confirmado; sem reader/writer, "implementar" exigiria inventar requisitos). Removidas defs de `schema/agents.ts` + `schema/knowledge.ts`. Migration `drizzle/0001_legal_blazing_skull.sql` (`DROP TABLE agent_sync_history; DROP TABLE knowledge_benchmarks;`) gerada + verificada: apply em DB fresh deixa 35 tabelas, ambas mortas ausentes.
 
-### [ ] FIX-032 — Usage budget endpoint ignorado pela UI
+### [x] FIX-032 — Usage budget endpoint ignorado pela UI
 - **Problema**: `/budget` existe mas UI não consome → budget alerts não surfaced.
 - **Passos**: add banner/notificação na `usage/` quando budget excedido.
 - **Esforço**: S.
+- **Estado (2026-06-22)**: `apps/web/components/usage/budget-banner.tsx` — `BudgetBanner` busca `/api/usage/budget?budgetUSD=50`, renderiza banner vermelho (exceeded) / âmbar (≥80%) / nada (under). Wired na `usage/page.tsx` acima de `UsageCharts` (4 testes RTL).
+
+### [x] FIX-020b — graph-canvas.test.tsx d3 mock incompleto (bônus, desbloqueia CI)
+- **Problema**: `graph-canvas.test.tsx` mockava `d3` sem `selectAll`/`data`/`join`/`text`/`forceCollide`; `GraphCanvas` chama esses via `await import('d3')` em effect → unhandled error → `pnpm test` exit 1 mesmo com 184/184 testes passando.
+- **Estado (2026-06-22)**: mock completado com os métodos usados; `pnpm --filter @wolfkrow/web test` agora exit 0.
 
 ---
 

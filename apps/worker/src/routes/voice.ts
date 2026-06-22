@@ -6,7 +6,7 @@
 import keytar from 'keytar';
 
 import type { AuthFastifyInstance } from '../types/fastify';
-import { ElevenLabsTtsProvider } from '../voice/elevenlabs';
+import { createTtsProvider } from '../voice/factory';
 import { WhisperSttProvider } from '../voice/whisper';
 
 async function getKey(name: string): Promise<string | null> {
@@ -43,7 +43,7 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
       const apiKey = await getKey(`${provider}-api-key`);
       if (!apiKey) return reply.status(503).send({ error: `${provider} API key not configured` });
 
-      const tts = new ElevenLabsTtsProvider(apiKey);
+      const tts = createTtsProvider(provider, apiKey);
       const audio = await tts.synthesize(text, {
         ...(voice !== undefined ? { voice } : {}),
         ...(model !== undefined ? { model } : {}),
@@ -56,16 +56,16 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
     },
   );
 
-  server.post<{ Body: { text: string; voice?: string } }>(
+  server.post<{ Body: { text: string; voice?: string; provider?: string } }>(
     '/synthesize/stream',
     async (req, reply) => {
-      const { text, voice } = req.body;
+      const { text, voice, provider = 'elevenlabs' } = req.body;
       if (!text) return reply.status(400).send({ error: 'text is required' });
 
-      const apiKey = await getKey('elevenlabs-api-key');
-      if (!apiKey) return reply.status(503).send({ error: 'ElevenLabs API key not configured' });
+      const apiKey = await getKey(`${provider}-api-key`);
+      if (!apiKey) return reply.status(503).send({ error: `${provider} API key not configured` });
 
-      const tts = new ElevenLabsTtsProvider(apiKey);
+      const tts = createTtsProvider(provider, apiKey);
       reply.header('Content-Type', 'audio/mpeg').header('Transfer-Encoding', 'chunked');
 
       if (!tts.streamSynthesize) {
