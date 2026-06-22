@@ -28,6 +28,8 @@ export { DrizzlePipelineProjectRepo } from './pipeline-project-repo';
 export { DrizzlePipelinePhaseRepo } from './pipeline-phase-repo';
 export { DrizzleEnrichSessionRepo } from './enrich-session-repo';
 export { DrizzleWorkflowRunRepo } from './workflow-run-repo';
+export { createRepoRegistry, resetRepoRegistry } from './registry';
+export type { RepoRegistry } from './registry';
 export { DrizzleSecretRepo } from './secret-repo';
 export { DrizzleTokenUsageRepo } from './token-usage-repo';
 export { DrizzleGlobalRuleRepo } from './global-rule-repo';

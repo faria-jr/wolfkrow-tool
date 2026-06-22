@@ -3,10 +3,10 @@
  */
 
 
-import { DrizzleTokenUsageRepo } from '@wolfkrow/infra/repos';
 import { ComputeUsageUseCase, CheckBudgetUseCase } from '@wolfkrow/use-cases';
 import { z } from 'zod';
 
+import { getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
@@ -28,7 +28,7 @@ function getUserId(req: { user?: { userId?: string } }): string {
 }
 
 export async function usageRoutes(server: AuthFastifyInstance) {
-  const repo = new DrizzleTokenUsageRepo();
+  const repo = getRepos().tokenUsage;
   const computeUC = new ComputeUsageUseCase(repo);
   const budgetUC = new CheckBudgetUseCase(repo);
 

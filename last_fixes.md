@@ -107,12 +107,13 @@
 - **Critério de aceite**: ≥3 MCP servers internos sobrem e respondem `tools/list`.
 - **Esforço**: L · **Depende de**: —
 
-### [ ] FIX-007 — DI container é stub; 42% das rotas bypass use-cases
+### [~] FIX-007 — DI container é stub; 42% das rotas bypass use-cases
 - **Problema**: `container.ts` wired só eventBus+logger; rotas fazem `new DrizzleXxxRepo()` inline. Viola §1.1/§1.5.
 - **Evidência**: `packages/use-cases/src/container.ts:24-28`; ~39 de 83 rotas importam infra direto.
 - **Passos**: 1. Completar container (registrar repos + use-cases). 2. Refatorar rotas web/worker p/ resolver via container (ou factory). 3. Remover `new Drizzle*Repo()` inline + imports diretos de adapters (`KeytarSecretsAdapter`, `VoyageEmbedder`, `BcryptHasher`).
 - **Critério de aceite**: nenhuma rota importa `@wolfkrow/infra` diretamente; tudo via container/ports.
 - **Esforço**: L · **Depende de**: FIX-027 (ports).
+- **Progresso (2026-06-22, fase 1)**: composition root criado — `packages/infra/src/repos/registry.ts` (`createRepoRegistry()`, singleton, 23 Drizzle repos; `resetRepoRegistry()` p/ testes). Decisão de layering: registry vive em `@wolfkrow/infra` (não use-cases — use-cases depende só de domain, não pode importar infra). Worker `apps/worker/src/container.ts` expõe `getRepos()`. **2 rotas migradas** (worker `usage` + `permissions`) — padrão provado: `getRepos().tokenUsage` / `.auditLog`, sem import `@wolfkrow/infra`. 3 testes (registry singleton + keys). **Faltam ~48 rotas** (~18 worker + ~30 web; web faz DB direto) — migração mecânica: trocar `new DrizzleXxxRepo()` por `getRepos().x` + drop import infra. Web precisa de `apps/web/lib/repos.ts` análogo. typecheck/lint/test green.
 
 ### [ ] FIX-008 — Graph feature misplaced (sem domain/use-case/port)
 - **Problema**: lógica de domínio (extração, co-ocorrência, tipos) em `apps/worker/src/knowledge/`, não em `packages/domain`+`use-cases`. `MGraph` é adapter sem port.

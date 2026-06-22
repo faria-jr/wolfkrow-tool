@@ -3,7 +3,6 @@
  */
 
 
-import { DrizzleAuditLogRepo } from '@wolfkrow/infra/repos';
 import {
   ResolvePermissionUseCase,
   RecordAuditEntryUseCase,
@@ -11,6 +10,7 @@ import {
 } from '@wolfkrow/use-cases';
 import { z } from 'zod';
 
+import { getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
@@ -39,7 +39,7 @@ function getUserId(req: { user?: { userId?: string } }): string {
 }
 
 export async function permissionsRoutes(server: AuthFastifyInstance) {
-  const auditRepo = new DrizzleAuditLogRepo();
+  const auditRepo = getRepos().auditLog;
   const resolveUC = new ResolvePermissionUseCase();
   const recordUC = new RecordAuditEntryUseCase(auditRepo);
   const queryUC = new QueryAuditLogUseCase(auditRepo);
