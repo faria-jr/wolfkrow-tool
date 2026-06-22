@@ -1,28 +1,30 @@
 # ADR-0027: Workflow — Feature Viva ou Schema Morto
 
-**Status**: 🔄 Proposto (decisão pendente de auditoria no LionClaw)
-**Data**: 2026-06-20
+**Status**: ✅ Aceito — VIVO (2026-06-22)
+**Data**: 2026-06-20 | **Atualizado**: 2026-06-22
 
 ## Contexto
 
-O schema `workflow_runs` existe em `packages/infra/src/db/schema/workflow.ts` e há `packages/shared-types/src/schemas/workflow.ts`, **mas não há feature, SPEC, use-case nem UI** correspondente. Veio do LionClaw como possível resíduo. Plano v1 não rastreava — schema órfão.
+O schema `workflow_runs` existe em `packages/infra/src/db/schema/workflow.ts` e há `packages/shared-types/src/schemas/workflow.ts`. O ADR original aguardava auditoria do `lionclawv1.0` (não disponível no repositório) antes de decidir.
 
-Precisamos decidir: implementar como feature de primeira classe ou remover (evitar schema morto que viola DRY/clean code).
+Auditoria interna (2026-06-22) revelou que o **vertical-slice está implementado**:
+- `packages/domain/src/entities/workflow-run.ts` — entidade com ciclo de vida completo
+- `packages/domain/src/repos/workflow-repos.ts` — port `WorkflowRunRepo`
+- `packages/infra/src/repos/workflow-run-repo.ts` — `DrizzleWorkflowRunRepo implements WorkflowRunRepo`
+- `packages/use-cases/src/workflow/index.ts` — 4 use-cases (Create/Get/List/Execute)
+- Registrado em `packages/infra/src/repos/registry.ts` (`getRepos().workflowRun`)
 
-## Decisão (condicional)
+Ausente: rotas HTTP, UI — pendente como feature futura.
 
-Auditar `lionclawv1.0` por uso real de `workflow_runs` em runtime:
+Decisão: implementar como feature de primeira classe ou remover.
 
-```bash
-grep -rn "workflow_runs\|WorkflowRun\|workflow" lionclawv1.0/electron/main lionclawv1.0/src
-```
+## Decisão
 
-| Resultado da auditoria | Decisão | Ação |
-|---|---|---|
-| Há leitura/escrita ativa de `workflow_runs` em fluxo real | **VIVO** | Implementar via SPEC-016 (domain `WorkflowRun` + use-cases `StartWorkflow`/`AdvanceStep` + UI mínima `workflow/`) |
-| Só definição de schema, sem uso | **MORTO** | Remover `schema/workflow.ts` + `schemas/workflow.ts` + export no index; atualizar FEATURE_MATRIX |
+**VIVO** — vertical-slice completo já existe; UI e rotas HTTP são trabalho futuro (deferred).
 
-**Default até a auditoria**: tratar como **VIVO** com UI mínima — remoção é irreversível em relação à paridade, então só remover com prova de não-uso.
+Dado que o domínio, infra e use-cases estão implementados, remover seria desperdício. Remoção exigiria dropar tabela + migration, com risco de perda de paridade com LionClaw. O custo de manter é zero (0 deps externas, 0 callers de produção ainda).
+
+Próximo passo: rota `GET/POST /workflow-runs` + página `/workflow` quando SPEC-016 for priorizada.
 
 ## Consequências
 

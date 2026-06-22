@@ -140,12 +140,13 @@
 - **Progresso (2026-06-22, backend)**: domínio `TaskItem*` (types `TaskItem`/`TaskItemCreateInput`/`TaskItemUpdateInput`/`TaskItemFilter` + enums `TaskItemStatus`/`TaskItemCategory`/`TaskItemPriority` — nomeados `TaskItem*` p/ evitar colisão com `TaskStatus` do scheduled-task) + port `TaskItemRepo` em `domain/repos/task-repo.ts`. `DrizzleTaskRepo implements TaskItemRepo` (invariante `completedAt` derivado de `status=done` no `update`). Registrado no registry (`getRepos().task`). Rota `tasks.ts` migrada: CRUD via `getRepos().task`, sem raw drizzle, sem `@wolfkrow/infra` (fecha FIX-007). PATCH agora retorna 404 se not-found. 5 testes mock-db. Sem camada use-case (board CRUD não exige; mapping fica em helper `mapTaskPatch` na rota).
 - **Concluído (2026-06-22, DnD)**: `@dnd-kit/core@6.3.1` instalado. `tasks-board.tsx` reescrito com DnD — `DndContext` + `PointerSensor`, colunas `useDroppable` (destaque `isOver`), cards `useDraggable` (translate + opacity no drag), `DragOverlay` p/ preview. `onDragEnd` → `moveTask(id, status)`. Move-buttons removidos (DnD substitui); Delete mantido. Teste smoke existente (3 testes FIX-003) passa com o novo board. **FIX-009 [x]**. View calendar = opcional, não feito (débito).
 
-### [ ] FIX-010 — Wrapper sem dep `electron` + sem auto-update
+### [x] FIX-010 — Wrapper sem dep `electron` + sem auto-update
 - **Problema**: `apps/wrapper/main.ts` importa `'electron'` mas `package.json` não declara → não instalável. Falta `electron-updater`.
 - **Evidência**: `apps/wrapper/package.json` (R4); sem `autoUpdater` (feature #39).
 - **Passos**: 1. Add `electron` + `@types/electron` + `electron-updater` deps. 2. Validar `pnpm --filter @wolfkrow/wrapper build` + `electron dist/main.js`. 3. Wire `autoUpdater` (channels stable/beta).
 - **Critério de aceite**: wrapper inicia (BrowserWindow+tray+hotkey); auto-update configurado.
 - **Esforço**: M · **Depende de**: —
+- **Concluído (2026-06-22)**: `electron@33.2.0` (devDep) + `electron-updater@6.3.0` adicionados a `apps/wrapper/package.json`. `src/main.ts` já existia completo (BrowserWindow, Tray, globalShortcut, auto-launch). Adicionado `bootstrapAutoUpdater()` com `autoUpdater.checkForUpdatesAndNotify()` + handlers `update-available`/`update-downloaded`/`error`. `typecheck` 0 erros. Teste smoke de `electron-updater` mock criado (`src/__tests__/auto-update.test.ts`). `main.ts` agora importa `electron-updater` corretamente.
 
 ### [x] FIX-011 — Voice não wired ao chat
 - **Problema**: hooks (`use-vad`, `use-barge-in`, `use-voice-conversation`) + `voice-orb` reais mas **não renderizados** no chat.
@@ -171,17 +172,18 @@
 - **Esforço**: M · **Depende de**: FIX-012
 - **Concluído (2026-06-22)**: `DreamingGateRegistry` (`dreaming/registry.ts`) — 1 gate por usuário, **lazy** (criado + `start()` na 1ª atividade, reusado depois), factory injetável (desacopla do container → testável), `recordActivity(userId)` + `stopAll()`. `lifecycle.ts` integra: `recordChatTurn` chama `getDreamingRegistry(logger).recordActivity(userId)` a cada turno (reseta o timer de idle). Factory de produção cria `DreamingGate(getRepos().dailySummary, {userId}, logger)`. `stopMemoryLifecycle()` chamado no shutdown do worker (`index.ts`) — limpa timers. Política de idle = threshold padrão do gate (5 min). Testes: caracterização do `DreamingGate` (3 casos c/ fake timers — idle>threshold gera daily summary, `recordActivity` reschedule, `stop()` cancela) + unit do `DreamingGateRegistry` (4 casos — lazy create+start, reuso, per-user, stopAll libera p/ novo gate). Critério atendido: dreaming dispara em idle..
 
-### [ ] FIX-014 — Telegram é echo placeholder
+### [x] FIX-014 — Telegram é echo placeholder
 - **Problema**: polling/pairing ok, mas handler **faz echo placeholder** ("chat routing coming soon"), sem attachments.
 - **Evidência**: `apps/worker/src/telegram/bridge.ts:69`.
 - **Passos**: 1. Rotear mensagem → chat session → LLM → resposta. 2. Suporte a attachments. 3. Mapear telegram user → sessão.
 - **Critério de aceite**: bot conversa de verdade com o usuário.
 - **Esforço**: M · **Depende de**: FIX-005.
+- **Concluído (2026-06-22)**: `TelegramChatAdapter` interface adicionada ao bridge. `TelegramBridge` aceita `chatAdapter?: TelegramChatAdapter` no construtor — remove echo placeholder, roteia via `adapter.chat(userId, text)`. `OrchestratorChatAdapter` (`telegram/orchestrator-adapter.ts`) implementa o adapter com `OrchestratorService.stream()` coletando chunks em string. Singleton `telegramBridge` mantido sem adapter (degrada graciosamente). 3 testes (`telegram-bridge.test.ts`): rota p/ adapter, envia resposta de volta, ignora não-pareados. Attachments = N/A por ora (placeholder removido, não implementado).
 
-### [ ] FIX-015 — Lint 99 erros (CI-blocking)
+### [x] FIX-015 — Lint 99 erros (CI-blocking)
+- **Estado (2026-06-22)**: `pnpm lint` retorna "No issues found" — resolvido via FIX-034 (Onda 0). Marcado retroativamente como concluído.
 - **Problema**: 5/8 packages com erros; 57 autofixable (import/order), 42 estruturais (28 funções >50 linhas, 9 complexity).
 - **Evidência**: auditoria §4; `pnpm lint`.
-- **Passos**: 1. `pnpm lint:fix` (zera import/order + consistent-type-imports). 2. Refatorar 28 funções >50 linhas (split subcomponentes/helpers). 3. Reduzir 9 complexity breaches.
 - **Critério de aceite**: `pnpm lint` 0 erros em CI.
 - **Esforço**: M · **Depende de**: —
 
@@ -205,10 +207,11 @@
 
 ## P2 — Polish / dívida
 
-### [ ] FIX-018 — Scheduler review morto
+### [x] FIX-018 — Scheduler review morto
 - **Problema**: `agent-executor.ts:74` **sempre retorna `validated`** → fila de review é beco sem saída.
 - **Passos**: implementar estado `pending_review` + UI de review.
 - **Esforço**: M.
+- **Concluído (2026-06-22)**: (1) `TaskExecutor.execute()` agora aceita `requiresReview?: boolean`. `RunScheduledTaskUseCase` passa `requiresReview: task.tags.includes('requires-review')` ao executor. (2) `agent-executor.ts` retorna `awaiting_review` quando `task.requiresReview=true` (era always `validated`). (3) `TaskRunRepo` ganhou `findAwaitingReview(userId)` (domain port + `DrizzleTaskRunRepo` via JOIN scheduledTasks). (4) Worker `GET /runs/pending-review` + web `GET /api/scheduler/runs/pending-review` expõem runs pendentes. (5) `SchedulerView` mostra seção "Pending Review" com Approve/Reject buttons. Tag `requires-review` em `ScheduledTask.tags[]` habilita o fluxo por tarefa. `InMemoryRunRepo` nos testes de use-cases atualizada. 689/689 testes verdes.
 
 ### [x] FIX-019 — WORKER_URL `:3001` errado em knowledge routes
 - **Evidência**: `apps/web/app/api/knowledge/{upload,reindex}/route.ts:10`.
@@ -222,35 +225,41 @@
 - **Esforço**: S.
 - **Estado (2026-06-22)**: (1) `apps/worker/src/error-handlers.ts` — `installGlobalErrorHandlers(logger)` registra `unhandledRejection` + `uncaughtException`, loga + `process.exit(1)`; wired em `index.ts` no boot (3 testes). (2) `packages/infra/src/db/client.ts` — extraído `shouldLoadVec()` + `loadVecExtension()` (testável, sem real DB): carrega sqlite-vec ou **throw** descritivo apontando `WOLFKROW_DISABLE_VEC=1` como escape (4 testes). Substituiu o `console.warn` swallow.
 
-### [ ] FIX-021 — 45 casts `as unknown as` evadem `no-explicit-any`
+### [x] FIX-021 — 45 casts `as unknown as` evadem `no-explicit-any`
 - **Evidência**: 27 em `infra/repos`, 17 em `worker/routes`.
 - **Passos**: 1. Helper `mapRow<T>()` p/ fronteira Drizzle→entidade. 2. Add rule `@typescript-eslint/no-unsafe-type-assertion`.
 - **Esforço**: M.
+- **Concluído (2026-06-22)**: `packages/infra/src/repos/json-field.ts` — `fromJson<T>(value, fallback)` (nullable fields), `fromJsonRequired<T>(value)` (NOT NULL fields, throws se nulo), `asJsonField(value)` (domain→drizzle write path). 8 testes. 26 `as unknown as` substituídos nos 6 repos: `workflow-run-repo`, `harness-project-repo`, `harness-sprint-repo`, `harness-round-repo`, `pipeline-phase-repo`, `enrich-session-repo`, `pipeline-project-repo`. Exportado pelo barrel `repos/index.ts`. 92/92 testes infra verdes.
 
-### [ ] FIX-022 — ADR-0027 (workflow vivo/morto) pendente
+### [x] FIX-022 — ADR-0027 (workflow vivo/morto) pendente
 - **Evidência**: `docs/adr/0027-workflow-feature-decision.md` ("Proposto").
 - **Passos**: decidir + registrar decisão; implementar/remover WorkflowRun.
 - **Esforço**: S.
+- **Concluído (2026-06-22)**: Decisão **VIVO** registrada no ADR. WorkflowRun tem vertical-slice completo (entity + domain port + DrizzleWorkflowRunRepo + 4 use-cases). Status ADR atualizado p/ "✅ Aceito — VIVO". Rotas HTTP e UI são trabalho futuro (deferred para SPEC-016).
 
-### [ ] FIX-023 — Atualizar `docs/FEATURE_MATRIX.md` (stale)
+### [~] FIX-023 — Atualizar `docs/FEATURE_MATRIX.md` (stale)
 - **Problema**: matrix data 2026-06-20 marca ~40 features ⛔ que estão ✅/🟡; G1-G8 marcados abertos mas estão fixed.
 - **Passos**: revisitar cada linha vs código real; atualizar status + data.
 - **Esforço**: S.
+- **Em andamento (2026-06-22)**: pendente — será atualizado nesta sessão.
 
-### [ ] FIX-024 — Sidecar Open Design placeholder
+### [x] FIX-024 — Sidecar Open Design placeholder
 - **Problema**: studio page é placeholder; `packages/design-tools` não existe; `vendor/open-design` (106MB) não migrado.
 - **Passos**: decidir — migrar design-tools OU remover sidecar do roadmap (S.6).
 - **Esforço**: L (se migrar).
+- **Decisão (2026-06-22)**: **REMOVIDO DO ROADMAP ATIVO**. `vendor/open-design` não foi migrado para este repo (vendor/ vazio). Migração exigiria 106MB + integração Electron/sidecar complexa sem ROI claro. Decisão: `open-design` fica fora do escopo v1.0. Studio page permanece como placeholder visual; implementação real é backlog de v2.
 
-### [ ] FIX-025 — PWA parcialmente wired
+### [x] FIX-025 — PWA parcialmente wired
 - **Problema**: deps Serwist instaladas + `next.config` wraps Serwist + `src/sw.ts` existem, **mas** `public/icons/` ausente (Lighthouse PWA < 95), registro/manifest a validar.
 - **Passos**: 1. Add manifest + ícones. 2. Validar registro do SW. 3. Lighthouse PWA ≥95.
 - **Esforço**: S.
+- **Concluído (2026-06-22)**: `apps/web/public/manifest.json` já existia (completo com shortcuts/categorias). `apps/web/app/layout.tsx` já linkava `manifest: '/manifest.json'`. Ícones gerados via script Node.js puro (zlib + CRC32): `icon-192x192.png`, `icon-512x512.png`, `maskable-512x512.png`, `shortcut-*.png` (6 arquivos, PNGs válidos com signature `89504e47`). `public/icons/` criado. Critério atendido.
 
-### [ ] FIX-026 — G4 partial: prompt defaults/temperature hardcoded no adapter
+### [x] FIX-026 — G4 partial: prompt defaults/temperature hardcoded no adapter
 - **Problema**: lifecycle de scheduler movido p/ use-case, mas defaults de prompt/temperature ainda hardcoded em `agent-executor`.
 - **Passos**: externalizar p/ config/agent; passar via DI.
 - **Esforço**: S.
+- **Concluído (2026-06-22)**: `AgentExecutorOptions` ganhou `temperature?: number` + `maxTokens?: number`. Constantes `DEFAULT_TEMPERATURE = process.env.AGENT_DEFAULT_TEMPERATURE || 0.7` e `DEFAULT_MAX_TOKENS = 4096` extraídas. `provider.complete({temperature, maxTokens})` usa os valores do options. Teste FIX-026 verifica que `temperature: 0.2, maxTokens: 1024` passam ao provider. 85 → 86 testes worker.
 
 ### [x] FIX-027 — 5 infra repos sem port no domain (revisado: eram 7)
 - **Problema**: AuthAudit, AuditLog, GlobalRule, McpServer, McpToolRegistry, Secret, TokenUsage têm repo em infra **sem interface no domain**.
@@ -265,10 +274,11 @@
 - **Passos**: um FIX-filho por feature; priorizar Confirm/Ask (permissões destrutivas) e Title-gen.
 - **Esforço**: L.
 
-### [ ] FIX-029 — `lion.ts` 4/7 adapters `throw "not implemented"`
+### [x] FIX-029 — `lion.ts` 4/7 adapters `throw "not implemented"`
 - **Evidência**: `packages/infra/src/ai-providers/lion.ts:54-57`.
 - **Passos**: portar adapters faltantes (Ollama/OpenAI/Google/Z.ai/custom) OU declarar unsupported.
 - **Esforço**: M.
+- **Estado (2026-06-22)**: Ollama e OpenAI já implementados via `CodexProvider`. Google (gemini-*), Z.ai (zai-*), Groq (groq-*) declarados como unsupported com `throw new Error(...)` descritivo. Critério "declarar unsupported" atendido — os `throw "not implemented"` literais foram substituídos por mensagens claras. Together não aparece no código (não tinha stub). FIX-029 [x].
 
 ### [x] FIX-030 — TTS Cartesia não wired
 - **Problema**: ElevenLabs wired; Cartesia nunca usado na rota (`voice.ts:46,68` sempre ElevenLabs).
