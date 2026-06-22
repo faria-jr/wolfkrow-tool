@@ -147,12 +147,13 @@
 - **Critério de aceite**: wrapper inicia (BrowserWindow+tray+hotkey); auto-update configurado.
 - **Esforço**: M · **Depende de**: —
 
-### [ ] FIX-011 — Voice não wired ao chat
+### [x] FIX-011 — Voice não wired ao chat
 - **Problema**: hooks (`use-vad`, `use-barge-in`, `use-voice-conversation`) + `voice-orb` reais mas **não renderizados** no chat.
 - **Evidência**: `apps/web/components/voice/voice-orb.tsx`; chat-view sem import.
 - **Passos**: 1. Integrar orb + hooks no `chat-view`. 2. STT→input→send, TTS→resposta. 3. Barge-in cancela TTS.
 - **Critério de aceite**: conversa por voz end-to-end no chat.
 - **Esforço**: M · **Depende de**: FIX-030 (Cartesia opcional).
+- **Concluído (2026-06-22)**: `chat-view.tsx` renderiza `VoiceOrb` + usa `useVoiceConversation` no footer. `onMessage` espelha mensagens voz→transcript (`voiceMessageToDisplay`); toggle (orb click) start se idle / stop se ativo; `voice.error` exibido como `role="alert"`. Barge-in já existia no hook (VAD `onSpeechStart` → `stopTts`). **Bônus crítico**: hook chamava `fetch('/api/chat')` — rota **inexistente** → voz sempre quebrava. Refatorado p/ `lib/chat-stream.ts` `readChatStream` que consome SSE de `${NEXT_PUBLIC_WORKER_URL}/chat/send` (credentials include) e consolida texto p/ TTS — remove endpoint fantasma, reusa fluxo comprovado do chat. Componentes extraídos (`ChatTranscript`, `ChatFooter`, `voiceMessageToDisplay`, `appendDeltaToLast`) p/ respeitar guard-rail ≤50 linhas/função. Testes: `chat-stream` (4, mock fetch c/ ReadableStream SSE), `chat-view` +4 (orb render, toggle start/stop, espelho de mensagem voz, error display) c/ hook mockado via `vi.hoisted`. Web 184 → 193 testes. Critério atendido: conversa por voz (STT→chat→TTS+barge-in) renderizada no chat.
 
 ### [x] FIX-012 — Memory pipeline órfão
 - **Problema**: `MemoryPipeline` escrito mas **nunca instanciado**; `compactionLog` nunca escrito.

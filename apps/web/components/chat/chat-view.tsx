@@ -8,6 +8,9 @@ import { StreamIndicator } from './stream-indicator';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { VoiceOrb } from '@/components/voice/voice-orb';
+import { useVoiceConversation } from '@/hooks/use-voice-conversation';
+import type { UseVoiceConversationReturn, VoiceConversationMessage } from '@/hooks/use-voice-conversation';
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
 const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
@@ -54,13 +57,64 @@ function ChatInput({ value, onChange, onSend, disabled }: ChatInputProps) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); }
   };
   return (
+    <div className="flex gap-2">
+      <Textarea value={value} onChange={(e) => onChange(e.target.value)} onKeyDown={handleKeyDown} placeholder="Message (Enter to send, Shift+Enter for newline)" className="min-h-[44px] max-h-32 resize-none" disabled={disabled} aria-label="Chat input" />
+      <Button onClick={onSend} disabled={disabled || !value.trim()} aria-label="Send">Send</Button>
+    </div>
+  );
+}
+
+function appendDeltaToLast(prev: DisplayMessage[], delta: string): DisplayMessage[] {
+  const last = prev[prev.length - 1];
+  if (!last || last.role !== 'assistant') return prev;
+  return [...prev.slice(0, -1), { ...last, content: last.content + delta }];
+}
+
+interface ChatTranscriptProps {
+  messages: DisplayMessage[];
+  isStreaming: boolean;
+  bottomRef: React.RefObject<HTMLDivElement | null>;
+}
+
+function ChatTranscript({ messages, isStreaming, bottomRef }: ChatTranscriptProps) {
+  return (
+    <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {messages.length === 0 && <p className="text-center text-sm text-muted-foreground mt-8">Start a conversation</p>}
+      {messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)}
+      {isStreaming && <StreamIndicator />}
+      <div ref={bottomRef} />
+    </div>
+  );
+}
+
+interface ChatFooterProps {
+  input: string;
+  onInputChange: (v: string) => void;
+  onSend: () => void;
+  disabled: boolean;
+  voice: UseVoiceConversationReturn;
+}
+
+function ChatFooter({ input, onInputChange, onSend, disabled, voice }: ChatFooterProps) {
+  const toggleVoice = () => {
+    if (voice.state === 'idle') void voice.start();
+    else voice.stop();
+  };
+  return (
     <div className="border-t p-4">
-      <div className="flex gap-2">
-        <Textarea value={value} onChange={(e) => onChange(e.target.value)} onKeyDown={handleKeyDown} placeholder="Message (Enter to send, Shift+Enter for newline)" className="min-h-[44px] max-h-32 resize-none" disabled={disabled} aria-label="Chat input" />
-        <Button onClick={onSend} disabled={disabled || !value.trim()} aria-label="Send">Send</Button>
+      {voice.error && <p role="alert" className="mb-2 text-sm text-destructive">{voice.error}</p>}
+      <div className="flex items-end gap-3">
+        <VoiceOrb state={voice.state} onClick={toggleVoice} />
+        <div className="flex-1">
+          <ChatInput value={input} onChange={onInputChange} onSend={onSend} disabled={disabled} />
+        </div>
       </div>
     </div>
   );
+}
+
+function voiceMessageToDisplay(msg: VoiceConversationMessage): DisplayMessage {
+  return { id: crypto.randomUUID(), role: msg.role, content: msg.text, createdAt: new Date() };
 }
 
 interface Props { model?: string; sessionId?: string; }
@@ -72,13 +126,15 @@ export function ChatView({ model = DEFAULT_MODEL, sessionId }: Props) {
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const appendToLast = useCallback((delta: string) => {
-    setMessages((prev) => {
-      const last = prev[prev.length - 1];
-      if (!last || last.role !== 'assistant') return prev;
-      return [...prev.slice(0, -1), { ...last, content: last.content + delta }];
-    });
-  }, []);
+  const appendText = useCallback(
+    (delta: string) => setMessages((prev) => appendDeltaToLast(prev, delta)),
+    [],
+  );
+
+  // FIX-011: voice conversation (STT -> chat -> TTS) with barge-in.
+  const voice = useVoiceConversation({
+    onMessage: (msg) => setMessages((prev) => [...prev, voiceMessageToDisplay(msg)]),
+  });
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -91,25 +147,26 @@ export function ChatView({ model = DEFAULT_MODEL, sessionId }: Props) {
     const ac = new AbortController();
     abortRef.current = ac;
     try {
-      await streamSse(`${WORKER_URL}/chat/send`, { message: text, model, sessionId }, ac.signal, appendToLast);
+      await streamSse(`${WORKER_URL}/chat/send`, { message: text, model, sessionId }, ac.signal, appendText);
     } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') appendToLast('[Error: could not connect to AI]');
+      if (err instanceof Error && err.name !== 'AbortError') appendText('[Error: could not connect to AI]');
     } finally {
       setIsStreaming(false);
       abortRef.current = null;
       bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
     }
-  }, [input, isStreaming, model, sessionId, appendToLast]);
+  }, [input, isStreaming, model, sessionId, appendText]);
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 && <p className="text-center text-sm text-muted-foreground mt-8">Start a conversation</p>}
-        {messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)}
-        {isStreaming && <StreamIndicator />}
-        <div ref={bottomRef} />
-      </div>
-      <ChatInput value={input} onChange={setInput} onSend={() => void send()} disabled={isStreaming} />
+      <ChatTranscript messages={messages} isStreaming={isStreaming} bottomRef={bottomRef} />
+      <ChatFooter
+        input={input}
+        onInputChange={setInput}
+        onSend={() => void send()}
+        disabled={isStreaming}
+        voice={voice}
+      />
     </div>
   );
 }

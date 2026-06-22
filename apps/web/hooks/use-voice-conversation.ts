@@ -2,9 +2,12 @@
 
 import { useCallback, useState } from 'react';
 
+
 import { useStt } from './use-stt';
 import { useTts } from './use-tts';
 import { useVad } from './use-vad';
+
+import { readChatStream } from '@/lib/chat-stream';
 
 export type VoiceConversationState = 'idle' | 'listening' | 'processing' | 'speaking';
 
@@ -28,17 +31,7 @@ export interface UseVoiceConversationReturn {
 }
 
 async function fetchAssistantResponse(transcript: string, agentId?: string): Promise<string> {
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      messages: [{ role: 'user', content: transcript }],
-      ...(agentId !== undefined ? { agentId } : {}),
-    }),
-  });
-  if (!res.ok) throw new Error('Chat API error');
-  const data = (await res.json()) as { content: string };
-  return data.content;
+  return readChatStream(transcript, agentId);
 }
 
 interface SpeechEndParams {

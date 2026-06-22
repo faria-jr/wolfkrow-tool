@@ -1,8 +1,35 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ChatView } from '../chat-view';
+
+interface VoiceMessage {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+// Mock the voice hook so rendering ChatView never touches Web Audio / VAD.
+const voice = vi.hoisted(() => ({
+  state: 'idle' as 'idle' | 'listening' | 'processing' | 'speaking',
+  start: vi.fn().mockResolvedValue(undefined),
+  stop: vi.fn(),
+  error: null as string | null,
+  onMessage: null as null | ((m: VoiceMessage) => void),
+}));
+
+vi.mock('@/hooks/use-voice-conversation', () => ({
+  useVoiceConversation: (opts?: { onMessage?: (m: VoiceMessage) => void }) => {
+    voice.onMessage = opts?.onMessage ?? null;
+    return {
+      state: voice.state,
+      messages: [],
+      start: voice.start,
+      stop: voice.stop,
+      error: voice.error,
+    };
+  },
+}));
 
 function makeSSEResponse(events: string[]): Response {
   const stream = new ReadableStream({
@@ -24,6 +51,11 @@ describe('ChatView', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
     vi.stubGlobal('crypto', { randomUUID: () => Math.random().toString(36) });
+    voice.state = 'idle';
+    voice.error = null;
+    voice.start = vi.fn().mockResolvedValue(undefined);
+    voice.stop = vi.fn();
+    voice.onMessage = null;
   });
 
   it('renders empty state initially', () => {
@@ -78,5 +110,41 @@ describe('ChatView', () => {
     await user.type(textarea, 'test message');
     await user.click(screen.getByLabelText('Send'));
     expect(textarea.value).toBe('');
+  });
+
+  it('renders the voice orb (FIX-011)', () => {
+    render(<ChatView />);
+    expect(screen.getByRole('button', { name: /start voice conversation/i })).toBeTruthy();
+  });
+
+  it('clicking the voice orb starts the conversation when idle (FIX-011)', async () => {
+    const user = userEvent.setup();
+    render(<ChatView />);
+    await user.click(screen.getByRole('button', { name: /start voice conversation/i }));
+    expect(voice.start).toHaveBeenCalledTimes(1);
+    expect(voice.stop).not.toHaveBeenCalled();
+  });
+
+  it('clicking the voice orb stops it when active (FIX-011)', async () => {
+    voice.state = 'listening';
+    const user = userEvent.setup();
+    render(<ChatView />);
+    await user.click(screen.getByRole('button', { name: /Listening/i }));
+    expect(voice.stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('mirrors voice messages into the transcript (FIX-011)', () => {
+    render(<ChatView />);
+    act(() => {
+      voice.onMessage?.({ role: 'user', text: 'hello from voice' });
+    });
+    expect(screen.getByText('hello from voice')).toBeTruthy();
+  });
+
+  it('shows the voice error when present (FIX-011)', () => {
+    voice.error = 'mic denied';
+    render(<ChatView />);
+    expect(screen.getByRole('alert')).toBeTruthy();
+    expect(screen.getByText('mic denied')).toBeTruthy();
   });
 });
