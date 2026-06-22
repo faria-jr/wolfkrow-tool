@@ -29,7 +29,7 @@ describe('createRepoRegistry (FIX-007)', () => {
         'globalRule', 'harnessProject', 'harnessRound', 'harnessSprint',
         'knowledgeChunk', 'knowledgeDoc', 'mcpServer', 'mcpToolRegistry',
         'pipelinePhase', 'pipelineProject', 'scheduledTask', 'secret',
-        'semanticMemory', 'skill', 'taskRun', 'tokenUsage', 'user', 'workflowRun',
+        'semanticMemory', 'skill', 'task', 'taskRun', 'tokenUsage', 'user', 'workflowRun',
       ].sort(),
     );
   });

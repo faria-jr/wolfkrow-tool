@@ -35,6 +35,7 @@ import { DrizzleScheduledTaskRepo } from './scheduled-task-repo';
 import { DrizzleSecretRepo } from './secret-repo';
 import { DrizzleSemanticMemoryRepo } from './semantic-memory-repo';
 import { DrizzleSkillRepo } from './skill-repo';
+import { DrizzleTaskRepo } from './task-repo';
 import { DrizzleTaskRunRepo } from './task-run-repo';
 import { DrizzleTokenUsageRepo } from './token-usage-repo';
 import { DrizzleUserRepo } from './user-repo';
@@ -57,6 +58,7 @@ export interface RepoRegistry {
   dailySummary: DrizzleDailySummaryRepo;
   scheduledTask: DrizzleScheduledTaskRepo;
   taskRun: DrizzleTaskRunRepo;
+  task: DrizzleTaskRepo;
   harnessProject: DrizzleHarnessProjectRepo;
   harnessSprint: DrizzleHarnessSprintRepo;
   harnessRound: DrizzleHarnessRoundRepo;
@@ -90,6 +92,7 @@ export function createRepoRegistry(force = false): RepoRegistry {
     dailySummary: new DrizzleDailySummaryRepo(db),
     scheduledTask: new DrizzleScheduledTaskRepo(db),
     taskRun: new DrizzleTaskRunRepo(db),
+    task: new DrizzleTaskRepo(db),
     harnessProject: new DrizzleHarnessProjectRepo(db),
     harnessSprint: new DrizzleHarnessSprintRepo(db),
     harnessRound: new DrizzleHarnessRoundRepo(db),

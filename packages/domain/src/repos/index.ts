@@ -27,3 +27,13 @@ export type { AuditRepo, AuditRow, AuditEntryInput, AuditFilter } from './audit-
 export type { McpServerRepo, McpServerRecord, McpServerCreateInput, McpServerVisibility } from './mcp-server-repo';
 export type { McpToolRegistryRepo, McpToolRecord, McpToolInput } from './mcp-tool-registry-repo';
 export type { AuthAuditRepo, AuthAuditEntry } from './auth-audit-repo';
+export type {
+  TaskItemRepo,
+  TaskItem,
+  TaskItemCreateInput,
+  TaskItemUpdateInput,
+  TaskItemFilter,
+  TaskItemStatus,
+  TaskItemCategory,
+  TaskItemPriority,
+} from './task-repo';
