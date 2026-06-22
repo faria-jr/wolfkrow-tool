@@ -12,6 +12,7 @@ import { config } from './config';
 import { installGlobalErrorHandlers } from './error-handlers';
 import { createLogger } from './logger';
 import { loadBuiltInMcpCatalog } from './mcp/catalog';
+import { stopMemoryLifecycle } from './memory/lifecycle';
 import { mcpManager } from './routes/mcp';
 import { Scheduler } from './scheduler';
 import { createServer } from './server';
@@ -69,6 +70,7 @@ async function main(): Promise<void> {
   const shutdown = (signal: string) => {
     logger.info({ signal }, 'Shutting down worker');
     scheduler.stop();
+    stopMemoryLifecycle();
     void mcpManager.stopAll();
     void server
       .close()

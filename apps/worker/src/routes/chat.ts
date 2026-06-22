@@ -8,6 +8,7 @@ import { SendMessageUseCase } from '@wolfkrow/use-cases';
 
 import { InMemoryChatSessionRepo, InMemoryMessageRepo } from '../chat-store';
 import type { Logger } from '../logger';
+import { recordChatTurn } from '../memory/lifecycle';
 import { OrchestratorService } from '../orchestrator';
 import type { AuthFastifyInstance } from '../types/fastify';
 
@@ -122,6 +123,15 @@ export async function chatRoutes(server: AuthFastifyInstance) {
         });
 
         await writeStreamAsSse(stream, sse);
+
+        // FIX-012 + FIX-013: capture memorable facts from the turn and keep the
+        // user's dreaming gate alive. Fire-and-forget — never blocks the reply.
+        const chatUserId = request.user?.userId;
+        if (chatUserId) {
+          recordChatTurn(server.log as unknown as Logger, chatUserId, [
+            { role: 'user', content: message },
+          ]);
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error';
         reply.raw.write(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`);

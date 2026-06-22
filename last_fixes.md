@@ -154,19 +154,21 @@
 - **Critério de aceite**: conversa por voz end-to-end no chat.
 - **Esforço**: M · **Depende de**: FIX-030 (Cartesia opcional).
 
-### [ ] FIX-012 — Memory pipeline órfão
+### [x] FIX-012 — Memory pipeline órfão
 - **Problema**: `MemoryPipeline` escrito mas **nunca instanciado**; `compactionLog` nunca escrito.
 - **Evidência**: `apps/worker/src/memory/pipeline.ts:64`.
 - **Passos**: 1. Instanciar pipeline no boot/scheduler. 2. Trigger compaction por threshold/turn. 3. Persistir em `compactionLog`.
 - **Critério de aceite**: sessão longa → compaction roda + loga.
-- **Esforço**: M · **Depende de**: FIX-013.
+- **Esforço**: M · **Depende de**: FIX-013
+- **Concluído (2026-06-22)**: decisão = **trigger por-turno fire-and-forget** (decisão do user). `apps/worker/src/memory/lifecycle.ts` — `recordChatTurn(logger, userId, messages)`: constrói `MemoryPipeline` do container (`getRepos().semanticMemory` + `getAdapters().embedder`) e chama `extractAndStore` fire-and-forget (erros logados, nunca propagados — memória é best-effort). Hook em `chat.ts` após `writeStreamAsSse`: `recordChatTurn(..., userId, [{role:'user', content:message}])`. Teste de caracterização do `MemoryPipeline` (4 casos — era órfão sem teste): extrai fatos de marcadores ('i prefer', 'my name'...), ignora assistant/short, persiste via repo+embedder fake. Teste smoke do lifecycle (3 casos, container mockado via `vi.hoisted`): persiste fato memorável, persiste nada se não-memorável, loga (não lança) em falha. `compactionLog` do critério original mapeado p/ `DailySummary` via FIX-013 (consolidação diária logada)..
 
-### [ ] FIX-013 — Dreaming nunca instanciado
+### [x] FIX-013 — Dreaming nunca instanciado
 - **Problema**: `DreamingGate` com lógica real, **nunca chamado**; turn-engine/CompactionPolicy ausentes.
 - **Evidência**: `apps/worker/src/memory/dreaming/gate.ts:15`.
 - **Passos**: 1. Definir `DreamingPolicy` (idle/turn triggers). 2. Instanciar gate no memory pipeline. 3. Teste: idle > N → dreaming roda.
 - **Critério de aceite**: dreaming dispara em idle configurado.
-- **Esforço**: M · **Depende de**: FIX-012.
+- **Esforço**: M · **Depende de**: FIX-012
+- **Concluído (2026-06-22)**: `DreamingGateRegistry` (`dreaming/registry.ts`) — 1 gate por usuário, **lazy** (criado + `start()` na 1ª atividade, reusado depois), factory injetável (desacopla do container → testável), `recordActivity(userId)` + `stopAll()`. `lifecycle.ts` integra: `recordChatTurn` chama `getDreamingRegistry(logger).recordActivity(userId)` a cada turno (reseta o timer de idle). Factory de produção cria `DreamingGate(getRepos().dailySummary, {userId}, logger)`. `stopMemoryLifecycle()` chamado no shutdown do worker (`index.ts`) — limpa timers. Política de idle = threshold padrão do gate (5 min). Testes: caracterização do `DreamingGate` (3 casos c/ fake timers — idle>threshold gera daily summary, `recordActivity` reschedule, `stop()` cancela) + unit do `DreamingGateRegistry` (4 casos — lazy create+start, reuso, per-user, stopAll libera p/ novo gate). Critério atendido: dreaming dispara em idle..
 
 ### [ ] FIX-014 — Telegram é echo placeholder
 - **Problema**: polling/pairing ok, mas handler **faz echo placeholder** ("chat routing coming soon"), sem attachments.
