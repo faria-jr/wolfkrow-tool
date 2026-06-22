@@ -1,10 +1,3 @@
-import * as schema from '@wolfkrow/infra/db/schema';
-import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-
-
-
 import {
   buildEntities,
   computeCooccurrence,
@@ -12,14 +5,19 @@ import {
   extractProperNouns,
   extractTechTerms,
   findFirstPosition,
-  GraphIngest,
   tokenize,
-} from '../knowledge/graph-ingest';
-import { MGraph } from '../knowledge/mgraph';
+} from '@wolfkrow/domain';
+import * as schema from '@wolfkrow/infra/db/schema';
+import { DrizzleGraphRepo } from '@wolfkrow/infra/repos';
+import { IngestGraphUseCase } from '@wolfkrow/use-cases';
+import Database from 'better-sqlite3';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+
 import type { createServer } from '../server';
 
-/** Build an isolated in-memory MGraph (no eager DB, no file on disk). */
-function makeGraph(): MGraph {
+/** Build an isolated in-memory graph repo (no eager DB, no file on disk). */
+function makeGraph(): DrizzleGraphRepo {
   const sqlite = new Database(':memory:');
   // Only the graph tables are needed; FKs are off by default in better-sqlite3,
   // so graph rows can reference arbitrary user ids.
@@ -43,16 +41,15 @@ function makeGraph(): MGraph {
     );
   `);
   const db = drizzle(sqlite, { schema });
-  return new MGraph(db);
+  return new DrizzleGraphRepo(db);
 }
 
-describe('graph-ingest extraction (pure)', () => {
+describe('graph extraction (pure, FIX-008 → @wolfkrow/domain)', () => {
   it('extracts proper nouns incl. sentence-initial, skipping stop words', () => {
     const nouns = extractProperNouns('Alice met Bob in Paris.');
     expect(nouns).toContain('Alice');
     expect(nouns).toContain('Bob');
     expect(nouns).toContain('Paris');
-    // stop word 'in' is excluded
     expect(nouns.map((n) => n.toLowerCase())).not.toContain('in');
   });
 
@@ -88,7 +85,6 @@ describe('graph-ingest extraction (pure)', () => {
 
 describe('computeCooccurrence (text proximity)', () => {
   it('connects entities within window using token distance', () => {
-    // positions: graphql=0, rest=3 → distance 3 (within window 8)
     const ents = buildEntities('GraphQL powers the new REST service');
     const pairs = computeCooccurrence(ents, 8);
     const labels = pairs.map((p) => [p.a.toLowerCase(), p.b.toLowerCase()].sort());
@@ -96,7 +92,6 @@ describe('computeCooccurrence (text proximity)', () => {
   });
 
   it('does not connect entities farther than the window', () => {
-    // build synthetic entities with far positions
     const ents = [
       { label: 'Alpha', type: 'entity' as const, position: 0 },
       { label: 'Omega', type: 'entity' as const, position: 100 },
@@ -114,31 +109,28 @@ describe('computeCooccurrence (text proximity)', () => {
   });
 });
 
-describe('GraphIngest.ingest', () => {
+describe('IngestGraphUseCase.execute', () => {
   it('persists document + entity nodes and returns honest edgeCount', () => {
     const graph = makeGraph();
-    const ingest = new GraphIngest(graph);
+    const ingest = new IngestGraphUseCase(graph);
     const text = 'GraphQL and REST communicate over HTTP with OAuth tokens.';
-    const res = ingest.ingest({ userId: 'u1', text });
+    const res = ingest.execute({ userId: 'u1', text });
 
     expect(res.documentNode.type).toBe('document');
     expect(res.entityNodes.length).toBeGreaterThan(0);
 
-    // edgeCount must equal mentions + co-occurs actually persisted for the doc.
     const allEdges = graph.listEdges('u1');
     const incident = allEdges.filter(
       (e) => e.sourceNodeId === res.documentNode.id || e.targetNodeId === res.documentNode.id,
     );
     const mentions = incident.filter((e) => e.relation === 'mentions');
     expect(mentions.length).toBe(res.entityNodes.length);
-    // edgeCount must reflect actually persisted edges (mentions + co-occurs),
-    // not the previous bogus 2n-1 formula.
     expect(res.edgeCount).toBe(allEdges.length);
   });
 
   it('entity nodes carry sourceId back-referencing the document node', () => {
     const graph = makeGraph();
-    const res = new GraphIngest(graph).ingest({ userId: 'u1', text: 'GraphQL API.' });
+    const res = new IngestGraphUseCase(graph).execute({ userId: 'u1', text: 'GraphQL API.' });
     for (const node of res.entityNodes) {
       expect(node.sourceId).toBe(res.documentNode.id);
     }
@@ -147,14 +139,14 @@ describe('GraphIngest.ingest', () => {
   it('idempotent: re-ingesting same text does not duplicate nodes', () => {
     const graph = makeGraph();
     const text = 'GraphQL API with REST.';
-    new GraphIngest(graph).ingest({ userId: 'u1', text });
+    new IngestGraphUseCase(graph).execute({ userId: 'u1', text });
     const firstCount = graph.listNodes('u1').length;
-    new GraphIngest(graph).ingest({ userId: 'u1', text });
+    new IngestGraphUseCase(graph).execute({ userId: 'u1', text });
     expect(graph.listNodes('u1').length).toBe(firstCount);
   });
 });
 
-describe('MGraph persistence + neighborhood', () => {
+describe('DrizzleGraphRepo persistence + neighborhood', () => {
   it('upsertNode is idempotent by (userId,label,type)', () => {
     const g = makeGraph();
     const a = g.upsertNode({ userId: 'u1', label: 'X', type: 'entity' });
@@ -204,13 +196,6 @@ describe('MGraph persistence + neighborhood', () => {
     expect(g.neighborhood('u1', 'nope', 1)).toBeNull();
   });
 
-  it('expand delegates to neighborhood (SPEC-022 ExpandNode)', () => {
-    const g = makeGraph();
-    const a = g.upsertNode({ userId: 'u1', label: 'A', type: 'entity' });
-    expect(g.expand('u1', a.id, 1)?.center.id).toBe(a.id);
-    expect(g.expand('u1', 'missing', 1)).toBeNull();
-  });
-
   it('deleteNode cascades edges and reports existence', () => {
     const g = makeGraph();
     const doc = g.upsertNode({ userId: 'u1', label: 'doc', type: 'document' });
@@ -220,14 +205,11 @@ describe('MGraph persistence + neighborhood', () => {
     expect(g.deleteNode('u1', 'missing')).toBe(false);
     expect(g.deleteNode('u1', doc.id)).toBe(true);
     expect(g.getNode('u1', doc.id)).toBeNull();
-    // edge referencing deleted node is gone too
     expect(g.listEdges('u1').length).toBe(0);
   });
 });
 
 describe('graph routes auth', () => {
-  // Lazily build the server; config may need JWKS_URL but the missing-token
-  // path returns 401 before any JWKS lookup, so no network is required.
   let app: Awaited<ReturnType<typeof createServer>> | null = null;
   beforeAll(async () => {
     const { createServer } = await import('../server');

@@ -1,34 +1,17 @@
 /**
- * GraphIngest — extracts named entities and relations from plain text,
- * then persists them to the knowledge graph via MGraph.
+ * Extração de entidades/relações p/ o knowledge graph (FIX-008).
  *
- * Uses lightweight heuristics (regex + NLP-lite patterns) rather than
- * a heavy ML model, so it runs entirely offline without a GPU.
- *
- * MGraph is injected so the ingest pipeline is testable without a global
- * singleton (see S.5 review).
+ * Lógica PURA de domínio (heurísticas regex + NLP-lite, sem I/O). Antes vivia
+ * em `apps/worker/src/knowledge/graph-ingest.ts`; movida para o domínio onde
+ * pertence. O use-case (`IngestGraphUseCase`) consome estas funções + o
+ * `GraphRepo` port.
  */
 
-import type { GraphNode, MGraph, NodeType } from './mgraph';
-
-export interface IngestInput {
-  userId: string;
-  text: string;
-  sourceId?: string;
-  sourceLabel?: string;
-}
-
-export interface IngestResult {
-  documentNode: GraphNode;
-  entityNodes: GraphNode[];
-  /** Honest count of edges persisted for this document (mentions + co-occurs). */
-  edgeCount: number;
-}
+import type { NodeType } from '../repos/graph-repo';
 
 /** Token-window within which two entities are considered co-occurring. */
 const COOCCUR_WINDOW = 8;
 
-// Words to skip when identifying entities
 const STOP_WORDS = new Set([
   'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
   'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
@@ -38,10 +21,14 @@ const STOP_WORDS = new Set([
   'i', 'me', 'my', 'he', 'she', 'him', 'her', 'his',
 ]);
 
-// Patterns for known concept types
 const TECH_TERMS = /\b(API|REST|GraphQL|HTTP|SQL|JSON|XML|CSV|PDF|URL|URI|JWT|OAuth|CORS|CDN|DNS|TLS|SSL|TCP|IP|SDK|CLI|IDE|CI|CD|AWS|GCP|Azure)\b/g;
 
-/** Split text into lowercased alphanumeric tokens with their index. */
+export interface PositionedEntity {
+  label: string;
+  type: Exclude<NodeType, 'document' | 'memory'>;
+  position: number;
+}
+
 export function tokenize(text: string): string[] {
   return text
     .replace(/[^a-zA-Z0-9\s]/g, ' ')
@@ -50,7 +37,6 @@ export function tokenize(text: string): string[] {
     .filter(Boolean);
 }
 
-/** First token index where `label` occurs (single word or multi-word phrase). */
 export function findFirstPosition(tokens: string[], label: string): number {
   const words = label.toLowerCase().split(/\s+/).filter(Boolean);
   if (words.length === 0) return -1;
@@ -68,15 +54,12 @@ export function findFirstPosition(tokens: string[], label: string): number {
 }
 
 export function extractProperNouns(text: string): string[] {
-  // Capitalised words not in STOP_WORDS. Includes sentence-initial words so
-  // entities that open a sentence (e.g. "Alice met Bob") are not lost; common
-  // sentence starters are filtered via STOP_WORDS.
   const words: string[] = [];
   const sentences = text.split(/(?<=[.!?])\s+/);
   for (const sentence of sentences) {
     const tokens = sentence.split(/\s+/);
-    for (let i = 0; i < tokens.length; i++) {
-      const raw = (tokens[i] ?? '').replace(/[^a-zA-Z0-9]/g, '');
+    for (const token of tokens) {
+      const raw = token.replace(/[^a-zA-Z0-9]/g, '');
       if (raw.length > 2 && /^[A-Z]/.test(raw) && !STOP_WORDS.has(raw.toLowerCase())) {
         words.push(raw);
       }
@@ -96,7 +79,6 @@ export function extractTechTerms(text: string): string[] {
 }
 
 export function extractKeyPhrases(text: string): string[] {
-  // noun-phrase heuristic: 2 consecutive non-stop words
   const phrases: string[] = [];
   const tokens = text
     .replace(/[^a-zA-Z0-9 ]/g, ' ')
@@ -119,16 +101,10 @@ export function extractKeyPhrases(text: string): string[] {
   return [...new Set(phrases)].slice(0, 20);
 }
 
-interface PositionedEntity {
-  label: string;
-  type: Exclude<NodeType, 'document' | 'memory'>;
-  position: number;
-}
-
 /**
- * Build the deduplicated entity list with each entity's first token position
- * in the source text. Position -1 means the entity was not found in the
- * token stream (it is still ingested but excluded from co-occurrence edges).
+ * Deduplicated entity list with each entity's first token position.
+ * Position -1 = not found in the token stream (ingested but excluded from
+ * co-occurrence edges).
  */
 export function buildEntities(text: string): PositionedEntity[] {
   const tokens = tokenize(text);
@@ -150,9 +126,8 @@ export function buildEntities(text: string): PositionedEntity[] {
 }
 
 /**
- * Compute co-occurrence pairs from entity text positions.
- * Two entities co-occur when their first token positions are within
- * COOCCUR_WINDOW tokens of each other. Weight = 1 / distance.
+ * Co-occurrence pairs from entity positions. Two entities co-occur when their
+ * first token positions are within `window` tokens. Weight = 1 / distance.
  */
 export function computeCooccurrence(
   entities: PositionedEntity[],
@@ -173,66 +148,4 @@ export function computeCooccurrence(
     }
   }
   return pairs;
-}
-
-export class GraphIngest {
-  constructor(private readonly graph: MGraph) {}
-
-  ingest(input: IngestInput): IngestResult {
-    const { userId, text, sourceId, sourceLabel } = input;
-
-    const docLabel = sourceLabel ?? (sourceId ? `doc:${sourceId}` : `text:${text.slice(0, 40)}`);
-    const documentNode = this.graph.upsertNode({
-      userId,
-      label: docLabel,
-      type: 'document',
-      ...(sourceId !== undefined ? { sourceId } : {}),
-    });
-
-    const entities = buildEntities(text);
-
-    const entityNodes: GraphNode[] = [];
-    const labelToNode = new Map<string, GraphNode>();
-    let mentionsEdges = 0;
-
-    for (const e of entities) {
-      // sourceId back-references the originating document node so an entity
-      // can be traced to its source directly (SPEC-022 US-3).
-      const node = this.graph.upsertNode({
-        userId,
-        label: e.label,
-        type: e.type,
-        sourceId: documentNode.id,
-      });
-      entityNodes.push(node);
-      labelToNode.set(e.label, node);
-      this.graph.upsertEdge({
-        userId,
-        sourceNodeId: documentNode.id,
-        targetNodeId: node.id,
-        relation: 'mentions',
-      });
-      mentionsEdges++;
-    }
-
-    const pairs = computeCooccurrence(entities);
-    let cooccurEdges = 0;
-    for (const p of pairs) {
-      const a = labelToNode.get(p.a);
-      const b = labelToNode.get(p.b);
-      if (!a || !b) continue;
-      this.graph.upsertEdge({
-        userId,
-        sourceNodeId: a.id,
-        targetNodeId: b.id,
-        relation: 'co-occurs',
-        weight: p.weight,
-      });
-      cooccurEdges++;
-    }
-
-    const edgeCount = mentionsEdges + cooccurEdges;
-
-    return { documentNode, entityNodes, edgeCount };
-  }
 }

@@ -37,3 +37,12 @@ export type {
   TaskItemCategory,
   TaskItemPriority,
 } from './task-repo';
+export type {
+  GraphRepo,
+  GraphNode,
+  GraphEdge,
+  GraphNeighborhood,
+  NodeType,
+  GraphNodeUpsertInput,
+  GraphEdgeUpsertInput,
+} from './graph-repo';

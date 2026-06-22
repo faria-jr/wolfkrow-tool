@@ -11,8 +11,9 @@
  * DELETE /graph/:id          — delete node (cascade edges), 404 if missing
  */
 
-import { GraphIngest } from '../knowledge/graph-ingest';
-import { MGraph } from '../knowledge/mgraph';
+import { IngestGraphUseCase, QueryNeighborhoodUseCase } from '@wolfkrow/use-cases';
+
+import { getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, graphIngestBody, neighborhoodQuery } from '../validation';
 
@@ -31,7 +32,7 @@ export async function graphRoutes(server: AuthFastifyInstance) {
   // GET /graph — full graph
   server.get('/', auth, async (req, reply) => {
     const userId = userIdOf(req);
-    const graph = new MGraph();
+    const graph = getRepos().graph;
     const nodes = graph.listNodes(userId);
     const edges = graph.listEdges(userId);
     return reply.send({ nodes, edges });
@@ -41,8 +42,8 @@ export async function graphRoutes(server: AuthFastifyInstance) {
   server.post<{ Body: IngestBody }>('/ingest', auth, async (req, reply) => {
     const userId = userIdOf(req);
     const { text, sourceId, sourceLabel } = validate(graphIngestBody, req.body ?? {});
-    const graph = new MGraph();
-    const result = new GraphIngest(graph).ingest({
+    const graph = getRepos().graph;
+    const result = new IngestGraphUseCase(graph).execute({
       userId,
       text,
       ...(sourceId !== undefined ? { sourceId } : {}),
@@ -62,8 +63,12 @@ export async function graphRoutes(server: AuthFastifyInstance) {
     async (req, reply) => {
       const userId = userIdOf(req);
       const { depth } = validate(neighborhoodQuery, req.query);
-      const graph = new MGraph();
-      const neighborhood = graph.neighborhood(userId, req.params.id, depth);
+      const graph = getRepos().graph;
+      const neighborhood = new QueryNeighborhoodUseCase(graph).execute({
+        userId,
+        nodeId: req.params.id,
+        depth,
+      });
       if (!neighborhood) return reply.status(404).send({ error: 'Node not found' });
       return reply.send(neighborhood);
     },
@@ -72,7 +77,7 @@ export async function graphRoutes(server: AuthFastifyInstance) {
   // DELETE /graph/:id — cascade edges, 404 if missing
   server.delete<{ Params: { id: string } }>('/:id', auth, async (req, reply) => {
     const userId = userIdOf(req);
-    const graph = new MGraph();
+    const graph = getRepos().graph;
     const deleted = graph.deleteNode(userId, req.params.id);
     if (!deleted) return reply.status(404).send({ error: 'Node not found' });
     return reply.send({ ok: true });

@@ -1,5 +1,7 @@
 /**
- * Shared graph types — mirror the worker MGraph schema (SPEC-022).
+ * Shared graph types — API wire format (Dates serialized as strings).
+ * Backend domain types (`@wolfkrow/domain` GraphNode/Edge) use Date; these
+ * mirror the JSON shape returned by /graph routes.
  */
 
 export type NodeType = 'document' | 'entity' | 'concept' | 'memory';

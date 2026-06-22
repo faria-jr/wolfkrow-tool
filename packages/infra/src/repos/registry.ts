@@ -22,6 +22,7 @@ import { DrizzleAuthAuditRepo } from './auth-audit-repo';
 import { DrizzleDailySummaryRepo } from './daily-summary-repo';
 import { DrizzleEnrichSessionRepo } from './enrich-session-repo';
 import { DrizzleGlobalRuleRepo } from './global-rule-repo';
+import { DrizzleGraphRepo } from './graph-repo';
 import { DrizzleHarnessProjectRepo } from './harness-project-repo';
 import { DrizzleHarnessRoundRepo } from './harness-round-repo';
 import { DrizzleHarnessSprintRepo } from './harness-sprint-repo';
@@ -66,6 +67,7 @@ export interface RepoRegistry {
   pipelinePhase: DrizzlePipelinePhaseRepo;
   enrichSession: DrizzleEnrichSessionRepo;
   workflowRun: DrizzleWorkflowRunRepo;
+  graph: DrizzleGraphRepo;
 }
 
 let _registry: RepoRegistry | null = null;
@@ -100,6 +102,7 @@ export function createRepoRegistry(force = false): RepoRegistry {
     pipelinePhase: new DrizzlePipelinePhaseRepo(db),
     enrichSession: new DrizzleEnrichSessionRepo(db),
     workflowRun: new DrizzleWorkflowRunRepo(db),
+    graph: new DrizzleGraphRepo(db),
   };
   return _registry;
 }

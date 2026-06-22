@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { GraphEdge, GraphNode, NodeType } from './types';
 
-/** Color per node type (kept in sync with MGraph NodeType). */
+/** Color per node type (kept in sync with domain NodeType). */
 const TYPE_COLOR: Record<NodeType, string> = {
   document: '#f59e0b',
   entity: '#3b82f6',

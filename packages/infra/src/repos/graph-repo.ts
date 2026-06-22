@@ -1,54 +1,30 @@
-/**
- * MGraph — Knowledge graph persistence + neighborhood queries.
- *
- * Wraps graphNodes + graphEdges Drizzle tables. DB is injected so the class
- * is testable with an in-memory SQLite instance and never opens a real
- * connection at import time (see S.5 review: lazy, no eager singleton).
- */
+import { randomUUID } from 'node:crypto';
 
-import { randomUUID } from 'crypto';
-
-
-import { getDb } from '@wolfkrow/infra/db/client';
-import { graphNodes, graphEdges } from '@wolfkrow/infra/db/schema';
+import type {
+  GraphEdge,
+  GraphEdgeUpsertInput,
+  GraphNeighborhood,
+  GraphNode,
+  GraphNodeUpsertInput,
+  GraphRepo,
+  NodeType,
+} from '@wolfkrow/domain';
 import { and, eq, inArray, or } from 'drizzle-orm';
 
-export type NodeType = 'document' | 'entity' | 'concept' | 'memory';
+import { getDb } from '../db/client';
+import { graphEdges, graphNodes } from '../db/schema/graph';
 
-export interface GraphNode {
-  id: string;
-  userId: string;
-  label: string;
-  type: NodeType;
-  sourceId: string | null;
-  createdAt: Date;
-}
+type Db = ReturnType<typeof getDb>;
 
-export interface GraphEdge {
-  id: string;
-  userId: string;
-  sourceNodeId: string;
-  targetNodeId: string;
-  relation: string;
-  weight: number;
-  createdAt: Date;
-}
+/**
+ * Knowledge-graph repository via Drizzle (SQLite). Implementa o port `GraphRepo`
+ * do domínio (FIX-008: antes era o adapter `MGraph` em apps/worker/src/knowledge,
+ * com tipos de domínio definidos fora do domínio).
+ */
+export class DrizzleGraphRepo implements GraphRepo {
+  constructor(private readonly db: Db = getDb()) {}
 
-export interface GraphNeighborhood {
-  center: GraphNode;
-  neighbors: GraphNode[];
-  edges: GraphEdge[];
-}
-
-export class MGraph {
-  constructor(private readonly db = getDb()) {}
-
-  upsertNode(input: {
-    userId: string;
-    label: string;
-    type: NodeType;
-    sourceId?: string;
-  }): GraphNode {
+  upsertNode(input: GraphNodeUpsertInput): GraphNode {
     const existing = this.db
       .select()
       .from(graphNodes)
@@ -56,33 +32,25 @@ export class MGraph {
         and(
           eq(graphNodes.userId, input.userId),
           eq(graphNodes.label, input.label),
-          eq(graphNodes.type, input.type),
+          eq(graphNodes.type, input.type as never),
         ),
       )
       .get();
+    if (existing) return this.toNode(existing);
 
-    if (existing) return existing as GraphNode;
-
-    const now = new Date();
-    const node: GraphNode = {
+    const node = {
       id: randomUUID(),
       userId: input.userId,
       label: input.label,
       type: input.type,
       sourceId: input.sourceId ?? null,
-      createdAt: now,
+      createdAt: new Date(),
     };
     this.db.insert(graphNodes).values(node).run();
-    return node;
+    return this.toNode(node);
   }
 
-  upsertEdge(input: {
-    userId: string;
-    sourceNodeId: string;
-    targetNodeId: string;
-    relation?: string;
-    weight?: number;
-  }): GraphEdge {
+  upsertEdge(input: GraphEdgeUpsertInput): GraphEdge {
     const relation = input.relation ?? 'related';
     const existing = this.db
       .select()
@@ -96,37 +64,27 @@ export class MGraph {
         ),
       )
       .get();
+    if (existing) return this.toEdge(existing);
 
-    if (existing) return existing as GraphEdge;
-
-    const now = new Date();
-    const edge: GraphEdge = {
+    const edge = {
       id: randomUUID(),
       userId: input.userId,
       sourceNodeId: input.sourceNodeId,
       targetNodeId: input.targetNodeId,
       relation,
       weight: input.weight ?? 1.0,
-      createdAt: now,
+      createdAt: new Date(),
     };
     this.db.insert(graphEdges).values(edge).run();
-    return edge;
+    return this.toEdge(edge);
   }
 
   listNodes(userId: string): GraphNode[] {
-    return this.db
-      .select()
-      .from(graphNodes)
-      .where(eq(graphNodes.userId, userId))
-      .all() as GraphNode[];
+    return this.db.select().from(graphNodes).where(eq(graphNodes.userId, userId)).all().map(this.toNode);
   }
 
   listEdges(userId: string): GraphEdge[] {
-    return this.db
-      .select()
-      .from(graphEdges)
-      .where(eq(graphEdges.userId, userId))
-      .all() as GraphEdge[];
+    return this.db.select().from(graphEdges).where(eq(graphEdges.userId, userId)).all().map(this.toEdge);
   }
 
   getNode(userId: string, nodeId: string): GraphNode | null {
@@ -134,14 +92,10 @@ export class MGraph {
       .select()
       .from(graphNodes)
       .where(and(eq(graphNodes.id, nodeId), eq(graphNodes.userId, userId)))
-      .get() as GraphNode | undefined;
-    return node ?? null;
+      .get();
+    return node ? this.toNode(node) : null;
   }
 
-  /**
-   * Neighborhood via breadth-first expansion up to `depth` hops.
-   * Implements QueryNeighborhood (depth=1) and ExpandNode (depth>1).
-   */
   neighborhood(userId: string, nodeId: string, depth = 1): GraphNeighborhood | null {
     const center = this.getNode(userId, nodeId);
     if (!center) return null;
@@ -153,9 +107,22 @@ export class MGraph {
     return { center, neighbors, edges };
   }
 
-  /** SPEC-022 ExpandNode — alias for neighborhood expansion. */
-  expand(userId: string, nodeId: string, depth = 1): GraphNeighborhood | null {
-    return this.neighborhood(userId, nodeId, depth);
+  deleteNode(userId: string, nodeId: string): boolean {
+    if (this.getNode(userId, nodeId) === null) return false;
+    this.db
+      .delete(graphEdges)
+      .where(
+        and(
+          eq(graphEdges.userId, userId),
+          or(eq(graphEdges.sourceNodeId, nodeId), eq(graphEdges.targetNodeId, nodeId)),
+        ),
+      )
+      .run();
+    this.db
+      .delete(graphNodes)
+      .where(and(eq(graphNodes.id, nodeId), eq(graphNodes.userId, userId)))
+      .run();
+    return true;
   }
 
   /** BFS from `nodeId`, returning all reachable node ids (including it). */
@@ -169,7 +136,6 @@ export class MGraph {
     return Array.from(visited);
   }
 
-  /** One BFS hop: returns the next frontier from edges touching `frontier`. */
   private expandFrontier(userId: string, frontier: string[], visited: Set<string>): string[] {
     const edges = this.db
       .select()
@@ -198,10 +164,9 @@ export class MGraph {
 
   private nodesByIds(ids: string[]): GraphNode[] {
     if (ids.length === 0) return [];
-    return this.db.select().from(graphNodes).where(inArray(graphNodes.id, ids)).all() as GraphNode[];
+    return this.db.select().from(graphNodes).where(inArray(graphNodes.id, ids)).all().map(this.toNode);
   }
 
-  /** Edges whose endpoints both fall within `ids`, scoped to user. */
   private edgesAmong(userId: string, ids: string[]): GraphEdge[] {
     if (ids.length === 0) return [];
     return this.db
@@ -216,27 +181,26 @@ export class MGraph {
           ),
         ),
       )
-      .all() as GraphEdge[];
+      .all()
+      .map(this.toEdge);
   }
 
-  /** Returns true if a node existed and was deleted. */
-  deleteNode(userId: string, nodeId: string): boolean {
-    const existed = this.getNode(userId, nodeId) !== null;
-    if (!existed) return false;
+  private toNode = (r: typeof graphNodes.$inferSelect): GraphNode => ({
+    id: r.id,
+    userId: r.userId,
+    label: r.label,
+    type: r.type as NodeType,
+    sourceId: r.sourceId ?? null,
+    createdAt: r.createdAt,
+  });
 
-    this.db
-      .delete(graphEdges)
-      .where(
-        and(
-          eq(graphEdges.userId, userId),
-          or(eq(graphEdges.sourceNodeId, nodeId), eq(graphEdges.targetNodeId, nodeId)),
-        ),
-      )
-      .run();
-    this.db
-      .delete(graphNodes)
-      .where(and(eq(graphNodes.id, nodeId), eq(graphNodes.userId, userId)))
-      .run();
-    return true;
-  }
+  private toEdge = (r: typeof graphEdges.$inferSelect): GraphEdge => ({
+    id: r.id,
+    userId: r.userId,
+    sourceNodeId: r.sourceNodeId,
+    targetNodeId: r.targetNodeId,
+    relation: r.relation,
+    weight: r.weight,
+    createdAt: r.createdAt,
+  });
 }
