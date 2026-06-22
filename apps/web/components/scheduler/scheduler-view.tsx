@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+
 interface TaskData {
   id: string;
   name: string;
@@ -39,19 +42,19 @@ function TaskCreateForm({ form, setForm, creating, error, onSubmit }: CreateForm
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label className="text-muted-foreground mb-1 block text-xs">Name *</label>
-          <input value={form.name} onChange={set('name')} className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm" placeholder="Daily briefing" />
+          <Input value={form.name} onChange={set('name')} placeholder="Daily briefing" />
         </div>
         <div>
           <label className="text-muted-foreground mb-1 block text-xs">Cron expression *</label>
-          <input value={form.cronExpression} onChange={set('cronExpression')} className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm font-mono" placeholder="0 9 * * *" />
+          <Input value={form.cronExpression} onChange={set('cronExpression')} className="font-mono" placeholder="0 9 * * *" />
         </div>
         <div className="sm:col-span-2">
           <label className="text-muted-foreground mb-1 block text-xs">Description</label>
-          <input value={form.description} onChange={set('description')} className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm" placeholder="Optional description" />
+          <Input value={form.description} onChange={set('description')} placeholder="Optional description" />
         </div>
         <div className="sm:col-span-2">
           <label className="text-muted-foreground mb-1 block text-xs">Prompt *</label>
-          <textarea value={form.prompt} onChange={set('prompt')} rows={3} className="border-input bg-background w-full rounded-md border px-3 py-2 text-sm" placeholder="Summarize the latest news and send me a briefing." />
+          <Textarea value={form.prompt} onChange={set('prompt')} rows={3} placeholder="Summarize the latest news and send me a briefing." />
         </div>
       </div>
       <button onClick={onSubmit} disabled={creating} className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50">

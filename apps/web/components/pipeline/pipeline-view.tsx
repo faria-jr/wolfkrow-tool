@@ -3,6 +3,9 @@
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+
 interface ProjectData {
   id: string;
   userId: string;
@@ -113,8 +116,8 @@ function PipelineLeftPanel({ name, setName, description, setDescription, creatin
     <div className="w-72 flex-shrink-0 space-y-4">
       <h2 className="text-lg font-semibold">Pipeline Projects</h2>
       <form onSubmit={onSubmit} className="space-y-2 rounded border p-3">
-        <input className="w-full rounded border px-2 py-1 text-sm" placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <textarea className="w-full rounded border px-2 py-1 text-sm" placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+        <Input placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <Textarea placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
         <button type="submit" disabled={creating} className="w-full rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50">{creating ? 'Creating…' : 'New Pipeline'}</button>
       </form>
       {error && <p className="text-sm text-red-600">{error}</p>}

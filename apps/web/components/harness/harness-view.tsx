@@ -3,6 +3,8 @@
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { Input } from '@/components/ui/input';
+
 interface ProjectData {
   id: string;
   userId: string;
@@ -83,12 +85,12 @@ interface CreateFormProps { form: NewProjectForm; setForm: (f: NewProjectForm) =
 function ProjectCreateForm({ form, setForm, creating, onSubmit }: CreateFormProps) {
   return (
     <form onSubmit={onSubmit} className="space-y-2 rounded border p-3">
-      <input className="w-full rounded border px-2 py-1 text-sm" placeholder="Project name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-      <input className="w-full rounded border px-2 py-1 text-sm" placeholder="Spec path (e.g. /docs/spec.md)" value={form.specPath} onChange={(e) => setForm({ ...form, specPath: e.target.value })} required />
-      <input className="w-full rounded border px-2 py-1 text-sm" placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+      <Input placeholder="Project name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+      <Input placeholder="Spec path (e.g. /docs/spec.md)" value={form.specPath} onChange={(e) => setForm({ ...form, specPath: e.target.value })} required />
+      <Input placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
       <div className="flex items-center gap-2 text-sm">
         <label>Max rounds:</label>
-        <input type="number" min={1} max={20} className="w-16 rounded border px-2 py-1" value={form.maxRoundsPerFeature} onChange={(e) => setForm({ ...form, maxRoundsPerFeature: Number(e.target.value) })} />
+        <Input type="number" min={1} max={20} className="w-16" value={form.maxRoundsPerFeature} onChange={(e) => setForm({ ...form, maxRoundsPerFeature: Number(e.target.value) })} />
       </div>
       <button type="submit" disabled={creating} className="w-full rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50">
         {creating ? 'Creating…' : 'Create Project'}
