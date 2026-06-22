@@ -1,35 +1,7 @@
 import { defaultPermissionResolver } from '@wolfkrow/domain';
-import type { AgentPermissions, PermissionResult } from '@wolfkrow/domain';
+import type { AgentPermissions, AuditRepo, AuditRow, PermissionResult } from '@wolfkrow/domain';
 
-export interface AuditRepo {
-  insert(entry: {
-    userId: string;
-    action: string;
-    resourceType: string;
-    resourceId?: string;
-    metadata: Record<string, unknown>;
-    ip?: string;
-    timestamp: Date;
-  }): void;
-  findMany(filter: {
-    userId: string;
-    action?: string;
-    resourceType?: string;
-    since?: Date;
-    limit?: number;
-  }): AuditRow[];
-}
-
-export interface AuditRow {
-  id: string;
-  userId: string;
-  action: string;
-  resourceType: string;
-  resourceId: string | undefined;
-  metadata: Record<string, unknown>;
-  ip: string | undefined;
-  timestamp: Date;
-}
+export type { AuditRepo, AuditRow } from '@wolfkrow/domain';
 
 // --- Resolve Permission ---
 

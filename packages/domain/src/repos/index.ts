@@ -22,3 +22,5 @@ export type { HarnessProjectRepo, HarnessSprintRepo, HarnessRoundRepo } from './
 export type { PipelineProjectRepo, PipelinePhaseRepo } from './pipeline-repos';
 export type { EnrichSessionRepo } from './enrich-repos';
 export type { WorkflowRunRepo } from './workflow-repos';
+export type { UsageRepo, UsageRecord, UsageRecordInput, UsageFilter, UsageCostFilter } from './usage-repo';
+export type { AuditRepo, AuditRow, AuditEntryInput, AuditFilter } from './audit-log-repo';

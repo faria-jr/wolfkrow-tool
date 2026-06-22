@@ -41,8 +41,8 @@ function getUserId(req: { user?: { userId?: string } }): string {
 export async function permissionsRoutes(server: AuthFastifyInstance) {
   const auditRepo = new DrizzleAuditLogRepo();
   const resolveUC = new ResolvePermissionUseCase();
-  const recordUC = new RecordAuditEntryUseCase(auditRepo as never);
-  const queryUC = new QueryAuditLogUseCase(auditRepo as never);
+  const recordUC = new RecordAuditEntryUseCase(auditRepo);
+  const queryUC = new QueryAuditLogUseCase(auditRepo);
 
   // POST /permissions/resolve — check if a tool is allowed
   server.post<{ Body: unknown }>('/resolve', async (req, reply) => {

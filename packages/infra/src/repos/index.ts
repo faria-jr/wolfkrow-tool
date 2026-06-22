@@ -30,10 +30,8 @@ export { DrizzleEnrichSessionRepo } from './enrich-session-repo';
 export { DrizzleWorkflowRunRepo } from './workflow-run-repo';
 export { DrizzleSecretRepo } from './secret-repo';
 export { DrizzleTokenUsageRepo } from './token-usage-repo';
-export type { TokenUsageRecord, TokenUsageFilter, TokenUsageSource } from './token-usage-repo';
 export { DrizzleGlobalRuleRepo } from './global-rule-repo';
 export { DrizzleAuditLogRepo } from './audit-log-repo';
-export type { AuditEntry, AuditFilter, AuditAction } from './audit-log-repo';
 
 import { getDb } from '../db/client';
 import { scheduledTasks, taskRuns } from '../db/schema/scheduler';

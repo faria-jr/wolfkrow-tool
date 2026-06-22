@@ -1,44 +1,7 @@
 import { defaultPricingCalculator } from '@wolfkrow/domain';
-import type { TokenUsage } from '@wolfkrow/domain';
+import type { TokenUsage, UsageRepo } from '@wolfkrow/domain';
 
-export interface UsageRepo {
-  insert(record: {
-    userId: string;
-    source: string;
-    model: string;
-    inputTokens: number;
-    outputTokens: number;
-    cacheReadTokens: number;
-    cacheWriteTokens: number;
-    cost: number;
-    sessionId?: string;
-    agentId?: string;
-    timestamp: Date;
-  }): void;
-  findMany(filter: {
-    userId: string;
-    from?: Date;
-    to?: Date;
-    source?: string;
-    agentId?: string;
-  }): UsageRecord[];
-  totalCostCents(filter: { userId: string; from?: Date; to?: Date; agentId?: string }): number;
-}
-
-export interface UsageRecord {
-  id: string;
-  userId: string;
-  source: string;
-  model: string;
-  inputTokens: number;
-  outputTokens: number;
-  cacheReadTokens: number;
-  cacheWriteTokens: number;
-  cost: number;
-  sessionId: string | undefined;
-  agentId: string | undefined;
-  timestamp: Date;
-}
+export type { UsageRepo, UsageRecord } from '@wolfkrow/domain';
 
 // --- Record Usage ---
 

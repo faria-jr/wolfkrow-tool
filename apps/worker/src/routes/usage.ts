@@ -29,8 +29,8 @@ function getUserId(req: { user?: { userId?: string } }): string {
 
 export async function usageRoutes(server: AuthFastifyInstance) {
   const repo = new DrizzleTokenUsageRepo();
-  const computeUC = new ComputeUsageUseCase(repo as never);
-  const budgetUC = new CheckBudgetUseCase(repo as never);
+  const computeUC = new ComputeUsageUseCase(repo);
+  const budgetUC = new CheckBudgetUseCase(repo);
 
   // GET /usage/summary?from=&to=&source=&agentId=
   server.get<{ Querystring: unknown }>('/summary', async (req, reply) => {
@@ -67,7 +67,7 @@ export async function usageRoutes(server: AuthFastifyInstance) {
       userId,
       ...(from ? { from: new Date(from) } : {}),
       ...(to ? { to: new Date(to) } : {}),
-      ...(source ? { source: source as never } : {}),
+      ...(source ? { source } : {}),
       ...(agentId ? { agentId } : {}),
     });
     return reply.send({ records });
