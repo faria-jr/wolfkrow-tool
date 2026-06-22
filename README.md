@@ -131,6 +131,33 @@ Abra **http://localhost:3000**. Na 1ª execução: onboarding (senha → escolha
 
 > **Importante (DB path):** o caminho do SQLite é relativo ao **cwd** de quem inicia o processo (default `.wolfkrow/data/wolfkrow.db`). Rode sempre `db:migrate` e os processos do mesmo diretório (raiz do repo) — ou defina `WOLFKROW_DB_PATH` para um caminho absoluto e compartilhe entre web/worker/migrate.
 
+### Iniciar o sistema
+
+Todos os comandos a partir da **raiz do repo**. `pnpm dev` sobe os dois processos via `concurrently`:
+
+```bash
+pnpm dev
+```
+
+Expansão (`package.json` raiz → `pnpm dev:web` + `pnpm dev:worker`):
+
+| Processo | Cmd efetivo | cwd | Porta |
+|---|---|---|---|
+| Web | `next dev --port 3000` | `apps/web` | `3000` |
+| Worker | `tsx watch src/index.ts` | `apps/worker` | `4000` |
+
+Endpoints úteis: UI **http://localhost:3000** · Worker health **http://localhost:4000/health** · Swagger **http://localhost:4000/docs**.
+
+Reproduzir do zero:
+
+```bash
+pnpm install && cp .env.example .env && pnpm build && pnpm db:migrate && pnpm dev
+```
+
+Produção: `pnpm build` depois `pnpm start` (web `next start` + worker `node dist/index.js`).
+
+> **Node 24 / nativos:** `better-sqlite3`, `keytar` e `node-pty` são módulos nativos compilados no `pnpm install`. Se houver erro `NODE_MODULE_VERSION` (binário compilado p/ outra versão do Node), recompile — ex.: `node-gyp rebuild --release` dentro de `node_modules/.pnpm/better-sqlite3@<v>/node_modules/better-sqlite3`.
+
 ---
 
 ## Variáveis de ambiente
