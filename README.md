@@ -129,7 +129,7 @@ pnpm dev                # web → :3000 · worker → :4000
 
 Abra **http://localhost:3000**. Na 1ª execução: onboarding (senha → escolha de SDK).
 
-> **Importante (DB path):** o caminho do SQLite é relativo ao **cwd** de quem inicia o processo (default `.wolfkrow/data/wolfkrow.db`). Rode sempre `db:migrate` e os processos do mesmo diretório (raiz do repo) — ou defina `WOLFKROW_DB_PATH` para um caminho absoluto e compartilhe entre web/worker/migrate.
+> **DB path:** o SQLite é resolvido em `$HOME/.wolfkrow/data/wolfkrow.db` por default (FIX-001 — independente do cwd, então web/worker/migrate compartilham o **mesmo** arquivo). Override via `WOLFKROW_DB_PATH` (absoluto). Na primeira execução após o upgrade, o DB antigo (cwd-relativo) não é encontrado — re-faça onboarding ou aponte `WOLFKROW_DB_PATH` para o arquivo antigo.
 
 ### Iniciar o sistema
 

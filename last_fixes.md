@@ -16,7 +16,7 @@
 
 ## P0 — Bloqueadores (impedem uso real)
 
-### [ ] FIX-001 — DB path relativo causa DBs split-brain
+### [x] FIX-001 — DB path relativo causa DBs split-brain
 - **Problema**: `WOLFKROW_DB_PATH` default é relativo ao cwd. Web (`apps/web`), worker (`apps/worker`) e migrate resolvem **arquivos SQLite diferentes** → login cria user num DB, worker lê outro → "invalid credentials", tabelas vazias.
 - **Evidência**: `packages/infra/src/db/client.ts:24,32,83` (`DEFAULT_DB_PATH = '.wolfkrow/data/wolfkrow.db'` + `path.resolve(process.cwd(), ...)`).
 - **Passos**:

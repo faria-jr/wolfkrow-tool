@@ -6,6 +6,7 @@
  */
 
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 import Database from 'better-sqlite3';
@@ -21,7 +22,19 @@ export type DatabaseClient = BetterSQLite3Database<typeof schema> & {
 let _client: DatabaseClient | null = null;
 let _sqlite: Database.Database | null = null;
 
-const DEFAULT_DB_PATH = '.wolfkrow/data/wolfkrow.db';
+/**
+ * Resolve the SQLite database path deterministically, independent of the
+ * process cwd (FIX-001: previously '.wolfkrow/...' was joined to cwd, so web,
+ * worker and migrate each opened a DIFFERENT file → split-brain DBs).
+ *
+ * Precedence: explicit arg → WOLFKROW_DB_PATH env → $HOME/.wolfkrow/data/wolfkrow.db.
+ */
+export function resolveDbPath(explicit?: string): string {
+  if (explicit) return path.resolve(explicit);
+  const envPath = process.env.WOLFKROW_DB_PATH;
+  if (envPath) return path.resolve(envPath);
+  return path.join(os.homedir(), '.wolfkrow', 'data', 'wolfkrow.db');
+}
 
 /**
  * Get or create SQLite database instance (singleton)
@@ -29,8 +42,7 @@ const DEFAULT_DB_PATH = '.wolfkrow/data/wolfkrow.db';
 export function getSqlite(dbPath?: string): Database.Database {
   if (_sqlite) return _sqlite;
 
-  const pathToUse = dbPath ?? process.env.WOLFKROW_DB_PATH ?? DEFAULT_DB_PATH;
-  const absolutePath = path.resolve(pathToUse);
+  const absolutePath = resolveDbPath(dbPath);
 
   fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
 
@@ -80,8 +92,7 @@ export function closeDb(): void {
 export function resetDb(dbPath?: string): void {
   closeDb();
 
-  const pathToUse = dbPath ?? process.env.WOLFKROW_DB_PATH ?? DEFAULT_DB_PATH;
-  const absolutePath = path.resolve(pathToUse);
+  const absolutePath = resolveDbPath(dbPath);
 
   if (fs.existsSync(absolutePath)) {
     fs.unlinkSync(absolutePath);
