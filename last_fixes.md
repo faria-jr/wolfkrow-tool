@@ -190,12 +190,13 @@
 - **Esforço**: S · **Depende de**: FIX-004.
 - **Concluído (2026-06-22, junto c/ FIX-004)**: `BuildSystemPromptUseCase` já aceita `skillDescriptions[]`. `agent-executor` resolve `agent.skills` (nomes) → `SkillRepo.findByUserId` + filtro → descriptions (`${name}: ${description}`) e passa ao builder. Skills agora aparecem no system prompt do scheduled-task path. (Pipeline/chat não usam skills por design — fases system-driven.)
 
-### [ ] FIX-017 — MCP HTTP API inalcançável
+### [x] FIX-017 — MCP HTTP API inalcançável
 - **Problema**: `manager.callTool`/`listTools` existem mas **nunca wired a rota** — MCP não usável via API.
 - **Evidência**: `apps/worker/src/mcp/manager.ts` + `routes/mcp.ts`.
 - **Passos**: 1. Expor `POST /mcp/:server/tools/call` + `GET /mcp/:server/tools`. 2. Permission gate. 3. Teste.
 - **Critério de aceite**: chamar tool MCP via HTTP funciona.
-- **Esforço**: S · **Depende de**: FIX-006.
+- **Esforço**: S · **Depende de**: FIX-006
+- **Concluído (2026-06-22)**: `mcpRoutes` refatorado p/ `FastifyPluginAsync<McpRouteOptions>` (manager injetável p/ testes, default = singleton). 2 endpoints novos: `GET /mcp/servers/:name/tools` (lista tools do server running; 400 se parado) e `POST /mcp/servers/:name/tools/call` body `{tool, arguments?}` → `manager.callTool` (400 se sem tool/server, 500 em erro do manager). Permission gate = `authenticate` (Bearer JWT — userId do token; gate mais fino = débito). Rotas divididas em `registerLifecycleRoutes` + `registerToolRoutes` p/ respeitar guard-rail ≤50 linhas/função. Teste `mcp-http-tools.test.ts` (4 casos): Fastify de teste c/ `authenticate` no-op + manager real subindo mock echo server; GET tools retorna `[echo]`, POST tools/call retorna content c/ 'hello', 400 em not-running e em tool ausente. Critério atendido..
 
 ---
 
