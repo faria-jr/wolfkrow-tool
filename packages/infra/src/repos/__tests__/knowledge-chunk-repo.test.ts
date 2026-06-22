@@ -1,7 +1,7 @@
 import { KnowledgeChunk } from '@wolfkrow/domain';
 import Database from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
-
+import { describe, expect, it } from 'vitest';
 
 import * as schema from '../../db/schema';
 import { cosineSimilarity, DrizzleKnowledgeChunkRepo } from '../knowledge-chunk-repo';

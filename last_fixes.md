@@ -38,7 +38,7 @@
 - **Critério de aceite**: ingest de doc fixture → search retorna resultado > 0 com score.
 - **Esforço**: M · **Depende de**: FIX-006 (searh via MCP depende) — independente p/ core.
 
-### [ ] FIX-003 — Coverage web 23% (gate ≥70%)
+### [x] FIX-003 — Coverage web 23% (gate ≥70%)
 - **Problema**: `@wolfkrow/web` em 23.3% de linhas (gate 70). 11 components `*-view.tsx` a 0%. Sub-gate auth/voice ≥80% violado (hooks `use-vad`/`use-tts`/`use-voice-conversation` 0%).
 - **Evidência**: auditoria §5; `apps/web/components/**/*-view.tsx` sem testes.
 - **Passos**:
