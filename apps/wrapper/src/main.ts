@@ -24,6 +24,7 @@ import {
   shell,
   Tray,
 } from 'electron';
+import { autoUpdater } from 'electron-updater';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -187,6 +188,26 @@ function createTray(window: BrowserWindow): void {
 }
 
 // ---------------------------------------------------------------------------
+// Auto-update
+// ---------------------------------------------------------------------------
+
+function bootstrapAutoUpdater(): void {
+  autoUpdater.logger = null; // use console
+  autoUpdater.on('update-available', () => {
+    console.warn('[updater] Update available — downloading...');
+  });
+  autoUpdater.on('update-downloaded', () => {
+    console.warn('[updater] Update downloaded — will install on next restart.');
+  });
+  autoUpdater.on('error', (err: Error) => {
+    console.warn('[updater] Auto-update error:', err.message);
+  });
+  autoUpdater.checkForUpdatesAndNotify().catch((e: unknown) => {
+    console.warn('[updater] Check failed:', e);
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Auto-launch
 // ---------------------------------------------------------------------------
 
@@ -228,6 +249,7 @@ async function main(): Promise<void> {
   win = createWindow();
   createTray(win);
   configureAutoLaunch();
+  bootstrapAutoUpdater();
 
   // Global hotkey
   globalShortcut.register(HOTKEY, toggleWindow);
