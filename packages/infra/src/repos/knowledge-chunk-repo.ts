@@ -1,6 +1,6 @@
 import type { ChunkMetadata, ChunkSearchResult, KeywordSearchResult, KnowledgeChunkRepo } from '@wolfkrow/domain';
 import { KnowledgeChunk } from '@wolfkrow/domain';
-import { eq } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, like } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { knowledgeChunks } from '../db/schema/knowledge';
@@ -27,6 +27,32 @@ function toEntity(row: DbChunk): KnowledgeChunk {
     position: row.position,
     createdAt: row.createdAt ?? new Date(),
   });
+}
+
+/**
+ * Cosine similarity between two equal-length vectors. Returns 0 for a zero
+ * vector (avoids divide-by-zero). Range: [-1, 1], higher = more similar.
+ *
+ * Used for in-app vector search over embeddings stored as JSON (FIX-002):
+ * the previous impl called sqlite-vec's vec_distance_cosine on a JSON text
+ * column with no vec0 virtual table → it always threw and the search
+ * silently returned []. Computing cosine in JS over the persisted embeddings
+ * works with the existing schema and is fine for a local single-user corpus.
+ */
+export function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) return 0;
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    const av = a[i]!;
+    const bv = b[i]!;
+    dot += av * bv;
+    normA += av * av;
+    normB += bv * bv;
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB);
+  return denom === 0 ? 0 : dot / denom;
 }
 
 export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
@@ -58,52 +84,33 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
   }
 
   async vectorSearch(embedding: number[], limit: number, documentIds?: string[]): Promise<ChunkSearchResult[]> {
-    const embeddingJson = JSON.stringify(embedding);
-    let sql = `
-      SELECT kc.id, kc.document_id, kc.content, kc.embedding, kc.metadata, kc.position, kc.created_at,
-             vec_distance_cosine(kc.embedding, ?) AS distance
-      FROM knowledge_chunks kc
-      WHERE kc.embedding IS NOT NULL
-    `;
-    const params: unknown[] = [embeddingJson];
+    const where = and(
+      isNotNull(knowledgeChunks.embedding),
+      documentIds && documentIds.length > 0 ? inArray(knowledgeChunks.documentId, documentIds) : undefined,
+    );
+    const rows = this.db.select().from(knowledgeChunks).where(where).all();
 
-    if (documentIds && documentIds.length > 0) {
-      sql += ` AND kc.document_id IN (${documentIds.map(() => '?').join(',')})`;
-      params.push(...documentIds);
-    }
-    sql += ` ORDER BY distance LIMIT ?`;
-    params.push(limit);
-
-    try {
-      const rows = this.db.$client.prepare(sql).all(...params) as (DbChunk & { distance: number })[];
-      return rows.map((r) => ({ chunk: toEntity(r), distance: r.distance }));
-    } catch {
-      return [];
-    }
+    return rows
+      .map((row) => {
+        const emb = row.embedding;
+        if (!Array.isArray(emb) || emb.length !== embedding.length) return null;
+        return { row, distance: 1 - cosineSimilarity(embedding, emb) };
+      })
+      .filter((x): x is { row: DbChunk; distance: number } => x !== null)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+      .map(({ row, distance }) => ({ chunk: toEntity(row), distance }));
   }
 
   async keywordSearch(query: string, limit: number, documentIds?: string[]): Promise<KeywordSearchResult[]> {
-    let sql = `
-      SELECT kc.id, kc.document_id, kc.content, kc.embedding, kc.metadata, kc.position, kc.created_at,
-             bm25(knowledge_chunks_fts) AS rank
-      FROM knowledge_chunks_fts
-      JOIN knowledge_chunks kc ON kc.id = knowledge_chunks_fts.rowid
-      WHERE knowledge_chunks_fts MATCH ?
-    `;
-    const params: unknown[] = [query];
-
-    if (documentIds && documentIds.length > 0) {
-      sql += ` AND kc.document_id IN (${documentIds.map(() => '?').join(',')})`;
-      params.push(...documentIds);
-    }
-    sql += ` ORDER BY rank LIMIT ?`;
-    params.push(limit);
-
-    try {
-      const rows = this.db.$client.prepare(sql).all(...params) as (DbChunk & { rank: number })[];
-      return rows.map((r) => ({ chunk: toEntity(r), rank: r.rank }));
-    } catch {
-      return [];
-    }
+    const pattern = `%${query}%`;
+    const where = and(
+      like(knowledgeChunks.content, pattern),
+      documentIds && documentIds.length > 0 ? inArray(knowledgeChunks.documentId, documentIds) : undefined,
+    );
+    const rows = this.db.select().from(knowledgeChunks).where(where).all();
+    return rows
+      .slice(0, limit)
+      .map((row) => ({ chunk: toEntity(row), rank: 0 }));
   }
 }

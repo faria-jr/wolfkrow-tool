@@ -27,7 +27,7 @@
 - **Critério de aceite**: mesmo DB independente do cwd de qualquer processo. Teste E2E verde.
 - **Esforço**: M · **Depende de**: —
 
-### [ ] FIX-002 — Knowledge search retorna `[]` silenciosamente
+### [x] FIX-002 — Knowledge search retorna `[]` silenciosamente
 - **Problema**: busca vetorial + FTS5 não funcionam — sem tabelas virtuais `vec0`/`fts5` criadas; `catch { return [] }` mascara o erro. RAG aparenta funcionar mas sempre vazio.
 - **Evidência**: `packages/infra/src/repos/knowledge-chunk-repo.ts:60-108` (`vec_distance_cosine` em coluna JSON, sem `vec0`; FTS5 nunca criado).
 - **Passos**:
