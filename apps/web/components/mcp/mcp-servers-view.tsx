@@ -1,12 +1,10 @@
 'use client';
 
-import { Plus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { AddMcpServerModal } from './add-mcp-server-modal';
 import type { McpServerData } from './mcp-server-list';
 import { McpServerList } from './mcp-server-list';
-
-import { Button } from '@/components/ui/button';
 
 const API = '/api/mcp-servers';
 
@@ -46,9 +44,7 @@ export function McpServersView() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button disabled title="Custom MCP server creation coming soon">
-          <Plus className="mr-2 h-4 w-4" />Add server
-        </Button>
+        <AddMcpServerModal onDone={() => void load()} />
       </div>
       <McpServerList servers={servers} onToggle={handleToggle} onDelete={handleDelete} />
     </div>
