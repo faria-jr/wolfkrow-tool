@@ -12,5 +12,6 @@ export interface ScheduledTaskRepo {
 export interface TaskRunRepo {
   findById(id: string): Promise<TaskRun | null>;
   findByTaskId(taskId: string, limit?: number): Promise<TaskRun[]>;
+  findAwaitingReview(userId: string): Promise<TaskRun[]>;
   save(run: TaskRun): Promise<TaskRun>;
 }

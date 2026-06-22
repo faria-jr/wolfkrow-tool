@@ -2,7 +2,7 @@ import type { ScheduledTaskRepo, TaskRunRepo } from '@wolfkrow/domain';
 import { NotFoundError, TaskRun } from '@wolfkrow/domain';
 
 export interface TaskExecutor {
-  execute(task: { id: string; name: string; prompt: string; agentId: string | undefined }): Promise<{
+  execute(task: { id: string; name: string; prompt: string; agentId: string | undefined; requiresReview?: boolean }): Promise<{
     status: 'awaiting_review' | 'validated' | 'rejected';
     output?: Record<string, unknown>;
     error?: string;
@@ -33,6 +33,7 @@ export class RunScheduledTaskUseCase {
     try {
       const result = await this.executor.execute({
         id: task.id, name: task.name, prompt: task.prompt, agentId: task.agentId,
+        requiresReview: task.tags.includes('requires-review'),
       });
 
       run = await this.runRepo.save(

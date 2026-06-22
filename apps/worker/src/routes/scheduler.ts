@@ -98,6 +98,13 @@ export async function schedulerRoutes(server: AuthFastifyInstance) {
     return reply.send({ runs: runs.map((r) => r.toProps()) });
   });
 
+  server.get('/runs/pending-review', { preHandler: [server.authenticate] }, async (req, reply) => {
+    const userId = (req as unknown as { user: { userId: string } }).user.userId;
+    const { runRepo } = makeRepos();
+    const runs = await runRepo.findAwaitingReview(userId);
+    return reply.send({ runs: runs.map((r) => r.toProps()), count: runs.length });
+  });
+
   server.post<{ Params: { id: string }; Body: { verdict: 'validated' | 'rejected'; note?: string } }>('/runs/:id/review', { preHandler: [server.authenticate] }, async (req, reply) => {
     const { runRepo } = makeRepos();
     const body = req.body;

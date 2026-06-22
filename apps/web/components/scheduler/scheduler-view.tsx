@@ -17,6 +17,14 @@ interface TaskData {
   createdAt: string;
 }
 
+interface PendingRun {
+  id: string;
+  taskId: string;
+  status: string;
+  output?: { content?: string };
+  startedAt?: string;
+}
+
 interface NewTaskForm { name: string; cronExpression: string; prompt: string; description: string; }
 
 const EMPTY_FORM: NewTaskForm = { name: '', cronExpression: '', prompt: '', description: '' };
@@ -63,6 +71,7 @@ function SchedulerTaskItem({ task, onToggle, onDelete, onRun }: TaskItemProps) {
             <span className={`inline-block h-2 w-2 rounded-full ${task.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
             <h3 className="truncate font-medium">{task.name}</h3>
             <code className="bg-muted rounded px-1.5 py-0.5 text-xs font-mono">{task.cronExpression}</code>
+            {task.tags.includes('requires-review') && <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-xs text-amber-600">review required</span>}
           </div>
           {task.description && <p className="text-muted-foreground mt-1 text-sm">{task.description}</p>}
           <p className="text-muted-foreground mt-1 line-clamp-1 text-xs">{task.prompt}</p>
@@ -77,6 +86,35 @@ function SchedulerTaskItem({ task, onToggle, onDelete, onRun }: TaskItemProps) {
           <button onClick={onDelete} className="text-muted-foreground hover:text-destructive text-xs transition-colors">delete</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+interface PendingReviewProps { runs: PendingRun[]; onReview: (id: string, verdict: 'validated' | 'rejected') => void; }
+function PendingReviewSection({ runs, onReview }: PendingReviewProps) {
+  if (runs.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      <h2 className="flex items-center gap-2 font-semibold text-amber-600">
+        <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+        Pending Review ({runs.length})
+      </h2>
+      {runs.map((run) => (
+        <div key={run.id} className="bg-card rounded-lg border border-amber-500/30 p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-muted-foreground text-xs">Run {run.id.slice(0, 8)} · {run.startedAt ? new Date(run.startedAt).toLocaleString() : '—'}</p>
+              {run.output?.content && (
+                <pre className="bg-muted mt-2 max-h-32 overflow-auto rounded p-2 text-xs whitespace-pre-wrap">{run.output.content}</pre>
+              )}
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button onClick={() => onReview(run.id, 'validated')} className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700">Approve</button>
+              <button onClick={() => onReview(run.id, 'rejected')} className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700">Reject</button>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -109,36 +147,41 @@ async function doCreateTask(p: CreateParams) {
   }
 }
 
-export function SchedulerView() {
+function useSchedulerData() {
   const [tasks, setTasks] = useState<TaskData[]>([]);
+  const [pendingRuns, setPendingRuns] = useState<PendingRun[]>([]);
+  const load = useCallback(async () => {
+    const [t, r] = await Promise.all([
+      fetch('/api/scheduler/tasks', { credentials: 'include' }),
+      fetch('/api/scheduler/runs/pending-review', { credentials: 'include' }),
+    ]);
+    if (t.ok) setTasks(((await t.json()) as { tasks: TaskData[] }).tasks ?? []);
+    if (r.ok) setPendingRuns(((await r.json()) as { runs: PendingRun[] }).runs ?? []);
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+  return { tasks, pendingRuns, reload: load };
+}
+
+async function patchTask(id: string, body: object) {
+  await fetch(`/api/scheduler/tasks/${id}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+}
+
+async function reviewRun(runId: string, verdict: 'validated' | 'rejected') {
+  await fetch(`/api/scheduler/runs/${runId}/review`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ verdict }) });
+}
+
+export function SchedulerView() {
+  const { tasks, pendingRuns, reload } = useSchedulerData();
   const [form, setForm] = useState<NewTaskForm>(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTasks = useCallback(async () => {
-    const res = await fetch('/api/scheduler/tasks', { credentials: 'include' });
-    if (res.ok) setTasks(((await res.json()) as { tasks: TaskData[] }).tasks ?? []);
-  }, []);
-
-  useEffect(() => { void loadTasks(); }, [loadTasks]);
-
-  const handleCreate = () => void doCreateTask({ form, setError, setCreating, setForm, setShowForm, load: () => void loadTasks() });
-
-  const handleToggle = async (task: TaskData) => {
-    await fetch(`/api/scheduler/tasks/${task.id}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: !task.enabled }) });
-    void loadTasks();
-  };
-
-  const handleDelete = async (id: string) => {
-    await fetch(`/api/scheduler/tasks/${id}`, { method: 'DELETE', credentials: 'include' });
-    void loadTasks();
-  };
-
-  const handleRun = async (id: string) => {
-    await fetch(`/api/scheduler/tasks/${id}/run`, { method: 'POST', credentials: 'include' });
-    void loadTasks();
-  };
+  const handleCreate = () => void doCreateTask({ form, setError, setCreating, setForm, setShowForm, load: () => void reload() });
+  const handleToggle = (task: TaskData) => void patchTask(task.id, { enabled: !task.enabled }).then(() => void reload());
+  const handleDelete = (id: string) => void fetch(`/api/scheduler/tasks/${id}`, { method: 'DELETE', credentials: 'include' }).then(() => void reload());
+  const handleRun = (id: string) => void fetch(`/api/scheduler/tasks/${id}/run`, { method: 'POST', credentials: 'include' }).then(() => void reload());
+  const handleReview = (runId: string, verdict: 'validated' | 'rejected') => void reviewRun(runId, verdict).then(() => void reload());
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
@@ -152,6 +195,7 @@ export function SchedulerView() {
         </button>
       </div>
       {showForm && <TaskCreateForm form={form} setForm={setForm} creating={creating} error={error} onSubmit={handleCreate} />}
+      <PendingReviewSection runs={pendingRuns} onReview={(id, v) => void handleReview(id, v)} />
       {tasks.length === 0 ? (
         <p className="text-muted-foreground py-12 text-center text-sm">No scheduled tasks yet.</p>
       ) : (

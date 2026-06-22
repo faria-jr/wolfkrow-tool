@@ -28,6 +28,7 @@ class InMemoryRunRepo implements TaskRunRepo {
   readonly store = new Map<string, TaskRun>();
   async findById(id: string) { return this.store.get(id) ?? null; }
   async findByTaskId(taskId: string) { return [...this.store.values()].filter((r) => r.taskId === taskId); }
+  async findAwaitingReview(_userId: string) { return [...this.store.values()].filter((r) => r.status === 'awaiting_review'); }
   async save(run: TaskRun) { this.store.set(run.id, run); return run; }
 }
 
