@@ -55,11 +55,11 @@ describe('RecordAuditEntryUseCase', () => {
     });
     const entry = repo.rows[0];
     expect(entry).toBeDefined();
-    expect(entry.userId).toBe('u1');
-    expect(entry.action).toBe('agent.create');
-    expect(entry.resourceId).toBe('a1');
-    expect(entry.metadata).toEqual({ model: 'gpt-4o' });
-    expect(entry.timestamp.getTime()).toBeGreaterThanOrEqual(before);
+    expect(entry?.userId).toBe('u1');
+    expect(entry?.action).toBe('agent.create');
+    expect(entry?.resourceId).toBe('a1');
+    expect(entry?.metadata).toEqual({ model: 'gpt-4o' });
+    expect(entry?.timestamp.getTime()).toBeGreaterThanOrEqual(before);
   });
 
   it('defaults metadata to empty object when omitted', () => {

@@ -1,23 +1,19 @@
 import { randomUUID } from 'node:crypto';
 
+import type { McpToolInput, McpToolRecord, McpToolRegistryRepo } from '@wolfkrow/domain';
 import { eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { mcpToolRegistry } from '../db/schema/mcp-servers';
 
-export interface McpToolRecord {
-  id: string;
-  mcpServerId: string;
-  name: string;
-  description: string | undefined;
-  inputSchema: Record<string, unknown> | undefined;
-  lastSynced: Date;
-}
-
-export class DrizzleMcpToolRegistryRepo {
+/**
+ * MCP tool-registry repository via Drizzle (SQLite). Implementa o port
+ * `McpToolRegistryRepo` do domínio (FIX-027: contrato era inline em infra).
+ */
+export class DrizzleMcpToolRegistryRepo implements McpToolRegistryRepo {
   constructor(private readonly db = getDb()) {}
 
-  upsertMany(serverId: string, tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>): void {
+  upsertMany(serverId: string, tools: McpToolInput[]): void {
     const now = new Date();
     for (const tool of tools) {
       const existing = this.db
@@ -55,17 +51,19 @@ export class DrizzleMcpToolRegistryRepo {
       .from(mcpToolRegistry)
       .where(eq(mcpToolRegistry.mcpServerId, serverId))
       .all()
-      .map((r) => ({
-        id: r.id,
-        mcpServerId: r.mcpServerId,
-        name: r.name,
-        description: r.description ?? undefined,
-        inputSchema: (r.inputSchema as Record<string, unknown> | null) ?? undefined,
-        lastSynced: r.lastSynced,
-      }));
+      .map(this.toRecord);
   }
 
   deleteByServerId(serverId: string): void {
     this.db.delete(mcpToolRegistry).where(eq(mcpToolRegistry.mcpServerId, serverId)).run();
   }
+
+  private toRecord = (r: typeof mcpToolRegistry.$inferSelect): McpToolRecord => ({
+    id: r.id,
+    mcpServerId: r.mcpServerId,
+    name: r.name,
+    description: r.description ?? undefined,
+    inputSchema: (r.inputSchema as Record<string, unknown> | null) ?? undefined,
+    lastSynced: r.lastSynced,
+  });
 }

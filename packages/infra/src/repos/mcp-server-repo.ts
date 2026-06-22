@@ -1,3 +1,9 @@
+import type {
+  McpServerCreateInput,
+  McpServerRecord,
+  McpServerRepo,
+  McpServerVisibility,
+} from '@wolfkrow/domain';
 import { eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
@@ -6,25 +12,11 @@ import { mcpServers } from '../db/schema/mcp-servers';
 type McpServerRow = typeof mcpServers.$inferSelect;
 type Db = ReturnType<typeof getDb>;
 
-export interface McpServerRecord {
-  id: string;
-  userId: string | null;
-  name: string;
-  description: string | undefined;
-  command: string;
-  args: string[];
-  env: Record<string, string>;
-  isActive: boolean;
-  isBuiltIn: boolean;
-  visibility: 'always' | 'on-demand' | 'background';
-  healthCheck: string | undefined;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type McpServerCreateInput = Omit<McpServerRecord, 'id' | 'createdAt' | 'updatedAt'>;
-
-export class DrizzleMcpServerRepo {
+/**
+ * MCP-server repository via Drizzle (SQLite). Implementa o port `McpServerRepo`
+ * do domínio (FIX-027: tipos eram inline em infra).
+ */
+export class DrizzleMcpServerRepo implements McpServerRepo {
   constructor(private readonly db: Db = getDb()) {}
 
   findById(id: string): McpServerRecord | null {
@@ -76,7 +68,7 @@ export class DrizzleMcpServerRepo {
       env: { ...input.env },
       isActive: input.isActive,
       isBuiltIn: input.isBuiltIn,
-      visibility: input.visibility,
+      visibility: input.visibility as McpServerVisibility,
       metadata: {},
       ...(input.description !== undefined ? { description: input.description } : {}),
       ...(input.healthCheck !== undefined ? { healthCheck: input.healthCheck } : {}),
@@ -94,7 +86,7 @@ export class DrizzleMcpServerRepo {
       env: (row.env ?? {}) as Record<string, string>,
       isActive: row.isActive,
       isBuiltIn: row.isBuiltIn,
-      visibility: row.visibility,
+      visibility: row.visibility as McpServerVisibility,
       healthCheck: row.healthCheck ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

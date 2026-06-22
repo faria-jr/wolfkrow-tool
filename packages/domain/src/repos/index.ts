@@ -24,3 +24,6 @@ export type { EnrichSessionRepo } from './enrich-repos';
 export type { WorkflowRunRepo } from './workflow-repos';
 export type { UsageRepo, UsageRecord, UsageRecordInput, UsageFilter, UsageCostFilter } from './usage-repo';
 export type { AuditRepo, AuditRow, AuditEntryInput, AuditFilter } from './audit-log-repo';
+export type { McpServerRepo, McpServerRecord, McpServerCreateInput, McpServerVisibility } from './mcp-server-repo';
+export type { McpToolRegistryRepo, McpToolRecord, McpToolInput } from './mcp-tool-registry-repo';
+export type { AuthAuditRepo, AuthAuditEntry } from './auth-audit-repo';

@@ -235,12 +235,13 @@
 - **Passos**: externalizar p/ config/agent; passar via DI.
 - **Esforço**: S.
 
-### [~] FIX-027 — 5 infra repos sem port no domain (revisado: eram 7)
+### [x] FIX-027 — 5 infra repos sem port no domain (revisado: eram 7)
 - **Problema**: AuthAudit, AuditLog, GlobalRule, McpServer, McpToolRegistry, Secret, TokenUsage têm repo em infra **sem interface no domain**.
 - **Passos**: criar `domain/repos/*.ts` p/ cada; fazer infra implementar; usar via DI.
 - **Esforço**: M · **Depende de**: FIX-007.
 - **Estado (2026-06-22)**: **2/7 já têm port** — `GlobalRuleRepo` (`domain/entities/global-rule.ts:95`) e `SecretRepo` (`domain/entities/secret.ts:107`), ambos já `implements` em infra. **5 faltam de verdade**: auth-audit, audit-log, mcp-server, mcp-tool-registry, token-usage. Anti-pattern comum: tipos inline em infra (`AuditEntry`, `McpServerRecord`, `TokenUsageRecord`...), type unions vazados do drizzle (`typeof X.$inferInsert['action']`), métodos sync. Blast radius: AuthAudit 7 callers, McpServer 4 callers, demais 1 caller. Todos em 0% coverage → RED (teste) antes do refactor.
 - **Progresso (2026-06-22)**: **2/5 slices feitos** — `token-usage` e `audit-log`. Ambos seguiam o padrão "port vivia em use-cases + infra não implementava + rota fazia `as never`". Movido port p/ domain (`UsageRepo`/`UsageRecord`/`UsageFilter` em `domain/repos/usage-repo.ts`; `AuditRepo`/`AuditRow`/`AuditFilter` em `domain/repos/audit-log-repo.ts`); infra `implements`; use-cases importam de `@wolfkrow/domain`; rotas `usage.ts` + `permissions.ts` sem `as never` (4 casts removidos). `source`/`action` viraram `string` na fronteira (infra restringe ao enum da coluna). 10 testes de caracterização (fake repos) cobrindo CheckBudget/ComputeUsage/RecordAudit/QueryAudit. **Faltam**: auth-audit (7 callers), mcp-server (4), mcp-tool-registry (1) — estes não têm port em use-cases, criam do zero.
+- **Concluído (2026-06-22)**: **5/5 slices** — completados `mcp-server`, `mcp-tool-registry`, `auth-audit` (criados do zero no domain: `McpServerRepo`/`McpServerRecord`/`McpServerVisibility`/`McpServerCreateInput`, `McpToolRegistryRepo`/`McpToolRecord`/`McpToolInput`, `AuthAuditRepo`/`AuthAuditEntry`). Infra `implements` em todos; enums drizzle (`visibility`/`action`) de-leaked p/ `string` na fronteira. Barrel infra re-exporta tipos do domain (backward-compat). Web route `mcp-servers/route.ts` ajustada p/ `exactOptionalPropertyTypes` (conditional spread). 11 testes mock-db (helper `mock-db.ts`) cobrindo os 3 repos sem use-case. **FIX-027 [x]** — ports + implements done. DI wiring (uso via container) = FIX-007.
 
 ### [ ] FIX-028 — Chat features faltantes
 - **Problema**: Title generation (#9), ConfirmDialog (#10), AskQuestionDialog (#11), Artifact detection (#36), Excalidraw inline (#34) — todos ⛔.

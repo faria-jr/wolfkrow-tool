@@ -1,18 +1,18 @@
 import { randomUUID } from 'node:crypto';
 
+import type { AuthAuditEntry, AuthAuditRepo } from '@wolfkrow/domain';
+
 import { getDb } from '../db/client';
 import { authAuditLog } from '../db/schema/auth';
 
-export type AuthAuditAction = typeof authAuditLog.$inferInsert['action'];
+/** Drizzle enum da coluna `action` (interno — a fronteira do domínio usa `string`). */
+type AuthAuditAction = typeof authAuditLog.$inferInsert['action'];
 
-export interface AuthAuditEntry {
-  userId: string | undefined;
-  action: AuthAuditAction;
-  ip: string | undefined;
-  userAgent: string | undefined;
-}
-
-export class DrizzleAuthAuditRepo {
+/**
+ * Auth-audit repository via Drizzle (SQLite). Implementa o port `AuthAuditRepo`
+ * do domínio (FIX-027: tipos eram inline em infra).
+ */
+export class DrizzleAuthAuditRepo implements AuthAuditRepo {
   constructor(private readonly db = getDb()) {}
 
   log(entry: AuthAuditEntry): void {
@@ -21,7 +21,7 @@ export class DrizzleAuthAuditRepo {
       .values({
         id: randomUUID(),
         userId: entry.userId ?? null,
-        action: entry.action,
+        action: entry.action as AuthAuditAction,
         ip: entry.ip ?? null,
         userAgent: entry.userAgent ?? null,
         metadata: {},

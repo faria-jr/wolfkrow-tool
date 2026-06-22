@@ -28,14 +28,14 @@ export async function POST(request: Request) {
   const server = repo.save(randomUUID(), {
     userId: session.userId,
     name: String(body.name),
-    description: body.description !== undefined ? String(body.description) : undefined,
+    ...(body.description !== undefined ? { description: String(body.description) } : {}),
     command: String(body.command),
     args: Array.isArray(body.args) ? (body.args as string[]) : [],
     env: (body.env as Record<string, string>) ?? {},
     isActive: Boolean(body.isActive),
     isBuiltIn: false,
     visibility: 'always',
-    healthCheck: body.healthCheck !== undefined ? String(body.healthCheck) : undefined,
+    ...(body.healthCheck !== undefined ? { healthCheck: String(body.healthCheck) } : {}),
   });
   return Response.json({ server }, { status: 201 });
 }
