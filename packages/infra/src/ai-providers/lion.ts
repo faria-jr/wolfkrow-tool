@@ -1,19 +1,3 @@
-/**
- * LionProvider — roteador universal multi-provider.
- * Despacha para o adapter correto baseado no prefixo do modelo.
- *
- * Adapters implementados:
- *   anthropic  → AnthropicProvider   (claude-*)
- *   openai     → CodexProvider       (gpt-*, o1-*, o3-*)
- *   ollama     → CodexProvider       (llama-*, qwen-*, phi-*, mistral-*, gemma-*)
- *
- * Stubs (P1 — A.2 completo):
- *   google     → gemini-*  (requer @google/generative-ai)
- *   zai        → zai-*     (requer @zai/sdk)
- *   groq       → groq-*    (requer groq-sdk)
- *   together   → together-* (requer together SDK)
- */
-
 import { AnthropicProvider } from './anthropic';
 import { CodexProvider } from './codex';
 import type { AIProvider, ChatMessage, CompletionOptions, CompletionResult, StreamChunk } from './types';
@@ -29,10 +13,34 @@ export interface LionProviderConfig {
   ollamaBaseUrl?: string;
 }
 
+function adapterKey(model: string): string {
+  const m = model.toLowerCase();
+  if (m.startsWith('claude-')) return 'anthropic';
+  if (OPENAI_PREFIXES.some((p) => m.startsWith(p))) return 'openai';
+  if (OLLAMA_PREFIXES.some((p) => m.startsWith(p))) return 'ollama';
+  return `stub:${m.split('-')[0]}`;
+}
+
 export class LionProvider implements AIProvider {
+  private readonly _cache = new Map<string, AIProvider>();
+
   constructor(private readonly config: LionProviderConfig) {}
 
+  /** Exposed for testing — returns the resolved (and cached) adapter. */
+  public resolveForTest(model: string): AIProvider {
+    return this.resolve(model);
+  }
+
   private resolve(model: string): AIProvider {
+    const key = adapterKey(model);
+    const cached = this._cache.get(key);
+    if (cached) return cached;
+    const provider = this.create(model);
+    this._cache.set(key, provider);
+    return provider;
+  }
+
+  private create(model: string): AIProvider {
     const m = model.toLowerCase();
 
     if (m.startsWith('claude-')) {
