@@ -127,13 +127,14 @@
 - **Critério de aceite**: graph segue vertical-slice `domain→use-case→infra→worker→web`; sem lógica em worker/knowledge.
 - **Esforço**: M · **Depende de**: FIX-007.
 
-### [~] FIX-009 — Tasks board misplaced + sem DnD
+### [x] FIX-009 — Tasks board misplaced + sem DnD
 - **Problema**: `tasks.ts` faz **raw drizzle** (`db.select().from(tasks)`), sem repo/use-case/port. Board move via botões (sem `@dnd-kit`); sem calendar.
 - **Evidência**: `apps/worker/src/routes/tasks.ts:8-10,54,78,100`; `apps/web/components/tasks/tasks-board.tsx`.
 - **Passos**: 1. Port `TaskRepo` + `DrizzleTaskRepo` + use-cases CRUD/move. 2. Rota via use-case. 3. DnD com `@dnd-kit`. 4. (opcional) view calendar.
 - **Critério de aceite**: Tasks via Clean Arch; drag-and-drop funcional.
 - **Esforço**: M · **Depende de**: FIX-007.
-- **Progresso (2026-06-22, backend)**: domínio `TaskItem*` (types `TaskItem`/`TaskItemCreateInput`/`TaskItemUpdateInput`/`TaskItemFilter` + enums `TaskItemStatus`/`TaskItemCategory`/`TaskItemPriority` — nomeados `TaskItem*` p/ evitar colisão com `TaskStatus` do scheduled-task) + port `TaskItemRepo` em `domain/repos/task-repo.ts`. `DrizzleTaskRepo implements TaskItemRepo` (invariante `completedAt` derivado de `status=done` no `update`). Registrado no registry (`getRepos().task`). Rota `tasks.ts` migrada: CRUD via `getRepos().task`, sem raw drizzle, sem `@wolfkrow/infra` (fecha FIX-007). PATCH agora retorna 404 se not-found. 5 testes mock-db. Sem camada use-case (board CRUD não exige; mapping fica em helper `mapTaskPatch` na rota). **Falta**: DnD `@dnd-kit` no `tasks-board.tsx` (hoje move via botões) + view calendar (opcional).
+- **Progresso (2026-06-22, backend)**: domínio `TaskItem*` (types `TaskItem`/`TaskItemCreateInput`/`TaskItemUpdateInput`/`TaskItemFilter` + enums `TaskItemStatus`/`TaskItemCategory`/`TaskItemPriority` — nomeados `TaskItem*` p/ evitar colisão com `TaskStatus` do scheduled-task) + port `TaskItemRepo` em `domain/repos/task-repo.ts`. `DrizzleTaskRepo implements TaskItemRepo` (invariante `completedAt` derivado de `status=done` no `update`). Registrado no registry (`getRepos().task`). Rota `tasks.ts` migrada: CRUD via `getRepos().task`, sem raw drizzle, sem `@wolfkrow/infra` (fecha FIX-007). PATCH agora retorna 404 se not-found. 5 testes mock-db. Sem camada use-case (board CRUD não exige; mapping fica em helper `mapTaskPatch` na rota).
+- **Concluído (2026-06-22, DnD)**: `@dnd-kit/core@6.3.1` instalado. `tasks-board.tsx` reescrito com DnD — `DndContext` + `PointerSensor`, colunas `useDroppable` (destaque `isOver`), cards `useDraggable` (translate + opacity no drag), `DragOverlay` p/ preview. `onDragEnd` → `moveTask(id, status)`. Move-buttons removidos (DnD substitui); Delete mantido. Teste smoke existente (3 testes FIX-003) passa com o novo board. **FIX-009 [x]**. View calendar = opcional, não feito (débito).
 
 ### [ ] FIX-010 — Wrapper sem dep `electron` + sem auto-update
 - **Problema**: `apps/wrapper/main.ts` importa `'electron'` mas `package.json` não declara → não instalável. Falta `electron-updater`.

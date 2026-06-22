@@ -1,5 +1,16 @@
 'use client';
 
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -35,27 +46,49 @@ const PRIORITY_COLORS = {
 export function TasksBoard() {
   const { tasks, createTask, moveTask, deleteTask } = useTasks();
   const [showForm, setShowForm] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+
+  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
+
+  function onDragStart(event: DragStartEvent) {
+    setActiveId(String(event.active.id));
+  }
+
+  function onDragEnd(event: DragEndEvent) {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over) return;
+    const targetStatus = String(over.id) as TaskStatus;
+    if (STATUS_COLS.some((c) => c.key === targetStatus)) {
+      void moveTask(String(active.id), targetStatus);
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      {showForm ? (
-        <NewTaskForm onCreated={() => setShowForm(false)} onCreate={createTask} onCancel={() => setShowForm(false)} />
-      ) : (
-        <Button onClick={() => setShowForm(true)} className="w-fit">New Task</Button>
-      )}
+    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <div className="flex flex-col gap-4">
+        {showForm ? (
+          <NewTaskForm onCreated={() => setShowForm(false)} onCreate={createTask} onCancel={() => setShowForm(false)} />
+        ) : (
+          <Button onClick={() => setShowForm(true)} className="w-fit">New Task</Button>
+        )}
 
-      <div className="grid grid-cols-4 gap-4">
-        {STATUS_COLS.map(({ key, label }) => (
-          <TaskColumn
-            key={key}
-            label={label}
-            tasks={tasks.filter((t) => t.status === key)}
-            onMove={moveTask}
-            onDelete={deleteTask}
-          />
-        ))}
+        <div className="grid grid-cols-4 gap-4">
+          {STATUS_COLS.map(({ key, label }) => (
+            <TaskColumn
+              key={key}
+              statusKey={key}
+              label={label}
+              tasks={tasks.filter((t) => t.status === key)}
+              onDelete={deleteTask}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+
+      <DragOverlay>{activeTask ? <TaskCardBody task={activeTask} /> : null}</DragOverlay>
+    </DndContext>
   );
 }
 
@@ -136,60 +169,60 @@ function NewTaskForm({
 }
 
 function TaskColumn({
+  statusKey,
   label,
   tasks,
-  onMove,
   onDelete,
 }: {
+  statusKey: TaskStatus;
   label: string;
   tasks: Task[];
-  onMove: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
 }) {
+  const { setNodeRef, isOver } = useDroppable({ id: statusKey });
   return (
-    <div className="flex flex-col gap-2">
+    <div ref={setNodeRef} className={`flex flex-col gap-2 rounded p-1 ${isOver ? 'bg-secondary/40' : ''}`}>
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">{label}</h3>
         <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{tasks.length}</span>
       </div>
       <div className="flex flex-col gap-2">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} onMove={onMove} onDelete={onDelete} />
+          <DraggableTaskCard key={task.id} task={task} onDelete={onDelete} />
         ))}
       </div>
     </div>
   );
 }
 
-function TaskCard({
-  task,
-  onMove,
-  onDelete,
-}: {
-  task: Task;
-  onMove: (id: string, status: TaskStatus) => void;
-  onDelete: (id: string) => void;
-}) {
+function DraggableTaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
+  const style = {
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    opacity: isDragging ? 0.4 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      <TaskCardBody task={task} onDelete={onDelete} />
+    </div>
+  );
+}
+
+/** Card body, reused by the drag overlay (no listeners there). */
+function TaskCardBody({ task, onDelete }: { task: Task; onDelete?: (id: string) => void }) {
   return (
     <div className={`rounded border border-l-4 bg-card p-2 ${PRIORITY_COLORS[task.priority]}`}>
       <p className="text-sm font-medium">{task.title}</p>
-      <div className="mt-2 flex flex-wrap gap-1">
-        {STATUS_COLS.filter((s) => s.key !== task.status).map((s) => (
+      {onDelete && (
+        <div className="mt-2 flex flex-wrap gap-1">
           <button
-            key={s.key}
-            onClick={() => onMove(task.id, s.key)}
-            className="rounded bg-secondary px-1.5 py-0.5 text-[10px] hover:bg-secondary/80"
+            onClick={() => onDelete(task.id)}
+            className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive hover:bg-destructive/20"
           >
-            → {s.label}
+            Delete
           </button>
-        ))}
-        <button
-          onClick={() => onDelete(task.id)}
-          className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive hover:bg-destructive/20"
-        >
-          Delete
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }
