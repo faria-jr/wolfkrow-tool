@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { harnessProjects } from '../db/schema/harness';
 
+import { fromJsonRequired, asJsonField } from './json-field';
 
 type DbRow = typeof harnessProjects.$inferSelect;
 
@@ -17,8 +18,8 @@ function toEntity(row: DbRow): HarnessProject {
     description: row.description ?? undefined,
     specPath: row.specPath,
     status: row.status,
-    config: row.config as unknown as HarnessConfig,
-    metrics: row.metrics as unknown as ProjectMetrics,
+    config: fromJsonRequired<HarnessConfig>(row.config),
+    metrics: fromJsonRequired<ProjectMetrics>(row.metrics),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     completedAt: row.completedAt ?? undefined,
@@ -43,16 +44,16 @@ export class DrizzleHarnessProjectRepo implements HarnessProjectRepo {
     this.db.insert(harnessProjects).values({
       id: p.id, userId: p.userId, name: p.name,
       description: p.description ?? null, specPath: p.specPath, status: p.status,
-      config: p.config as unknown as Record<string, unknown>,
-      metrics: p.metrics as unknown as Record<string, unknown>,
+      config: asJsonField(p.config),
+      metrics: asJsonField(p.metrics),
       createdAt: p.createdAt, updatedAt: p.updatedAt,
       completedAt: p.completedAt ?? null,
     }).onConflictDoUpdate({
       target: harnessProjects.id,
       set: {
         name: p.name, description: p.description ?? null, status: p.status,
-        config: p.config as unknown as Record<string, unknown>,
-        metrics: p.metrics as unknown as Record<string, unknown>,
+        config: asJsonField(p.config),
+        metrics: asJsonField(p.metrics),
         updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
       },
     }).run();

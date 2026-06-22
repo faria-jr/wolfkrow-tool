@@ -1,11 +1,11 @@
 import { WorkflowRun } from '@wolfkrow/domain';
-import type { WorkflowRunRepo } from '@wolfkrow/domain';
-import type { WorkflowMetrics } from '@wolfkrow/domain';
+import type { WorkflowMetrics, WorkflowRunRepo } from '@wolfkrow/domain';
 import { eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { workflowRuns } from '../db/schema/workflow';
 
+import { fromJson, asJsonField } from './json-field';
 
 type DbRow = typeof workflowRuns.$inferSelect;
 
@@ -15,12 +15,12 @@ function toEntity(row: DbRow): WorkflowRun {
     userId: row.userId,
     workflowName: row.workflowName,
     status: row.status,
-    input: (row.input as Record<string, unknown>) ?? {},
-    output: (row.output as Record<string, unknown>) ?? undefined,
+    input: fromJson<Record<string, unknown>>(row.input, {}),
+    output: fromJson<Record<string, unknown>>(row.output, undefined as unknown as Record<string, unknown>) ?? undefined,
     error: row.error ?? undefined,
     startedAt: row.startedAt ?? undefined,
     completedAt: row.completedAt ?? undefined,
-    metrics: (row.metrics as unknown as WorkflowMetrics) ?? { durationMs: 0, stepCount: 0 },
+    metrics: fromJson<WorkflowMetrics>(row.metrics, { durationMs: 0, stepCount: 0 }),
     createdAt: row.createdAt,
   });
 }
@@ -43,16 +43,16 @@ export class DrizzleWorkflowRunRepo implements WorkflowRunRepo {
     const p = run.toProps();
     this.db.insert(workflowRuns).values({
       id: p.id, userId: p.userId, workflowName: p.workflowName, status: p.status,
-      input: p.input, output: p.output ?? {}, error: p.error ?? null,
+      input: asJsonField(p.input), output: asJsonField(p.output), error: p.error ?? null,
       startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-      metrics: p.metrics as unknown as Record<string, unknown>,
+      metrics: asJsonField(p.metrics),
       metadata: {}, createdAt: p.createdAt,
     }).onConflictDoUpdate({
       target: workflowRuns.id,
       set: {
-        status: p.status, output: p.output ?? {}, error: p.error ?? null,
+        status: p.status, output: asJsonField(p.output), error: p.error ?? null,
         startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-        metrics: p.metrics as unknown as Record<string, unknown>,
+        metrics: asJsonField(p.metrics),
       },
     }).run();
     return run;

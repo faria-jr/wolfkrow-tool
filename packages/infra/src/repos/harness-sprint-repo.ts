@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { harnessSprints } from '../db/schema/harness';
 
+import { fromJsonRequired, asJsonField } from './json-field';
 
 type DbRow = typeof harnessSprints.$inferSelect;
 
@@ -17,10 +18,10 @@ function toEntity(row: DbRow): HarnessSprint {
     name: row.name,
     description: row.description ?? undefined,
     status: row.status,
-    features: row.features as SprintFeature[],
+    features: fromJsonRequired<SprintFeature[]>(row.features),
     startedAt: row.startedAt ?? undefined,
     completedAt: row.completedAt ?? undefined,
-    metrics: row.metrics as unknown as SprintMetrics,
+    metrics: fromJsonRequired<SprintMetrics>(row.metrics),
   });
 }
 
@@ -44,13 +45,13 @@ export class DrizzleHarnessSprintRepo implements HarnessSprintRepo {
       description: p.description ?? null, status: p.status,
       features: p.features as unknown[],
       startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-      metrics: p.metrics as unknown as Record<string, unknown>,
+      metrics: asJsonField(p.metrics),
     }).onConflictDoUpdate({
       target: harnessSprints.id,
       set: {
         status: p.status, features: p.features as unknown[],
         startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-        metrics: p.metrics as unknown as Record<string, unknown>,
+        metrics: asJsonField(p.metrics),
       },
     }).run();
     return sprint;

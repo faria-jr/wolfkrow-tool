@@ -1,9 +1,9 @@
 import type { TaskRunRepo } from '@wolfkrow/domain';
 import { TaskRun } from '@wolfkrow/domain';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
-import { taskRuns } from '../db/schema/scheduler';
+import { scheduledTasks, taskRuns } from '../db/schema/scheduler';
 
 type DbRow = typeof taskRuns.$inferSelect;
 type TaskRunMetricsRow = { tokens?: number; cost?: number; durationMs?: number; toolUses?: number } | null;
@@ -45,6 +45,20 @@ export class DrizzleTaskRunRepo implements TaskRunRepo {
   async findByTaskId(taskId: string, limit?: number): Promise<TaskRun[]> {
     const q = this.db.select().from(taskRuns).where(eq(taskRuns.taskId, taskId));
     const rows = limit ? q.limit(limit).all() : q.all();
+    return rows.map(toEntity);
+  }
+
+  async findAwaitingReview(userId: string): Promise<TaskRun[]> {
+    const userTasks = this.db.select({ id: scheduledTasks.id })
+      .from(scheduledTasks)
+      .where(eq(scheduledTasks.userId, userId))
+      .all();
+    if (userTasks.length === 0) return [];
+    const taskIds = userTasks.map((t) => t.id);
+    const rows = this.db.select().from(taskRuns)
+      .where(inArray(taskRuns.taskId, taskIds))
+      .all()
+      .filter((r) => r.status === 'awaiting_review');
     return rows.map(toEntity);
   }
 

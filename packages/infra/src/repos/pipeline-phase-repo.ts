@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { pipelinePhases } from '../db/schema/pipeline';
 
+import { fromJson, asJsonField } from './json-field';
 
 type DbRow = typeof pipelinePhases.$inferSelect;
 type PhaseDbStage = typeof pipelinePhases.$inferInsert['stage'];
@@ -19,7 +20,7 @@ function toEntity(row: DbRow): PipelinePhase {
     artifactPath: row.artifactPath ?? undefined,
     startedAt: row.startedAt ?? undefined,
     completedAt: row.completedAt ?? undefined,
-    metrics: (row.metrics as unknown as PhaseMetrics) ?? { tokens: 0, durationMs: 0 },
+    metrics: fromJson<PhaseMetrics>(row.metrics, { tokens: 0, durationMs: 0 }),
   });
 }
 
@@ -42,13 +43,13 @@ export class DrizzlePipelinePhaseRepo implements PipelinePhaseRepo {
       id: p.id, projectId: p.projectId, stage: p.stage as PhaseDbStage, status: p.status,
       artifactPath: p.artifactPath ?? null,
       startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-      metrics: p.metrics as unknown as Record<string, unknown>,
+      metrics: asJsonField(p.metrics),
     }).onConflictDoUpdate({
       target: pipelinePhases.id,
       set: {
         status: p.status, artifactPath: p.artifactPath ?? null,
         startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-        metrics: p.metrics as unknown as Record<string, unknown>,
+        metrics: asJsonField(p.metrics),
       },
     }).run();
     return phase;

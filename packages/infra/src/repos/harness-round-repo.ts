@@ -6,6 +6,7 @@ import { and, eq } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { harnessRounds } from '../db/schema/harness';
 
+import { fromJsonRequired, asJsonField } from './json-field';
 
 type DbRow = typeof harnessRounds.$inferSelect;
 
@@ -18,7 +19,7 @@ function toEntity(row: DbRow): HarnessRound {
     status: row.status,
     coderOutput: row.coderOutput ?? undefined,
     evaluatorFeedback: row.evaluatorFeedback ?? undefined,
-    metrics: row.metrics as unknown as RoundMetrics,
+    metrics: fromJsonRequired<RoundMetrics>(row.metrics),
     startedAt: row.startedAt,
     completedAt: row.completedAt ?? undefined,
   });
@@ -49,14 +50,14 @@ export class DrizzleHarnessRoundRepo implements HarnessRoundRepo {
     this.db.insert(harnessRounds).values({
       id: p.id, sprintId: p.sprintId, featureIndex: p.featureIndex, roundNumber: p.roundNumber,
       status: p.status, coderOutput: p.coderOutput ?? null, evaluatorFeedback: p.evaluatorFeedback ?? null,
-      metrics: p.metrics as unknown as Record<string, unknown>,
+      metrics: asJsonField(p.metrics),
       startedAt: p.startedAt, completedAt: p.completedAt ?? null,
     }).onConflictDoUpdate({
       target: harnessRounds.id,
       set: {
         status: p.status, coderOutput: p.coderOutput ?? null,
         evaluatorFeedback: p.evaluatorFeedback ?? null,
-        metrics: p.metrics as unknown as Record<string, unknown>,
+        metrics: asJsonField(p.metrics),
         completedAt: p.completedAt ?? null,
       },
     }).run();

@@ -6,9 +6,12 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { pipelineProjects } from '../db/schema/pipeline';
 
+import { fromJson, asJsonField } from './json-field';
 
 type DbRow = typeof pipelineProjects.$inferSelect;
 type PipelineProjectRow = typeof pipelineProjects.$inferInsert;
+
+const EMPTY_METRICS: PipelineMetrics = { totalTokens: 0, totalCost: 0, phasesCompleted: 0, durationMs: 0 };
 
 function toRow(p: ReturnType<PipelineProject['toProps']>): PipelineProjectRow {
   return {
@@ -16,7 +19,7 @@ function toRow(p: ReturnType<PipelineProject['toProps']>): PipelineProjectRow {
     currentStage: p.currentStage, status: p.status,
     discoveryNotes: p.discoveryNotes ?? null, specPath: p.specPath ?? null,
     prdPath: p.prdPath ?? null, approvalNotes: p.approvalNotes ?? null,
-    metrics: p.metrics as unknown as Record<string, unknown>,
+    metrics: asJsonField(p.metrics),
     createdAt: p.createdAt, updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
   };
 }
@@ -33,7 +36,7 @@ function toEntity(row: DbRow): PipelineProject {
     specPath: row.specPath ?? undefined,
     prdPath: row.prdPath ?? undefined,
     approvalNotes: row.approvalNotes ?? undefined,
-    metrics: (row.metrics as unknown as PipelineMetrics) ?? { totalTokens: 0, totalCost: 0, phasesCompleted: 0, durationMs: 0 },
+    metrics: fromJson<PipelineMetrics>(row.metrics, EMPTY_METRICS),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     completedAt: row.completedAt ?? undefined,

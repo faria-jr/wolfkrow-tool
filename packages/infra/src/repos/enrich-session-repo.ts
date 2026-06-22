@@ -6,8 +6,11 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db/client';
 import { enrichSessions } from '../db/schema/enrich';
 
+import { fromJson, asJsonField } from './json-field';
 
 type DbRow = typeof enrichSessions.$inferSelect;
+
+const EMPTY_METRICS: EnrichMetrics = { tokens: 0, durationMs: 0 };
 
 function toEntity(row: DbRow): EnrichSession {
   return EnrichSession.fromProps({
@@ -17,8 +20,8 @@ function toEntity(row: DbRow): EnrichSession {
     status: row.status,
     validatorAgentId: row.validatorAgentId ?? undefined,
     enricherAgentId: row.enricherAgentId ?? undefined,
-    validatorMetrics: (row.validatorMetrics as unknown as EnrichMetrics) ?? { tokens: 0, durationMs: 0 },
-    enricherMetrics: (row.enricherMetrics as unknown as EnrichMetrics) ?? { tokens: 0, durationMs: 0 },
+    validatorMetrics: fromJson<EnrichMetrics>(row.validatorMetrics, EMPTY_METRICS),
+    enricherMetrics: fromJson<EnrichMetrics>(row.enricherMetrics, EMPTY_METRICS),
     startedAt: row.startedAt ?? undefined,
     completedAt: row.completedAt ?? undefined,
   });
@@ -42,16 +45,16 @@ export class DrizzleEnrichSessionRepo implements EnrichSessionRepo {
     this.db.insert(enrichSessions).values({
       id: p.id, userId: p.userId, specPath: p.specPath, status: p.status,
       validatorAgentId: p.validatorAgentId ?? null, enricherAgentId: p.enricherAgentId ?? null,
-      validatorMetrics: p.validatorMetrics as unknown as Record<string, unknown>,
-      enricherMetrics: p.enricherMetrics as unknown as Record<string, unknown>,
+      validatorMetrics: asJsonField(p.validatorMetrics),
+      enricherMetrics: asJsonField(p.enricherMetrics),
       startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
       metadata: {},
     }).onConflictDoUpdate({
       target: enrichSessions.id,
       set: {
         status: p.status,
-        validatorMetrics: p.validatorMetrics as unknown as Record<string, unknown>,
-        enricherMetrics: p.enricherMetrics as unknown as Record<string, unknown>,
+        validatorMetrics: asJsonField(p.validatorMetrics),
+        enricherMetrics: asJsonField(p.enricherMetrics),
         startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
       },
     }).run();

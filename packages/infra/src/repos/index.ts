@@ -30,6 +30,7 @@ export { DrizzleEnrichSessionRepo } from './enrich-session-repo';
 export { DrizzleWorkflowRunRepo } from './workflow-run-repo';
 export { DrizzleGraphRepo } from './graph-repo';
 export { createRepoRegistry, resetRepoRegistry } from './registry';
+export { fromJson, fromJsonRequired, asJsonField } from './json-field';
 export type { RepoRegistry } from './registry';
 export { DrizzleSecretRepo } from './secret-repo';
 export { DrizzleTokenUsageRepo } from './token-usage-repo';
