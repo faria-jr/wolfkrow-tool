@@ -5,6 +5,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createAgentExecutor, type AgentExecutorOptions } from '../agent-executor';
 import { createTestAIProviderFactory } from '../test-utils/ai-provider';
 
+// FIX-004: executor resolves repos via the container. Mock it so no real DB is
+// touched; tests provide agents/skills/rules through the mutable fake repos.
+const fakeRepos = {
+  agent: { findById: async (_id: string) => null },
+  skill: { findByUserId: async (_u: string) => [] as unknown[] },
+  globalRule: { findAll: async (_u: string) => [] as unknown[] },
+};
+vi.mock('../container', () => ({ getRepos: () => fakeRepos }));
+
 const mockProvider: AIProvider = {
   async complete() {
     return {
@@ -85,5 +94,20 @@ describe('AgentExecutor', () => {
         system: 'You are a helpful assistant.',
       })
     );
+  });
+
+  it('FIX-004: injects enabled global rules into the system prompt', async () => {
+    vi.mocked(keytar.getPassword).mockResolvedValue('fake-api-key');
+    const completeSpy = vi.spyOn(mockProvider, 'complete');
+    // An enabled rule with a prompt section the builder will concatenate.
+    fakeRepos.globalRule.findAll = async () => [
+      { enabled: true, kind: 'behavior', sortOrder: 0, toPromptSection: () => 'Always cite sources.' },
+    ];
+
+    const executor = createExecutor();
+    await executor.execute(baseTask);
+
+    const system = completeSpy.mock.calls[0]?.[0]?.system ?? '';
+    expect(system).toContain('Always cite sources.');
   });
 });

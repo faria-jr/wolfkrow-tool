@@ -5,6 +5,7 @@
 
 import {
   ApprovePipelinePhaseUseCase,
+  BuildSystemPromptUseCase,
   CompletePhaseUseCase,
   CreatePipelineProjectUseCase,
   DeletePipelineProjectUseCase,
@@ -54,7 +55,12 @@ async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: Ru
   ]);
   if (!project || !phase) return reply.status(404).send({ error: 'Not found' });
 
-  const systemPrompt = PHASE_PROMPTS[phase.stage] ?? 'You are a helpful assistant.';
+  // FIX-004: compose the phase prompt with the user's enabled global rules.
+  const basePrompt = PHASE_PROMPTS[phase.stage] ?? 'You are a helpful assistant.';
+  const systemPrompt = await new BuildSystemPromptUseCase(getRepos().globalRule).execute({
+    userId: project.userId,
+    agentSystemPrompt: basePrompt,
+  });
   const userContent = req.body.userPrompt ?? `Project: ${project.name}\n${project.description ?? ''}\nDiscovery notes: ${project.discoveryNotes ?? 'N/A'}`;
 
   const apiKey = await getApiKey();

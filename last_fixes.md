@@ -86,12 +86,13 @@
 
 ## P1 — Wiring / funcionalidade inerte (parece pronto, não está)
 
-### [ ] FIX-004 — Rules nunca injetadas no LLM
+### [x] FIX-004 — Rules nunca injetadas no LLM
 - **Problema**: CRUD + `BuildSystemPromptUseCase` + `/build-prompt` funcionam, mas `agent-executor` e `pipeline` hardcodeiam prompts sem chamar o builder → regras globais inertes.
 - **Evidência**: `apps/worker/src/agent-executor.ts:55`, `apps/worker/src/routes/pipeline.ts:112-119`.
 - **Passos**: 1. Injetar `BuildSystemPromptUseCase` no executor/pipeline. 2. Compor prompt = base + regras ativas. 3. Teste: regra ativa aparece no prompt enviado ao provider.
 - **Critério de aceite**: regra criada no Vault/Rules aparece no system prompt do LLM em runtime.
 - **Esforço**: S · **Depende de**: FIX-007 (DI).
+- **Concluído (2026-06-22)**: `agent-executor.ts` — carrega agent via `getRepos().agent` (era raw drizzle `getDb`+`Schema`) e compõe o system prompt via `BuildSystemPromptUseCase(getRepos().globalRule)` (agent prompt + regras ativas). `pipeline.ts` `runPhaseHandler` — phase prompt composto com regras do `userId` do projeto. Default system prompt preservado (`'You are a helpful assistant.'`). Teste novo prova injeção (regra ativa aparece no `provider.complete({system})`). 4 testes agent-executor (mock do container `getRepos`).
 
 ### [ ] FIX-005 — Sub-agents runtime não wired ao orchestrator
 - **Problema**: CRUD de agentes pronto, mas `orchestrator` tem **0 refs a Agent** → agentes nunca驱动 execução.
@@ -179,12 +180,13 @@
 - **Critério de aceite**: `pnpm lint` 0 erros em CI.
 - **Esforço**: M · **Depende de**: —
 
-### [ ] FIX-016 — Skills sem prompt injection
+### [x] FIX-016 — Skills sem prompt injection
 - **Problema**: CRUD ok, mas skills **não injetadas** no prompt; attach/detach órfãos.
 - **Evidência**: `apps/web/components/skills/skill-editor.tsx:58`.
 - **Passos**: 1. Resolver skills ativas do agente/sessão. 2. Compor no system prompt (junto c/ FIX-004). 3. Teste.
 - **Critério de aceite**: skill ativa aparece no prompt.
 - **Esforço**: S · **Depende de**: FIX-004.
+- **Concluído (2026-06-22, junto c/ FIX-004)**: `BuildSystemPromptUseCase` já aceita `skillDescriptions[]`. `agent-executor` resolve `agent.skills` (nomes) → `SkillRepo.findByUserId` + filtro → descriptions (`${name}: ${description}`) e passa ao builder. Skills agora aparecem no system prompt do scheduled-task path. (Pipeline/chat não usam skills por design — fases system-driven.)
 
 ### [ ] FIX-017 — MCP HTTP API inalcançável
 - **Problema**: `manager.callTool`/`listTools` existem mas **nunca wired a rota** — MCP não usável via API.

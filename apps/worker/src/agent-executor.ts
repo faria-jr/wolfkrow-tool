@@ -1,21 +1,17 @@
 /**
  * Agent executor for scheduled tasks
  *
- * Loads agent config and secret API key from the vault, then calls the AI provider.
+ * Loads agent config + secret API key, resolves the agent's skills, and
+ * composes the system prompt from the agent prompt + enabled global rules +
+ * skills (FIX-004 + FIX-016) via BuildSystemPromptUseCase — then calls the AI
+ * provider.
  */
 
-import {
-  getDb,
-  Schema,
-  aiProviderFactory,
-  type AIProvider,
-  type AIProviderFactory,
-} from '@wolfkrow/infra';
-import type { TaskExecutor } from '@wolfkrow/use-cases';
-import { eq } from 'drizzle-orm';
+import { aiProviderFactory, type AIProvider, type AIProviderFactory } from '@wolfkrow/infra';
+import { BuildSystemPromptUseCase, type TaskExecutor } from '@wolfkrow/use-cases';
 import keytar from 'keytar';
 
-
+import { getRepos } from './container';
 import type { Logger } from './logger';
 
 export interface AgentExecutorOptions {
@@ -27,23 +23,49 @@ export interface AgentExecutorOptions {
 }
 
 const KEYTAR_SERVICE = 'wolfkrow';
+const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
+const DEFAULT_SYSTEM = 'You are a helpful assistant.';
+
+interface AgentLike {
+  userId: string;
+  model: string;
+  systemPrompt: string | undefined;
+  skills: string[];
+}
+
+/** FIX-016: resolve the agent's attached skills → descriptions for injection. */
+async function resolveSkillDescriptions(agent: AgentLike | null, userId: string): Promise<string[]> {
+  if (!agent || agent.skills.length === 0) return [];
+  const userSkills = await getRepos().skill.findByUserId(userId);
+  return userSkills
+    .filter((s) => agent.skills.includes(s.name))
+    .map((s) => `${s.name}: ${s.description}`);
+}
+
+/** FIX-004: compose system prompt = agent prompt + enabled rules + skills. */
+async function buildSystemPrompt(agent: AgentLike | null, userId: string): Promise<string> {
+  const skillDescriptions = await resolveSkillDescriptions(agent, userId);
+  return new BuildSystemPromptUseCase(getRepos().globalRule).execute({
+    userId,
+    agentSystemPrompt: agent?.systemPrompt ?? DEFAULT_SYSTEM,
+    ...(skillDescriptions.length ? { skillDescriptions } : {}),
+  });
+}
 
 export function createAgentExecutor(options: AgentExecutorOptions = {}): TaskExecutor {
   const logger = options.logger;
   const providerName = options.provider ?? 'anthropic';
-  const model = options.model ?? 'claude-3-5-sonnet-20241022';
-  const factory = options.providerFactory ?? aiProviderFactory;
+  const defaultModel = options.model ?? DEFAULT_MODEL;
   const serviceName = options.keytarService ?? KEYTAR_SERVICE;
+  const factory: AIProviderFactory = options.providerFactory ?? aiProviderFactory;
 
   return {
     async execute(task: { id: string; name: string; prompt: string; agentId: string | undefined }) {
-      const db = getDb();
+      const repos = getRepos();
+      const agent = task.agentId ? ((await repos.agent.findById(task.agentId)) as AgentLike | null) : null;
+      const userId = agent?.userId ?? 'default';
 
-      let agent: typeof Schema.agents.$inferSelect | undefined;
-      if (task.agentId) {
-        const rows = db.select().from(Schema.agents).where(eq(Schema.agents.id, task.agentId)).limit(1).all();
-        agent = rows[0];
-      }
+      const system = await buildSystemPrompt(agent, userId);
 
       const apiKey = await keytar.getPassword(serviceName, 'anthropic-api-key');
       if (!apiKey) {
@@ -51,8 +73,7 @@ export function createAgentExecutor(options: AgentExecutorOptions = {}): TaskExe
       }
 
       const provider: AIProvider = factory.create(providerName, apiKey);
-
-      const system = agent?.systemPrompt ?? 'You are a helpful assistant.';
+      const model = agent?.model ?? defaultModel;
       const prompt = `[Scheduled task: ${task.name}]\n\n${task.prompt}`;
 
       logger?.info({ taskId: task.id, agentId: task.agentId, model }, 'Calling AI provider');
