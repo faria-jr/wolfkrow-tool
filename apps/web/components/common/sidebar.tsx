@@ -43,7 +43,7 @@ const MAIN_NAV: NavItem[] = [
   { title: 'Chat', url: '/chat', icon: MessageSquare },
   { title: 'Agents', url: '/agents', icon: Bot },
   { title: 'Skills', url: '/skills', icon: Sparkles },
-  { title: 'MCP Servers', url: '/mcp', icon: Network },
+  { title: 'MCP Servers', url: '/mcp-servers', icon: Network },
   { title: 'Knowledge', url: '/knowledge', icon: BookOpen },
   { title: 'Graph', url: '/graph', icon: Network },
   { title: 'Tasks', url: '/tasks', icon: ListTodo },
