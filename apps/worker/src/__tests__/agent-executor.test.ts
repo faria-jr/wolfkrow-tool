@@ -96,6 +96,18 @@ describe('AgentExecutor', () => {
     );
   });
 
+  it('FIX-026: uses custom temperature when provided', async () => {
+    vi.mocked(keytar.getPassword).mockResolvedValue('fake-api-key');
+    const completeSpy = vi.spyOn(mockProvider, 'complete');
+
+    const executor = createExecutor({ temperature: 0.2, maxTokens: 1024 });
+    await executor.execute(baseTask);
+
+    expect(completeSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ temperature: 0.2, maxTokens: 1024 })
+    );
+  });
+
   it('FIX-004: injects enabled global rules into the system prompt', async () => {
     vi.mocked(keytar.getPassword).mockResolvedValue('fake-api-key');
     const completeSpy = vi.spyOn(mockProvider, 'complete');

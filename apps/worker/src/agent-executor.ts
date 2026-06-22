@@ -18,6 +18,8 @@ import type { Logger } from './logger';
 export interface AgentExecutorOptions {
   provider?: string;
   model?: string;
+  temperature?: number;
+  maxTokens?: number;
   logger?: Logger;
   providerFactory?: AIProviderFactory;
   keytarService?: string;
@@ -25,6 +27,8 @@ export interface AgentExecutorOptions {
 
 const KEYTAR_SERVICE = 'wolfkrow';
 const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
+const DEFAULT_TEMPERATURE = Number(process.env['AGENT_DEFAULT_TEMPERATURE']) || 0.7;
+const DEFAULT_MAX_TOKENS = 4096;
 
 interface AgentLike {
   userId: string;
@@ -37,11 +41,13 @@ export function createAgentExecutor(options: AgentExecutorOptions = {}): TaskExe
   const logger = options.logger;
   const providerName = options.provider ?? 'anthropic';
   const defaultModel = options.model ?? DEFAULT_MODEL;
+  const temperature = options.temperature ?? DEFAULT_TEMPERATURE;
+  const maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
   const serviceName = options.keytarService ?? KEYTAR_SERVICE;
   const factory: AIProviderFactory = options.providerFactory ?? aiProviderFactory;
 
   return {
-    async execute(task: { id: string; name: string; prompt: string; agentId: string | undefined }) {
+    async execute(task: { id: string; name: string; prompt: string; agentId: string | undefined; requiresReview?: boolean }) {
       const repos = getRepos();
       const agent = task.agentId ? ((await repos.agent.findById(task.agentId)) as AgentLike | null) : null;
       const userId = agent?.userId ?? 'default';
@@ -63,8 +69,8 @@ export function createAgentExecutor(options: AgentExecutorOptions = {}): TaskExe
         model,
         system,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: 4096,
-        temperature: 0.5,
+        maxTokens,
+        temperature,
       });
 
       logger?.info(
@@ -72,8 +78,10 @@ export function createAgentExecutor(options: AgentExecutorOptions = {}): TaskExe
         'AI provider response received'
       );
 
+      const status = task.requiresReview ? ('awaiting_review' as const) : ('validated' as const);
+
       return {
-        status: 'validated' as const,
+        status,
         output: {
           content: result.content,
           inputTokens: result.usage.inputTokens,
