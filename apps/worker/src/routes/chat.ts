@@ -25,12 +25,44 @@ const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
 const sessionRepo = new InMemoryChatSessionRepo();
 const messageRepo = new InMemoryMessageRepo();
 
-function makeAIAdapter(orchestrator: OrchestratorService, provider?: string): AIStreamPort {
+/** Build adapter opts, omitting undefined values (exactOptionalPropertyTypes). */
+function adapterOptions(
+  provider: string | undefined,
+  agentId: string | undefined,
+  userId: string | undefined,
+): { provider?: string; agentId?: string; userId?: string } {
+  return {
+    ...(provider !== undefined ? { provider } : {}),
+    ...(agentId !== undefined ? { agentId } : {}),
+    ...(userId !== undefined ? { userId } : {}),
+  };
+}
+
+/** Write the AI stream as SSE events (ack/done/text). */
+async function writeStreamAsSse(
+  stream: AsyncIterable<AIStreamChunk>,
+  sse: (data: unknown) => void,
+): Promise<void> {
+  for await (const chunk of stream) {
+    if (chunk.done) {
+      sse({ type: 'done', usage: { inputTokens: chunk.inputTokens, outputTokens: chunk.outputTokens } });
+    } else if (chunk.delta) {
+      sse({ type: 'text', content: chunk.delta });
+    }
+  }
+}
+
+function makeAIAdapter(
+  orchestrator: OrchestratorService,
+  opts: { provider?: string; agentId?: string; userId?: string },
+): AIStreamPort {
   function query(options: AICompletionOptions): AsyncIterable<AIStreamChunk> {
     return orchestrator.stream({
       messages: options.messages,
       model: options.model,
-      ...(provider !== undefined ? { provider } : {}),
+      ...(opts.provider !== undefined ? { provider: opts.provider } : {}),
+      ...(opts.agentId !== undefined ? { agentId: opts.agentId } : {}),
+      ...(opts.userId !== undefined ? { userId: opts.userId } : {}),
       ...(options.system !== undefined ? { system: options.system } : {}),
       ...(options.signal !== undefined ? { signal: options.signal } : {}),
     }) as AsyncIterable<AIStreamChunk>;
@@ -73,7 +105,10 @@ export async function chatRoutes(server: AuthFastifyInstance) {
         const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
         sse({ type: 'ack', message });
 
-        const ai = makeAIAdapter(orchestrator, provider);
+        const ai = makeAIAdapter(
+          orchestrator,
+          adapterOptions(provider, agentId, request.user?.userId),
+        );
         const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai);
 
         const stream = await useCase.execute({
@@ -86,13 +121,7 @@ export async function chatRoutes(server: AuthFastifyInstance) {
           ...(system !== undefined ? { system } : {}),
         });
 
-        for await (const chunk of stream) {
-          if (chunk.done) {
-            sse({ type: 'done', usage: { inputTokens: chunk.inputTokens, outputTokens: chunk.outputTokens } });
-          } else if (chunk.delta) {
-            sse({ type: 'text', content: chunk.delta });
-          }
-        }
+        await writeStreamAsSse(stream, sse);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error';
         reply.raw.write(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`);

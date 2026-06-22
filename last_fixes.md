@@ -94,12 +94,13 @@
 - **Esforço**: S · **Depende de**: FIX-007 (DI).
 - **Concluído (2026-06-22)**: `agent-executor.ts` — carrega agent via `getRepos().agent` (era raw drizzle `getDb`+`Schema`) e compõe o system prompt via `BuildSystemPromptUseCase(getRepos().globalRule)` (agent prompt + regras ativas). `pipeline.ts` `runPhaseHandler` — phase prompt composto com regras do `userId` do projeto. Default system prompt preservado (`'You are a helpful assistant.'`). Teste novo prova injeção (regra ativa aparece no `provider.complete({system})`). 4 testes agent-executor (mock do container `getRepos`).
 
-### [ ] FIX-005 — Sub-agents runtime não wired ao orchestrator
+### [x] FIX-005 — Sub-agents runtime não wired ao orchestrator
 - **Problema**: CRUD de agentes pronto, mas `orchestrator` tem **0 refs a Agent** → agentes nunca驱动 execução.
 - **Evidência**: `apps/worker/src/orchestrator.ts`.
 - **Passos**: 1. Definir contrato `AgentRuntime.resolve(agent) → executor`. 2. Orchestrator seleciona executor por `agent.strategy`. 3. Teste: invocar agente → usa strategy/config corretos.
 - **Critério de aceite**: agente persistido define comportamento real da execução.
 - **Esforço**: M · **Depende de**: FIX-007.
+- **Concluído (2026-06-22)**: helper compartilhado `apps/worker/src/agent-prompt.ts` (`buildAgentSystemPrompt` — compõe agent prompt + regras + skills; reusado por agent-executor e orchestrator, DRY). `OrchestratorService.stream`: `ChatRequest` ganhou `agentId`+`userId`; `applyAgent` resolve o Agent persistido (`getRepos().agent.findById`) → deriva **provider** de `agent.runtime` (mapa cloud→anthropic, codex→codex, local→ollama, external→anthropic), **model** do agent, e **system** via `buildAgentSystemPrompt`. Rota `chat.ts` passa `agentId`+`userId` ao orchestrator via `makeAIAdapter` (antes agentId ia só p/ metadata da sessão). Teste FIX-005: agent runtime 'codex' → provider 'codex' criado. Helpers extraídos (`adapterOptions`, `writeStreamAsSse`, `resolveAgentRuntime`) p/ respeitar guard-rails de complexidade.
 
 ### [ ] FIX-006 — MCP servers inexistentes (G9)
 - **Problema**: catalog tem 18 entradas, **0 binários** (`packages/mcp-servers/` não existe) → todo spawn ENOENT → `crashed`. Nenhum MCP roda.

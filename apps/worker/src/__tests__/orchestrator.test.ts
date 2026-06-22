@@ -11,6 +11,15 @@ vi.mock('keytar', () => ({
   },
 }));
 
+// FIX-005: orchestrator resolves a persisted Agent via the container. Mutable
+// fake so the agent-driven test can inject one without a real DB.
+const fakeRepos = {
+  agent: { findById: async (_id: string) => null as unknown },
+  skill: { findByUserId: async (_u: string) => [] as unknown[] },
+  globalRule: { findAll: async (_u: string) => [] as unknown[] },
+};
+vi.mock('../container', () => ({ getRepos: () => fakeRepos }));
+
 async function collect(stream: AsyncIterable<StreamChunk>): Promise<StreamChunk[]> {
   const out: StreamChunk[] = [];
   for await (const chunk of stream) out.push(chunk);
@@ -99,5 +108,27 @@ describe('OrchestratorService', () => {
       }),
     );
     expect(createSpy).toHaveBeenCalled();
+  });
+
+  it('FIX-005: a persisted Agent drives provider (from runtime), model, and system prompt', async () => {
+    fakeRepos.agent.findById = async () => ({
+      userId: 'u1',
+      model: 'agent-specific-model',
+      runtime: 'codex',
+      systemPrompt: 'You are the persisted agent.',
+      skills: [],
+    });
+    const createSpy = vi.fn().mockReturnValue(new MockProvider(['agent reply']));
+    const chunks = await collect(
+      new OrchestratorService({ factory: { create: createSpy } }).stream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'claude-3-5-sonnet-20241022', // should be overridden by the agent
+        agentId: 'a1',
+        userId: 'u1',
+      }),
+    );
+    // runtime 'codex' maps to the 'codex' provider (agent drove resolution)
+    expect(createSpy).toHaveBeenCalledWith('codex', expect.any(String));
+    expect(chunks.length).toBeGreaterThan(0);
   });
 });
