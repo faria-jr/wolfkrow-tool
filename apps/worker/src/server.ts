@@ -30,6 +30,7 @@ import { ptyRoutes } from './routes/pty';
 import { rulesRoutes } from './routes/rules';
 import { schedulerRoutes } from './routes/scheduler';
 import { sidecarRoutes } from './routes/sidecar';
+import { skillsRoutes } from './routes/skills';
 import { tasksRoutes } from './routes/tasks';
 import { telegramRoutes } from './routes/telegram';
 import { usageRoutes } from './routes/usage';
@@ -57,6 +58,7 @@ async function registerRoutes(server: FastifyInstance) {
   await server.register(tasksRoutes, { prefix: '/tasks' });
   await server.register(graphRoutes, { prefix: '/graph' });
   await server.register(sidecarRoutes, { prefix: '/sidecar' });
+  await server.register(skillsRoutes, { prefix: '/skills' });
 }
 
 async function registerPlugins(server: FastifyInstance) {
