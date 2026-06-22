@@ -11,6 +11,10 @@ import { createLogger } from '../logger';
 
 const logger = createLogger('telegram-bridge');
 
+export interface TelegramChatAdapter {
+  chat(userId: string, text: string): Promise<string>;
+}
+
 interface PairingEntry {
   code: string;
   telegramId?: string;
@@ -22,6 +26,8 @@ export class TelegramBridge {
   private bot: TelegramBot | undefined;
   private pairings = new Map<string, PairingEntry>(); // keyed by code
   private userMap = new Map<string, string>(); // telegramId → wolfkrowUserId
+
+  constructor(private readonly chatAdapter?: TelegramChatAdapter) {}
 
   async start(token: string): Promise<void> {
     if (this.bot) return;
@@ -58,16 +64,30 @@ export class TelegramBridge {
 
     this.bot.on('message', async (msg) => {
       const telegramId = String(msg.from?.id ?? '');
-      if (!this.userMap.has(telegramId)) return;
-      if (msg.text?.startsWith('/')) return; // handled by command listeners
+      const wolfkrowUserId = this.userMap.get(telegramId);
+      if (!wolfkrowUserId) return;
+      if (msg.text?.startsWith('/')) return;
 
       const text = msg.text ?? '';
       if (!text) return;
 
-      // Echo back placeholder — real impl routes to chat use-case
       logger.info({ telegramId, text }, 'Telegram message received');
-      await this.bot?.sendMessage(msg.chat.id, `Wolfkrow received: "${text}" (chat routing coming soon)`);
+      await this.handleMessage(msg.chat.id, wolfkrowUserId, text);
     });
+  }
+
+  private async handleMessage(chatId: number, userId: string, text: string): Promise<void> {
+    if (!this.chatAdapter) {
+      await this.bot?.sendMessage(chatId, '⚠️ Chat routing not configured.');
+      return;
+    }
+    try {
+      const reply = await this.chatAdapter.chat(userId, text);
+      await this.bot?.sendMessage(chatId, reply);
+    } catch (err) {
+      logger.error({ err, userId }, 'Telegram chat routing error');
+      await this.bot?.sendMessage(chatId, '⚠️ Error processing your message. Please try again.');
+    }
   }
 
   stop(): void {
