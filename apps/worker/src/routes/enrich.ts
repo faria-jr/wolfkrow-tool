@@ -5,7 +5,6 @@
 
 import { readFile } from 'node:fs/promises';
 
-import { DrizzleEnrichSessionRepo, aiProviderFactory } from '@wolfkrow/infra';
 import {
   CancelEnrichSessionUseCase,
   CreateEnrichSessionUseCase,
@@ -17,6 +16,7 @@ import {
 import type { ValidatorAgent, EnricherAgent } from '@wolfkrow/use-cases';
 import keytar from 'keytar';
 
+import { getAdapters, getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 
 
@@ -30,7 +30,7 @@ function createValidator(): ValidatorAgent {
   return {
     async validate({ specContent }) {
       const apiKey = await getApiKey();
-      const provider = aiProviderFactory.create('anthropic', apiKey);
+      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
       const result = await provider.complete({
         model: 'claude-sonnet-4-6',
         system: 'You are a spec validator. Analyze this specification and identify: (1) missing sections, (2) ambiguous requirements, (3) technical inconsistencies. Return a structured validation report.',
@@ -47,7 +47,7 @@ function createEnricher(): EnricherAgent {
   return {
     async enrich({ specContent, validatorOutput }) {
       const apiKey = await getApiKey();
-      const provider = aiProviderFactory.create('anthropic', apiKey);
+      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
       const result = await provider.complete({
         model: 'claude-sonnet-4-6',
         system: 'You are a spec enricher. Using the validator\'s feedback, improve and complete the specification. Fill gaps, clarify ambiguities, and add missing details.',
@@ -71,7 +71,7 @@ interface RunBody { specContent?: string; }
 interface EnricherRunBody { specContent?: string; validatorOutput: string; }
 
 export async function enrichRoutes(server: AuthFastifyInstance) {
-  const makeRepo = () => new DrizzleEnrichSessionRepo();
+  const makeRepo = () => getRepos().enrichSession;
 
   server.post<{ Body: CreateBody }>('/sessions', async (req) => {
     const { session } = await new CreateEnrichSessionUseCase(makeRepo()).execute(req.body);

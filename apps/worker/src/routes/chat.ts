@@ -4,7 +4,6 @@
  */
 
 import type { AICompletionOptions, AICompletionResult, AIStreamChunk, AIStreamPort } from '@wolfkrow/domain';
-import type { StreamChunk } from '@wolfkrow/infra';
 import { SendMessageUseCase } from '@wolfkrow/use-cases';
 
 import { InMemoryChatSessionRepo, InMemoryMessageRepo } from '../chat-store';
@@ -34,7 +33,7 @@ function makeAIAdapter(orchestrator: OrchestratorService, provider?: string): AI
       ...(provider !== undefined ? { provider } : {}),
       ...(options.system !== undefined ? { system: options.system } : {}),
       ...(options.signal !== undefined ? { signal: options.signal } : {}),
-    }) as AsyncIterable<StreamChunk>;
+    }) as AsyncIterable<AIStreamChunk>;
   }
 
   async function complete(options: AICompletionOptions): Promise<AICompletionResult> {

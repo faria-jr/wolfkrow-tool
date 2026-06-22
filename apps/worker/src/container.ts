@@ -8,7 +8,7 @@
  */
 
 import type { EmbeddingPort, SecretsAdapter } from '@wolfkrow/domain';
-import { VoyageEmbedder } from '@wolfkrow/infra';
+import { aiProviderFactory, type AIProviderFactory, VoyageEmbedder } from '@wolfkrow/infra';
 import { createRepoRegistry, type RepoRegistry } from '@wolfkrow/infra/repos';
 import { KeytarSecretsAdapter } from '@wolfkrow/infra/secrets/keytar-adapter';
 
@@ -22,6 +22,7 @@ export function getRepos(): RepoRegistry {
 export interface AdapterBundle {
   embedder: EmbeddingPort;
   secrets: SecretsAdapter;
+  aiFactory: AIProviderFactory;
 }
 
 let _adapters: AdapterBundle | null = null;
@@ -29,12 +30,14 @@ let _adapters: AdapterBundle | null = null;
 /**
  * Singleton adapter bundle. The embedder is built from `VOYAGE_API_KEY` (env)
  * and the secrets adapter is keyless, so both are safe to construct eagerly.
+ * `aiFactory` re-exposes the infra singleton so routes don't import infra.
  */
 export function getAdapters(): AdapterBundle {
   if (_adapters) return _adapters;
   _adapters = {
     embedder: new VoyageEmbedder(process.env['VOYAGE_API_KEY'] ?? ''),
     secrets: new KeytarSecretsAdapter(),
+    aiFactory: aiProviderFactory,
   };
   return _adapters;
 }

@@ -4,11 +4,6 @@
  */
 
 import {
-  DrizzlePipelinePhaseRepo,
-  DrizzlePipelineProjectRepo,
-  aiProviderFactory,
-} from '@wolfkrow/infra';
-import {
   ApprovePipelinePhaseUseCase,
   CompletePhaseUseCase,
   CreatePipelineProjectUseCase,
@@ -20,12 +15,14 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import keytar from 'keytar';
 
+import { getAdapters, getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 
 function makeRepos() {
+  const r = getRepos();
   return {
-    projectRepo: new DrizzlePipelineProjectRepo(),
-    phaseRepo: new DrizzlePipelinePhaseRepo(),
+    projectRepo: r.pipelineProject,
+    phaseRepo: r.pipelinePhase,
   };
 }
 
@@ -61,7 +58,7 @@ async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: Ru
   const userContent = req.body.userPrompt ?? `Project: ${project.name}\n${project.description ?? ''}\nDiscovery notes: ${project.discoveryNotes ?? 'N/A'}`;
 
   const apiKey = await getApiKey();
-  const result = await aiProviderFactory.create('anthropic', apiKey).complete({
+  const result = await getAdapters().aiFactory.create('anthropic', apiKey).complete({
     model: 'claude-sonnet-4-6',
     system: systemPrompt,
     messages: [{ role: 'user', content: userContent }],

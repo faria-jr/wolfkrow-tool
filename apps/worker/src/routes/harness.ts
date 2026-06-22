@@ -5,7 +5,6 @@
 
 import { readFile } from 'node:fs/promises';
 
-import { DrizzleHarnessProjectRepo, DrizzleHarnessRoundRepo, DrizzleHarnessSprintRepo, aiProviderFactory } from '@wolfkrow/infra';
 import {
   CreateHarnessProjectUseCase,
   DeleteHarnessProjectUseCase,
@@ -19,14 +18,16 @@ import type { HarnessPlanner, CoderAgent, EvaluatorAgent } from '@wolfkrow/use-c
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import keytar from 'keytar';
 
+import { getAdapters, getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 
 
 function makeRepos() {
+  const r = getRepos();
   return {
-    projectRepo: new DrizzleHarnessProjectRepo(),
-    sprintRepo: new DrizzleHarnessSprintRepo(),
-    roundRepo: new DrizzleHarnessRoundRepo(),
+    projectRepo: r.harnessProject,
+    sprintRepo: r.harnessSprint,
+    roundRepo: r.harnessRound,
   };
 }
 
@@ -40,7 +41,7 @@ function createLlmPlanner(): HarnessPlanner {
   return {
     async plan(specContent, config) {
       const apiKey = await getApiKey();
-      const provider = aiProviderFactory.create('anthropic', apiKey);
+      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
       const result = await provider.complete({
         model: config.plannerModel,
         system: 'You are a senior software architect. Given a spec, output a JSON array of sprints. Each sprint: {name, description, features: [{name, description, acceptanceCriteria: string[]}]}. Respond ONLY with valid JSON array.',
@@ -62,7 +63,7 @@ function createLlmCoder(): CoderAgent {
   return {
     async implement(input) {
       const apiKey = await getApiKey();
-      const provider = aiProviderFactory.create('anthropic', apiKey);
+      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
       const previousContext = input.previousFeedback ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}` : '';
       const result = await provider.complete({
         model: input.coderModel,
@@ -83,7 +84,7 @@ function createLlmEvaluator(): EvaluatorAgent {
   return {
     async evaluate(input) {
       const apiKey = await getApiKey();
-      const provider = aiProviderFactory.create('anthropic', apiKey);
+      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
       const result = await provider.complete({
         model: 'claude-sonnet-4-6',
         system: 'You are a QA engineer. Evaluate if the implementation meets the acceptance criteria. Respond with JSON: {passed: boolean, feedback: string}',
