@@ -269,10 +269,11 @@
 - **Progresso (2026-06-22)**: **2/5 slices feitos** — `token-usage` e `audit-log`. Ambos seguiam o padrão "port vivia em use-cases + infra não implementava + rota fazia `as never`". Movido port p/ domain (`UsageRepo`/`UsageRecord`/`UsageFilter` em `domain/repos/usage-repo.ts`; `AuditRepo`/`AuditRow`/`AuditFilter` em `domain/repos/audit-log-repo.ts`); infra `implements`; use-cases importam de `@wolfkrow/domain`; rotas `usage.ts` + `permissions.ts` sem `as never` (4 casts removidos). `source`/`action` viraram `string` na fronteira (infra restringe ao enum da coluna). 10 testes de caracterização (fake repos) cobrindo CheckBudget/ComputeUsage/RecordAudit/QueryAudit. **Faltam**: auth-audit (7 callers), mcp-server (4), mcp-tool-registry (1) — estes não têm port em use-cases, criam do zero.
 - **Concluído (2026-06-22)**: **5/5 slices** — completados `mcp-server`, `mcp-tool-registry`, `auth-audit` (criados do zero no domain: `McpServerRepo`/`McpServerRecord`/`McpServerVisibility`/`McpServerCreateInput`, `McpToolRegistryRepo`/`McpToolRecord`/`McpToolInput`, `AuthAuditRepo`/`AuthAuditEntry`). Infra `implements` em todos; enums drizzle (`visibility`/`action`) de-leaked p/ `string` na fronteira. Barrel infra re-exporta tipos do domain (backward-compat). Web route `mcp-servers/route.ts` ajustada p/ `exactOptionalPropertyTypes` (conditional spread). 11 testes mock-db (helper `mock-db.ts`) cobrindo os 3 repos sem use-case. **FIX-027 [x]** — ports + implements done. DI wiring (uso via container) = FIX-007.
 
-### [ ] FIX-028 — Chat features faltantes
+### [x] FIX-028 — Chat features faltantes
 - **Problema**: Title generation (#9), ConfirmDialog (#10), AskQuestionDialog (#11), Artifact detection (#36), Excalidraw inline (#34) — todos ⛔.
 - **Passos**: um FIX-filho por feature; priorizar Confirm/Ask (permissões destrutivas) e Title-gen.
 - **Esforço**: L.
+- **Estado (2026-06-22)**: #9 título derivado do 1º texto do usuário (max 40 chars), resetado no clear; #10 ConfirmDialog via AlertDialog antes de limpar histórico; #11 AskQuestionDialog (Dialog) exibido quando SSE emite `ask_question`; #36 react-markdown + remark-gfm para mensagens do assistant (code blocks, bold, GFM); #34 Excalidraw adiado (dependência pesada, sem caso de uso imediato). Excalidraw inline deferido como P3.
 
 ### [x] FIX-029 — `lion.ts` 4/7 adapters `throw "not implemented"`
 - **Evidência**: `packages/infra/src/ai-providers/lion.ts:54-57`.
