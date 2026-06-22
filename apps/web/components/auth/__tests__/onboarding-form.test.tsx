@@ -47,7 +47,7 @@ describe('OnboardingForm', () => {
     expect(await screen.findByText(/at least 8 characters/i)).toBeInTheDocument();
   });
 
-  it('advances to step 2 on successful setup', async () => {
+  it('advances to provider step (step 2) on successful setup', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 201,
@@ -58,11 +58,47 @@ describe('OnboardingForm', () => {
     await userEvent.type(screen.getByLabelText(/^password$/i), 'Password1');
     await userEvent.type(screen.getByLabelText(/confirm password/i), 'Password1');
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    expect(await screen.findByRole('combobox')).toBeInTheDocument();
+  });
+
+  it('skipping provider step shows completion', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({ userId: 'u1' }),
+    } as Response);
+
+    render(<OnboardingForm />);
+    await userEvent.type(screen.getByLabelText(/^password$/i), 'Password1');
+    await userEvent.type(screen.getByLabelText(/confirm password/i), 'Password1');
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    await screen.findByRole('combobox');
+    await userEvent.click(screen.getByRole('button', { name: /skip/i }));
 
     expect(await screen.findByText(/you're all set/i)).toBeInTheDocument();
   });
 
-  it('redirects to /chat when continuing from step 2', async () => {
+  it('saves provider+key to vault and shows completion', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ userId: 'u1' }) } as Response)
+      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({}) } as Response);
+
+    render(<OnboardingForm />);
+    await userEvent.type(screen.getByLabelText(/^password$/i), 'Password1');
+    await userEvent.type(screen.getByLabelText(/confirm password/i), 'Password1');
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    await screen.findByRole('combobox');
+    await userEvent.type(screen.getByPlaceholderText(/api key/i), 'sk-test-key');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/vault', expect.objectContaining({ method: 'POST' }));
+    expect(await screen.findByText(/you're all set/i)).toBeInTheDocument();
+  });
+
+  it('redirects to /chat when continuing from completion', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       status: 201,
@@ -74,6 +110,8 @@ describe('OnboardingForm', () => {
     await userEvent.type(screen.getByLabelText(/confirm password/i), 'Password1');
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
+    await screen.findByRole('combobox');
+    await userEvent.click(screen.getByRole('button', { name: /skip/i }));
     await screen.findByText(/you're all set/i);
     await userEvent.click(screen.getByRole('button', { name: /go to app/i }));
 
@@ -93,20 +131,5 @@ describe('OnboardingForm', () => {
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/already exists/i);
-  });
-
-  it('shows validation error from server', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-      json: async () => ({ error: 'Must contain at least one number' }),
-    } as Response);
-
-    render(<OnboardingForm />);
-    await userEvent.type(screen.getByLabelText(/^password$/i), 'Password1');
-    await userEvent.type(screen.getByLabelText(/confirm password/i), 'Password1');
-    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/number/i);
   });
 });

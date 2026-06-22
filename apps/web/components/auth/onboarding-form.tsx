@@ -27,7 +27,14 @@ const step1Schema = z
   });
 
 export type Step1Form = z.infer<typeof step1Schema>;
-type OnboardingStep = 1 | 2;
+type OnboardingStep = 1 | 2 | 3;
+
+const PROVIDERS = [
+  { value: 'anthropic', label: 'Anthropic (Claude)', placeholder: 'sk-ant-...' },
+  { value: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-...' },
+  { value: 'openai', label: 'OpenAI', placeholder: 'sk-...' },
+  { value: 'ollama', label: 'Ollama (local)', placeholder: 'ollama' },
+] as const;
 
 export function OnboardingForm() {
   const router = useRouter();
@@ -51,10 +58,95 @@ export function OnboardingForm() {
     setStep(2);
   }
 
-  if (step === 2) {
+  if (step === 3) {
     return <CompletionStep onContinue={() => router.push('/chat')} />;
   }
+  if (step === 2) {
+    return <ProviderStep onDone={() => setStep(3)} />;
+  }
   return <PasswordSetupForm form={form} error={submitError} onSubmit={onStep1Submit} />;
+}
+
+function ProviderStep({ onDone }: { onDone: () => void }) {
+  const [provider, setProvider] = useState<string>('anthropic');
+  const [apiKey, setApiKey] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const selectedProvider = PROVIDERS.find((p) => p.value === provider) ?? PROVIDERS[0];
+
+  async function handleSave() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/vault', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: provider, value: apiKey }),
+      });
+      if (!res.ok) {
+        const d = (await res.json()) as { error?: string };
+        throw new Error(d.error ?? 'Failed to save');
+      }
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h2 className="text-lg font-semibold">Set up your AI provider</h2>
+        <p className="text-muted-foreground text-sm">Connect an API key to start chatting. You can change this later in Vault.</p>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="text-sm font-medium" htmlFor="provider-select">Provider</label>
+          <select
+            id="provider-select"
+            value={provider}
+            onChange={(e) => setProvider(e.target.value)}
+            className="border-input bg-background mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+          >
+            {PROVIDERS.map((p) => (
+              <option key={p.value} value={p.value}>{p.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {selectedProvider.value !== 'ollama' && (
+          <div>
+            <label className="text-sm font-medium" htmlFor="api-key-input">API Key</label>
+            <Input
+              id="api-key-input"
+              type="password"
+              placeholder={`API key (${selectedProvider.placeholder})`}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+        )}
+      </div>
+
+      {error && <p className="text-destructive text-sm" role="alert">{error}</p>}
+
+      <div className="flex gap-3">
+        <Button
+          onClick={() => void handleSave()}
+          disabled={saving || (selectedProvider.value !== 'ollama' && !apiKey.trim())}
+          className="flex-1"
+        >
+          {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : 'Save'}
+        </Button>
+        <Button variant="outline" onClick={onDone}>Skip</Button>
+      </div>
+    </div>
+  );
 }
 
 type SetupFormProps = {
