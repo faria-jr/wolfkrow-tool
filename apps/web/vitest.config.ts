@@ -49,6 +49,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, '.'),
       '@wolfkrow/design-tokens': path.resolve(__dirname, '../../packages/design-tokens/src/index.ts'),
+      '@wolfkrow/infra': path.resolve(__dirname, '../../packages/infra/src/index.ts'),
     },
   },
 });
