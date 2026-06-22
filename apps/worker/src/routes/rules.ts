@@ -3,7 +3,6 @@
  */
 
 import type { RuleKind } from '@wolfkrow/domain';
-import { DrizzleGlobalRuleRepo } from '@wolfkrow/infra/repos';
 import {
   ListRulesUseCase,
   CreateRuleUseCase,
@@ -14,7 +13,7 @@ import {
 } from '@wolfkrow/use-cases';
 import { z } from 'zod';
 
-
+import { getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
@@ -37,7 +36,7 @@ function getUserId(req: { user?: { userId?: string } }): string {
   return req.user?.userId ?? 'default';
 }
 
-const _repo = new DrizzleGlobalRuleRepo();
+const _repo = getRepos().globalRule;
 const listUC = new ListRulesUseCase(_repo);
 const createUC = new CreateRuleUseCase(_repo);
 const updateUC = new UpdateRuleUseCase(_repo);

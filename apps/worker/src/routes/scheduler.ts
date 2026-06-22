@@ -3,7 +3,6 @@
  * N.6: RunScheduledTaskUseCase encapsulates AI execution.
  */
 
-import { DrizzleScheduledTaskRepo, DrizzleTaskRunRepo } from '@wolfkrow/infra';
 import {
   CreateScheduledTaskUseCase,
   DeleteScheduledTaskUseCase,
@@ -15,11 +14,13 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { createAgentExecutor } from '../agent-executor';
+import { getRepos } from '../container';
 import type { Logger } from '../logger';
 import type { AuthFastifyInstance } from '../types/fastify';
 
 function makeRepos() {
-  return { taskRepo: new DrizzleScheduledTaskRepo(), runRepo: new DrizzleTaskRunRepo() };
+  const r = getRepos();
+  return { taskRepo: r.scheduledTask, runRepo: r.taskRun };
 }
 
 interface CreateBody {
