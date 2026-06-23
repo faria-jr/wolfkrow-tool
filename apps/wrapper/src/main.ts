@@ -72,7 +72,7 @@ function spawnChild(name: string, cmd: string, args: string[], cwd: string): Chi
   return proc;
 }
 
-function killChildren(): void {
+export function killChildren(): void {
   for (const { proc } of children) {
     if (!proc.killed) proc.kill('SIGTERM');
   }
@@ -82,7 +82,7 @@ function killChildren(): void {
 // Wait for port to become reachable
 // ---------------------------------------------------------------------------
 
-async function waitForPort(port: number, timeoutMs: number): Promise<void> {
+export async function waitForPort(port: number, timeoutMs: number): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
