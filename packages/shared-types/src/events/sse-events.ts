@@ -42,6 +42,13 @@ export const ChatStreamChunkSchema = z.discriminatedUnion('type', [
     isError: z.boolean().default(false),
   }),
   BaseEventSchema.extend({
+    type: z.literal('tool_permission'),
+    id: NonEmptyStringSchema,
+    name: NonEmptyStringSchema,
+    input: z.record(z.unknown()),
+    prompt: z.string(),
+  }),
+  BaseEventSchema.extend({
     type: z.literal('usage'),
     inputTokens: z.number().int().min(0),
     outputTokens: z.number().int().min(0),

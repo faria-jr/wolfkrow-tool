@@ -4,11 +4,11 @@
  */
 
 import type { AICompletionOptions, AICompletionResult, AIStreamChunk, AIStreamPort } from '@wolfkrow/domain';
-import { DrizzleChatSessionRepo, DrizzleMessageRepo, DrizzleTokenUsageRepo } from '@wolfkrow/infra';
 import type { ImagePart } from '@wolfkrow/infra';
 import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
 import { CompactSessionUseCase, SendMessageUseCase } from '@wolfkrow/use-cases';
 
+import { getRepos } from '../container';
 import type { Logger } from '../logger';
 import { recordChatTurn } from '../memory/lifecycle';
 import { OrchestratorService } from '../orchestrator';
@@ -39,10 +39,6 @@ interface SendCtx {
 const DEFAULT_MODEL = DEFAULT_CHAT_MODEL;
 const AUTO_COMPACT_THRESHOLD = 8000;
 
-const sessionRepo = new DrizzleChatSessionRepo();
-const messageRepo = new DrizzleMessageRepo();
-const usageRepo = new DrizzleTokenUsageRepo();
-
 /** Build adapter opts, omitting undefined values (exactOptionalPropertyTypes). */
 function adapterOptions(
   provider: string | undefined,
@@ -70,6 +66,9 @@ async function writeStreamAsSse(
     } else if (chunk.toolResult) {
       const { callId, output, isError } = chunk.toolResult;
       sse({ type: 'tool_result', callId, output, isError });
+    } else if (chunk.toolPermission) {
+      const { callId, name, input, prompt } = chunk.toolPermission;
+      sse({ type: 'tool_permission', id: callId, name, input, prompt });
     } else if (chunk.delta) {
       sse({ type: 'text', content: chunk.delta });
     }
@@ -115,6 +114,7 @@ async function autoCompact(
   model: string,
   ai: AIStreamPort,
 ): Promise<void> {
+  const messageRepo = getRepos().message;
   await new CompactSessionUseCase(messageRepo, ai).execute({
     sessionId,
     userId,
@@ -135,6 +135,7 @@ async function handleSendRequest(
 
   const { content, imageParts } = await processAttachments(message, attachments);
   const ai = makeAIAdapter(ctx.orchestrator, adapterOptions(provider, agentId, authUserId), imageParts);
+  const { chatSession: sessionRepo, message: messageRepo, tokenUsage: usageRepo } = getRepos();
   const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, usageRepo);
 
   const stream = await useCase.execute({
@@ -186,7 +187,7 @@ export async function chatRoutes(server: AuthFastifyInstance) {
       const model = request.body.model ?? DEFAULT_MODEL;
       const ai = makeAIAdapter(orchestrator, adapterOptions(undefined, undefined, userId));
       try {
-        const result = await new CompactSessionUseCase(messageRepo, ai).execute({
+        const result = await new CompactSessionUseCase(getRepos().message, ai).execute({
           sessionId: request.params.id, userId, model,
           ...(request.body.tokenThreshold !== undefined ? { tokenThreshold: request.body.tokenThreshold } : {}),
         });

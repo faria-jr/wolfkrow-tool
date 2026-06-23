@@ -31,6 +31,13 @@ export interface CompletionOptions {
 }
 
 /** Chunk incremental de stream. delta vazio + done=true encerra com usage. */
+export interface ToolPermissionEvent {
+  callId: string;
+  name: string;
+  input: Record<string, unknown>;
+  prompt: string;
+}
+
 export interface StreamChunk {
   delta: string;
   inputTokens?: number;
@@ -40,6 +47,8 @@ export interface StreamChunk {
   toolCall?: { id: string; name: string; input: Record<string, unknown> };
   /** Emitted after a tool has been executed. */
   toolResult?: { callId: string; output: string; isError: boolean };
+  /** T17: emitted when a destructive tool needs user approval (PermissionResult 'ask'). */
+  toolPermission?: ToolPermissionEvent;
 }
 
 export interface CompletionResult {

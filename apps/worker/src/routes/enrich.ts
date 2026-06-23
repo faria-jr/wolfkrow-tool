@@ -14,22 +14,16 @@ import {
   RunValidatorUseCase,
 } from '@wolfkrow/use-cases';
 import type { ValidatorAgent, EnricherAgent } from '@wolfkrow/use-cases';
-import keytar from 'keytar';
 
 import { getAdapters, getRepos } from '../container';
+import { getAnthropicApiKey } from '../lib/keychain';
 import type { AuthFastifyInstance } from '../types/fastify';
 
-
-async function getApiKey(): Promise<string> {
-  const key = await keytar.getPassword('wolfkrow', 'anthropic-api-key');
-  if (!key) throw new Error('Missing anthropic-api-key in system keychain');
-  return key;
-}
 
 function createValidator(): ValidatorAgent {
   return {
     async validate({ specContent }) {
-      const apiKey = await getApiKey();
+      const apiKey = await getAnthropicApiKey();
       const provider = getAdapters().aiFactory.create('anthropic', apiKey);
       const result = await provider.complete({
         model: 'claude-sonnet-4-6',
@@ -46,7 +40,7 @@ function createValidator(): ValidatorAgent {
 function createEnricher(): EnricherAgent {
   return {
     async enrich({ specContent, validatorOutput }) {
-      const apiKey = await getApiKey();
+      const apiKey = await getAnthropicApiKey();
       const provider = getAdapters().aiFactory.create('anthropic', apiKey);
       const result = await provider.complete({
         model: 'claude-sonnet-4-6',

@@ -14,9 +14,9 @@ import {
   StartPhaseUseCase,
 } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import keytar from 'keytar';
 
-import { getAdapters, getRepos } from '../container';
+import { getAdapters, getArtifactWriter, getRepos } from '../container';
+import { getAnthropicApiKey } from '../lib/keychain';
 import type { AuthFastifyInstance } from '../types/fastify';
 
 function makeRepos() {
@@ -25,12 +25,6 @@ function makeRepos() {
     projectRepo: r.pipelineProject,
     phaseRepo: r.pipelinePhase,
   };
-}
-
-async function getApiKey(): Promise<string> {
-  const key = await keytar.getPassword('wolfkrow', 'anthropic-api-key');
-  if (!key) throw new Error('Missing anthropic-api-key in system keychain');
-  return key;
 }
 
 interface CreateProjectBody { userId: string; name: string; description?: string; }
@@ -46,7 +40,7 @@ async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: Ru
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Not found' });
 
-  const apiKey = await getApiKey();
+  const apiKey = await getAnthropicApiKey();
   const aiProvider = getAdapters().aiFactory.create('anthropic', apiKey);
 
   // FIX-004: compose the phase prompt with the user's enabled global rules.
@@ -62,7 +56,10 @@ async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: Ru
   };
 
   try {
-    const result = await new RunPhaseUseCase(projectRepo, phaseRepo, wrappedProvider).execute({
+    const result = await new RunPhaseUseCase(
+      projectRepo, phaseRepo, wrappedProvider,
+      { messageRepo: getRepos().pipelineMessage, artifactWriter: getArtifactWriter() },
+    ).execute({
       projectId: req.params.id,
       phaseId: req.params.phaseId,
       ...(req.body.userPrompt !== undefined ? { userPrompt: req.body.userPrompt } : {}),

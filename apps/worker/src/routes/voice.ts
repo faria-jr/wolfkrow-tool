@@ -3,14 +3,13 @@
  * B.4: Voice pipeline with Whisper STT + ElevenLabs/Cartesia TTS.
  */
 
-import keytar from 'keytar';
-
+import { getSecret } from '../lib/keychain';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { createTtsProvider } from '../voice/factory';
 import { WhisperSttProvider } from '../voice/whisper';
 
 async function getKey(name: string): Promise<string | null> {
-  return keytar.getPassword('wolfkrow', name);
+  return getSecret(name);
 }
 
 type RawReply = { raw: { write: (b: Buffer) => void; end: () => void } };

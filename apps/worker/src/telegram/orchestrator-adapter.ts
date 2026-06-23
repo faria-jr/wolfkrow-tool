@@ -1,8 +1,11 @@
+import { DEFAULT_AGENT_MODEL } from '@wolfkrow/shared-types';
+
 import type { OrchestratorService } from '../orchestrator';
+
 
 import type { TelegramChatAdapter } from './bridge';
 
-const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
+const DEFAULT_MODEL = DEFAULT_AGENT_MODEL;
 
 export class OrchestratorChatAdapter implements TelegramChatAdapter {
   constructor(private readonly orchestrator: OrchestratorService) {}

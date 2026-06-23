@@ -66,22 +66,47 @@ export class SendMessageUseCase implements UseCase<SendMessageInput, SendMessage
     let accumulated = '';
     let inputTokens = 0;
     let outputTokens = 0;
+    let aborted = false;
 
-    for await (const chunk of this.ai.query(options)) {
-      if (chunk.delta) accumulated += chunk.delta;
-      if (chunk.inputTokens !== undefined) inputTokens = chunk.inputTokens;
-      if (chunk.outputTokens !== undefined) outputTokens = chunk.outputTokens;
-      yield chunk;
+    try {
+      for await (const chunk of this.ai.query(options)) {
+        if (chunk.delta) accumulated += chunk.delta;
+        if (chunk.inputTokens !== undefined) inputTokens = chunk.inputTokens;
+        if (chunk.outputTokens !== undefined) outputTokens = chunk.outputTokens;
+        yield chunk;
+      }
+    } catch (err) {
+      // T19: Stop button aborts mid-stream — flush the partial message instead of losing it.
+      if (!isAbortError(err)) throw err;
+      aborted = true;
     }
 
+    await this.finalizeTurn({ session, input, accumulated, inputTokens, outputTokens, aborted });
+
+    if (aborted) {
+      // Close the stream cleanly so the SSE layer flushes the partial message to the client.
+      yield { delta: '', done: true, inputTokens, outputTokens };
+    }
+  }
+
+  /** Persist the assistant turn (partial on abort) + record usage for completed turns. */
+  private async finalizeTurn(ctx: {
+    session: ChatSession;
+    input: SendMessageInput;
+    accumulated: string;
+    inputTokens: number;
+    outputTokens: number;
+    aborted: boolean;
+  }): Promise<void> {
+    const { session, input, accumulated, inputTokens, outputTokens, aborted } = ctx;
     if (accumulated) {
       const assistantMsg = MessageEntity.create({ sessionId: session.id, userId: input.userId, role: 'assistant', content: accumulated });
       await this.messageRepo.save(assistantMsg);
     }
-
     await this.sessionRepo.save(session.recordActivity());
 
-    if (this.usageRepo && (inputTokens > 0 || outputTokens > 0)) {
+    // Record usage only for fully completed turns (aborted turns are partial).
+    if (!aborted && this.usageRepo && (inputTokens > 0 || outputTokens > 0)) {
       const cost = defaultPricingCalculator.cost(input.model, { inputTokens, outputTokens });
       this.usageRepo.insert({
         userId: input.userId,
@@ -98,4 +123,10 @@ export class SendMessageUseCase implements UseCase<SendMessageInput, SendMessage
       });
     }
   }
+}
+
+function isAbortError(err: unknown): boolean {
+  // Match AbortError (DOM/Node) AND provider variants like Anthropic's APIUserAbortError.
+  if (err instanceof Error && /abort/i.test(err.name)) return true;
+  return typeof DOMException !== 'undefined' && err instanceof DOMException && /abort/i.test(err.name);
 }

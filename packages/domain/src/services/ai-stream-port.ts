@@ -16,6 +16,8 @@ export interface AIStreamChunk {
   done?: boolean;
   toolCall?: { id: string; name: string; input: Record<string, unknown> };
   toolResult?: { callId: string; output: string; isError: boolean };
+  /** T17: emitted when a destructive tool requires user approval. */
+  toolPermission?: { callId: string; name: string; input: Record<string, unknown>; prompt: string };
 }
 
 export interface AICompletionOptions {

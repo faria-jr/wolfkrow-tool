@@ -1,5 +1,6 @@
-import { ToolResult } from '@wolfkrow/domain';
 import type { ToolExecutionContext, ToolExecutor } from '@wolfkrow/domain';
+import { ToolResult } from '@wolfkrow/domain';
+import { PermissionResolver } from '@wolfkrow/domain';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BashTool } from '../../tools/bash-tool';
@@ -52,6 +53,24 @@ function makeToolUseStream(
       usage,
       stop_reason: 'tool_use',
       content: toolCalls.map((tc) => ({ type: 'tool_use', id: tc.id, name: tc.name, input: tc.input })),
+    }),
+  };
+}
+
+function makeAbortingStream(texts: string[]) {
+  return {
+    async *[Symbol.asyncIterator]() {
+      for (const text of texts) {
+        yield { type: 'content_block_delta', delta: { type: 'text_delta', text } };
+      }
+      const err = new Error('Request was aborted.');
+      err.name = 'AbortError';
+      throw err;
+    },
+    finalMessage: async () => ({
+      usage: { input_tokens: 5, output_tokens: 3 },
+      stop_reason: 'end_turn',
+      content: [],
     }),
   };
 }
@@ -162,5 +181,109 @@ describe('ClaudeAgentProvider', () => {
     await collect(provider.query(opts));
 
     expect(capturedCtx[0]?.workDir).toBe('/my/workspace');
+  });
+
+  function makeSpyTool(name: string, seen: string[]) {
+    const spy: ToolExecutor = {
+      name,
+      description: 'spy',
+      inputSchema: { type: 'object', properties: {} },
+      async execute(_input, _ctx) {
+        seen.push(name);
+        return ToolResult.ok('spy', 'ok');
+      },
+    };
+    return spy;
+  }
+
+  // --- T17: permission flow ---
+
+  it('denies blacklisted tool and emits error result (no execution)', async () => {
+    streamMock
+      .mockReturnValueOnce(makeToolUseStream([{ id: 'tc1', name: 'Write', input: {} }]))
+      .mockReturnValueOnce(makeTextStream(['done']));
+
+    const seen: string[] = [];
+    const registry = new ToolRegistry([makeSpyTool('Write', seen)]);
+    const resolver = new PermissionResolver();
+    const provider = new ClaudeAgentProvider('key', registry, resolver, {
+      agent: { allowedTools: [], blockedTools: ['Write'] },
+    });
+    const chunks = await collect(provider.query(opts));
+
+    const err = chunks.find((c) => c.toolResult?.isError);
+    expect(err?.toolResult?.output).toMatch(/blacklisted/i);
+    expect(seen).toHaveLength(0);
+  });
+
+  it('asks permission for destructive tool and executes when approved', async () => {
+    streamMock
+      .mockReturnValueOnce(makeToolUseStream([{ id: 'tc1', name: 'Write', input: {} }]))
+      .mockReturnValueOnce(makeTextStream(['done']));
+
+    const seen: string[] = [];
+    const registry = new ToolRegistry([makeSpyTool('Write', seen)]);
+    const resolver = new PermissionResolver();
+    const requestPermission = vi.fn().mockResolvedValue(true);
+    const provider = new ClaudeAgentProvider('key', registry, resolver, {
+      agent: { allowedTools: ['Write'] },
+      requestPermission,
+    });
+    const chunks = await collect(provider.query(opts));
+
+    const permChunks = chunks.filter((c) => c.toolPermission);
+    expect(permChunks).toHaveLength(1);
+    expect(permChunks[0]?.toolPermission?.name).toBe('Write');
+    expect(requestPermission).toHaveBeenCalledTimes(1);
+    expect(seen).toHaveLength(1);
+  });
+
+  it('asks permission for destructive tool and denies when rejected', async () => {
+    streamMock
+      .mockReturnValueOnce(makeToolUseStream([{ id: 'tc1', name: 'Write', input: {} }]))
+      .mockReturnValueOnce(makeTextStream(['done']));
+
+    const seen: string[] = [];
+    const registry = new ToolRegistry([makeSpyTool('Write', seen)]);
+    const resolver = new PermissionResolver();
+    const requestPermission = vi.fn().mockResolvedValue(false);
+    const provider = new ClaudeAgentProvider('key', registry, resolver, {
+      agent: { allowedTools: ['Write'] },
+      requestPermission,
+    });
+    const chunks = await collect(provider.query(opts));
+
+    const err = chunks.find((c) => c.toolResult?.isError);
+    expect(err?.toolResult?.output).toMatch(/denied|not approved/i);
+    expect(seen).toHaveLength(0);
+  });
+
+  it('denies destructive tool when no requestPermission handler is wired (safe default)', async () => {
+    streamMock
+      .mockReturnValueOnce(makeToolUseStream([{ id: 'tc1', name: 'Write', input: {} }]))
+      .mockReturnValueOnce(makeTextStream(['done']));
+
+    const seen: string[] = [];
+    const registry = new ToolRegistry([makeSpyTool('Write', seen)]);
+    const resolver = new PermissionResolver();
+    const provider = new ClaudeAgentProvider('key', registry, resolver, {
+      agent: { allowedTools: ['Write'] },
+    });
+    const chunks = await collect(provider.query(opts));
+
+    expect(chunks.some((c) => c.toolPermission)).toBe(true);
+    const err = chunks.find((c) => c.toolResult?.isError);
+    expect(err?.toolResult?.output).toMatch(/denied|not approved/i);
+    expect(seen).toHaveLength(0);
+  });
+
+  it('emits a done chunk when the stream aborts mid-turn (abort robustness)', async () => {
+    streamMock.mockReturnValue(makeAbortingStream(['partial']));
+    const provider = new ClaudeAgentProvider('key');
+    const chunks = await collect(provider.query(opts));
+
+    expect(chunks.some((c) => c.done)).toBe(true);
+    const text = chunks.filter((c) => c.delta && !c.done).map((c) => c.delta).join('');
+    expect(text).toBe('partial');
   });
 });

@@ -16,6 +16,7 @@ import {
   BashTool,
   ClaudeAgentProvider,
   FilesystemTool,
+  FsArtifactWriter,
   type AIProviderFactory,
   ToolRegistry,
   VoyageEmbedder,
@@ -59,6 +60,15 @@ export function getAdapters(): AdapterBundle {
 /** Test helper: drop the cached adapter bundle. */
 export function resetAdapters(): void {
   _adapters = null;
+}
+
+let _artifactWriter: FsArtifactWriter | null = null;
+
+/** T26: singleton artifact writer (pipeline phase artifacts → disk). */
+export function getArtifactWriter(): FsArtifactWriter {
+  if (_artifactWriter) return _artifactWriter;
+  _artifactWriter = new FsArtifactWriter();
+  return _artifactWriter;
 }
 
 export interface HarnessAgents {
