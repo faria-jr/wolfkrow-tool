@@ -3,11 +3,13 @@
  * B.2: BuildPlan pipeline with AI-driven phases.
  */
 
+import { NotFoundError } from '@wolfkrow/domain';
 import {
   ApprovePipelinePhaseUseCase,
   BuildSystemPromptUseCase,
   CreatePipelineProjectUseCase,
   DeletePipelineProjectUseCase,
+  GeneratePipelineReportUseCase,
   GetPipelineProjectUseCase,
   ListPipelineProjectsUseCase,
   RunPhaseUseCase,
@@ -133,6 +135,23 @@ export async function pipelineRoutes(server: AuthFastifyInstance) {
     return phases.map((p) => p.toProps());
   });
 
+  // T26 (tech_debt): consolidated Markdown report of a project's phases + outputs.
+  server.get<{ Params: { id: string } }>('/projects/:id/report', reportHandler);
+
   server.post<{ Params: RunParams; Body: RunPhaseBody }>('/projects/:id/phases/:phaseId/run', runPhaseHandler);
   server.post<{ Params: RunParams; Body: ApproveBody }>('/projects/:id/phases/:phaseId/approve', approvePhaseHandler);
+}
+
+async function reportHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+  const { projectRepo, phaseRepo } = _repos;
+  try {
+    const { report } = await new GeneratePipelineReportUseCase(
+      projectRepo, phaseRepo, getRepos().pipelineMessage,
+    ).execute({ projectId: req.params.id });
+    return { report };
+  } catch (err) {
+    if (err instanceof NotFoundError) return reply.status(404).send({ error: 'Not found' });
+    req.log.error({ err }, 'Pipeline report error');
+    return reply.status(500).send({ error: 'Report generation failed' });
+  }
 }

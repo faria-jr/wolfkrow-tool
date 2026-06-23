@@ -7,8 +7,11 @@ import type { AICompletionOptions, AICompletionResult, AIStreamChunk, AIStreamPo
 import type { ImagePart } from '@wolfkrow/infra';
 import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
 import { CompactSessionUseCase, SendMessageUseCase } from '@wolfkrow/use-cases';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { getRepos } from '../container';
+import { requestToolPermission, resolveToolPermission } from '../chat/permission-store';
+import { getAgenticStreamPort, getChatWorkDir, getRepos } from '../container';
+import { getAnthropicApiKey } from '../lib/keychain';
 import type { Logger } from '../logger';
 import { recordChatTurn } from '../memory/lifecycle';
 import { OrchestratorService } from '../orchestrator';
@@ -134,7 +137,24 @@ async function handleSendRequest(
   ctx.sse({ type: 'ack', message });
 
   const { content, imageParts } = await processAttachments(message, attachments);
-  const ai = makeAIAdapter(ctx.orchestrator, adapterOptions(provider, agentId, authUserId), imageParts);
+  let ai = makeAIAdapter(ctx.orchestrator, adapterOptions(provider, agentId, authUserId), imageParts);
+
+  // T17: when the agent declares allowed tools, switch to an agentic provider
+  // (claude-agent + tools) so destructive tool calls surface tool_permission
+  // events the UI must approve. Agentic mode does not consume attachments yet.
+  if (agentId) {
+    const agent = await getRepos().agent.findById(agentId);
+    if (agent && agent.allowedTools.length > 0) {
+      const apiKey = await getAnthropicApiKey();
+      ai = getAgenticStreamPort({
+        apiKey,
+        allowedTools: agent.allowedTools,
+        workDir: getChatWorkDir(userId),
+        requestPermission: (callId) => requestToolPermission(callId),
+      });
+    }
+  }
+
   const { chatSession: sessionRepo, message: messageRepo, tokenUsage: usageRepo } = getRepos();
   const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, usageRepo);
 
@@ -198,4 +218,24 @@ export async function chatRoutes(server: AuthFastifyInstance) {
       }
     },
   );
+
+  // T17: resolve a pending tool-permission request (UI approves/denies a
+  // destructive tool call surfaced via the tool_permission SSE event).
+  server.post<{ Body: PermissionBody }>(
+    '/permission',
+    { preHandler: [server.authenticate] },
+    permissionHandler,
+  );
+}
+
+interface PermissionBody { callId: string; approved: boolean }
+
+async function permissionHandler(
+  request: FastifyRequest<{ Body: PermissionBody }>,
+  reply: FastifyReply,
+) {
+  const { callId, approved } = request.body;
+  const ok = resolveToolPermission(callId, approved);
+  if (!ok) return reply.status(404).send({ error: 'No pending permission for callId' });
+  return { resolved: true };
 }
