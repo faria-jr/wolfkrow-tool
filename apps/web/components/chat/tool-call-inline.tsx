@@ -1,5 +1,8 @@
 'use client';
 
+import { ArtifactCard } from './artifact-card';
+import { detectArtifact } from './artifact-detector';
+
 export interface ToolCall {
   id: string;
   name: string;
@@ -13,14 +16,16 @@ interface Props {
 }
 
 export function ToolCallInline({ toolCall }: Props) {
+  const artifactType = toolCall.output ? detectArtifact(toolCall.output) : undefined;
+
   return (
     <div className="my-1 rounded border border-border bg-muted/30 px-3 py-2 text-xs font-mono" role="article" aria-label={`Tool call: ${toolCall.name}`}>
       <div className="flex items-center gap-2">
         <span className="font-semibold text-foreground">{toolCall.name}</span>
         <StatusBadge status={toolCall.status} />
       </div>
-      {toolCall.output && (
-        <pre className="mt-1 overflow-x-auto whitespace-pre-wrap text-muted-foreground">{toolCall.output}</pre>
+      {toolCall.output && artifactType && (
+        <ArtifactCard output={toolCall.output} artifactType={artifactType} />
       )}
     </div>
   );

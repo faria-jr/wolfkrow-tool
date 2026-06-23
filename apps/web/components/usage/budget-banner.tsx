@@ -19,19 +19,39 @@ interface BudgetStatus {
 
 const DEFAULT_BUDGET_USD = 50;
 const APPROACH_THRESHOLD_PERCENT = 80;
+const STORAGE_KEY = 'wolfkrow:budget_usd';
 
 const usd = (n: number): string => `$${n.toFixed(2)}`;
+
+function readBudget(): number {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = Number(raw ?? DEFAULT_BUDGET_USD);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_BUDGET_USD;
+  } catch {
+    return DEFAULT_BUDGET_USD;
+  }
+}
 
 export function BudgetBanner() {
   const [status, setStatus] = useState<BudgetStatus | null>(null);
 
-  useEffect(() => {
-    fetch(`/api/usage/budget?budgetUSD=${DEFAULT_BUDGET_USD}`)
+  function fetchBudget() {
+    const budgetUSD = readBudget();
+    fetch(`/api/usage/budget?budgetUSD=${budgetUSD}`)
       .then((r) => r.json() as Promise<BudgetStatus>)
       .then(setStatus)
       .catch(() => {
         // Banner is non-critical — never crash the Usage page on a fetch error.
       });
+  }
+
+  useEffect(() => {
+    fetchBudget();
+    window.addEventListener('wolfkrow:budget-changed', fetchBudget);
+    return () => {
+      window.removeEventListener('wolfkrow:budget-changed', fetchBudget);
+    };
   }, []);
 
   if (!status || (!status.exceeded && status.percentUsed < APPROACH_THRESHOLD_PERCENT)) {
