@@ -66,19 +66,19 @@ describe('ClaudeAgentProvider', () => {
 });
 
 describe('ClaudeCompatProvider', () => {
-  it('streams chunks via OpenAI SDK', async () => {
-    const provider = new ClaudeCompatProvider('key');
+  it('streams chunks via Anthropic SDK using preset', async () => {
+    const provider = new ClaudeCompatProvider('key', 'zai');
     const chunks = await collect(provider.query(opts('claude-3-5-sonnet-20241022')));
 
     const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
-    expect(text).toBe('Codex reply');
+    expect(text).toBe('Agent reply');
     const done = chunks.find((c) => c.done);
     expect(done).toBeDefined();
   });
 
   it('complete accumulates content', async () => {
-    const result = await new ClaudeCompatProvider('key').complete(opts('claude-3-5-sonnet-20241022'));
-    expect(result.content).toBe('Codex reply');
+    const result = await new ClaudeCompatProvider('key', 'minimax').complete(opts('claude-3-5-sonnet-20241022'));
+    expect(result.content).toBe('Agent reply');
   });
 });
 

@@ -16,6 +16,45 @@ import { MockProvider } from './mock';
 import { OpenRouterProvider } from './openrouter';
 import type { AIProvider, AIProviderFactory } from './types';
 
+const CLAUDE_COMPAT_PREFIX = 'claude-compat:';
+
+function isClaudeCompatPrefixed(provider: string): boolean {
+  return provider.toLowerCase().startsWith(CLAUDE_COMPAT_PREFIX);
+}
+
+function extractClaudeCompatPreset(provider: string): string {
+  return provider.slice(CLAUDE_COMPAT_PREFIX.length);
+}
+
+function createSimpleProvider(
+  normalized: string,
+  apiKey: string,
+  toolRegistry: ToolRegistry | undefined,
+  permissionResolver: PermissionResolver | undefined,
+): AIProvider | undefined {
+  switch (normalized) {
+    case 'anthropic':
+      return new AnthropicProvider(apiKey);
+    case 'claude-agent':
+      return new ClaudeAgentProvider(apiKey, toolRegistry, permissionResolver);
+    case 'claude-compat':
+      return new ClaudeCompatProvider(apiKey, 'zai');
+    case 'codex':
+    case 'openai':
+      return new CodexProvider(apiKey);
+    case 'lion':
+      return new LionProvider({ anthropicApiKey: apiKey });
+    case 'openrouter':
+      return new OpenRouterProvider(apiKey);
+    case 'ollama':
+      return new CodexProvider('ollama', 'http://localhost:11434/v1');
+    case 'mock':
+      return new MockProvider();
+    default:
+      return undefined;
+  }
+}
+
 export class ProviderAIProviderFactory implements AIProviderFactory {
   constructor(
     private readonly toolRegistry?: ToolRegistry,
@@ -23,27 +62,17 @@ export class ProviderAIProviderFactory implements AIProviderFactory {
   ) {}
 
   create(provider: string, apiKey: string): AIProvider {
-    switch (provider.toLowerCase()) {
-      case 'anthropic':
-        return new AnthropicProvider(apiKey);
-      case 'claude-agent':
-        return new ClaudeAgentProvider(apiKey, this.toolRegistry, this.permissionResolver);
-      case 'claude-compat':
-        return new ClaudeCompatProvider(apiKey);
-      case 'codex':
-      case 'openai':
-        return new CodexProvider(apiKey);
-      case 'lion':
-        return new LionProvider({ anthropicApiKey: apiKey });
-      case 'openrouter':
-        return new OpenRouterProvider(apiKey);
-      case 'ollama':
-        return new CodexProvider('ollama', 'http://localhost:11434/v1');
-      case 'mock':
-        return new MockProvider();
-      default:
-        throw new Error(`Unsupported AI provider: ${provider}`);
+    const normalized = provider.toLowerCase();
+
+    if (isClaudeCompatPrefixed(normalized)) {
+      const presetId = extractClaudeCompatPreset(normalized);
+      return new ClaudeCompatProvider(apiKey, presetId);
     }
+
+    const simple = createSimpleProvider(normalized, apiKey, this.toolRegistry, this.permissionResolver);
+    if (simple) return simple;
+
+    throw new Error(`Unsupported AI provider: ${provider}`);
   }
 }
 
@@ -56,3 +85,10 @@ export { LionProvider } from './lion';
 export { MockProvider } from './mock';
 export { OpenRouterProvider } from './openrouter';
 export { accumulate, estimateTokens } from './helpers';
+export {
+  CLAUDE_COMPAT_PRESETS,
+  CLAUDE_COMPAT_PROVIDER_IDS,
+  getClaudeCompatPreset,
+  isClaudeCompatProviderId,
+} from '@wolfkrow/domain';
+export type { ClaudeCompatPreset, ClaudeCompatProviderId } from '@wolfkrow/domain';

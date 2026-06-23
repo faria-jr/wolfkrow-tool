@@ -24,7 +24,8 @@ export interface AgentData {
   mcpServers: string[];
   isActive: boolean;
   skills: string[];
-  runtime: 'cloud' | 'local' | 'codex' | 'external';
+  runtime: 'cloud' | 'local' | 'codex' | 'external' | 'claude-compat';
+  provider?: string;
   squad?: string;
   systemPrompt?: string;
 }
@@ -51,6 +52,7 @@ function buildDefaultValues(agent?: AgentData): AgentFormValues {
     isActive: agent.isActive,
     skills: agent.skills,
     runtime: agent.runtime,
+    provider: agent.provider ?? '',
     systemPrompt: agent.systemPrompt ?? '',
     ...(agent.thinkingBudget !== undefined ? { thinkingBudget: agent.thinkingBudget } : {}),
     ...(agent.squad !== undefined ? { squad: agent.squad as AgentFormValues['squad'] } : {}),

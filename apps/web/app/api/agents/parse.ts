@@ -24,12 +24,14 @@ function parseRequiredFields(userId: string, b: Body) {
 function parseOptionalCreateFields(b: Body): {
   description: string | undefined;
   thinkingBudget: number | undefined;
+  provider: string | undefined;
   squad: Squad | undefined;
   systemPrompt: string | undefined;
 } {
   return {
     description: b.description !== undefined ? String(b.description) : undefined,
     thinkingBudget: b.thinkingBudget !== undefined ? Number(b.thinkingBudget) : undefined,
+    provider: b.provider !== undefined ? String(b.provider) : undefined,
     squad: b.squad !== undefined ? (b.squad as Squad) : undefined,
     systemPrompt: b.systemPrompt !== undefined ? String(b.systemPrompt) : undefined,
   };
@@ -51,18 +53,26 @@ function parsePatchCore(b: Body): AgentUpdateInput {
 }
 
 function parsePatchExtra(b: Body): AgentUpdateInput {
-  return {
-    ...(b.maxTurns !== undefined ? { maxTurns: Number(b.maxTurns) } : {}),
-    ...(b.allowedTools !== undefined ? { allowedTools: b.allowedTools as string[] } : {}),
-    ...(b.mcpServers !== undefined ? { mcpServers: b.mcpServers as string[] } : {}),
-    ...(b.isActive !== undefined ? { isActive: Boolean(b.isActive) } : {}),
-    ...(b.skills !== undefined ? { skills: b.skills as string[] } : {}),
-    ...(b.runtime !== undefined ? { runtime: b.runtime as Runtime } : {}),
-    ...(b.squad !== undefined ? { squad: b.squad as Squad } : {}),
-    ...(b.systemPrompt !== undefined ? { systemPrompt: String(b.systemPrompt) } : {}),
-  };
+  const extra: AgentUpdateInput = {};
+
+  if (b.maxTurns !== undefined) extra.maxTurns = Number(b.maxTurns);
+  if (b.allowedTools !== undefined) extra.allowedTools = b.allowedTools as string[];
+  if (b.mcpServers !== undefined) extra.mcpServers = b.mcpServers as string[];
+  if (b.isActive !== undefined) extra.isActive = Boolean(b.isActive);
+  if (b.skills !== undefined) extra.skills = b.skills as string[];
+  if (b.runtime !== undefined) extra.runtime = b.runtime as Runtime;
+  if (b.squad !== undefined) extra.squad = b.squad as Squad;
+  if (b.systemPrompt !== undefined) extra.systemPrompt = String(b.systemPrompt);
+
+  return extra;
+}
+
+function parseProvider(b: Body): Pick<AgentUpdateInput, 'provider'> {
+  return b.provider !== undefined
+    ? { provider: b.provider ? String(b.provider) : undefined }
+    : {};
 }
 
 export function parsePatchInput(b: Body): AgentUpdateInput {
-  return { ...parsePatchCore(b), ...parsePatchExtra(b) };
+  return { ...parsePatchCore(b), ...parsePatchExtra(b), ...parseProvider(b) };
 }

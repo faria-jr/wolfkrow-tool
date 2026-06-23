@@ -6,6 +6,13 @@ export type { AIStreamPort, AIStreamChunk, AICompletionOptions, AICompletionResu
 export type { EmbeddingPort } from './embedding-port';
 export type { SecretsAdapter } from './secrets-port';
 export {
+  CLAUDE_COMPAT_PRESETS,
+  CLAUDE_COMPAT_PROVIDER_IDS,
+  getClaudeCompatPreset,
+  isClaudeCompatProviderId,
+} from './claude-compat-presets';
+export type { ClaudeCompatPreset, ClaudeCompatProviderId } from './claude-compat-presets';
+export {
   tokenize,
   findFirstPosition,
   extractProperNouns,

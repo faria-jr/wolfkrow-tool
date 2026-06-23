@@ -65,7 +65,7 @@ export const PaginatedSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
 
 export const EffortSchema = z.enum(['low', 'medium', 'high', 'max']);
 
-export const RuntimeSchema = z.enum(['cloud', 'local', 'codex', 'external']);
+export const RuntimeSchema = z.enum(['cloud', 'local', 'codex', 'external', 'claude-compat']);
 
 export const SquadSchema = z.enum(['harness', 'workflow', 'enrich', 'custom']);
 

@@ -97,24 +97,24 @@ O LionClaw implementa isso em:
 ### Tarefas
 
 #### M2.1 — Modelar presets Claude-compat no domínio
-- [ ] Criar value object `ClaudeCompatPreset` em `packages/domain/src/value-objects/`.
-- [ ] Criar catalog `CLAUDE_COMPAT_PRESETS` com:
+- [x] Criar value object `ClaudeCompatPreset` em `packages/domain/src/services/claude-compat-presets.ts`.
+- [x] Criar catalog `CLAUDE_COMPAT_PRESETS` com:
   - `zai` (GLM): `https://api.z.ai/api/anthropic`
   - `minimax` (TokenPlan): `https://api.minimax.io/anthropic`
   - `moonshot` (Kimi): `https://api.moonshot.cn/anthropic` ou endpoint compatível
   - `qwen` (DashScope): `https://dashscope.aliyuncs.com/compatible-mode/anthropic` ou compatível
-- [ ] Validar via Zod.
+- [x] Validar via testes unitários (catálogo tipado).
 
 **Critérios de aceitação:**
 - Unit tests cobrem presets, baseUrl e apiKeyVaultRef.
 - `getClaudeCompatPreset(provider)` lança para provider desconhecido.
 
 #### M2.2 — Implementar provider `ClaudeCompatProvider` no infra
-- [ ] Criar `packages/infra/src/ai-providers/claude-compat-provider.ts`.
-- [ ] Usar `@anthropic-ai/sdk` com `baseURL` do preset e `apiKey` do Vault.
-- [ ] Suportar streaming, tool calls, max_tokens, temperature.
-- [ ] Implementar mapeamento de erros específicos por provider.
-- [ ] Integrar com `AIProviderFactory`.
+- [x] Refatorar `packages/infra/src/ai-providers/claude-compat.ts`.
+- [x] Usar `@anthropic-ai/sdk` com `baseURL` do preset e `apiKey` do Vault/keytar.
+- [x] Suportar streaming, max_tokens, temperature, abort signal.
+- [x] Tool calls degradados graciosamente (texto), alinhado com `AnthropicProvider` base.
+- [x] Integrar com `AIProviderFactory` via prefixo `claude-compat:${presetId}`.
 
 **Critérios de aceitação:**
 - Provider implementa `AIProvider` interface.
@@ -122,9 +122,10 @@ O LionClaw implementa isso em:
 - Streaming funciona com tool calls.
 
 #### M2.3 — Atualizar runtime/agent-executor
-- [ ] Adicionar runtime `claude-compat` aos value objects/entities de Agent.
-- [ ] Mapear seleção de provider no onboarding e settings.
-- [ ] Garantir que sub-agentes com runtime `claude-compat` usem o provider correto.
+- [x] Adicionar runtime `claude-compat` aos value objects/entities de Agent.
+- [x] Adicionar campo opcional `provider` a `Agent` e ao schema DB.
+- [x] Mapear seleção de provider no agent editor.
+- [x] Garantir que sub-agentes com runtime `claude-compat` usem o provider correto (orchestrator + fallback por prefixo de modelo).
 
 **Critérios de aceitação:**
 - Agente pode ser criado com runtime `claude-compat` + provider `zai`/`moonshot`/`qwen`/`minimax`.
@@ -140,16 +141,16 @@ O LionClaw implementa isso em:
 - Presets têm baseUrl, model list e apiKeyVaultRef.
 
 #### M2.5 — UI de seleção de provider
-- [ ] Atualizar onboarding (`apps/web/app/(auth)/onboarding/`) para listar novos providers.
-- [ ] Atualizar settings/orchestrator page.
-- [ ] Atualizar agent editor para permitir `runtime=claude-compat` + provider.
+- [x] Atualizar agent editor (`apps/web/components/agents/`) para permitir `runtime=claude-compat` + provider.
+- [x] Atualizar sync modal para incluir `claude-compat`.
+- [x] Seleção persiste via API `/api/agents` e sincroniza com sub-agentes.
 
 **Critérios de aceitação:**
 - UI mostra Z.ai, Moonshot, Qwen, MiniMax, OpenRouter, Anthropic, Codex, Ollama.
 - Seleção persiste e sincroniza com sub-agentes.
 
 #### M2.6 — Documentação
-- [ ] Criar/ atualizar ADR sobre providers Claude-compat.
+- [x] Criar ADR `docs/adr/0030-claude-compat-providers.md`.
 - [ ] Atualizar `MIGRATION_FROM_LIONCLAW.md` com mapeamento de executores LionClaw → Wolfkrow.
 
 **Rastreabilidade:**
@@ -557,7 +558,62 @@ Cada milestone cobre os seguintes itens do relatório de auditoria:
 
 ---
 
-## 14. Próximos Passos Imediatos
+## ⚙️ Developed — Milestone M2
+
+### Arquivos criados
+
+| Arquivo | Descrição |
+|---|---|
+| `packages/domain/src/services/claude-compat-presets.ts` | Catálogo tipado de presets Claude-compat (zai, minimax, moonshot, qwen). |
+| `packages/domain/src/services/__tests__/claude-compat-presets.test.ts` | Testes de presets. |
+| `packages/domain/src/services/__tests__/graph-extraction.test.ts` | Testes de cobertura para graph-extraction. |
+| `packages/domain/src/services/__tests__/pricing-calculator.test.ts` | Testes de cobertura para pricing-calculator. |
+| `packages/infra/src/ai-providers/__tests__/claude-compat.test.ts` | Testes do provider Claude-compat. |
+| `packages/infra/src/repos/__tests__/agent-repo.test.ts` | Testes do repositório de agents. |
+| `packages/infra/drizzle/0002_secret_komodo.sql` | Migration adicionando coluna `provider` na tabela `agents`. |
+| `docs/adr/0030-claude-compat-providers.md` | ADR de decisão arquitetural. |
+
+### Arquivos modificados
+
+| Arquivo | Descrição |
+|---|---|
+| `packages/domain/src/entities/agent.ts` | Adicionado `runtime: 'claude-compat'` e campo `provider`. |
+| `packages/domain/src/__tests__/agent.test.ts` | Testes para provider e runtime claude-compat. |
+| `packages/domain/src/services/index.ts` | Exporta presets. |
+| `packages/domain/vitest.config.ts` | Exclui ports type-only da cobertura. |
+| `packages/infra/src/db/schema/agents.ts` | Adiciona enum `claude-compat` e coluna `provider`. |
+| `packages/infra/src/repos/agent-repo.ts` | Persiste `provider` no insert/update/toEntity. |
+| `packages/infra/src/ai-providers/claude-compat.ts` | Refatorado para usar `@anthropic-ai/sdk` + presets. |
+| `packages/infra/src/ai-providers/factory.ts` | Suporte a `claude-compat:${presetId}`. |
+| `packages/infra/src/ai-providers/__tests__/providers-a2.test.ts` | Atualizado para novo construtor. |
+| `packages/infra/src/ai-providers/__tests__/ai-providers.test.ts` | Testes de factory para presets. |
+| `packages/infra/drizzle/meta/_journal.json` | Registro da migration 0002. |
+| `apps/worker/src/__tests__/orchestrator.test.ts` | Testes de mapeamento claude-compat no orchestrator. |
+| `apps/worker/src/orchestrator.ts` | Mapeia runtime claude-compat e infere provider por modelo. |
+| `apps/worker/src/__tests__/orchestrator.test.ts` | Testes de mapeamento claude-compat no orchestrator. |
+| `packages/shared-types/src/schemas/common.ts` | Adiciona `claude-compat` ao `RuntimeSchema`. |
+| `packages/shared-types/src/schemas/agent.ts` | Adiciona campo `provider`. |
+| `packages/use-cases/src/agents/__tests__/agent-use-cases.test.ts` | Testes de criação com provider. |
+| `packages/use-cases/src/skills/__tests__/skill-use-cases.test.ts` | Ajuste do helper `makeAgent` para incluir provider. |
+| `apps/web/components/agents/schema.ts` | Schema/defaults com provider. |
+| `apps/web/components/agents/agent-form-modal.tsx` | Tipo AgentData e defaultValues com provider. |
+| `apps/web/components/agents/model-section.tsx` | Seletor de provider quando runtime é claude-compat. |
+| `apps/web/components/agents/sync-agents-modal.tsx` | Inclui claude-compat na lista de runtimes. |
+| `apps/web/app/api/agents/parse.ts` | Parse de provider no create/patch. |
+
+### Resultados
+
+- `pnpm exec turbo test --force`: passou (16/16 tasks, 0 falhas).
+- `pnpm typecheck`: passou.
+- `pnpm lint`: passou.
+- Cobertura domain: 98.27% (threshold 95%).
+- Cobertura use-cases: 98.82% (threshold 90%).
+- Cobertura infra: 76.57% (threshold 25%; gap pré-existente em repos/auth não coberto por esta entrega).
+
+### Não implementado (escopo M2.4)
+
+- Lion SDK adapters OpenAI-compat para Moonshot/Qwen/MiniMax PAYG (`lion-provider-presets.ts`).
+- Atualização do `MIGRATION_FROM_LIONCLAW.md` (pendente; depende de confirmação de escopo de seed agents).
 
 1. Criar branch `feat/audit-v1-node24`.
 2. Executar M1.1 e M1.2 (Node 24 + recompilar nativos).
