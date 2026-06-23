@@ -455,7 +455,7 @@ Meta v1.0: **50 WAC** (single-user pode ter 50+ conversas/semana).
 
 3. **Source build** (open-source, devs)
    - `pnpm install && pnpm dev`
-   - Requer Node 20+, pnpm 9+
+   - Requer Node 24+, pnpm 9+
 
 4. **Cloud self-hosted** (futuro, v2.0)
    - Docker image
@@ -478,7 +478,7 @@ Open-source seletivo: extraction de libraries internas para npm público (`@wolf
 | OS | macOS 12+, Windows 10+, Linux (Ubuntu 22+) | macOS 14+ |
 | RAM | 8 GB | 16 GB |
 | Disk | 2 GB | 5 GB |
-| Node | 20+ | 22+ |
+| Node | 24+ | 24+ (LTS recomendado) |
 | Browser | Chrome 120+ | Chrome latest |
 
 ### 7.2 Opcionais (funcionalidades específicas)

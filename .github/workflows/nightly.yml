@@ -19,7 +19,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -29,7 +29,9 @@ jobs:
         run: pnpm turbo build
 
       - name: Run tests
-        run: pnpm test
+        run: pnpm exec turbo test --force
+        env:
+          TURBO_FORCE: true
 
       - name: Notify on failure
         if: failure()

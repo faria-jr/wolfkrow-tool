@@ -8,7 +8,7 @@ on:
 
 env:
   TURBO_TELEMETRY_DISABLED: 1
-  NODE_VERSION: 22
+  NODE_VERSION: 24
 
 jobs:
   lint:
@@ -87,7 +87,9 @@ jobs:
         run: pnpm turbo build
 
       - name: Test ${{ matrix.package }}
-        run: pnpm --filter @wolfkrow/${{ matrix.package }} test:cov
+        run: pnpm exec turbo test --force --filter @wolfkrow/${{ matrix.package }}
+        env:
+          TURBO_FORCE: true
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3

@@ -10,7 +10,7 @@ By participating, you agree to abide by our [Code of Conduct](./CODE_OF_CONDUCT.
 
 ### Prerequisites
 
-- Node.js 22+
+- Node.js 24+
 - pnpm 9+
 - Git
 

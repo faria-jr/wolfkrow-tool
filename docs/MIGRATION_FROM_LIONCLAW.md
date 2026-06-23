@@ -23,7 +23,7 @@ This guide walks through migrating your data from LionClaw v3.0 to Wolfkrow.
 
 - LionClaw v3.0 installed (or a `.db` file from a LionClaw backup)
 - Wolfkrow installed and configured (run `wolfkrow` at least once to initialize the DB)
-- Node.js 22+
+- Node.js 24+
 
 ## Step-by-step migration
 
