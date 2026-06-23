@@ -175,7 +175,7 @@ function useChatSession(model: string, sessionId?: string) {
       abortRef.current = null;
       bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
     }
-  }, [isStreaming, model, sessionId, appendText, onAsk, appendToolCall, updateToolCall]);
+  }, [isStreaming, model, sessionId, appendText, onAsk, appendToolCall, updateToolCall, onPermission]);
   const send = useCallback(() => {
     const text = input.trim();
     if (!text || isStreaming) return;
