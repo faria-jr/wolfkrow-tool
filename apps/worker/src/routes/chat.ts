@@ -7,7 +7,7 @@ import type { AICompletionOptions, AICompletionResult, AIStreamChunk, AIStreamPo
 import { DrizzleChatSessionRepo, DrizzleMessageRepo, DrizzleTokenUsageRepo } from '@wolfkrow/infra';
 import type { ImagePart } from '@wolfkrow/infra';
 import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
-import { SendMessageUseCase } from '@wolfkrow/use-cases';
+import { CompactSessionUseCase, SendMessageUseCase } from '@wolfkrow/use-cases';
 
 import type { Logger } from '../logger';
 import { recordChatTurn } from '../memory/lifecycle';
@@ -27,7 +27,17 @@ interface ChatBody {
   attachments?: AttachmentInput[];
 }
 
+interface CompactBody { model?: string; tokenThreshold?: number; }
+
+interface SendCtx {
+  orchestrator: OrchestratorService;
+  log: Logger;
+  signal: AbortSignal;
+  sse: (data: unknown) => void;
+}
+
 const DEFAULT_MODEL = DEFAULT_CHAT_MODEL;
+const AUTO_COMPACT_THRESHOLD = 8000;
 
 const sessionRepo = new DrizzleChatSessionRepo();
 const messageRepo = new DrizzleMessageRepo();
@@ -99,6 +109,50 @@ function makeAIAdapter(
   return { query, complete };
 }
 
+async function autoCompact(
+  sessionId: string,
+  userId: string,
+  model: string,
+  ai: AIStreamPort,
+): Promise<void> {
+  await new CompactSessionUseCase(messageRepo, ai).execute({
+    sessionId,
+    userId,
+    model,
+    tokenThreshold: AUTO_COMPACT_THRESHOLD,
+  });
+}
+
+async function handleSendRequest(
+  body: ChatBody,
+  authUserId: string | undefined,
+  ctx: SendCtx,
+): Promise<void> {
+  const { message, model = DEFAULT_MODEL, provider, system, sessionId, agentId, attachments } = body;
+  const userId = authUserId ?? 'anonymous';
+
+  ctx.sse({ type: 'ack', message });
+
+  const { content, imageParts } = await processAttachments(message, attachments);
+  const ai = makeAIAdapter(ctx.orchestrator, adapterOptions(provider, agentId, authUserId), imageParts);
+  const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, usageRepo);
+
+  const stream = await useCase.execute({
+    sessionId, userId, agentId, content, model, signal: ctx.signal,
+    ...(system !== undefined ? { system } : {}),
+  });
+
+  await writeStreamAsSse(stream, ctx.sse);
+
+  if (sessionId) {
+    autoCompact(sessionId, userId, model, ai).catch(() => undefined);
+  }
+
+  if (authUserId) {
+    recordChatTurn(ctx.log, authUserId, [{ role: 'user', content: message }]);
+  }
+}
+
 export async function chatRoutes(server: AuthFastifyInstance) {
   const orchestrator = new OrchestratorService({ logger: server.log as unknown as Logger });
 
@@ -106,54 +160,40 @@ export async function chatRoutes(server: AuthFastifyInstance) {
     '/send',
     { preHandler: [server.authenticate] },
     async (request, reply) => {
-      const { message, model = DEFAULT_MODEL, provider, system, sessionId, agentId, attachments } = request.body;
-
-      reply.raw.writeHead(200, {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      });
-
+      reply.raw.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
       const ac = new AbortController();
       request.raw.on('close', () => ac.abort());
-
+      const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
       try {
-        const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
-        sse({ type: 'ack', message });
-
-        const { content, imageParts } = await processAttachments(message, attachments);
-
-        const ai = makeAIAdapter(
-          orchestrator,
-          adapterOptions(provider, agentId, request.user?.userId),
-          imageParts,
-        );
-        const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, usageRepo);
-
-        const stream = await useCase.execute({
-          sessionId,
-          userId: request.user?.userId ?? 'anonymous',
-          agentId,
-          content,
-          model,
-          signal: ac.signal,
-          ...(system !== undefined ? { system } : {}),
+        await handleSendRequest(request.body, request.user?.userId, {
+          orchestrator, log: server.log as unknown as Logger, signal: ac.signal, sse,
         });
-
-        await writeStreamAsSse(stream, sse);
-
-        const chatUserId = request.user?.userId;
-        if (chatUserId) {
-          recordChatTurn(server.log as unknown as Logger, chatUserId, [
-            { role: 'user', content: message },
-          ]);
-        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error';
         reply.raw.write(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`);
         server.log.error({ err }, 'Chat stream error');
       } finally {
         reply.raw.end();
+      }
+    },
+  );
+
+  server.post<{ Params: { id: string }; Body: CompactBody }>(
+    '/sessions/:id/compact',
+    { preHandler: [server.authenticate] },
+    async (request, reply) => {
+      const userId = request.user?.userId ?? 'anonymous';
+      const model = request.body.model ?? DEFAULT_MODEL;
+      const ai = makeAIAdapter(orchestrator, adapterOptions(undefined, undefined, userId));
+      try {
+        const result = await new CompactSessionUseCase(messageRepo, ai).execute({
+          sessionId: request.params.id, userId, model,
+          ...(request.body.tokenThreshold !== undefined ? { tokenThreshold: request.body.tokenThreshold } : {}),
+        });
+        return result;
+      } catch (err) {
+        server.log.error({ err }, 'Compact session error');
+        return reply.status(500).send({ error: 'Compaction failed' });
       }
     },
   );
