@@ -30,6 +30,8 @@ export { PipelineProject } from './pipeline-project';
 export type { PipelineProjectProps, PipelineProjectCreateInput, PipelineStage, PipelineStatus, PipelineMetrics } from './pipeline-project';
 export { PipelinePhase } from './pipeline-phase';
 export type { PipelinePhaseProps, PipelinePhaseCreateInput, PhaseStatus, PhaseMetrics } from './pipeline-phase';
+export { PipelineMessage } from './pipeline-message';
+export type { PipelineMessageProps, PipelineMessageCreateInput, PipelineMessageRole } from './pipeline-message';
 export { ScheduledTask } from './scheduled-task';
 export type { ScheduledTaskProps, ScheduledTaskCreateInput, TaskStatus } from './scheduled-task';
 export { TaskRun } from './task-run';

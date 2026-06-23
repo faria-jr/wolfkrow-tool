@@ -19,6 +19,7 @@ import { getDb } from '../db/client';
 import { DrizzleAgentRepo } from './agent-repo';
 import { DrizzleAuditLogRepo } from './audit-log-repo';
 import { DrizzleAuthAuditRepo } from './auth-audit-repo';
+import { DrizzleChatSessionRepo, DrizzleMessageRepo } from './chat-repos';
 import { DrizzleDailySummaryRepo } from './daily-summary-repo';
 import { DrizzleEnrichSessionRepo } from './enrich-session-repo';
 import { DrizzleGlobalRuleRepo } from './global-rule-repo';
@@ -30,6 +31,7 @@ import { DrizzleKnowledgeChunkRepo } from './knowledge-chunk-repo';
 import { DrizzleKnowledgeDocRepo } from './knowledge-doc-repo';
 import { DrizzleMcpServerRepo } from './mcp-server-repo';
 import { DrizzleMcpToolRegistryRepo } from './mcp-tool-registry-repo';
+import { DrizzlePipelineMessageRepo } from './pipeline-message-repo';
 import { DrizzlePipelinePhaseRepo } from './pipeline-phase-repo';
 import { DrizzlePipelineProjectRepo } from './pipeline-project-repo';
 import { DrizzleScheduledTaskRepo } from './scheduled-task-repo';
@@ -45,6 +47,8 @@ import { DrizzleWorkflowRunRepo } from './workflow-run-repo';
 export interface RepoRegistry {
   user: DrizzleUserRepo;
   agent: DrizzleAgentRepo;
+  chatSession: DrizzleChatSessionRepo;
+  message: DrizzleMessageRepo;
   skill: DrizzleSkillRepo;
   secret: DrizzleSecretRepo;
   globalRule: DrizzleGlobalRuleRepo;
@@ -65,6 +69,7 @@ export interface RepoRegistry {
   harnessRound: DrizzleHarnessRoundRepo;
   pipelineProject: DrizzlePipelineProjectRepo;
   pipelinePhase: DrizzlePipelinePhaseRepo;
+  pipelineMessage: DrizzlePipelineMessageRepo;
   enrichSession: DrizzleEnrichSessionRepo;
   workflowRun: DrizzleWorkflowRunRepo;
   graph: DrizzleGraphRepo;
@@ -80,6 +85,8 @@ export function createRepoRegistry(force = false): RepoRegistry {
   _registry = {
     user: new DrizzleUserRepo(db),
     agent: new DrizzleAgentRepo(db),
+    chatSession: new DrizzleChatSessionRepo(db),
+    message: new DrizzleMessageRepo(db),
     skill: new DrizzleSkillRepo(db),
     secret: new DrizzleSecretRepo(db),
     globalRule: new DrizzleGlobalRuleRepo(db),
@@ -100,6 +107,7 @@ export function createRepoRegistry(force = false): RepoRegistry {
     harnessRound: new DrizzleHarnessRoundRepo(db),
     pipelineProject: new DrizzlePipelineProjectRepo(db),
     pipelinePhase: new DrizzlePipelinePhaseRepo(db),
+    pipelineMessage: new DrizzlePipelineMessageRepo(db),
     enrichSession: new DrizzleEnrichSessionRepo(db),
     workflowRun: new DrizzleWorkflowRunRepo(db),
     graph: new DrizzleGraphRepo(db),

@@ -1,5 +1,5 @@
 import { NotFoundError, PipelinePhase, PipelineProject } from '@wolfkrow/domain';
-import type { AIStreamPort, PipelinePhaseRepo, PipelineProjectRepo } from '@wolfkrow/domain';
+import type { AIStreamPort, ArtifactWriter, PipelineMessage, PipelineMessageRepo, PipelinePhaseRepo, PipelineProjectRepo } from '@wolfkrow/domain';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RunPhaseUseCase } from '../run-phase';
@@ -33,6 +33,25 @@ function makeProject(stage: PipelineProject['currentStage'] = 'discovery') {
 
 function makePhase(projectId: string, stage: PipelinePhase['stage'] = 'discovery') {
   return PipelinePhase.create({ projectId, stage }).start();
+}
+
+class InMemoryMessageRepo implements PipelineMessageRepo {
+  readonly store = new Map<string, PipelineMessage>();
+  async save(m: PipelineMessage) { this.store.set(m.id, m); return m; }
+  async saveMany(msgs: PipelineMessage[]) { for (const m of msgs) this.store.set(m.id, m); }
+  async findByPhaseId(pid: string) { return [...this.store.values()].filter((m) => m.phaseId === pid); }
+  async findByProjectId(pid: string) { return [...this.store.values()].filter((m) => m.projectId === pid); }
+}
+
+function makeArtifactWriter(): ArtifactWriter & { written: Map<string, string> } {
+  const written = new Map<string, string>();
+  return {
+    written,
+    async write(key: string, content: string) {
+      written.set(key, content);
+      return `/artifacts/${key}.md`;
+    },
+  };
 }
 
 describe('RunPhaseUseCase', () => {
@@ -190,5 +209,89 @@ describe('RunPhaseUseCase', () => {
 
     expect(result.phase.status).toBe('completed');
     expect(result.project.currentStage).toBe('completed');
+  });
+
+  it('persists user and assistant messages when messageRepo provided (T26)', async () => {
+    const projectRepo = new InMemoryProjectRepo();
+    const phaseRepo = new InMemoryPhaseRepo();
+    const messageRepo = new InMemoryMessageRepo();
+    const ai = makeAI('discovery output');
+
+    const project = makeProject('discovery');
+    const phase = makePhase(project.id, 'discovery');
+    await projectRepo.save(project);
+    await phaseRepo.save(phase);
+
+    await new RunPhaseUseCase(projectRepo, phaseRepo, ai, { messageRepo }).execute({
+      projectId: project.id, phaseId: phase.id, userPrompt: 'analyze this',
+    });
+
+    const msgs = await messageRepo.findByPhaseId(phase.id);
+    expect(msgs).toHaveLength(2);
+    expect(msgs.some((m) => m.role === 'user' && m.content === 'analyze this')).toBe(true);
+    expect(msgs.some((m) => m.role === 'assistant' && m.content === 'discovery output')).toBe(true);
+  });
+
+  it('writes the assistant output as an artifact and sets artifactPath (T26)', async () => {
+    const projectRepo = new InMemoryProjectRepo();
+    const phaseRepo = new InMemoryPhaseRepo();
+    const messageRepo = new InMemoryMessageRepo();
+    const writer = makeArtifactWriter();
+    const ai = makeAI('spec artifact body');
+
+    const project = makeProject('spec_build');
+    const phase = makePhase(project.id, 'spec_build');
+    await projectRepo.save(project);
+    await phaseRepo.save(phase);
+
+    const result = await new RunPhaseUseCase(projectRepo, phaseRepo, ai, { messageRepo, artifactWriter: writer }).execute({
+      projectId: project.id, phaseId: phase.id,
+    });
+
+    expect(result.phase.artifactPath).toMatch(/\/artifacts\//);
+    expect([...writer.written.values()]).toContain('spec artifact body');
+  });
+
+  it('skips assistant message and artifact when AI output is empty (consistency fix)', async () => {
+    const projectRepo = new InMemoryProjectRepo();
+    const phaseRepo = new InMemoryPhaseRepo();
+    const messageRepo = new InMemoryMessageRepo();
+    const writer = makeArtifactWriter();
+    const ai = makeAI('');
+
+    const project = makeProject('discovery');
+    const phase = makePhase(project.id, 'discovery');
+    await projectRepo.save(project);
+    await phaseRepo.save(phase);
+
+    await new RunPhaseUseCase(projectRepo, phaseRepo, ai, { messageRepo, artifactWriter: writer }).execute({
+      projectId: project.id, phaseId: phase.id, userPrompt: 'go',
+    });
+
+    const msgs = await messageRepo.findByPhaseId(phase.id);
+    expect(msgs.filter((m) => m.role === 'assistant')).toHaveLength(0);
+    expect(writer.written.size).toBe(0);
+  });
+
+  it('persists user+assistant messages atomically via saveMany', async () => {
+    const projectRepo = new InMemoryProjectRepo();
+    const phaseRepo = new InMemoryPhaseRepo();
+    const messageRepo = new InMemoryMessageRepo();
+    const saveMany = vi.spyOn(messageRepo, 'saveMany');
+    const ai = makeAI('output');
+
+    const project = makeProject('discovery');
+    const phase = makePhase(project.id, 'discovery');
+    await projectRepo.save(project);
+    await phaseRepo.save(phase);
+
+    await new RunPhaseUseCase(projectRepo, phaseRepo, ai, { messageRepo }).execute({
+      projectId: project.id, phaseId: phase.id, userPrompt: 'go',
+    });
+
+    expect(saveMany).toHaveBeenCalledTimes(1);
+    const batch = saveMany.mock.calls[0]?.[0] ?? [];
+    expect(batch).toHaveLength(2);
+    expect(batch.map((m) => m.role).sort()).toEqual(['assistant', 'user']);
   });
 });

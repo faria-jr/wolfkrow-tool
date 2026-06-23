@@ -1,5 +1,5 @@
-import type { AIStreamPort, PipelinePhase, PipelineProject, PipelinePhaseRepo, PipelineProjectRepo, PipelineStage } from '@wolfkrow/domain';
-import { NotFoundError } from '@wolfkrow/domain';
+import type { AIStreamPort, ArtifactWriter, PipelinePhase, PipelinePhaseRepo, PipelineProject, PipelineProjectRepo, PipelineStage, PipelineMessageRepo } from '@wolfkrow/domain';
+import { NotFoundError, PipelineMessage as PipelineMessageEntity } from '@wolfkrow/domain';
 
 const NEXT_STAGE: Record<PipelineStage, PipelineStage | null> = {
   discovery: 'spec_build',
@@ -31,12 +31,24 @@ export interface RunPhaseOutput {
   tokens: number;
 }
 
+export interface RunPhaseOptions {
+  messageRepo?: PipelineMessageRepo;
+  artifactWriter?: ArtifactWriter;
+}
+
 export class RunPhaseUseCase {
+  private readonly messageRepo?: PipelineMessageRepo;
+  private readonly artifactWriter?: ArtifactWriter;
+
   constructor(
     private readonly projectRepo: PipelineProjectRepo,
     private readonly phaseRepo: PipelinePhaseRepo,
     private readonly aiProvider: AIStreamPort,
-  ) {}
+    options: RunPhaseOptions = {},
+  ) {
+    if (options.messageRepo) this.messageRepo = options.messageRepo;
+    if (options.artifactWriter) this.artifactWriter = options.artifactWriter;
+  }
 
   async execute(input: RunPhaseInput): Promise<RunPhaseOutput> {
     const [project, phase] = await Promise.all([
@@ -58,7 +70,9 @@ export class RunPhaseUseCase {
     });
 
     const tokens = result.usage.inputTokens + result.usage.outputTokens;
-    const completedPhase = await this.phaseRepo.save(phase.complete(undefined, tokens));
+    const artifactPath = await this.persistExchange(project, phase, userContent, result);
+
+    const completedPhase = await this.phaseRepo.save(phase.complete(artifactPath, tokens));
 
     const nextStage = NEXT_STAGE[phase.stage];
     const updatedProject = await this.projectRepo.save(
@@ -68,6 +82,32 @@ export class RunPhaseUseCase {
     );
 
     return { phase: completedPhase, project: updatedProject, output: result.content, tokens };
+  }
+
+  /**
+   * T26: persist the AI exchange atomically (user always, assistant only when
+   * non-empty) and write the artifact. Returns the artifact path, if any.
+   */
+  private async persistExchange(
+    project: PipelineProject,
+    phase: PipelinePhase,
+    userContent: string,
+    result: { content: string },
+  ): Promise<string | undefined> {
+    const hasOutput = result.content.trim().length > 0;
+    if (this.messageRepo) {
+      const msgs: PipelineMessageEntity[] = [
+        PipelineMessageEntity.create({ projectId: project.id, phaseId: phase.id, role: 'user', content: userContent }),
+      ];
+      if (hasOutput) {
+        msgs.push(PipelineMessageEntity.create({ projectId: project.id, phaseId: phase.id, role: 'assistant', content: result.content }));
+      }
+      await this.messageRepo.saveMany(msgs);
+    }
+    if (this.artifactWriter && hasOutput) {
+      return this.artifactWriter.write(`${project.id}/${phase.id}-${phase.stage}`, result.content);
+    }
+    return undefined;
   }
 
   private buildDefaultContent(project: PipelineProject): string {

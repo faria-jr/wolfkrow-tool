@@ -6,6 +6,27 @@
 
 ---
 
+## Status pós-auditoria (2026-06-23)
+
+Auditoria de evidência (estrutural + funcional via testes) das Tasks 13–29 encontrou **10 REAL · 7 PARCIAL · 0 FALSO**. Os 7 PARCIAL foram corrigidos na branch `feat/audit-fixes` (TDD vermelho→verde). Gates `typecheck`+`lint`+`test` verdes.
+
+| Task | Gap original | Correção | Status |
+|---|---|---|---|
+| T17 | `tool_permission` SSE type ausente; `PermissionResolver` com `void` (não usado) | `StreamChunk`/`AIStreamChunk`/Zod schema ganham `tool_permission`; `ClaudeAgentProvider` integra resolver de fato (allow/deny/ask + `requestPermission` callback + safe default deny); `writeStreamAsSse` repassa | ✅ base done |
+| T18 | `chat.ts` instanciava `new Drizzle*Repo()` em escopo de módulo (viola composition root) | repos expostos via `getRepos()` (chatSession/message/tokenUsage); `chat-store.ts` InMemory morto deletado | ✅ done |
+| T19 | Stop abortava stream mas não persistia mensagem parcial; sem teste | `streamAndSave` try/catch no `AbortError` → flush parcial + `done` chunk; teste no-use-case + Stop RTL já existia | ✅ done |
+| T22 | 4 routes chamavam `keytar.getPassword` direto (pipeline/voice/enrich/telegram) | helper único `getProviderApiKey`/`getSecret` em `lib/keychain.ts`; `keytar` só em `lib/keychain.ts` | ✅ done |
+| T23 | literal `'claude-3-5-sonnet-20241022'` hardcoded (deprecated) no telegram adapter | substituído por `DEFAULT_AGENT_MODEL` (`claude-sonnet-4-6`) | ✅ done |
+| T24 | sqlite-vec carregado em boot mas **não usado** pela search | Opção B: load removido do boot (`getSqlite`); JS cosine mantido/testado; `loadVecExtension`/`shouldLoadVec` keep como scaffold testado para futura Opção A (vec0). Consistente com FEATURE_MATRIX §21 | ✅ done |
+| T26 | `run-phase` não persistia AI messages nem artifact, sem report | novo `PipelineMessage`+`PipelineMessageRepo` (Drizzle) + `ArtifactWriter`/`FsArtifactWriter`; `run-phase` salva user+assistant + escreve artifact em disco (`artifactPath`); wired no registry+container+route | ✅ done (report final = tech_debt) |
+
+**Pendências remanescentes (tech_debt, não bloqueantes p/ v1.0.0):**
+- T17 fluxo UI completo pause/resume: `requestPermission` callback wired ao chat route (pending-permission map + `POST /chat/permission` + frontend `ConfirmDialog`). Hoje `ask` → safe deny sem callback.
+- T26 report final consolidado (consolida outputs das fases num relatório único).
+- T24 Opção A (`vec0` virtual table) se RAG crescer além ~5k chunks — já scaffold.
+
+---
+
 ## 0. Princípios de execução
 
 | Princípio | Regra |

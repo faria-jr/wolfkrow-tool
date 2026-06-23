@@ -73,6 +73,34 @@ async function collect(stream: AsyncIterable<AIStreamChunk>): Promise<AIStreamCh
   return out;
 }
 
+/** Fake AI that emits some deltas then aborts mid-stream (T19). */
+function makeAbortingAI(parts: string[]): AIStreamPort {
+  return {
+    async *query(_opts: AICompletionOptions): AsyncIterable<AIStreamChunk> {
+      for (const delta of parts) yield { delta };
+      throw new DOMException('Aborted', 'AbortError');
+    },
+    async complete(_opts: AICompletionOptions): Promise<AICompletionResult> {
+      return { content: '', usage: { inputTokens: 0, outputTokens: 0 } };
+    },
+  };
+}
+
+/** Fake AI that aborts with the Anthropic SDK's APIUserAbortError variant. */
+function makeSdkAbortingAI(parts: string[]): AIStreamPort {
+  return {
+    async *query(_opts: AICompletionOptions): AsyncIterable<AIStreamChunk> {
+      for (const delta of parts) yield { delta };
+      const err = new Error('Request was aborted.');
+      err.name = 'APIUserAbortError';
+      throw err;
+    },
+    async complete(_opts: AICompletionOptions): Promise<AICompletionResult> {
+      return { content: '', usage: { inputTokens: 0, outputTokens: 0 } };
+    },
+  };
+}
+
 // ── SendMessageUseCase ───────────────────────────────────────────────────────
 
 describe('SendMessageUseCase', () => {
@@ -185,6 +213,32 @@ describe('SendMessageUseCase', () => {
     expect(queriedMessages[0]?.messages.length).toBe(2);
     expect(queriedMessages[0]?.messages[0]?.content).toBe('first message');
     expect(queriedMessages[0]?.messages[1]?.content).toBe('second message');
+  });
+
+  it('flushes partial assistant message when stream is aborted (T19)', async () => {
+    ai = makeAbortingAI(['partial', ' response']);
+    const uc = new SendMessageUseCase(sessionRepo, messageRepo, ai);
+    const chunks = await collect(await uc.execute(input()));
+
+    // Stream must close cleanly with a done chunk on abort
+    expect(chunks.some((c) => c.done)).toBe(true);
+    // Partial assistant message must be persisted despite the abort
+    const sessions = await sessionRepo.findByUserId('u1');
+    const msgs = await messageRepo.findBySessionId(sessions[0]!.id);
+    const assistantMsg = msgs.find((m) => m.role === 'assistant');
+    expect(assistantMsg?.content).toBe('partial response');
+  });
+
+  it('flushes partial message on Anthropic APIUserAbortError (abort robustness)', async () => {
+    ai = makeSdkAbortingAI(['partial', ' reply']);
+    const uc = new SendMessageUseCase(sessionRepo, messageRepo, ai);
+    const chunks = await collect(await uc.execute(input()));
+
+    expect(chunks.some((c) => c.done)).toBe(true);
+    const sessions = await sessionRepo.findByUserId('u1');
+    const msgs = await messageRepo.findBySessionId(sessions[0]!.id);
+    const assistantMsg = msgs.find((m) => m.role === 'assistant');
+    expect(assistantMsg?.content).toBe('partial reply');
   });
 });
 

@@ -19,7 +19,7 @@ export type { KnowledgeDocRepo, KnowledgeChunkRepo, ChunkSearchResult, KeywordSe
 export type { SemanticMemoryRepo, DailySummaryRepo, MemorySearchResult } from './memory-repos';
 export type { ScheduledTaskRepo, TaskRunRepo } from './scheduler-repos';
 export type { HarnessProjectRepo, HarnessSprintRepo, HarnessRoundRepo } from './harness-repos';
-export type { PipelineProjectRepo, PipelinePhaseRepo } from './pipeline-repos';
+export type { PipelineProjectRepo, PipelinePhaseRepo, PipelineMessageRepo, ArtifactWriter } from './pipeline-repos';
 export type { EnrichSessionRepo } from './enrich-repos';
 export type { WorkflowRunRepo } from './workflow-repos';
 export type { UsageRepo, UsageRecord, UsageRecordInput, UsageFilter, UsageCostFilter } from './usage-repo';

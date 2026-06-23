@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getProviderApiKey } from '../keychain';
+import { getProviderApiKey, getSecret } from '../keychain';
 
 const mockKeytar = vi.hoisted(() => ({ getPassword: vi.fn() }));
 vi.mock('keytar', () => ({ default: mockKeytar }));
@@ -41,5 +41,26 @@ describe('getProviderApiKey', () => {
     mockKeytar.getPassword.mockResolvedValue('test-key');
     await getProviderApiKey('myprovider');
     expect(mockKeytar.getPassword).toHaveBeenCalledWith('wolfkrow', 'myprovider-api-key');
+  });
+});
+
+describe('getSecret', () => {
+  beforeEach(() => { mockKeytar.getPassword.mockReset(); });
+
+  it('returns the stored secret for an account name', async () => {
+    mockKeytar.getPassword.mockResolvedValue('bot-token-123');
+    await expect(getSecret('telegram-bot-token')).resolves.toBe('bot-token-123');
+    expect(mockKeytar.getPassword).toHaveBeenCalledWith('wolfkrow', 'telegram-bot-token');
+  });
+
+  it('returns null when the secret is absent (no throw)', async () => {
+    mockKeytar.getPassword.mockResolvedValue(null);
+    await expect(getSecret('missing')).resolves.toBeNull();
+  });
+
+  it('honors a custom service name', async () => {
+    mockKeytar.getPassword.mockResolvedValue('k');
+    await getSecret('x', 'alt-service');
+    expect(mockKeytar.getPassword).toHaveBeenCalledWith('alt-service', 'x');
   });
 });

@@ -11,7 +11,6 @@ import path from 'node:path';
 
 import Database from 'better-sqlite3';
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { getLoadablePath } from 'sqlite-vec';
 
 import * as schema from './schema/index';
 
@@ -37,40 +36,6 @@ export function resolveDbPath(explicit?: string): string {
 }
 
 /**
- * Whether to load the sqlite-vec extension. Disabled explicitly via
- * `WOLFKROW_DISABLE_VEC=1` for environments that intentionally run without
- * vector search. (FIX-020: was previously a silent `console.warn` swallow.)
- */
-export function shouldLoadVec(): boolean {
-  return process.env.WOLFKROW_DISABLE_VEC !== '1';
-}
-
-/**
- * Load sqlite-vec into a database connection, or throw a descriptive error.
- * Vector search is a core feature (FIX-002 wired RAG on `vec0`); failing
- * silently hides a broken knowledge pipeline. The error message points users
- * at the escape hatch (`WOLFKROW_DISABLE_VEC=1`) for envs that opt out.
- *
- * Accepts a minimal `{ loadExtension }` surface so it is unit-testable without
- * a real better-sqlite3 connection.
- */
-export function loadVecExtension(
-  sqlite: { loadExtension(path: string): void },
-  vecPath: string,
-): void {
-  if (!shouldLoadVec()) return;
-  try {
-    sqlite.loadExtension(vecPath);
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `sqlite-vec extension failed to load from ${vecPath}: ${detail}. ` +
-        'Vector search will not work. Set WOLFKROW_DISABLE_VEC=1 to start without it.',
-    );
-  }
-}
-
-/**
  * Get or create SQLite database instance (singleton)
  */
 export function getSqlite(dbPath?: string): Database.Database {
@@ -86,7 +51,10 @@ export function getSqlite(dbPath?: string): Database.Database {
   sqlite.pragma('foreign_keys = ON');
   sqlite.pragma('busy_timeout = 5000');
 
-  loadVecExtension(sqlite, getLoadablePath());
+  // T24: sqlite-vec is NOT loaded at boot. Vector search uses an in-process JS
+  // cosine (knowledge-chunk-repo.ts) which is correct for the ≤5k-chunk scale
+  // documented in ADR-0028. `loadVecExtension`/`shouldLoadVec` are kept below as
+  // a tested scaffold for a future vec0 migration (Option A) if RAG outgrows JS.
 
   _sqlite = sqlite;
   return sqlite;

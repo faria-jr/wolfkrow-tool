@@ -2,9 +2,9 @@
  * Telegram management routes — B.5.
  */
 
-import keytar from 'keytar';
 import { z } from 'zod';
 
+import { getSecret } from '../lib/keychain';
 import { telegramBridge } from '../telegram/bridge';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
@@ -16,7 +16,7 @@ const pairBody = z.object({
 export async function telegramRoutes(server: AuthFastifyInstance) {
   // POST /telegram/start — start bridge with stored token
   server.post('/start', async (_req, reply) => {
-    const token = await keytar.getPassword('wolfkrow', 'telegram-bot-token');
+    const token = await getSecret('telegram-bot-token');
     if (!token) return reply.status(503).send({ error: 'Telegram bot token not configured' });
 
     await telegramBridge.start(token);

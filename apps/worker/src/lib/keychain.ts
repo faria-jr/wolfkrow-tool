@@ -21,3 +21,17 @@ export async function getProviderApiKey(provider: string, service = KEYTAR_SERVI
   if (!key) throw new Error(`Missing API key in keychain: ${service}/${account}`);
   return key;
 }
+
+/** Convenience wrapper for the most common provider (used by pipeline + enrich). */
+export async function getAnthropicApiKey(): Promise<string> {
+  return getProviderApiKey('anthropic');
+}
+
+/**
+ * Generic keychain read by account name (e.g. `telegram-bot-token`).
+ * Returns null when absent — callers decide how to handle a missing secret.
+ * Use {@link getProviderApiKey} for provider API keys (it throws + maps accounts).
+ */
+export async function getSecret(account: string, service = KEYTAR_SERVICE): Promise<string | null> {
+  return keytar.getPassword(service, account);
+}

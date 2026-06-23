@@ -6,7 +6,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { ToolResult } from '@wolfkrow/domain';
-import type { PermissionResolver } from '@wolfkrow/domain';
+import type { AgentPermissions, PermissionResolver } from '@wolfkrow/domain';
 
 import type { ToolRegistry } from '../tools/tool-registry';
 
@@ -17,6 +17,7 @@ import type {
   CompletionOptions,
   CompletionResult,
   StreamChunk,
+  ToolPermissionEvent,
 } from './types';
 
 export interface ToolDefinition {
@@ -44,12 +45,18 @@ interface TurnResult {
 export interface ClaudeAgentOptions {
   maxTurns?: number;
   workDir?: string;
+  /** T17: agent permission profile. When set, each tool call is gated by the PermissionResolver. */
+  agent?: AgentPermissions;
+  /** T17: invoked when a tool requires approval ('ask'). UI round-trip; resolves true to execute. */
+  requestPermission?: (req: ToolPermissionEvent) => Promise<boolean>;
 }
 
 export class ClaudeAgentProvider implements AIProvider {
   private readonly client: Anthropic;
   private readonly registry: ToolRegistry | undefined;
-  // permissionResolver is reserved for T17 (tool permission UI flow)
+  private readonly permissionResolver: PermissionResolver | undefined;
+  private readonly agent: AgentPermissions | undefined;
+  private readonly requestPermission: ((req: ToolPermissionEvent) => Promise<boolean>) | undefined;
   private readonly maxTurns: number;
   private readonly workDir: string | undefined;
 
@@ -61,7 +68,9 @@ export class ClaudeAgentProvider implements AIProvider {
   ) {
     this.client = new Anthropic({ apiKey });
     this.registry = registry;
-    void permissionResolver;
+    this.permissionResolver = permissionResolver;
+    this.agent = opts.agent;
+    this.requestPermission = opts.requestPermission;
     this.maxTurns = opts.maxTurns ?? DEFAULT_MAX_TURNS;
     this.workDir = opts.workDir;
   }
@@ -74,7 +83,18 @@ export class ClaudeAgentProvider implements AIProvider {
     let totalOutput = 0;
 
     for (let turn = 0; turn < this.maxTurns; turn++) {
-      const result: TurnResult = yield* this.streamOneTurn(messages, callOptions, toolDefs);
+      let result: TurnResult;
+      try {
+        result = yield* this.streamOneTurn(messages, callOptions, toolDefs);
+      } catch (err) {
+        // Abort (Stop button) mid-turn: close the stream cleanly instead of
+        // propagating and leaving the caller without a terminal chunk.
+        if (isAbortError(err)) {
+          yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+          return;
+        }
+        throw err;
+      }
       totalInput += result.inputTokens;
       totalOutput += result.outputTokens;
 
@@ -87,7 +107,8 @@ export class ClaudeAgentProvider implements AIProvider {
       for (const block of result.toolUseBlocks.values()) {
         const input = this.parseToolInput(block.partialJson);
         yield { delta: '', toolCall: { id: block.id, name: block.name, input } };
-        const toolResult = await this.executeTool(block, input);
+        const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input);
+        if (permissionChunk) yield permissionChunk;
         yield { delta: '', toolResult: { callId: toolResult.callId, output: toolResult.output, isError: toolResult.isError } };
         toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: toolResult.output, is_error: toolResult.isError });
       }
@@ -125,6 +146,36 @@ export class ClaudeAgentProvider implements AIProvider {
     } catch (err) {
       return ToolResult.error(block.id, err instanceof Error ? err.message : String(err));
     }
+  }
+
+  /**
+   * T17: gate tool execution behind the PermissionResolver.
+   * - No agent/resolver configured → execute directly (backward compatible).
+   * - allow → execute; deny → error result (no execution).
+   * - ask → emit a tool_permission chunk, await requestPermission (default: deny if no handler).
+   */
+  private async executeWithPermission(
+    block: ToolUseBlock,
+    input: Record<string, unknown>,
+  ): Promise<{ result: ToolResult; permissionChunk?: StreamChunk }> {
+    if (!this.agent || !this.permissionResolver) {
+      return { result: await this.executeTool(block, input) };
+    }
+    const decision = this.permissionResolver.canUseTool(this.agent, block.name, input);
+    if (decision.type === 'deny') {
+      return { result: ToolResult.error(block.id, decision.reason) };
+    }
+    // 'allow' executes directly; 'ask' gates execution behind user approval.
+    let permissionChunk: StreamChunk | undefined;
+    if (decision.type === 'ask') {
+      const event: ToolPermissionEvent = { callId: block.id, name: block.name, input, prompt: decision.prompt };
+      permissionChunk = { delta: '', toolPermission: event };
+      const approved = this.requestPermission ? await this.requestPermission(event) : false;
+      if (!approved) {
+        return { result: ToolResult.error(block.id, `Tool "${block.name}" not approved by user`), permissionChunk };
+      }
+    }
+    return { result: await this.executeTool(block, input), ...(permissionChunk ? { permissionChunk } : {}) };
   }
 
   private buildParams(
@@ -203,4 +254,10 @@ export class ClaudeAgentProvider implements AIProvider {
 
 function toAnthropicMessage(m: ChatMessage): Anthropic.Messages.MessageParam {
   return { role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content };
+}
+
+function isAbortError(err: unknown): boolean {
+  // Match AbortError (DOM/Node) and provider variants (Anthropic APIUserAbortError).
+  if (err instanceof Error && /abort/i.test(err.name)) return true;
+  return typeof DOMException !== 'undefined' && err instanceof DOMException && /abort/i.test(err.name);
 }
