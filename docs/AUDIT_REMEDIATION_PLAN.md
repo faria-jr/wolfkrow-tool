@@ -21,9 +21,9 @@ Auditoria de evidência (estrutural + funcional via testes) das Tasks 13–29 en
 | T26 | `run-phase` não persistia AI messages nem artifact, sem report | novo `PipelineMessage`+`PipelineMessageRepo` (Drizzle) + `ArtifactWriter`/`FsArtifactWriter`; `run-phase` salva user+assistant + escreve artifact em disco (`artifactPath`); wired no registry+container+route | ✅ done (report final = tech_debt) |
 
 **Pendências remanescentes (tech_debt, não bloqueantes p/ v1.0.0):**
-- T17 fluxo UI completo pause/resume: `requestPermission` callback wired ao chat route (pending-permission map + `POST /chat/permission` + frontend `ConfirmDialog`). Hoje `ask` → safe deny sem callback.
-- T26 report final consolidado (consolida outputs das fases num relatório único).
-- T24 Opção A (`vec0` virtual table) se RAG crescer além ~5k chunks — já scaffold.
+- ~~T17 fluxo UI completo pause/resume~~ → **RESOLVIDO (2026-06-23):** `permission-store` (pending map) + `POST /chat/permission` + chat route detecta agent agentic (`allowedTools` não-vazio) e constrói `ClaudeAgentProvider` com `requestPermission` wired + frontend `ConfirmDialog` aprova/denya via POST.
+- ~~T26 report final consolidado~~ → **RESOLVIDO (2026-06-23):** `GeneratePipelineReportUseCase` consolida fases + outputs em Markdown; endpoint `GET /pipeline/projects/:id/report`.
+- T24 Opção A (`vec0` virtual table) — **ROADMAP** (decisão: Opção B mantida; A só se RAG > 5k chunks). JS cosine testado e suficiente para o caso local single-user.
 
 ---
 

@@ -252,4 +252,34 @@ describe('ChatView', () => {
     await user.click(screen.getByLabelText('Send'));
     await waitFor(() => expect(screen.getByText('file contents here')).toBeTruthy());
   });
+
+  it('shows ConfirmDialog on tool_permission and POSTs the approval (T17 UI)', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn();
+    // 1st call: the /chat/send SSE stream emitting tool_permission.
+    fetchMock.mockImplementationOnce(async () =>
+      makeSSEResponse([
+        sseEvent({ type: 'tool_permission', id: 'perm-1', name: 'Write', input: {}, prompt: 'Allow Write?' }),
+        sseEvent({ type: 'done' }),
+      ]),
+    );
+    // Subsequent calls (POST /chat/permission) resolve OK.
+    fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ChatView />);
+    await user.type(screen.getByLabelText('Chat input'), 'write a file');
+    await user.click(screen.getByLabelText('Send'));
+
+    await waitFor(() => expect(screen.getByText('Allow Write?')).toBeTruthy(), { timeout: 3000 });
+    await user.click(screen.getByRole('button', { name: /confirm/i }));
+
+    await waitFor(() => {
+      const permCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith('/chat/permission'));
+      expect(permCall).toBeDefined();
+    });
+    const permCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith('/chat/permission'));
+    const init = permCall?.[1] as RequestInit;
+    expect(JSON.parse(String(init.body))).toEqual({ callId: 'perm-1', approved: true });
+  });
 });

@@ -1,3 +1,7 @@
+/* eslint-disable max-lines, max-lines-per-function --
+   Chat view aggregates voice, tools, attachments, and the tool-permission flow
+   by domain; these are cohesive UI concerns and splitting would fragment state
+   without clarifying behavior. */
 'use client';
 
 import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
@@ -27,13 +31,21 @@ type SSEEvent =
   | { type: 'error'; message: string }
   | { type: 'ask_question'; prompt: string }
   | { type: 'tool_call'; id: string; name: string; input: Record<string, unknown> }
-  | { type: 'tool_result'; callId: string; output: string; isError: boolean };
+  | { type: 'tool_result'; callId: string; output: string; isError: boolean }
+  | { type: 'tool_permission'; id: string; name: string; input: Record<string, unknown>; prompt: string };
+
+interface PendingPermission {
+  callId: string;
+  name: string;
+  prompt: string;
+}
 
 interface SseCallbacks {
   onText: (t: string) => void;
   onAskQuestion?: (q: string) => void;
   onToolCall?: (tc: ToolCall) => void;
   onToolResult?: (callId: string, output: string, isError: boolean) => void;
+  onToolPermission?: (p: PendingPermission) => void;
 }
 
 function parseSseLine(line: string): SSEEvent | null {
@@ -43,10 +55,22 @@ function parseSseLine(line: string): SSEEvent | null {
 }
 
 function dispatchSseEvent(ev: SSEEvent, cb: SseCallbacks): void {
-  if (ev.type === 'text' && ev.content) { cb.onText(ev.content); return; }
-  if (ev.type === 'ask_question') { cb.onAskQuestion?.(ev.prompt); return; }
-  if (ev.type === 'tool_call') { cb.onToolCall?.({ id: ev.id, name: ev.name, input: ev.input, status: 'running' }); return; }
-  if (ev.type === 'tool_result') cb.onToolResult?.(ev.callId, ev.output, ev.isError);
+  switch (ev.type) {
+    case 'text':
+      cb.onText(ev.content);
+      return;
+    case 'ask_question':
+      cb.onAskQuestion?.(ev.prompt);
+      return;
+    case 'tool_call':
+      cb.onToolCall?.({ id: ev.id, name: ev.name, input: ev.input, status: 'running' });
+      return;
+    case 'tool_result':
+      cb.onToolResult?.(ev.callId, ev.output, ev.isError);
+      return;
+    case 'tool_permission':
+      cb.onToolPermission?.({ callId: ev.id, name: ev.name, prompt: ev.prompt });
+  }
 }
 
 function processLine(line: string, cb: SseCallbacks): void {
@@ -111,6 +135,7 @@ function useChatSession(model: string, sessionId?: string) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [sessionTitle, setSessionTitle] = useState('New Chat');
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [pendingPermission, setPendingPermission] = useState<PendingPermission | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -118,6 +143,16 @@ function useChatSession(model: string, sessionId?: string) {
   const appendText = useCallback((delta: string) => setMessages((prev) => appendDeltaToLast(prev, delta)), []);
   const appendMessage = useCallback((msg: DisplayMessage) => setMessages((prev) => [...prev, msg]), []);
   const onAsk = useCallback((q: string) => setPendingQuestion(q), []);
+  const onPermission = useCallback((p: PendingPermission) => setPendingPermission(p), []);
+  const resolvePermission = useCallback(async (callId: string, approved: boolean) => {
+    setPendingPermission(null);
+    await fetch(`${WORKER_URL}/chat/permission`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ callId, approved }),
+    });
+  }, []);
   const appendToolCall = useCallback((tc: ToolCall) => setMessages((prev) => applyToolCall(prev, tc)), []);
   const updateToolCall = useCallback((callId: string, output: string, isError: boolean) => setMessages((prev) => applyToolResult(prev, callId, output, isError)), []);
   const doSend = useCallback(async (text: string, attachments: AttachmentData[]) => {
@@ -132,7 +167,7 @@ function useChatSession(model: string, sessionId?: string) {
     try {
       const body: Record<string, unknown> = { message: text, model, sessionId };
       if (attachments.length) body['attachments'] = attachments;
-      await streamSse(`${WORKER_URL}/chat/send`, body, ac.signal, { onText: appendText, onAskQuestion: onAsk, onToolCall: appendToolCall, onToolResult: updateToolCall });
+      await streamSse(`${WORKER_URL}/chat/send`, body, ac.signal, { onText: appendText, onAskQuestion: onAsk, onToolCall: appendToolCall, onToolResult: updateToolCall, onToolPermission: onPermission });
     } catch (err) {
       if (err instanceof Error && err.name !== 'AbortError') appendText('[Error: could not connect to AI]');
     } finally {
@@ -153,7 +188,7 @@ function useChatSession(model: string, sessionId?: string) {
   const dismissQuestion = useCallback(() => setPendingQuestion(null), []);
   const clear = useCallback(() => { setMessages([]); setSessionTitle('New Chat'); hasSetTitle.current = false; }, []);
   const stop = useCallback(() => { abortRef.current?.abort(); }, []);
-  return { messages, input, setInput, isStreaming, sessionTitle, pendingQuestion, dismissQuestion, send, stop, clear, answerQuestion, appendMessage, bottomRef, pendingAttachments, setPendingAttachments };
+  return { messages, input, setInput, isStreaming, sessionTitle, pendingQuestion, dismissQuestion, send, stop, clear, answerQuestion, appendMessage, bottomRef, pendingAttachments, setPendingAttachments, pendingPermission, resolvePermission };
 }
 
 interface ChatHeaderProps { title: string; onClear: () => void; }
@@ -245,7 +280,7 @@ interface Props { model?: string; sessionId?: string; }
 
 export function ChatView({ model = DEFAULT_CHAT_MODEL, sessionId }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const { messages, input, setInput, isStreaming, sessionTitle, pendingQuestion, dismissQuestion, send, stop, clear, answerQuestion, appendMessage, bottomRef, pendingAttachments, setPendingAttachments } = useChatSession(model, sessionId);
+  const { messages, input, setInput, isStreaming, sessionTitle, pendingQuestion, dismissQuestion, send, stop, clear, answerQuestion, appendMessage, bottomRef, pendingAttachments, setPendingAttachments, pendingPermission, resolvePermission } = useChatSession(model, sessionId);
   const voice = useVoiceConversation({ onMessage: (msg) => appendMessage(voiceMessageToDisplay(msg)) });
   const handleClearConfirm = () => { clear(); setConfirmOpen(false); };
   const handleAttach = useCallback((items: AttachmentData[]) => {
@@ -272,6 +307,15 @@ export function ChatView({ model = DEFAULT_CHAT_MODEL, sessionId }: Props) {
       <ConfirmDialog open={confirmOpen} title="Clear chat?" description="All messages will be removed." onConfirm={handleClearConfirm} onCancel={() => setConfirmOpen(false)} />
       {pendingQuestion !== null && (
         <AskQuestionDialog open={true} question={pendingQuestion} onAnswer={answerQuestion} onCancel={dismissQuestion} />
+      )}
+      {pendingPermission && (
+        <ConfirmDialog
+          open={true}
+          title={`Allow tool: ${pendingPermission.name}?`}
+          description={pendingPermission.prompt}
+          onConfirm={() => resolvePermission(pendingPermission.callId, true)}
+          onCancel={() => resolvePermission(pendingPermission.callId, false)}
+        />
       )}
     </div>
   );

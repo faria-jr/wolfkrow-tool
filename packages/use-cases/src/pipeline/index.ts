@@ -14,3 +14,5 @@ export { ApprovePipelinePhaseUseCase } from './approve-phase';
 export type { ApprovePipelinePhaseInput, ApprovePipelinePhaseOutput } from './approve-phase';
 export { RunPhaseUseCase } from './run-phase';
 export type { RunPhaseInput, RunPhaseOutput } from './run-phase';
+export { GeneratePipelineReportUseCase } from './generate-pipeline-report';
+export type { GenerateReportInput, GenerateReportOutput } from './generate-pipeline-report';

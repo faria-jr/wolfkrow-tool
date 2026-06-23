@@ -7,10 +7,19 @@
  * constructing them inline.
  */
 
+import { mkdirSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import type { EmbeddingPort, SecretsAdapter } from '@wolfkrow/domain';
+import type {
+  AICompletionOptions,
+  AICompletionResult,
+  AIStreamChunk,
+  AIStreamPort,
+  EmbeddingPort,
+  SecretsAdapter,
+} from '@wolfkrow/domain';
+import { defaultPermissionResolver } from '@wolfkrow/domain';
 import {
   aiProviderFactory,
   BashTool,
@@ -69,6 +78,46 @@ export function getArtifactWriter(): FsArtifactWriter {
   if (_artifactWriter) return _artifactWriter;
   _artifactWriter = new FsArtifactWriter();
   return _artifactWriter;
+}
+
+let _toolRegistry: ToolRegistry | null = null;
+
+/** T17: singleton tool registry (bash + filesystem) for agentic chat. */
+export function getToolRegistry(): ToolRegistry {
+  if (_toolRegistry) return _toolRegistry;
+  _toolRegistry = new ToolRegistry([new BashTool(), new FilesystemTool()]);
+  return _toolRegistry;
+}
+
+/** T17: per-user sandboxed working dir for agentic chat tools (bash/fs). */
+export function getChatWorkDir(userId: string): string {
+  const dir = path.join(os.homedir(), '.wolfkrow', 'workspace', userId);
+  mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
+/**
+ * T17: build an agentic streaming port backed by ClaudeAgentProvider with the
+ * permission flow wired (destructive tools → ask → requestPermission → UI).
+ * `requestPermission` receives the tool_call id; the route parks it in the
+ * permission-store until POST /chat/permission resolves it.
+ */
+export function getAgenticStreamPort(opts: {
+  apiKey: string;
+  allowedTools: readonly string[];
+  requestPermission: (callId: string) => Promise<boolean>;
+  workDir?: string;
+}): AIStreamPort {
+  const provider = new ClaudeAgentProvider(opts.apiKey, getToolRegistry(), defaultPermissionResolver, {
+    agent: { allowedTools: [...opts.allowedTools] },
+    requestPermission: (e) => opts.requestPermission(e.callId),
+    ...(opts.workDir !== undefined ? { workDir: opts.workDir } : {}),
+  });
+  return {
+    query: (o: AICompletionOptions) => provider.query(o) as AsyncIterable<AIStreamChunk>,
+    complete: (o: AICompletionOptions) =>
+      provider.complete(o) as Promise<AICompletionResult>,
+  };
 }
 
 export interface HarnessAgents {
