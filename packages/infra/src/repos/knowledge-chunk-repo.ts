@@ -2,7 +2,7 @@ import type { ChunkMetadata, ChunkSearchResult, KeywordSearchResult, KnowledgeCh
 import { KnowledgeChunk } from '@wolfkrow/domain';
 import { and, eq, inArray, isNotNull, like } from 'drizzle-orm';
 
-import { getDb } from '../db/client';
+import { getDb, type DatabaseClient } from '../db/client';
 import { knowledgeChunks } from '../db/schema/knowledge';
 
 type DbChunk = typeof knowledgeChunks.$inferSelect;
@@ -32,12 +32,7 @@ function toEntity(row: DbChunk): KnowledgeChunk {
 /**
  * Cosine similarity between two equal-length vectors. Returns 0 for a zero
  * vector (avoids divide-by-zero). Range: [-1, 1], higher = more similar.
- *
- * T24 (Option B): Brute-force O(n) over all rows with embeddings. Suitable
- * for local single-user corpora up to ~5k chunks. Beyond that, migrate to a
- * sqlite-vec vec0 virtual table (Voyage-3 dimension = 1024) and rewrite
- * search to use vec_distance_cosine on the virtual table.
- * Exported for reuse by SemanticMemoryRepo.
+ * Exported for reuse by SemanticMemoryRepo and tests.
  */
 export function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length || a.length === 0) return 0;
@@ -55,10 +50,24 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return denom === 0 ? 0 : dot / denom;
 }
 
+function hasVec0Table(sqlite: DatabaseClient['$client']): boolean {
+  return (
+    sqlite
+      .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='knowledge_chunks_vec'")
+      .get() != null
+  );
+}
+
 export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
   constructor(private readonly db = getDb()) {}
 
   async saveMany(chunks: KnowledgeChunk[]): Promise<KnowledgeChunk[]> {
+    const sqlite = this.db.$client;
+    const useVec0 = hasVec0Table(sqlite);
+    const vec0Stmt = useVec0
+      ? sqlite.prepare('INSERT OR REPLACE INTO knowledge_chunks_vec (chunk_id, embedding) VALUES (?, ?)')
+      : null;
+
     for (const chunk of chunks) {
       const p = chunk.toProps();
       this.db.insert(knowledgeChunks).values({
@@ -70,6 +79,14 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
         position: p.position,
         createdAt: p.createdAt,
       }).run();
+
+      if (vec0Stmt && p.embedding && p.embedding.length === 1024) {
+        try {
+          vec0Stmt.run(p.id, JSON.stringify(p.embedding));
+        } catch {
+          // vec0 insert failure is non-fatal — JS cosine fallback still works
+        }
+      }
     }
     return chunks;
   }
@@ -80,10 +97,64 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
   }
 
   async deleteByDocumentId(documentId: string): Promise<void> {
+    const sqlite = this.db.$client;
+
+    if (hasVec0Table(sqlite)) {
+      const ids = this.db
+        .select({ id: knowledgeChunks.id })
+        .from(knowledgeChunks)
+        .where(eq(knowledgeChunks.documentId, documentId))
+        .all()
+        .map((r) => r.id);
+
+      if (ids.length > 0) {
+        const placeholders = ids.map(() => '?').join(', ');
+        sqlite.prepare(`DELETE FROM knowledge_chunks_vec WHERE chunk_id IN (${placeholders})`).run(...ids);
+      }
+    }
+
     this.db.delete(knowledgeChunks).where(eq(knowledgeChunks.documentId, documentId)).run();
   }
 
   async vectorSearch(embedding: number[], limit: number, documentIds?: string[]): Promise<ChunkSearchResult[]> {
+    const sqlite = this.db.$client;
+
+    if (embedding.length === 1024 && hasVec0Table(sqlite)) {
+      return this.vectorSearchVec0(sqlite, embedding, limit, documentIds);
+    }
+
+    return this.vectorSearchJS(embedding, limit, documentIds);
+  }
+
+  private vectorSearchVec0(
+    sqlite: DatabaseClient['$client'],
+    embedding: number[],
+    limit: number,
+    documentIds?: string[],
+  ): ChunkSearchResult[] {
+    const queryLimit = documentIds && documentIds.length > 0 ? limit * 10 : limit;
+    const candidates = sqlite
+      .prepare(
+        `SELECT chunk_id, distance
+         FROM knowledge_chunks_vec
+         WHERE embedding MATCH ?
+         ORDER BY distance
+         LIMIT ?`,
+      )
+      .all(JSON.stringify(embedding), queryLimit) as Array<{ chunk_id: string; distance: number }>;
+
+    const results: ChunkSearchResult[] = [];
+    for (const { chunk_id, distance } of candidates) {
+      if (results.length >= limit) break;
+      const row = this.db.select().from(knowledgeChunks).where(eq(knowledgeChunks.id, chunk_id)).get();
+      if (!row) continue;
+      if (documentIds && documentIds.length > 0 && !documentIds.includes(row.documentId)) continue;
+      results.push({ chunk: toEntity(row), distance });
+    }
+    return results;
+  }
+
+  private vectorSearchJS(embedding: number[], limit: number, documentIds?: string[]): ChunkSearchResult[] {
     const where = and(
       isNotNull(knowledgeChunks.embedding),
       documentIds && documentIds.length > 0 ? inArray(knowledgeChunks.documentId, documentIds) : undefined,

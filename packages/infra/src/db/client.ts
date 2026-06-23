@@ -13,6 +13,7 @@ import Database from 'better-sqlite3';
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 
 import * as schema from './schema/index';
+import { loadVecExtension } from './vec-extension';
 
 export type DatabaseClient = BetterSQLite3Database<typeof schema> & {
   $client: Database.Database;
@@ -51,10 +52,9 @@ export function getSqlite(dbPath?: string): Database.Database {
   sqlite.pragma('foreign_keys = ON');
   sqlite.pragma('busy_timeout = 5000');
 
-  // T24: sqlite-vec is NOT loaded at boot. Vector search uses an in-process JS
-  // cosine (knowledge-chunk-repo.ts) which is correct for the ≤5k-chunk scale
-  // documented in ADR-0028. `loadVecExtension`/`shouldLoadVec` are kept below as
-  // a tested scaffold for a future vec0 migration (Option A) if RAG outgrows JS.
+  // T24 Opção A: load sqlite-vec for O(log n) vector search via vec0.
+  // No-ops gracefully when the native extension is unavailable.
+  loadVecExtension(sqlite);
 
   _sqlite = sqlite;
   return sqlite;

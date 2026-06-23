@@ -11,18 +11,20 @@
  *  3. Brute-force cosine search over 100 chunks completes in < 50 ms
  */
 
+import { randomUUID } from 'node:crypto';
+import { existsSync, unlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { existsSync, unlinkSync } from 'node:fs';
-import { randomUUID } from 'node:crypto';
 
+import { KnowledgeChunk } from '@wolfkrow/domain';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { getDb, closeDb } from '../db/client';
 import { runMigrations } from '../db/migrate';
-import { knowledgeDocuments, knowledgeChunks } from '../db/schema/knowledge';
 import { users } from '../db/schema/auth';
+import { knowledgeDocuments, knowledgeChunks } from '../db/schema/knowledge';
+import { isVecLoaded } from '../db/vec-extension';
 import { cosineSimilarity, DrizzleKnowledgeChunkRepo } from '../repos/knowledge-chunk-repo';
 
 // Resolve migrations folder: __tests__/ is inside src/, which is inside packages/infra/
@@ -227,5 +229,142 @@ describe('Knowledge Benchmark — cosine similarity retrieval', () => {
     const elapsed = performance.now() - t0;
 
     expect(elapsed).toBeLessThan(50);
+  });
+});
+
+describe('vec0 vector search (T24 Opção A)', () => {
+  const VEC_DIM = 1024;
+  let testDbPath: string;
+  let repo: DrizzleKnowledgeChunkRepo;
+  let testDocumentId: string;
+
+  beforeEach(() => {
+    testDbPath = path.join(os.tmpdir(), `wolfkrow-vec0-${Date.now()}-${Math.random()}.db`);
+    process.env.WOLFKROW_DB_PATH = testDbPath;
+
+    runMigrations({ migrationsFolder: MIGRATIONS_FOLDER, dbPath: testDbPath });
+
+    const db = getDb(testDbPath);
+    const testUserId = randomUUID();
+    testDocumentId = randomUUID();
+
+    db.insert(users).values({
+      id: testUserId,
+      email: 'vec0@test.local',
+      passwordHash: 'x',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).run();
+
+    db.insert(knowledgeDocuments).values({
+      id: testDocumentId,
+      userId: testUserId,
+      filename: 'vec0.txt',
+      mimeType: 'text/plain',
+      size: 0,
+      status: 'ready',
+      chunkCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }).run();
+
+    repo = new DrizzleKnowledgeChunkRepo(db);
+  });
+
+  afterEach(() => {
+    closeDb();
+    [testDbPath, `${testDbPath}-wal`, `${testDbPath}-shm`].forEach((p) => {
+      if (existsSync(p)) unlinkSync(p);
+    });
+    delete process.env.WOLFKROW_DB_PATH;
+  });
+
+  it.skipIf(!isVecLoaded())('vec0 table created on DB init', () => {
+    const sqlite = getDb(testDbPath).$client;
+    const row = sqlite.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='knowledge_chunks_vec'",
+    ).get();
+    expect(row).toBeTruthy();
+  });
+
+  it.skipIf(!isVecLoaded())('saveMany populates vec0 for 1024-dim embeddings', async () => {
+    const emb = spikeVector(VEC_DIM, 0);
+    const chunk = KnowledgeChunk.fromProps({
+      id: randomUUID(),
+      documentId: testDocumentId,
+      content: 'vec0 chunk',
+      embedding: emb,
+      metadata: { sourceType: 'raw', position: 0 },
+      position: 0,
+      createdAt: new Date(),
+    });
+
+    await repo.saveMany([chunk]);
+
+    const sqlite = getDb(testDbPath).$client;
+    const row = sqlite.prepare('SELECT chunk_id FROM knowledge_chunks_vec WHERE chunk_id = ?').get(chunk.toProps().id);
+    expect(row).toBeTruthy();
+  });
+
+  it.skipIf(!isVecLoaded())('vectorSearch uses vec0 path and returns correct top-1', async () => {
+    const emb0 = spikeVector(VEC_DIM, 0);
+    const emb1 = spikeVector(VEC_DIM, 1);
+    const id0 = randomUUID();
+    const id1 = randomUUID();
+
+    await repo.saveMany([
+      KnowledgeChunk.fromProps({ id: id0, documentId: testDocumentId, content: 'vec0-chunk-zero', embedding: emb0, metadata: { sourceType: 'raw', position: 0 }, position: 0, createdAt: new Date() }),
+      KnowledgeChunk.fromProps({ id: id1, documentId: testDocumentId, content: 'vec0-chunk-one', embedding: emb1, metadata: { sourceType: 'raw', position: 1 }, position: 1, createdAt: new Date() }),
+    ]);
+
+    const results = await repo.vectorSearch(emb0, 1);
+    expect(results).toHaveLength(1);
+    expect(results[0]!.chunk.toProps().content).toBe('vec0-chunk-zero');
+    expect(results[0]!.distance).toBeCloseTo(0, 5);
+  });
+
+  it.skipIf(!isVecLoaded())('deleteByDocumentId removes chunks from vec0', async () => {
+    const emb = spikeVector(VEC_DIM, 5);
+    const chunk = KnowledgeChunk.fromProps({
+      id: randomUUID(),
+      documentId: testDocumentId,
+      content: 'to-delete',
+      embedding: emb,
+      metadata: { sourceType: 'raw', position: 0 },
+      position: 0,
+      createdAt: new Date(),
+    });
+
+    await repo.saveMany([chunk]);
+    await repo.deleteByDocumentId(testDocumentId);
+
+    const sqlite = getDb(testDbPath).$client;
+    const row = sqlite.prepare('SELECT chunk_id FROM knowledge_chunks_vec WHERE chunk_id = ?').get(chunk.toProps().id);
+    expect(row).toBeUndefined();
+  });
+
+  it.skipIf(!isVecLoaded())('vec0 search over 100 1024-dim chunks completes in under 100 ms', async () => {
+    const CHUNKS = 100;
+    const queryEmb = randomUnitVector(VEC_DIM);
+
+    const chunks = Array.from({ length: CHUNKS }, (_, i) =>
+      KnowledgeChunk.fromProps({
+        id: randomUUID(),
+        documentId: testDocumentId,
+        content: `perf-${i}`,
+        embedding: randomUnitVector(VEC_DIM),
+        metadata: { sourceType: 'raw', position: i },
+        position: i,
+        createdAt: new Date(),
+      }),
+    );
+
+    await repo.saveMany(chunks);
+
+    const t0 = performance.now();
+    await repo.vectorSearch(queryEmb, 5);
+    const elapsed = performance.now() - t0;
+
+    expect(elapsed).toBeLessThan(100);
   });
 });
