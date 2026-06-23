@@ -1,6 +1,6 @@
 # Wolfkrow Tool — Feature Matrix (Rastreabilidade reconciliada)
 
-> Reconciliado em 2026-06-22 contra código real (commit 618b3ee + auditoria completa de todos os arquivos).
+> Reconciliado em 2026-06-23 contra código real (Tasks 13–29 concluídas).
 > Legenda: ✅ feito · 🟡 parcial/placeholder · ⛔ não iniciado
 
 ---
@@ -13,7 +13,7 @@
 | 2 | Onboarding c/ escolha de SDK (wizard) | SPEC-001 | 🟡 setup senha ✅; escolha SDK ✅ reconciliamento Task 9 | Task 9 |
 | 3 | Sub-agentes CRUD + runtime + sync massa | SPEC-013 | ✅ | FIX-004/005 |
 | 4 | Skills (editor markdown+frontmatter) | SPEC-014 | ✅ | FIX-016 |
-| 5 | MCP servers (lifecycle start/stop/restart, discovery) | SPEC-008 | ✅ 3 built-in; custom create ✅ Task 10 | FIX-006/017; Task 10 |
+| 5 | MCP servers (lifecycle start/stop/restart, discovery) | SPEC-008 | ✅ 6 built-in (graph-search, wolfkrow-skills, knowledge-base, youtube, google-calendar, google-gmail) + PLANNED catalog; custom create ✅ Task 10 | FIX-006/017; Task 10; Task 27 |
 | 6 | Memory pipeline (compaction/daily/semantic) | SPEC-015 | ✅ | FIX-012 |
 | 7 | Dreaming (idle + turn) | SPEC-015 | ✅ | FIX-013 |
 | 8 | Session management (criar/listar/arquivar/deletar) | SPEC-002 | 🟡 in-memory; persistência parcial | — |
@@ -21,7 +21,7 @@
 | 10 | Confirm dialog (permissões destrutivas) | SPEC-002 | ✅ ConfirmDialog component | FIX-028 |
 | 11 | Ask user question (estruturada) | SPEC-002 | ✅ AskQuestionDialog component | FIX-028 |
 | 12 | Voice conversation (VAD/barge-in) | SPEC-003 | ✅ | FIX-011 |
-| 13 | STT (Whisper local / OpenAI) | SPEC-003 | 🟡 provider integrado | FIX-011 |
+| 13 | STT (Whisper local / OpenAI) | SPEC-003 | ✅ subprocess local + OpenAI API fallback | FIX-011; Task 28 |
 | 14 | TTS (ElevenLabs / Cartesia) | SPEC-003 | ✅ factory TTS selecionável | FIX-030 |
 | 15 | Voice orb UI | SPEC-003 | ✅ VoiceOrb no chat | FIX-011 |
 
@@ -34,7 +34,7 @@
 | 18 | Open Design Studio (sidecar Next.js) | SPEC-007 | ✅ apps/sidecar + DesignStudio iframe embed | S.6 commit 1329c87 |
 | 19 | Enrich pipeline (Validator→Enricher) | SPEC-016 | 🟡 API backend ✅; UI ✅ Task 8 | Task 8 |
 | 20 | Spec build/validate/enrich seed agents | SPEC-016 | ⛔ | — |
-| 21 | Knowledge engine (ingest/chunk/embed/search) | SPEC-004 | ✅ FTS5+vector search | FIX-002 |
+| 21 | Knowledge engine (ingest/chunk/embed/search) | SPEC-004 | ✅ keyword LIKE + JS cosine similarity (O(n)); roadmap: sqlite-vec vec0 | FIX-002; ADR-0028 |
 | 22 | Knowledge benchmark (retrieval eval) | SPEC-004 | ⛔ removido intencionalmente | FIX-031 |
 
 ## Sistema & Infra (18)
@@ -60,23 +60,32 @@
 | 39 | Auto-update (electron-updater) | SPEC-012 | ✅ | FIX-010 |
 | 40 | Pricing calculator (multi-fonte) | SPEC-018 | ⛔ | — |
 
-## MCPs Externos (15 + 3 internos)
+## MCPs — binários reais vs catalog planejado
+
+### Built-in (binário real em packages/mcp-servers/)
 
 | # | MCP | Status |
 |---|---|---|
-| 41–44 | Google Calendar/Gmail/Drive/Sheets | ✅ catalog seed |
-| 45 | ElevenLabs (TTS) | ✅ catalog |
-| 46 | Excalidraw (drawing) | ✅ catalog |
-| 47 | Knowledge base (search) | ✅ bridge real |
-| 48 | Memory search | ✅ catalog |
-| 49 | Local agents | ✅ catalog |
-| 50 | Local LLM (Ollama) | ✅ |
-| 51 | Skills | ✅ bridge real |
-| 52 | YouTube (transcript) | ✅ catalog |
-| 53 | Shopify | ✅ catalog |
-| 54 | Nano-banana (Cohere) | ✅ catalog |
-| 55 | Graph search | ✅ bridge real |
-| int | wolfkrow-agents/skills/user-question | ✅ 3 internos |
+| 47 | Knowledge base (search) | ✅ binary real |
+| 51 | wolfkrow-skills | ✅ binary real |
+| 52 | YouTube (search + transcript) | ✅ binary real (Task 27) |
+| 55 | Graph search | ✅ binary real |
+| 41 | Google Calendar | ✅ binary real (Task 27) |
+| 42 | Google Gmail | ✅ binary real (Task 27) |
+
+### Planned (catalog seed — sem binário ainda)
+
+| # | MCP | Status |
+|---|---|---|
+| 43–44 | Google Drive/Sheets | 🟡 PLANNED — sem binário |
+| 45 | ElevenLabs (TTS) | 🟡 PLANNED — sem binário |
+| 46 | Excalidraw (drawing) | 🟡 PLANNED — sem binário |
+| 48 | Memory search | 🟡 PLANNED — sem binário |
+| 49 | Local agents (wolfkrow-agents) | 🟡 PLANNED — sem binário |
+| 50 | Local LLM (Ollama) | 🟡 PLANNED — sem binário |
+| 53 | Shopify | 🟡 PLANNED — sem binário |
+| 54 | Nano-banana (Cohere) | 🟡 PLANNED — sem binário |
+| int | wolfkrow-user-question | 🟡 PLANNED — sem binário |
 
 ## Providers AI (não mapeados originalmente)
 
@@ -108,21 +117,23 @@
 | G2 Worker JWKS efêmero | ✅ RESOLVIDO — createRemoteJWKSet + keypair persistente |
 | G3 AIProvider sem streaming | ✅ RESOLVIDO — query() AsyncIterable |
 | G4 Regra de negócio no agent-executor | 🟡 temp/model externalizados |
-| G5 Worker bloqueia no start 18 MCPs | ✅ RESOLVIDO — apenas 3 internos |
+| G5 Worker bloqueia no start 18 MCPs | ✅ RESOLVIDO — 6 built-in com `visibility: on-demand`; planned sem spawn |
 | G6 Schemas sem índices | ✅ RESOLVIDO — 35 index() nos schemas Drizzle |
 | G7 MCP manager sem JSON-RPC real | ✅ RESOLVIDO — stdio JSON-RPC |
 | G8 web/worker não dependem de domain | ✅ RESOLVIDO — Clean Arch completo |
-| G9 Catalog aponta MCPs não migrados | ✅ RESOLVIDO — 3 reais + PLANNED list |
+| G9 Catalog aponta MCPs não migrados | ✅ RESOLVIDO — 6 built-in com binários reais + PLANNED list honesta |
 
 ---
 
-## Resumo de cobertura (reconciliado 2026-06-22)
+## Resumo de cobertura (reconciliado 2026-06-23, Tasks 1–29)
 
 | | Quantidade |
 |---|---|
 | Funcionalidades mapeadas | 55 + providers + infra |
-| ✅ Feito (após Tasks 1-12) | ~42 |
-| 🟡 Parcial | ~8 |
+| ✅ Feito (após Tasks 1-29) | ~44 |
+| 🟡 Parcial | ~6 |
 | ⛔ Não iniciado (out-of-scope v1) | ~5 |
+| MCPs com binário real | 6 |
+| MCPs planned (sem binário) | 9 |
 | Bugs de navegação corrigidos | 2/2 |
 | Gaps de segurança resolvidos | 8/9 |

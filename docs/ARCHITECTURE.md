@@ -55,7 +55,7 @@ Wolfkrow Tool é um **sistema distribuído single-machine** composto por 3 proce
 ┌──────────────────▼───────────────────────────────────────────────┐
 │                  WORKER NODE.JS (long-running)                    │
 │                                                                  │
-│  HTTP Server (port 4000) + WebSocket Server                      │
+│  Fastify HTTP Server (port 4000) + WebSocket Server                      │
 │                                                                  │
 │  Modules:                                                         │
 │  ┌────────────────────────────────────────────────────────────┐ │
@@ -65,13 +65,14 @@ Wolfkrow Tool é um **sistema distribuído single-machine** composto por 3 proce
 │  │  - codex-sdk         (OpenAI Codex CLI via OAuth)        │ │
 │  │  - lion-sdk          (multi-provider: Ollama, OpenAI,    │ │
 │  │                        Google, Z.ai, custom)              │ │
-│  │  - agent-runtime     (14 executors: cloud, local, codex, │ │
-│  │                        external, zai, google-genai, etc)  │ │
+│  │  - ai-providers      (7 providers: anthropic, claude-agent,│ │
+│  │                        codex, lion, openrouter,            │ │
+│  │                        openai-compat, claude-compat)       │ │
 │  │  - orchestrator      (strategy + queue + permission)     │ │
 │  └────────────────────────────────────────────────────────────┘ │
 │  ┌────────────────────────────────────────────────────────────┐ │
 │  │ mcp/                                                     │ │
-│  │  - manager    (spawn 19 MCPs stdio)                       │ │
+│  │  - manager    (spawn MCPs stdio: 6 built-in + catalog)    │ │
 │  │  - bridge     (JSON-RPC stdio)                            │ │
 │  │  - catalog    (registry)                                  │ │
 │  └────────────────────────────────────────────────────────────┘ │
@@ -97,7 +98,7 @@ Wolfkrow Tool é um **sistema distribuído single-machine** composto por 3 proce
 │  └────────────────────────────────────────────────────────────┘ │
 │                                                                  │
 │  Spawns:                                                         │
-│  - 19 MCP servers (google-*, elevenlabs, etc)                   │
+│  - 6 built-in MCP servers + planned catalog                      │
 │  - whisper.cpp subprocess                                        │
 │  - ffmpeg subprocess                                             │
 │  - Codex CLI subprocess                                          │
@@ -278,7 +279,7 @@ packages/domain/src/
 - Drizzle ORM
 - better-sqlite3 + sqlite-vec
 - @anthropic-ai/claude-agent-sdk
-- @anthropic-ai/sdk (embeddings)
+- voyageai HTTP API (voyage-3 embeddings, 1024 dims) — ADR-0028
 - @google/genai (Vertex AI)
 - node-telegram-bot-api
 - keytar
@@ -302,7 +303,7 @@ packages/infra/src/
 │   ├── openai-compat-provider.ts
 │   └── factory.ts
 ├── embeddings/
-│   └── anthropic-embeddings.ts
+│   └── voyage-embedder.ts
 ├── secrets/
 │   └── keytar-adapter.ts
 ├── doc-parsers/
@@ -453,7 +454,7 @@ httpServer.listen(4000);
    a. Para cada file:
       - Parse via doc-parsers (pdf-parse, mammoth, etc)
       - Chunk semantically (Markdown-aware)
-      - Gera embeddings via Anthropic API
+      - Gera embeddings via Voyage AI API (voyage-3, 1024 dims)
       - Salva chunks em knowledge_chunks (sqlite-vec)
    b. Atualiza document status (processing → ready)
    c. Publica IngestCompletedEvent

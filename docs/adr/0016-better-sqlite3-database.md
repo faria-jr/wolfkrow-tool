@@ -89,7 +89,7 @@ export const knowledgeChunks = sqliteTable('knowledge_chunks', {
   id: text('id').primaryKey(),
   documentId: text('document_id').notNull(),
   content: text('content').notNull(),
-  embedding: vec_f32('embedding', { dimensions: 1536 }),  // Anthropic embeddings
+  embedding: vec_f32('embedding', { dimensions: 1024 }),  // Voyage embeddings (voyage-3) — ver ADR-0028
   metadata: text('metadata', { mode: 'json' }).$type<Record<string, unknown>>(),
 });
 

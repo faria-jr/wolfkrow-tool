@@ -153,7 +153,7 @@ Wolfkrow Tool é o único assistente que combina:
 - [ ] Upload drag-and-drop multi-file
 - [ ] Parse de PDF/DOCX/CSV/XLSX/MD/URL
 - [ ] Chunking inteligente (semantic, não fixed-size)
-- [ ] Embeddings via Anthropic API
+- [ ] Embeddings via Voyage AI API (voyage-3, 1024 dims) — ver ADR-0028
 - [ ] Vector search via sqlite-vec
 - [ ] Hybrid search (keyword + semantic)
 - [ ] Metadata filtering (data, source, tags)

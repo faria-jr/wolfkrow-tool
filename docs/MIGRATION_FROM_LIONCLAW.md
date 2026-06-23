@@ -99,6 +99,39 @@ migration-report-<timestamp>.json
 
 It contains per-table statistics: total rows, migrated rows, skipped rows (duplicate PKs), and any errors.
 
+## Decisões de escopo (diferenças intencionais vs LionClaw)
+
+### Consolidação de executors (LionClaw → Wolfkrow)
+
+LionClaw tinha executors separados por provider (`zai-executor`, `google-genai-executor`, `minimax-executor`, etc.). No Wolfkrow, esses foram **consolidados via OpenRouter**:
+
+| LionClaw executor | Wolfkrow equivalente |
+|---|---|
+| `zai-executor` | OpenRouter com prefix `openrouter/` |
+| `google-genai-executor` | OpenRouter com `google/gemini-*` |
+| `minimax-executor` | OpenRouter com `minimax/*` |
+| `codex-executor` | `CodexProvider` (mantido, OAuth próprio) |
+| `anthropic-executor` | `AnthropicProvider` (mantido, SDK direto) |
+
+Para usar providers via OpenRouter, configure o prefixo correto no vault e selecione `openrouter` como provider no onboarding.
+
+### Adições não presentes no LionClaw
+
+Funcionalidades novas adicionadas durante o desenvolvimento do Wolfkrow:
+
+| Feature | Decisão |
+|---|---|
+| OpenRouter | Substitui integração direta zai/google/minimax — um key, acesso a 100+ modelos |
+| Storybook | Design system documentation — sem equivalente no LionClaw |
+| Design tokens (Tailwind v4) | Sistema de tokens CSS — sem equivalente no LionClaw |
+| Pipeline run phases (T26) | Fase de execução IA por estágio — feature nova |
+| Auto-compaction (T29) | Threshold-based session compaction — feature nova |
+| Whisper.cpp subprocess (T28) | STT local sem custo por token — feature nova |
+
+### Histórico de mensagens
+
+A migração de `chat_messages` é válida a partir da **Task 18** (SendMessageUseCase com persistência Drizzle). Versões do Wolfkrow anteriores a Task 18 usavam sessões in-memory — não há dados de histórico para migrar dessas versões.
+
 ## Troubleshooting
 
 **"LionClaw DB not found"**: Pass the correct path with `--from`. You can also export from LionClaw via _Settings → Export → SQLite backup_.
