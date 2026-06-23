@@ -204,4 +204,52 @@ describe('ChatView', () => {
     await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy());
     expect(screen.getByText('What do you mean?')).toBeTruthy();
   });
+
+  it('shows Stop button during streaming and returns to Send after abort (T19)', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetch).mockImplementation((_, opts) => {
+      const signal = (opts as RequestInit).signal;
+      return new Promise<Response>((_resolve, reject) => {
+        signal?.addEventListener('abort', () =>
+          reject(Object.assign(new Error('Aborted'), { name: 'AbortError' })),
+        );
+      });
+    });
+    render(<ChatView />);
+    await user.type(screen.getByLabelText('Chat input'), 'hello');
+    await user.click(screen.getByLabelText('Send'));
+    await waitFor(() => expect(screen.getByLabelText('Stop')).toBeTruthy());
+    await user.click(screen.getByLabelText('Stop'));
+    await waitFor(() => expect(screen.queryByLabelText('Stop')).toBeNull());
+    expect(screen.getByLabelText('Send')).toBeTruthy();
+  });
+
+  it('renders tool call inline when tool_call SSE event received (T17)', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetch).mockResolvedValue(
+      makeSSEResponse([
+        sseEvent({ type: 'tool_call', id: 'tc-1', name: 'read_file', input: { path: '/foo.txt' } }),
+        sseEvent({ type: 'done' }),
+      ]),
+    );
+    render(<ChatView />);
+    await user.type(screen.getByLabelText('Chat input'), 'read a file');
+    await user.click(screen.getByLabelText('Send'));
+    await waitFor(() => expect(screen.getByLabelText('Tool call: read_file')).toBeTruthy());
+  });
+
+  it('shows tool result output when tool_result SSE event received (T17)', async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetch).mockResolvedValue(
+      makeSSEResponse([
+        sseEvent({ type: 'tool_call', id: 'tc-1', name: 'read_file', input: { path: '/foo.txt' } }),
+        sseEvent({ type: 'tool_result', callId: 'tc-1', output: 'file contents here', isError: false }),
+        sseEvent({ type: 'done' }),
+      ]),
+    );
+    render(<ChatView />);
+    await user.type(screen.getByLabelText('Chat input'), 'read a file');
+    await user.click(screen.getByLabelText('Send'));
+    await waitFor(() => expect(screen.getByText('file contents here')).toBeTruthy());
+  });
 });

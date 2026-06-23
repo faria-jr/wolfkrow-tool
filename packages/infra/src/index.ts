@@ -15,3 +15,4 @@ export * from './auth/bcrypt-hasher';
 export * from './auth/otplib-totp';
 export * from './repos';
 export { VoyageEmbedder } from './embeddings/voyage-embedder';
+export * from './tools/index';

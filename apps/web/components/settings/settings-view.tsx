@@ -1,14 +1,14 @@
-import Link from 'next/link';
 import {
+  BarChart3,
   Bot,
   Calendar,
+  FileText,
   Folder,
   KeyRound,
   Network,
-  FileText,
   ShieldCheck,
-  BarChart3,
 } from 'lucide-react';
+import Link from 'next/link';
 
 const SECTIONS = [
   { title: 'Vault', href: '/vault', icon: KeyRound, description: 'API keys and secrets' },

@@ -16,7 +16,7 @@ describe('PipelineTemplatePicker', () => {
   it('calls onSelect with template id when button clicked', async () => {
     const onSelect = vi.fn();
     render(<PipelineTemplatePicker onSelect={onSelect} />);
-    await userEvent.click(screen.getAllByRole('button', { name: /use/i })[0]);
+    await userEvent.click(screen.getAllByRole('button', { name: /use/i })[0]!);
     expect(onSelect).toHaveBeenCalledWith(expect.any(String));
   });
 });

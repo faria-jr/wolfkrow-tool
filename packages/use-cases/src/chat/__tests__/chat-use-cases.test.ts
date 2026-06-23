@@ -7,9 +7,12 @@ import type {
   ChatSessionRepo,
   Message,
   MessageRepo,
+  UsageRecord,
+  UsageRecordInput,
+  UsageRepo,
 } from '@wolfkrow/domain';
 import { ChatSession as ChatSessionEntity, Message as MessageEntity } from '@wolfkrow/domain';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CompactSessionUseCase, SendMessageUseCase } from '../index';
 
@@ -140,6 +143,23 @@ describe('SendMessageUseCase', () => {
     expect(msgs.some((m) => m.role === 'assistant')).toBe(true);
     const assistantMsg = msgs.find((m) => m.role === 'assistant');
     expect(assistantMsg?.content).toBe('Hello world');
+  });
+
+  it('records token usage when usageRepo provided', async () => {
+    const insertMock = vi.fn();
+    const usageRepo: UsageRepo = {
+      insert: insertMock,
+      findMany: () => [] as UsageRecord[],
+      totalCostCents: () => 0,
+    };
+    const uc = new SendMessageUseCase(sessionRepo, messageRepo, ai, usageRepo);
+    await collect(await uc.execute(input({ model: 'claude-sonnet-4-6' })));
+    expect(insertMock).toHaveBeenCalledOnce();
+    const record = insertMock.mock.calls[0]?.[0] as UsageRecordInput;
+    expect(record.inputTokens).toBe(10);
+    expect(record.outputTokens).toBe(2);
+    expect(record.source).toBe('chat');
+    expect(record.model).toBe('claude-sonnet-4-6');
   });
 
   it('builds multi-turn context from history', async () => {

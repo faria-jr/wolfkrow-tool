@@ -11,6 +11,11 @@ export interface ChatMessage {
   content: string;
 }
 
+export interface ImagePart {
+  mimeType: string; // 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+  data: string; // base64-encoded
+}
+
 export interface CompletionOptions {
   model: string;
   /** Multi-turn. Use [{role:'user', content}] p/ prompt único. */
@@ -21,6 +26,8 @@ export interface CompletionOptions {
   temperature?: number;
   /** Abortar streaming (botão Stop) — repassado ao SDK. */
   signal?: AbortSignal;
+  /** T21: vision blocks injected into the last user message. */
+  imageParts?: ImagePart[];
 }
 
 /** Chunk incremental de stream. delta vazio + done=true encerra com usage. */
@@ -29,6 +36,10 @@ export interface StreamChunk {
   inputTokens?: number;
   outputTokens?: number;
   done?: boolean;
+  /** Emitted when AI requests a tool call. */
+  toolCall?: { id: string; name: string; input: Record<string, unknown> };
+  /** Emitted after a tool has been executed. */
+  toolResult?: { callId: string; output: string; isError: boolean };
 }
 
 export interface CompletionResult {

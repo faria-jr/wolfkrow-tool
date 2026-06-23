@@ -45,6 +45,27 @@ export const BUILT_IN_MCP_SERVERS: readonly BuiltInMcpEntry[] = [
     args: ['../mcp-servers/knowledge-base/dist/index.js'],
     visibility: 'always',
   },
+  {
+    name: 'youtube',
+    description: 'YouTube video search and transcript extraction (requires YOUTUBE_API_KEY)',
+    command: 'node',
+    args: ['../mcp-servers/youtube/dist/index.js'],
+    visibility: 'on-demand',
+  },
+  {
+    name: 'google-calendar',
+    description: 'Google Calendar — list and create events (requires GOOGLE_CALENDAR_TOKEN)',
+    command: 'node',
+    args: ['../mcp-servers/google-calendar/dist/index.js'],
+    visibility: 'on-demand',
+  },
+  {
+    name: 'google-gmail',
+    description: 'Gmail — search and read messages (requires GOOGLE_GMAIL_TOKEN)',
+    command: 'node',
+    args: ['../mcp-servers/google-gmail/dist/index.js'],
+    visibility: 'on-demand',
+  },
 ] as const;
 
 /**
@@ -53,8 +74,6 @@ export const BUILT_IN_MCP_SERVERS: readonly BuiltInMcpEntry[] = [
  * `packages/mcp-servers/<name>/`, move its entry into BUILT_IN_MCP_SERVERS.
  */
 export const PLANNED_MCP_SERVERS: readonly BuiltInMcpEntry[] = [
-  { name: 'google-calendar', description: 'Google Calendar API integration', command: 'node', args: [], visibility: 'on-demand' },
-  { name: 'google-gmail', description: 'Gmail API integration', command: 'node', args: [], visibility: 'on-demand' },
   { name: 'google-drive', description: 'Google Drive API integration', command: 'node', args: [], visibility: 'on-demand' },
   { name: 'google-sheets', description: 'Google Sheets API integration', command: 'node', args: [], visibility: 'on-demand' },
   { name: 'elevenlabs', description: 'ElevenLabs text-to-speech', command: 'node', args: [], visibility: 'on-demand' },
@@ -63,7 +82,6 @@ export const PLANNED_MCP_SERVERS: readonly BuiltInMcpEntry[] = [
   { name: 'local-agents', description: 'Local agent runner', command: 'node', args: [], visibility: 'always' },
   { name: 'local-llm', description: 'Ollama local LLM', command: 'node', args: [], visibility: 'on-demand' },
   { name: 'skills', description: 'Skills MCP server', command: 'node', args: [], visibility: 'always' },
-  { name: 'youtube', description: 'YouTube transcript extraction', command: 'node', args: [], visibility: 'on-demand' },
   { name: 'shopify', description: 'Shopify e-commerce API', command: 'node', args: [], visibility: 'on-demand' },
   { name: 'nano-banana', description: 'Cohere LLM', command: 'node', args: [], visibility: 'on-demand' },
   { name: 'wolfkrow-agents', description: 'Internal agents', command: 'node', args: [], visibility: 'always' },

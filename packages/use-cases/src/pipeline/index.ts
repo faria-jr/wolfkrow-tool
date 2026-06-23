@@ -12,3 +12,5 @@ export { CompletePhaseUseCase } from './complete-phase';
 export type { CompletePhaseInput, CompletePhaseOutput } from './complete-phase';
 export { ApprovePipelinePhaseUseCase } from './approve-phase';
 export type { ApprovePipelinePhaseInput, ApprovePipelinePhaseOutput } from './approve-phase';
+export { RunPhaseUseCase } from './run-phase';
+export type { RunPhaseInput, RunPhaseOutput } from './run-phase';

@@ -65,7 +65,7 @@ describe('AgentExecutor', () => {
 
     const executor = createExecutor();
 
-    await expect(executor.execute(baseTask)).rejects.toThrow('Missing anthropic-api-key');
+    await expect(executor.execute(baseTask)).rejects.toThrow('Missing API key in keychain');
   });
 
   it('returns AI provider response when key exists', async () => {

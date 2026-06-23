@@ -6,8 +6,9 @@ import type {
   ChatSessionRepo,
   Message,
   MessageRepo,
+  UsageRepo,
 } from '@wolfkrow/domain';
-import { Message as MessageEntity, ChatSession as ChatSessionEntity } from '@wolfkrow/domain';
+import { Message as MessageEntity, ChatSession as ChatSessionEntity, defaultPricingCalculator } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
@@ -28,6 +29,7 @@ export class SendMessageUseCase implements UseCase<SendMessageInput, SendMessage
     private readonly sessionRepo: ChatSessionRepo,
     private readonly messageRepo: MessageRepo,
     private readonly ai: AIStreamPort,
+    private readonly usageRepo?: UsageRepo,
   ) {}
 
   async execute(input: SendMessageInput): Promise<SendMessageOutput> {
@@ -78,7 +80,22 @@ export class SendMessageUseCase implements UseCase<SendMessageInput, SendMessage
     }
 
     await this.sessionRepo.save(session.recordActivity());
-    void inputTokens;
-    void outputTokens;
+
+    if (this.usageRepo && (inputTokens > 0 || outputTokens > 0)) {
+      const cost = defaultPricingCalculator.cost(input.model, { inputTokens, outputTokens });
+      this.usageRepo.insert({
+        userId: input.userId,
+        source: 'chat',
+        model: input.model,
+        inputTokens,
+        outputTokens,
+        cacheReadTokens: 0,
+        cacheWriteTokens: 0,
+        cost: cost.usdCents,
+        sessionId: session.id,
+        ...(input.agentId !== undefined ? { agentId: input.agentId } : {}),
+        timestamp: new Date(),
+      });
+    }
   }
 }

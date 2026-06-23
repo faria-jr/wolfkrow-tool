@@ -169,11 +169,13 @@ export default tseslint.config(
   // TECH-DEBT (legado pré-Fase F — reescrito nas fases indicadas, override removido lá):
   //   login-form.tsx + middleware.ts → Fase A.1 (reimplementação auth total)
   //   repos/index.ts              → Fase F.3 (ports + base genérica substitui)
+  //   lion.ts create()            → refactor quando adapter catalog crescer (T34+)
   {
     files: [
       '**/components/auth/login-form.tsx',
       '**/apps/web/middleware.ts',
       '**/infra/src/repos/index.ts',
+      '**/infra/src/ai-providers/lion.ts',
     ],
     rules: {
       'max-lines-per-function': 'off',

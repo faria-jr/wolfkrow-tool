@@ -1,9 +1,11 @@
 import type { MemorySearchResult, SemanticMemoryRepo } from '@wolfkrow/domain';
 import { SemanticMemory } from '@wolfkrow/domain';
-import { eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { semanticMemories } from '../db/schema/memory';
+
+import { cosineSimilarity } from './knowledge-chunk-repo';
 
 type DbRow = typeof semanticMemories.$inferSelect;
 
@@ -74,21 +76,21 @@ export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
   }
 
   async vectorSearch(embedding: number[], userId: string, limit: number): Promise<MemorySearchResult[]> {
-    const embeddingJson = JSON.stringify(embedding);
-    const sql = `
-      SELECT id, user_id, content, embedding, source, importance, access_count, last_accessed_at,
-             metadata, created_at,
-             vec_distance_cosine(embedding, ?) AS distance
-      FROM semantic_memories
-      WHERE user_id = ? AND embedding IS NOT NULL
-      ORDER BY distance
-      LIMIT ?
-    `;
-    try {
-      const rows = this.db.$client.prepare(sql).all(embeddingJson, userId, limit) as (DbRow & { distance: number })[];
-      return rows.map((r) => ({ memory: toEntity(r), distance: r.distance }));
-    } catch {
-      return [];
-    }
+    const rows = this.db
+      .select()
+      .from(semanticMemories)
+      .where(and(eq(semanticMemories.userId, userId), isNotNull(semanticMemories.embedding)))
+      .all();
+
+    return rows
+      .map((r) => {
+        const emb = r.embedding;
+        if (!Array.isArray(emb) || emb.length !== embedding.length) return null;
+        return { row: r, distance: 1 - cosineSimilarity(embedding, emb) };
+      })
+      .filter((x): x is { row: DbRow; distance: number } => x !== null)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+      .map(({ row, distance }) => ({ memory: toEntity(row), distance }));
   }
 }

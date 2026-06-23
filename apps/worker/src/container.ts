@@ -7,10 +7,24 @@
  * constructing them inline.
  */
 
+import * as os from 'node:os';
+import * as path from 'node:path';
+
 import type { EmbeddingPort, SecretsAdapter } from '@wolfkrow/domain';
-import { aiProviderFactory, type AIProviderFactory, VoyageEmbedder } from '@wolfkrow/infra';
+import {
+  aiProviderFactory,
+  BashTool,
+  ClaudeAgentProvider,
+  FilesystemTool,
+  type AIProviderFactory,
+  ToolRegistry,
+  VoyageEmbedder,
+} from '@wolfkrow/infra';
 import { createRepoRegistry, type RepoRegistry } from '@wolfkrow/infra/repos';
 import { KeytarSecretsAdapter } from '@wolfkrow/infra/secrets/keytar-adapter';
+import type { CoderAgent, EvaluatorAgent, HarnessPlanner } from '@wolfkrow/use-cases';
+
+import { getProviderApiKey } from './lib/keychain';
 
 export type { RepoRegistry };
 
@@ -45,4 +59,125 @@ export function getAdapters(): AdapterBundle {
 /** Test helper: drop the cached adapter bundle. */
 export function resetAdapters(): void {
   _adapters = null;
+}
+
+export interface HarnessAgents {
+  planner: HarnessPlanner;
+  coder: CoderAgent;
+  evaluator: EvaluatorAgent;
+}
+
+export function getHarnessAgents(): HarnessAgents {
+  return { planner: makePlanner(), coder: makeCoder(), evaluator: makeEvaluator() };
+}
+
+function makePlanner(): HarnessPlanner {
+  return {
+    async plan(specContent, config) {
+      const apiKey = await getProviderApiKey('anthropic');
+      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
+      const result = await provider.complete({
+        model: config.plannerModel,
+        system: 'You are a senior software architect. Given a spec, output a JSON array of sprints. Each sprint: {name, description, features: [{name, description, acceptanceCriteria: string[]}]}. Respond ONLY with valid JSON array.',
+        messages: [{ role: 'user', content: `Create sprint plan for:\n\n${specContent}` }],
+        maxTokens: 4096,
+        temperature: 0.3,
+      });
+      try {
+        const raw = result.content.match(/\[[\s\S]*\]/)?.[0] ?? result.content;
+        return JSON.parse(raw) as Array<{ name: string; description: string; features: Array<{ name: string; description: string; acceptanceCriteria: string[] }> }>;
+      } catch {
+        return [{ name: 'Sprint 1', description: specContent.slice(0, 200), features: [{ name: 'Implementation', description: specContent.slice(0, 500), acceptanceCriteria: ['All features implemented'] }] }];
+      }
+    },
+  };
+}
+
+function makeCoder(): CoderAgent {
+  return {
+    async implement(input) {
+      const apiKey = await getProviderApiKey('anthropic');
+      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
+      const previousContext = input.previousFeedback ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}` : '';
+      const result = await provider.complete({
+        model: input.coderModel,
+        system: 'You are an expert software engineer. Implement the requested feature with clean, tested code.',
+        messages: [{
+          role: 'user',
+          content: `Sprint: ${input.sprintName}\nFeature: ${input.featureName}\nDescription: ${input.featureDescription}\nAcceptance Criteria:\n${input.acceptanceCriteria.map((c) => `- ${c}`).join('\n')}${previousContext}\n\nImplement this feature completely.`,
+        }],
+        maxTokens: 8192,
+        temperature: 0.2,
+      });
+      return { output: result.content, tokens: result.usage.inputTokens + result.usage.outputTokens };
+    },
+  };
+}
+
+function makeEvaluator(): EvaluatorAgent {
+  return {
+    async evaluate(input) {
+      const apiKey = await getProviderApiKey('anthropic');
+      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
+      const result = await provider.complete({
+        model: 'claude-sonnet-4-6',
+        system: 'You are a QA engineer. Evaluate if the implementation meets the acceptance criteria. Respond with JSON: {passed: boolean, feedback: string}',
+        messages: [{
+          role: 'user',
+          content: `Acceptance Criteria:\n${input.acceptanceCriteria.map((c) => `- ${c}`).join('\n')}\n\nImplementation:\n${input.coderOutput}\n\nDoes this implementation satisfy all acceptance criteria?`,
+        }],
+        maxTokens: 1024,
+        temperature: 0.1,
+      });
+      try {
+        const raw = result.content.match(/\{[\s\S]*\}/)?.[0] ?? result.content;
+        const parsed = JSON.parse(raw) as { passed: boolean; feedback: string };
+        return { ...parsed, tokens: result.usage.inputTokens + result.usage.outputTokens };
+      } catch {
+        return { passed: false, feedback: result.content, tokens: result.usage.inputTokens + result.usage.outputTokens };
+      }
+    },
+  };
+}
+
+/** Workspace dir scoped per project for harness coder sandboxing. */
+export function getHarnessProjectWorkDir(projectId: string): string {
+  return path.join(
+    process.env['HARNESS_WORKSPACE_DIR'] ?? os.tmpdir(),
+    'wolfkrow-harness',
+    projectId,
+  );
+}
+
+/** CoderAgent backed by ClaudeAgentProvider with bash + filesystem tools sandboxed to workDir. */
+export function makeCoderWithTools(workDir: string): CoderAgent {
+  return {
+    async implement(input) {
+      const apiKey = await getProviderApiKey('anthropic');
+      const registry = new ToolRegistry([new BashTool(), new FilesystemTool()]);
+      const provider = new ClaudeAgentProvider(apiKey, registry, undefined, { maxTurns: 80, workDir });
+      const previousContext = input.previousFeedback
+        ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}`
+        : '';
+      const result = await provider.complete({
+        model: input.coderModel,
+        system:
+          'You are an expert software engineer with access to bash and filesystem tools. ' +
+          'Implement the requested feature with clean, tested code. ' +
+          'Write files to the workspace directory. Run tests to verify your implementation.',
+        messages: [{
+          role: 'user',
+          content:
+            `Sprint: ${input.sprintName}\n` +
+            `Feature: ${input.featureName}\n` +
+            `Description: ${input.featureDescription}\n` +
+            `Acceptance Criteria:\n${input.acceptanceCriteria.map((c) => `- ${c}`).join('\n')}` +
+            `${previousContext}\n\nImplement this feature completely. Use your tools to write files and run tests.`,
+        }],
+        maxTokens: 16384,
+        temperature: 0.2,
+      });
+      return { output: result.content, tokens: result.usage.inputTokens + result.usage.outputTokens };
+    },
+  };
 }

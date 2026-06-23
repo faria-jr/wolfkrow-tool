@@ -67,13 +67,38 @@ export function OnboardingForm() {
   return <PasswordSetupForm form={form} error={submitError} onSubmit={onStep1Submit} />;
 }
 
+interface ProviderFormFieldsProps {
+  provider: string;
+  apiKey: string;
+  onProviderChange: (v: string) => void;
+  onApiKeyChange: (v: string) => void;
+}
+
+function ProviderFormFields({ provider, apiKey, onProviderChange, onApiKeyChange }: ProviderFormFieldsProps) {
+  const selected = PROVIDERS.find((p) => p.value === provider) ?? PROVIDERS[0];
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="text-sm font-medium" htmlFor="provider-select">Provider</label>
+        <select id="provider-select" value={provider} onChange={(e) => onProviderChange(e.target.value)} className="border-input bg-background mt-1 block w-full rounded-md border px-3 py-2 text-sm">
+          {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+        </select>
+      </div>
+      {selected.value !== 'ollama' && (
+        <div>
+          <label className="text-sm font-medium" htmlFor="api-key-input">API Key</label>
+          <Input id="api-key-input" type="password" placeholder={`API key (${selected.placeholder})`} value={apiKey} onChange={(e) => onApiKeyChange(e.target.value)} className="mt-1" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProviderStep({ onDone }: { onDone: () => void }) {
   const [provider, setProvider] = useState<string>('anthropic');
   const [apiKey, setApiKey] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const selectedProvider = PROVIDERS.find((p) => p.value === provider) ?? PROVIDERS[0];
 
   async function handleSave() {
     setSaving(true);
@@ -102,45 +127,10 @@ function ProviderStep({ onDone }: { onDone: () => void }) {
         <h2 className="text-lg font-semibold">Set up your AI provider</h2>
         <p className="text-muted-foreground text-sm">Connect an API key to start chatting. You can change this later in Vault.</p>
       </div>
-
-      <div className="space-y-3">
-        <div>
-          <label className="text-sm font-medium" htmlFor="provider-select">Provider</label>
-          <select
-            id="provider-select"
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            className="border-input bg-background mt-1 block w-full rounded-md border px-3 py-2 text-sm"
-          >
-            {PROVIDERS.map((p) => (
-              <option key={p.value} value={p.value}>{p.label}</option>
-            ))}
-          </select>
-        </div>
-
-        {selectedProvider.value !== 'ollama' && (
-          <div>
-            <label className="text-sm font-medium" htmlFor="api-key-input">API Key</label>
-            <Input
-              id="api-key-input"
-              type="password"
-              placeholder={`API key (${selectedProvider.placeholder})`}
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-        )}
-      </div>
-
+      <ProviderFormFields provider={provider} apiKey={apiKey} onProviderChange={setProvider} onApiKeyChange={setApiKey} />
       {error && <p className="text-destructive text-sm" role="alert">{error}</p>}
-
       <div className="flex gap-3">
-        <Button
-          onClick={() => void handleSave()}
-          disabled={saving || (selectedProvider.value !== 'ollama' && !apiKey.trim())}
-          className="flex-1"
-        >
+        <Button onClick={() => void handleSave()} disabled={saving || (provider !== 'ollama' && !apiKey.trim())} className="flex-1">
           {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : 'Save'}
         </Button>
         <Button variant="outline" onClick={onDone}>Skip</Button>

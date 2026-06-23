@@ -1,16 +1,21 @@
 /**
  * Chat routes — SSE streaming via SendMessageUseCase.
- * A.3: session persistence (in-memory), multi-turn context.
+ * Session persistence via Drizzle (DrizzleChatSessionRepo / DrizzleMessageRepo).
  */
 
 import type { AICompletionOptions, AICompletionResult, AIStreamChunk, AIStreamPort } from '@wolfkrow/domain';
+import { DrizzleChatSessionRepo, DrizzleMessageRepo, DrizzleTokenUsageRepo } from '@wolfkrow/infra';
+import type { ImagePart } from '@wolfkrow/infra';
+import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
 import { SendMessageUseCase } from '@wolfkrow/use-cases';
 
-import { InMemoryChatSessionRepo, InMemoryMessageRepo } from '../chat-store';
 import type { Logger } from '../logger';
 import { recordChatTurn } from '../memory/lifecycle';
 import { OrchestratorService } from '../orchestrator';
 import type { AuthFastifyInstance } from '../types/fastify';
+
+import type { AttachmentInput } from './chat-attachments';
+import { processAttachments } from './chat-attachments';
 
 interface ChatBody {
   message: string;
@@ -19,12 +24,14 @@ interface ChatBody {
   system?: string;
   sessionId?: string;
   agentId?: string;
+  attachments?: AttachmentInput[];
 }
 
-const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
+const DEFAULT_MODEL = DEFAULT_CHAT_MODEL;
 
-const sessionRepo = new InMemoryChatSessionRepo();
-const messageRepo = new InMemoryMessageRepo();
+const sessionRepo = new DrizzleChatSessionRepo();
+const messageRepo = new DrizzleMessageRepo();
+const usageRepo = new DrizzleTokenUsageRepo();
 
 /** Build adapter opts, omitting undefined values (exactOptionalPropertyTypes). */
 function adapterOptions(
@@ -39,7 +46,7 @@ function adapterOptions(
   };
 }
 
-/** Write the AI stream as SSE events (ack/done/text). */
+/** Write the AI stream as SSE events (ack/done/text/tool_call/tool_result). */
 async function writeStreamAsSse(
   stream: AsyncIterable<AIStreamChunk>,
   sse: (data: unknown) => void,
@@ -47,6 +54,12 @@ async function writeStreamAsSse(
   for await (const chunk of stream) {
     if (chunk.done) {
       sse({ type: 'done', usage: { inputTokens: chunk.inputTokens, outputTokens: chunk.outputTokens } });
+    } else if (chunk.toolCall) {
+      const { id, name, input } = chunk.toolCall;
+      sse({ type: 'tool_call', id, name, input });
+    } else if (chunk.toolResult) {
+      const { callId, output, isError } = chunk.toolResult;
+      sse({ type: 'tool_result', callId, output, isError });
     } else if (chunk.delta) {
       sse({ type: 'text', content: chunk.delta });
     }
@@ -56,6 +69,7 @@ async function writeStreamAsSse(
 function makeAIAdapter(
   orchestrator: OrchestratorService,
   opts: { provider?: string; agentId?: string; userId?: string },
+  imageParts?: ImagePart[],
 ): AIStreamPort {
   function query(options: AICompletionOptions): AsyncIterable<AIStreamChunk> {
     return orchestrator.stream({
@@ -66,6 +80,7 @@ function makeAIAdapter(
       ...(opts.userId !== undefined ? { userId: opts.userId } : {}),
       ...(options.system !== undefined ? { system: options.system } : {}),
       ...(options.signal !== undefined ? { signal: options.signal } : {}),
+      ...(imageParts?.length ? { imageParts } : {}),
     }) as AsyncIterable<AIStreamChunk>;
   }
 
@@ -91,7 +106,7 @@ export async function chatRoutes(server: AuthFastifyInstance) {
     '/send',
     { preHandler: [server.authenticate] },
     async (request, reply) => {
-      const { message, model = DEFAULT_MODEL, provider, system, sessionId, agentId } = request.body;
+      const { message, model = DEFAULT_MODEL, provider, system, sessionId, agentId, attachments } = request.body;
 
       reply.raw.writeHead(200, {
         'Content-Type': 'text/event-stream',
@@ -106,17 +121,20 @@ export async function chatRoutes(server: AuthFastifyInstance) {
         const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
         sse({ type: 'ack', message });
 
+        const { content, imageParts } = await processAttachments(message, attachments);
+
         const ai = makeAIAdapter(
           orchestrator,
           adapterOptions(provider, agentId, request.user?.userId),
+          imageParts,
         );
-        const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai);
+        const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, usageRepo);
 
         const stream = await useCase.execute({
           sessionId,
           userId: request.user?.userId ?? 'anonymous',
           agentId,
-          content: message,
+          content,
           model,
           signal: ac.signal,
           ...(system !== undefined ? { system } : {}),
@@ -124,8 +142,6 @@ export async function chatRoutes(server: AuthFastifyInstance) {
 
         await writeStreamAsSse(stream, sse);
 
-        // FIX-012 + FIX-013: capture memorable facts from the turn and keep the
-        // user's dreaming gate alive. Fire-and-forget — never blocks the reply.
         const chatUserId = request.user?.userId;
         if (chatUserId) {
           recordChatTurn(server.log as unknown as Logger, chatUserId, [

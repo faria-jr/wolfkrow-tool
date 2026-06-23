@@ -9,6 +9,7 @@ export { DrizzleRepo, InMemoryRepo } from './base';
 export { DrizzleUserRepo } from './user-repo';
 export { DrizzleAgentRepo } from './agent-repo';
 export { DrizzleSkillRepo } from './skill-repo';
+export { DrizzleChatSessionRepo, DrizzleMessageRepo } from './chat-repos';
 export { DrizzleMcpServerRepo } from './mcp-server-repo';
 export type { McpServerRecord, McpServerCreateInput, McpServerVisibility } from '@wolfkrow/domain';
 export { DrizzleAuthAuditRepo } from './auth-audit-repo';

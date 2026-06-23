@@ -60,9 +60,8 @@ describe('ClaudeAgentProvider', () => {
     expect(result.content).toBe('Agent reply');
   });
 
-  it('accepts tool definitions', () => {
-    const tools = [{ name: 'search', description: 'Web search', input_schema: { type: 'object' as const, properties: {} } }];
-    expect(() => new ClaudeAgentProvider('key', tools)).not.toThrow();
+  it('accepts empty registry (no tools)', () => {
+    expect(() => new ClaudeAgentProvider('key')).not.toThrow();
   });
 });
 

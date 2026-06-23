@@ -14,13 +14,12 @@ import {
   PlanSprintsUseCase,
   RunCoderRoundUseCase,
 } from '@wolfkrow/use-cases';
-import type { HarnessPlanner, CoderAgent, EvaluatorAgent } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import keytar from 'keytar';
 
-import { getAdapters, getRepos } from '../container';
+import { getHarnessAgents, getHarnessProjectWorkDir, makeCoderWithTools, getRepos } from '../container';
+import type { FeatureRunResult } from '../harness/runner';
+import { runHarnessFeature } from '../harness/runner';
 import type { AuthFastifyInstance } from '../types/fastify';
-
 
 function makeRepos() {
   const r = getRepos();
@@ -28,81 +27,6 @@ function makeRepos() {
     projectRepo: r.harnessProject,
     sprintRepo: r.harnessSprint,
     roundRepo: r.harnessRound,
-  };
-}
-
-async function getApiKey(): Promise<string> {
-  const key = await keytar.getPassword('wolfkrow', 'anthropic-api-key');
-  if (!key) throw new Error('Missing anthropic-api-key in system keychain');
-  return key;
-}
-
-function createLlmPlanner(): HarnessPlanner {
-  return {
-    async plan(specContent, config) {
-      const apiKey = await getApiKey();
-      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
-      const result = await provider.complete({
-        model: config.plannerModel,
-        system: 'You are a senior software architect. Given a spec, output a JSON array of sprints. Each sprint: {name, description, features: [{name, description, acceptanceCriteria: string[]}]}. Respond ONLY with valid JSON array.',
-        messages: [{ role: 'user', content: `Create sprint plan for:\n\n${specContent}` }],
-        maxTokens: 4096,
-        temperature: 0.3,
-      });
-      try {
-        const raw = result.content.match(/\[[\s\S]*\]/)?.[0] ?? result.content;
-        return JSON.parse(raw) as Array<{ name: string; description: string; features: Array<{ name: string; description: string; acceptanceCriteria: string[] }> }>;
-      } catch {
-        return [{ name: 'Sprint 1', description: specContent.slice(0, 200), features: [{ name: 'Implementation', description: specContent.slice(0, 500), acceptanceCriteria: ['All features implemented'] }] }];
-      }
-    },
-  };
-}
-
-function createLlmCoder(): CoderAgent {
-  return {
-    async implement(input) {
-      const apiKey = await getApiKey();
-      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
-      const previousContext = input.previousFeedback ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}` : '';
-      const result = await provider.complete({
-        model: input.coderModel,
-        system: 'You are an expert software engineer. Implement the requested feature with clean, tested code.',
-        messages: [{
-          role: 'user',
-          content: `Sprint: ${input.sprintName}\nFeature: ${input.featureName}\nDescription: ${input.featureDescription}\nAcceptance Criteria:\n${input.acceptanceCriteria.map((c) => `- ${c}`).join('\n')}${previousContext}\n\nImplement this feature completely.`,
-        }],
-        maxTokens: 8192,
-        temperature: 0.2,
-      });
-      return { output: result.content, tokens: result.usage.inputTokens + result.usage.outputTokens };
-    },
-  };
-}
-
-function createLlmEvaluator(): EvaluatorAgent {
-  return {
-    async evaluate(input) {
-      const apiKey = await getApiKey();
-      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
-      const result = await provider.complete({
-        model: 'claude-sonnet-4-6',
-        system: 'You are a QA engineer. Evaluate if the implementation meets the acceptance criteria. Respond with JSON: {passed: boolean, feedback: string}',
-        messages: [{
-          role: 'user',
-          content: `Acceptance Criteria:\n${input.acceptanceCriteria.map((c) => `- ${c}`).join('\n')}\n\nImplementation:\n${input.coderOutput}\n\nDoes this implementation satisfy all acceptance criteria?`,
-        }],
-        maxTokens: 1024,
-        temperature: 0.1,
-      });
-      try {
-        const raw = result.content.match(/\{[\s\S]*\}/)?.[0] ?? result.content;
-        const parsed = JSON.parse(raw) as { passed: boolean; feedback: string };
-        return { ...parsed, tokens: result.usage.inputTokens + result.usage.outputTokens };
-      } catch {
-        return { passed: false, feedback: result.content, tokens: result.usage.inputTokens + result.usage.outputTokens };
-      }
-    },
   };
 }
 
@@ -120,7 +44,7 @@ async function planHandler(req: FastifyRequest<{ Params: { id: string }; Body: P
   if (!specContent && project.specPath) {
     try { specContent = await readFile(project.specPath, 'utf8'); } catch { specContent = ''; }
   }
-  const { sprints } = await new PlanSprintsUseCase(projectRepo, sprintRepo, createLlmPlanner()).execute({ projectId: project.id, specContent });
+  const { sprints } = await new PlanSprintsUseCase(projectRepo, sprintRepo, getHarnessAgents().planner).execute({ projectId: project.id, specContent });
   return sprints.map((s) => s.toProps());
 }
 
@@ -128,7 +52,7 @@ async function runCoderHandler(req: FastifyRequest<{ Params: { id: string; sprin
   const { projectRepo, sprintRepo, roundRepo } = _hRepos;
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
-  const { round } = await new RunCoderRoundUseCase(sprintRepo, roundRepo, createLlmCoder()).execute({
+  const { round } = await new RunCoderRoundUseCase(sprintRepo, roundRepo, getHarnessAgents().coder).execute({
     sprintId: req.params.sprintId,
     featureIndex: req.body.featureIndex,
     roundNumber: req.body.roundNumber,
@@ -136,6 +60,47 @@ async function runCoderHandler(req: FastifyRequest<{ Params: { id: string; sprin
     ...(req.body.previousFeedback !== undefined ? { previousFeedback: req.body.previousFeedback } : {}),
   });
   return round.toProps();
+}
+
+interface RunBody { sprintId: string; }
+
+async function runSseHandler(
+  req: FastifyRequest<{ Params: { id: string }; Body: RunBody }>,
+  reply: FastifyReply,
+) {
+  const { projectRepo, sprintRepo, roundRepo } = _hRepos;
+  const project = await projectRepo.findById(req.params.id);
+  if (!project) return reply.status(404).send({ error: 'Project not found' });
+
+  const sprint = await sprintRepo.findById(req.body.sprintId);
+  if (!sprint) return reply.status(404).send({ error: 'Sprint not found' });
+
+  const workDir = getHarnessProjectWorkDir(project.id);
+  const coder = makeCoderWithTools(workDir);
+  const { evaluator } = getHarnessAgents();
+
+  reply.raw.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+  const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+
+  const results: FeatureRunResult[] = [];
+
+  for (let i = 0; i < sprint.features.length; i++) {
+    const result = await runHarnessFeature(
+      { sprintId: sprint.id, featureIndex: i, coderModel: project.config.coderModel, maxRounds: project.config.maxRoundsPerFeature },
+      { sprintRepo, roundRepo },
+      { coder, evaluator },
+      (event) => sse({ type: 'progress', sprintId: sprint.id, featureIndex: i, ...event }),
+    );
+    results.push(result);
+    sse({ type: 'feature_done', ...result });
+  }
+
+  sse({ type: 'done', results });
+  reply.raw.end();
 }
 
 export async function harnessRoutes(server: AuthFastifyInstance) {
@@ -177,7 +142,7 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
 
   server.post<{ Params: { roundId: string } }>('/rounds/:roundId/evaluate', async (req, reply) => {
     try {
-      const result = await new EvaluateRoundUseCase(roundRepo, createLlmEvaluator()).execute({ roundId: req.params.roundId });
+      const result = await new EvaluateRoundUseCase(roundRepo, getHarnessAgents().evaluator).execute({ roundId: req.params.roundId });
       return { ...result.round.toProps(), passed: result.passed };
     } catch {
       return reply.status(404).send({ error: 'Round not found' });
@@ -193,4 +158,6 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
   server.get<{ Params: { sprintId: string } }>('/sprints/:sprintId/rounds', async (req) => {
     return (await roundRepo.findBySprintId(req.params.sprintId)).map((r) => r.toProps());
   });
+
+  server.post<{ Params: { id: string }; Body: RunBody }>('/projects/:id/run', runSseHandler);
 }

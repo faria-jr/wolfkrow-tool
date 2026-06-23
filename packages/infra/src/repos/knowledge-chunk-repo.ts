@@ -33,11 +33,11 @@ function toEntity(row: DbChunk): KnowledgeChunk {
  * Cosine similarity between two equal-length vectors. Returns 0 for a zero
  * vector (avoids divide-by-zero). Range: [-1, 1], higher = more similar.
  *
- * Used for in-app vector search over embeddings stored as JSON (FIX-002):
- * the previous impl called sqlite-vec's vec_distance_cosine on a JSON text
- * column with no vec0 virtual table → it always threw and the search
- * silently returned []. Computing cosine in JS over the persisted embeddings
- * works with the existing schema and is fine for a local single-user corpus.
+ * T24 (Option B): Brute-force O(n) over all rows with embeddings. Suitable
+ * for local single-user corpora up to ~5k chunks. Beyond that, migrate to a
+ * sqlite-vec vec0 virtual table (Voyage-3 dimension = 1024) and rewrite
+ * search to use vec_distance_cosine on the virtual table.
+ * Exported for reuse by SemanticMemoryRepo.
  */
 export function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length || a.length === 0) return 0;

@@ -10,6 +10,7 @@ import type {
   ChatMessage,
   CompletionOptions,
   CompletionResult,
+  ImagePart,
   StreamChunk,
 } from './types';
 
@@ -21,13 +22,18 @@ export class AnthropicProvider implements AIProvider {
   }
 
   async *query(options: CompletionOptions): AsyncIterable<StreamChunk> {
+    const messages = options.messages.map(toAnthropicMessage);
+    if (options.imageParts?.length) {
+      injectImageParts(messages, options.imageParts);
+    }
+
     const stream = this.client.messages.stream(
       {
         model: options.model,
         max_tokens: options.maxTokens ?? 4096,
         temperature: options.temperature ?? 0.5,
         ...(options.system ? { system: options.system } : {}),
-        messages: options.messages.map(toAnthropicMessage),
+        messages,
       },
       { signal: options.signal },
     );
@@ -60,5 +66,34 @@ function toAnthropicMessage(message: ChatMessage): Anthropic.Messages.MessagePar
   return {
     role: message.role === 'assistant' ? 'assistant' : 'user',
     content: message.content,
+  };
+}
+
+function injectImageParts(
+  messages: Anthropic.Messages.MessageParam[],
+  parts: ImagePart[],
+): void {
+  const lastUserIdx = messages.reduce(
+    (found, m, i) => (m.role === 'user' ? i : found),
+    -1,
+  );
+  if (lastUserIdx < 0) return;
+
+  const lastMsg = messages[lastUserIdx];
+  if (!lastMsg) return;
+  const text = typeof lastMsg.content === 'string' ? (lastMsg.content as string) : '';
+
+  const imageBlocks: Anthropic.Messages.ImageBlockParam[] = parts.map((p) => ({
+    type: 'image',
+    source: {
+      type: 'base64',
+      media_type: p.mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+      data: p.data,
+    },
+  }));
+
+  messages[lastUserIdx] = {
+    role: 'user',
+    content: [...imageBlocks, { type: 'text', text }],
   };
 }

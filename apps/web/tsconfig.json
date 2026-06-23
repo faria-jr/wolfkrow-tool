@@ -11,7 +11,8 @@
     "plugins": [{ "name": "next" }],
     "paths": {
       "@/*": ["./*"],
-      "@wolfkrow/design-tokens": ["../../packages/design-tokens/src/index.ts"]
+      "@wolfkrow/design-tokens": ["../../packages/design-tokens/src/index.ts"],
+      "@wolfkrow/shared-types": ["../../packages/shared-types/src/index.ts"]
     }
   },
   "include": [

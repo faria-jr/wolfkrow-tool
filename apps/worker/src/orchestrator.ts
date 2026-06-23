@@ -9,23 +9,12 @@
 import type { Runtime } from '@wolfkrow/domain';
 import { aiProviderFactory } from '@wolfkrow/infra';
 import type { AIProvider, AIProviderFactory, CompletionOptions, StreamChunk } from '@wolfkrow/infra';
-import keytar from 'keytar';
 
 import { buildAgentSystemPrompt } from './agent-prompt';
 import { getRepos } from './container';
+import { getProviderApiKey, KEYTAR_SERVICE } from './lib/keychain';
 import type { Logger } from './logger';
 
-const KEYTAR_SERVICE = 'wolfkrow';
-const KEYTAR_ACCOUNT_MAP: Record<string, string> = {
-  anthropic: 'anthropic-api-key',
-  'claude-agent': 'anthropic-api-key',
-  'claude-compat': 'anthropic-api-key',
-  codex: 'openai-api-key',
-  openai: 'openai-api-key',
-  lion: 'anthropic-api-key',
-  ollama: 'ollama-api-key',
-  mock: '',
-};
 
 export interface ChatRequest {
   messages: CompletionOptions['messages'];
@@ -38,6 +27,8 @@ export interface ChatRequest {
   /** FIX-005: when set, the persisted Agent drives provider/model/system. */
   agentId?: string;
   userId?: string;
+  /** T21: vision image blocks injected into last user message. */
+  imageParts?: CompletionOptions['imageParts'];
 }
 
 /** Map an Agent's runtime to a provider name (FIX-005). */
@@ -97,6 +88,7 @@ export class OrchestratorService {
       ...(effective.maxTokens !== undefined ? { maxTokens: effective.maxTokens } : {}),
       ...(effective.temperature !== undefined ? { temperature: effective.temperature } : {}),
       ...(effective.signal !== undefined ? { signal: effective.signal } : {}),
+      ...(effective.imageParts?.length ? { imageParts: effective.imageParts } : {}),
     });
   }
 
@@ -127,11 +119,6 @@ export class OrchestratorService {
   }
 
   private async loadApiKey(provider: string): Promise<string> {
-    if (provider === 'mock') return '';
-    if (provider === 'ollama') return 'ollama';
-    const account = KEYTAR_ACCOUNT_MAP[provider] ?? `${provider}-api-key`;
-    const key = await keytar.getPassword(this.keytarService, account);
-    if (!key) throw new Error(`Missing API key in keychain: ${this.keytarService}/${account}`);
-    return key;
+    return getProviderApiKey(provider, this.keytarService);
   }
 }

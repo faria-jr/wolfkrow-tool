@@ -24,6 +24,7 @@
     "@mozilla/readability": "^0.6.0",
     "@wolfkrow/domain": "workspace:*",
     "@wolfkrow/infra": "workspace:*",
+    "@wolfkrow/shared-types": "workspace:*",
     "@wolfkrow/use-cases": "workspace:*",
     "cron-parser": "^4.9.0",
     "csv-parse": "^7.0.0",

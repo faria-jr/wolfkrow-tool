@@ -50,6 +50,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, '.'),
       '@wolfkrow/design-tokens': path.resolve(__dirname, '../../packages/design-tokens/src/index.ts'),
       '@wolfkrow/infra': path.resolve(__dirname, '../../packages/infra/src/index.ts'),
+      '@wolfkrow/shared-types': path.resolve(__dirname, '../../packages/shared-types/src/index.ts'),
     },
   },
 });

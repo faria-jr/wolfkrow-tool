@@ -19,3 +19,4 @@ export { PricingCalculator, Money, defaultPricingCalculator } from './pricing-ca
 export type { PricingTier, TokenUsage } from './pricing-calculator';
 export { PermissionResolver, defaultPermissionResolver } from './permission-resolver';
 export type { PermissionResult, AgentPermissions } from './permission-resolver';
+export type { ToolExecutor, ToolExecutionContext } from './tool-port';

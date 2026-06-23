@@ -8,11 +8,12 @@
  */
 
 import { aiProviderFactory, type AIProvider, type AIProviderFactory } from '@wolfkrow/infra';
+import { DEFAULT_AGENT_MODEL } from '@wolfkrow/shared-types';
 import { type TaskExecutor } from '@wolfkrow/use-cases';
-import keytar from 'keytar';
 
 import { buildAgentSystemPrompt } from './agent-prompt';
 import { getRepos } from './container';
+import { getProviderApiKey, KEYTAR_SERVICE } from './lib/keychain';
 import type { Logger } from './logger';
 
 export interface AgentExecutorOptions {
@@ -25,8 +26,7 @@ export interface AgentExecutorOptions {
   keytarService?: string;
 }
 
-const KEYTAR_SERVICE = 'wolfkrow';
-const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
+const DEFAULT_MODEL = DEFAULT_AGENT_MODEL;
 const DEFAULT_TEMPERATURE = Number(process.env['AGENT_DEFAULT_TEMPERATURE']) || 0.7;
 const DEFAULT_MAX_TOKENS = 4096;
 
@@ -54,11 +54,7 @@ export function createAgentExecutor(options: AgentExecutorOptions = {}): TaskExe
 
       const system = await buildAgentSystemPrompt(agent, userId);
 
-      const apiKey = await keytar.getPassword(serviceName, 'anthropic-api-key');
-      if (!apiKey) {
-        throw new Error('Missing anthropic-api-key in system keychain');
-      }
-
+      const apiKey = await getProviderApiKey(providerName, serviceName);
       const provider: AIProvider = factory.create(providerName, apiKey);
       const model = agent?.model ?? defaultModel;
       const prompt = `[Scheduled task: ${task.name}]\n\n${task.prompt}`;

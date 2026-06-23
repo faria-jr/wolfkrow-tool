@@ -3,6 +3,10 @@
  * Novos SDKs = novo case, zero edição nos callers.
  */
 
+import type { PermissionResolver } from '@wolfkrow/domain';
+
+import type { ToolRegistry } from '../tools/tool-registry';
+
 import { AnthropicProvider } from './anthropic';
 import { ClaudeAgentProvider } from './claude-agent';
 import { ClaudeCompatProvider } from './claude-compat';
@@ -13,12 +17,17 @@ import { OpenRouterProvider } from './openrouter';
 import type { AIProvider, AIProviderFactory } from './types';
 
 export class ProviderAIProviderFactory implements AIProviderFactory {
+  constructor(
+    private readonly toolRegistry?: ToolRegistry,
+    private readonly permissionResolver?: PermissionResolver,
+  ) {}
+
   create(provider: string, apiKey: string): AIProvider {
     switch (provider.toLowerCase()) {
       case 'anthropic':
         return new AnthropicProvider(apiKey);
       case 'claude-agent':
-        return new ClaudeAgentProvider(apiKey);
+        return new ClaudeAgentProvider(apiKey, this.toolRegistry, this.permissionResolver);
       case 'claude-compat':
         return new ClaudeCompatProvider(apiKey);
       case 'codex':

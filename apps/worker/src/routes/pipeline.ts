@@ -6,11 +6,11 @@
 import {
   ApprovePipelinePhaseUseCase,
   BuildSystemPromptUseCase,
-  CompletePhaseUseCase,
   CreatePipelineProjectUseCase,
   DeletePipelineProjectUseCase,
   GetPipelineProjectUseCase,
   ListPipelineProjectsUseCase,
+  RunPhaseUseCase,
   StartPhaseUseCase,
 } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -33,15 +33,9 @@ async function getApiKey(): Promise<string> {
   return key;
 }
 
-const PHASE_PROMPTS: Record<string, string> = {
-  discovery: 'You are a product discovery expert. Analyze the project and produce structured discovery notes: problem statement, target users, key requirements, constraints, and success metrics. Be concise and actionable.',
-  spec_build: 'You are a technical architect. Based on the discovery notes, build a detailed technical specification: architecture decisions, API contracts, data models, implementation strategy, and risk assessment.',
-  spec_validate: 'You are a senior QA engineer. Validate the technical specification for completeness, consistency, and feasibility. List any gaps, contradictions, or risks found. Provide a validation summary.',
-};
-
 interface CreateProjectBody { userId: string; name: string; description?: string; }
 interface StartPhaseBody { stage: string; }
-interface RunPhaseBody { userPrompt?: string; }
+interface RunPhaseBody { userPrompt?: string; model?: string; }
 interface ApproveBody { approved: boolean; notes?: string; }
 
 const _repos = makeRepos();
@@ -49,33 +43,35 @@ const _repos = makeRepos();
 type RunParams = { id: string; phaseId: string };
 async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: RunPhaseBody }>, reply: FastifyReply) {
   const { projectRepo, phaseRepo } = _repos;
-  const [project, phase] = await Promise.all([
-    projectRepo.findById(req.params.id),
-    phaseRepo.findById(req.params.phaseId),
-  ]);
-  if (!project || !phase) return reply.status(404).send({ error: 'Not found' });
-
-  // FIX-004: compose the phase prompt with the user's enabled global rules.
-  const basePrompt = PHASE_PROMPTS[phase.stage] ?? 'You are a helpful assistant.';
-  const systemPrompt = await new BuildSystemPromptUseCase(getRepos().globalRule).execute({
-    userId: project.userId,
-    agentSystemPrompt: basePrompt,
-  });
-  const userContent = req.body.userPrompt ?? `Project: ${project.name}\n${project.description ?? ''}\nDiscovery notes: ${project.discoveryNotes ?? 'N/A'}`;
+  const project = await projectRepo.findById(req.params.id);
+  if (!project) return reply.status(404).send({ error: 'Not found' });
 
   const apiKey = await getApiKey();
-  const result = await getAdapters().aiFactory.create('anthropic', apiKey).complete({
-    model: 'claude-sonnet-4-6',
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userContent }],
-    maxTokens: 4096,
-    temperature: 0.3,
+  const aiProvider = getAdapters().aiFactory.create('anthropic', apiKey);
+
+  // FIX-004: compose the phase prompt with the user's enabled global rules.
+  const phaseSystemPrompt = await new BuildSystemPromptUseCase(getRepos().globalRule).execute({
+    userId: project.userId,
+    agentSystemPrompt: 'You are a helpful assistant.',
   });
 
-  const { phase: completed, project: updated } = await new CompletePhaseUseCase(projectRepo, phaseRepo).execute({
-    phaseId: phase.id, projectId: project.id, tokens: result.usage.inputTokens + result.usage.outputTokens,
-  });
-  return { phase: completed.toProps(), project: updated.toProps(), output: result.content };
+  const wrappedProvider = {
+    query: aiProvider.query.bind(aiProvider),
+    complete: async (opts: Parameters<typeof aiProvider.complete>[0]) =>
+      aiProvider.complete({ ...opts, system: opts.system ? `${phaseSystemPrompt}\n\n${opts.system}` : phaseSystemPrompt }),
+  };
+
+  try {
+    const result = await new RunPhaseUseCase(projectRepo, phaseRepo, wrappedProvider).execute({
+      projectId: req.params.id,
+      phaseId: req.params.phaseId,
+      ...(req.body.userPrompt !== undefined ? { userPrompt: req.body.userPrompt } : {}),
+      ...(req.body.model !== undefined ? { model: req.body.model } : {}),
+    });
+    return { phase: result.phase.toProps(), project: result.project.toProps(), output: result.output };
+  } catch {
+    return reply.status(404).send({ error: 'Not found' });
+  }
 }
 
 async function approvePhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: ApproveBody }>, reply: FastifyReply) {

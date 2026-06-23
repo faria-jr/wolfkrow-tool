@@ -8,3 +8,5 @@ export { CronExpression } from './cron-expression';
 export { EmbeddingVector } from './embedding-vector';
 export { PasswordHash } from './password-hash';
 export { PlainPassword } from './plain-password';
+export { ToolCall } from './tool-call';
+export { ToolResult } from './tool-result';

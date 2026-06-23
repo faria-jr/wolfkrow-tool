@@ -14,6 +14,8 @@ export interface AIStreamChunk {
   inputTokens?: number;
   outputTokens?: number;
   done?: boolean;
+  toolCall?: { id: string; name: string; input: Record<string, unknown> };
+  toolResult?: { callId: string; output: string; isError: boolean };
 }
 
 export interface AICompletionOptions {

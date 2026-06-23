@@ -46,7 +46,12 @@ const nextConfig: NextConfig = {
     const csp = [
       "default-src 'self'",
       `connect-src 'self' ${workerOrigin} ${sidecarOrigin} wss://localhost:4000 ws://localhost:4000`,
-      "script-src 'self' 'unsafe-eval'", // unsafe-eval needed by Next.js in dev; tighten in prod via env
+      // 'unsafe-inline' required: Next.js App Router delivers RSC flight data via
+      // inline <script>self.__next_f.push(...)</script> tags. Without it (or a nonce)
+      // the RSC client can't read the payload -> "Connection closed" + blank page.
+      // 'unsafe-eval' needed by Next.js in dev. For external exposure, switch to
+      // per-request nonce-based CSP (generate in middleware, read in headers()).
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob:",
