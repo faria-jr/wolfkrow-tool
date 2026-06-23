@@ -25,9 +25,11 @@ describe('McpServersView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders Add server button', () => {
+  it('renders Add server button enabled', () => {
     render(<McpServersView />);
-    expect(screen.getByRole('button', { name: /add server/i })).toBeDisabled();
+    const btn = screen.getByRole('button', { name: /add server/i });
+    expect(btn).toBeDefined();
+    expect(btn).not.toBeDisabled();
   });
 
   it('loads servers and displays them', async () => {

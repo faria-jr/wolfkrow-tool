@@ -1,4 +1,4 @@
-import { TasksBoard } from '@/components/tasks/tasks-board';
+import { TasksPageTabs } from '@/components/tasks/tasks-page-tabs';
 
 export default function TasksPage() {
   return (
@@ -7,7 +7,7 @@ export default function TasksPage() {
         <h1 className="text-xl font-semibold">Tasks</h1>
         <p className="text-sm text-muted-foreground">Personal task management</p>
       </div>
-      <TasksBoard />
+      <TasksPageTabs />
     </div>
   );
 }
