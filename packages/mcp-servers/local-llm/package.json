@@ -1,0 +1,26 @@
+{
+  "name": "@wolfkrow/mcp-local-llm",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json --incremental false",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@wolfkrow/mcp-shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "^2.1.4",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

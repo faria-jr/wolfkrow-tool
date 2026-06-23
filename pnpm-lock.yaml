@@ -600,6 +600,44 @@ importers:
         specifier: ^2.1.4
         version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
 
+  packages/mcp-servers/elevenlabs:
+    dependencies:
+      '@wolfkrow/mcp-shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      '@vitest/coverage-v8':
+        specifier: ^2.1.4
+        version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0))
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
+
+  packages/mcp-servers/excalidraw:
+    dependencies:
+      '@wolfkrow/mcp-shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      '@vitest/coverage-v8':
+        specifier: ^2.1.4
+        version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0))
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
+
   packages/mcp-servers/google-calendar:
     dependencies:
       '@wolfkrow/mcp-shared':
@@ -619,7 +657,45 @@ importers:
         specifier: ^2.1.4
         version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
 
+  packages/mcp-servers/google-drive:
+    dependencies:
+      '@wolfkrow/mcp-shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      '@vitest/coverage-v8':
+        specifier: ^2.1.4
+        version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0))
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
+
   packages/mcp-servers/google-gmail:
+    dependencies:
+      '@wolfkrow/mcp-shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      '@vitest/coverage-v8':
+        specifier: ^2.1.4
+        version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0))
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
+
+  packages/mcp-servers/google-sheets:
     dependencies:
       '@wolfkrow/mcp-shared':
         specifier: workspace:*
@@ -664,7 +740,102 @@ importers:
         specifier: ^5.6.3
         version: 5.9.3
 
+  packages/mcp-servers/local-agents:
+    dependencies:
+      '@wolfkrow/mcp-shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      '@vitest/coverage-v8':
+        specifier: ^2.1.4
+        version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0))
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
+
+  packages/mcp-servers/local-llm:
+    dependencies:
+      '@wolfkrow/mcp-shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      '@vitest/coverage-v8':
+        specifier: ^2.1.4
+        version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0))
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
+
+  packages/mcp-servers/memory-search:
+    dependencies:
+      '@wolfkrow/mcp-shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      '@vitest/coverage-v8':
+        specifier: ^2.1.4
+        version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0))
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
+
+  packages/mcp-servers/nano-banana:
+    dependencies:
+      '@wolfkrow/mcp-shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      '@vitest/coverage-v8':
+        specifier: ^2.1.4
+        version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0))
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
+
   packages/mcp-servers/shared:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.13.2
+      '@vitest/coverage-v8':
+        specifier: ^2.1.4
+        version: 2.1.9(vitest@2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0))
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.4
+        version: 2.1.9(@types/node@24.13.2)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.13.2)(typescript@5.9.3))(terser@5.48.0)
+
+  packages/mcp-servers/shopify:
+    dependencies:
+      '@wolfkrow/mcp-shared':
+        specifier: workspace:*
+        version: link:../shared
     devDependencies:
       '@types/node':
         specifier: ^24.0.0
