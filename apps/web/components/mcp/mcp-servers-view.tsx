@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 
 import { AddMcpServerModal } from './add-mcp-server-modal';
+import { GoogleOAuthPanel } from './google-oauth-panel';
 import type { McpHealthSnapshot, McpServerData } from './mcp-server-list';
 import { McpServerList } from './mcp-server-list';
 
@@ -135,11 +136,14 @@ export function McpServersView() {
 
   const actions = useServerActions(reload, setServers);
 
+  const serverNames = servers.map((s) => s.name);
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
         <AddMcpServerModal onDone={() => void reload()} />
       </div>
+      <GoogleOAuthPanel configuredServers={serverNames} />
       <McpServerList
         servers={servers}
         onToggle={actions.toggle}
