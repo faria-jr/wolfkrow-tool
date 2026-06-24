@@ -7,6 +7,22 @@
 
 export type McpServerVisibility = 'always' | 'on-demand' | 'background';
 
+/**
+ * Source of an MCP server entry, as seen by the UI.
+ *
+ * - `built-in`: bundled binary in `packages/mcp-servers/`, seeded into the DB
+ *   at install (`isBuiltIn: true`).
+ * - `planned`: declared in `PLANNED_MCP_SERVERS` but no binary exists yet
+ *   (deferred integrations). Surfaced in the UI as "not yet available" but
+ *   never spawned (FIX-006 G5).
+ * - `custom`: user-added via the Add MCP Server modal (`isBuiltIn: false`).
+ *
+ * The first two are derived; the third is always `isBuiltIn: false`. The
+ * catalog lookup is done at the route layer (`built-in-mcps.ts` exports
+ * `BUILT_IN_MCP_SERVERS` and `PLANNED_MCP_SERVERS`).
+ */
+export type McpServerSource = 'built-in' | 'planned' | 'custom';
+
 export interface McpServerRecord {
   id: string;
   userId: string | null;
@@ -43,5 +59,6 @@ export interface McpServerRepo {
   findAll(userId?: string): McpServerRecord[];
   save(id: string, input: McpServerCreateInput): McpServerRecord;
   toggleActive(id: string, isActive: boolean): void;
+  setVisibility(id: string, visibility: McpServerVisibility): void;
   delete(id: string): void;
 }

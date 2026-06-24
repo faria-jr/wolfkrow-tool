@@ -67,4 +67,20 @@ describe('DrizzleMcpServerRepo (FIX-027)', () => {
     repo.delete('s1');
     expect(chain.run).toHaveBeenCalledTimes(2);
   });
+
+  it('setVisibility updates visibility without throwing', () => {
+    const { db, chain } = mockDb();
+    const repo = new DrizzleMcpServerRepo(db as never);
+    repo.setVisibility('s1', 'on-demand');
+    expect(chain.run).toHaveBeenCalledTimes(1);
+  });
+
+  it('setVisibility accepts all three visibility modes', () => {
+    const { db, chain } = mockDb();
+    const repo = new DrizzleMcpServerRepo(db as never);
+    repo.setVisibility('s1', 'always');
+    repo.setVisibility('s2', 'on-demand');
+    repo.setVisibility('s3', 'background');
+    expect(chain.run).toHaveBeenCalledTimes(3);
+  });
 });
