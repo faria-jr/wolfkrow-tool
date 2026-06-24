@@ -99,6 +99,21 @@ describe('ComputeUsageUseCase', () => {
     expect(summary.bySource['agent']?.costUSD).toBe(20);
   });
 
+  it('emits byDay as an array sorted by day with input/output/cost', () => {
+    const day1 = new Date('2024-01-02T10:00:00Z');
+    const day2 = new Date('2024-01-01T10:00:00Z');
+    repo.records.push(
+      record({ userId: 'u1', inputTokens: 100, outputTokens: 40, cost: 500, timestamp: day1 }),
+      record({ userId: 'u1', inputTokens: 50, outputTokens: 10, cost: 250, timestamp: day2 }),
+    );
+    const summary = new ComputeUsageUseCase(repo).execute({ userId: 'u1' });
+    expect(Array.isArray(summary.byDay)).toBe(true);
+    expect(summary.byDay).toEqual([
+      { day: '2024-01-01', inputTokens: 50, outputTokens: 10, costUSD: 2.5 },
+      { day: '2024-01-02', inputTokens: 100, outputTokens: 40, costUSD: 5 },
+    ]);
+  });
+
   it('ignores records from other users', () => {
     repo.records.push(record({ userId: 'u1', cost: 1000 }), record({ userId: 'u2', cost: 9999 }));
     const summary = new ComputeUsageUseCase(repo).execute({ userId: 'u1' });

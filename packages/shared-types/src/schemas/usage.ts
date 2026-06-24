@@ -53,20 +53,40 @@ export const UsageQuerySchema = z.object({
 
 export type UsageQuery = z.infer<typeof UsageQuerySchema>;
 
-export const UsageStatsSchema = z.object({
-  totalTokens: z.number().int().min(0),
-  totalCost: z.number().min(0),
-  totalRequests: z.number().int().min(0),
-  bySource: z.record(TokenUsageSourceSchema, z.number().min(0)),
-  byModel: z.record(z.string(), z.number().min(0)),
+/**
+ * Per-dimension token/cost breakdown entry.
+ *
+ * Aggregated across records sharing a model, source, or calendar day.
+ */
+const UsageBreakdownEntrySchema = z.object({
+  inputTokens: z.number().int().min(0),
+  outputTokens: z.number().int().min(0),
+  costUSD: z.number().min(0),
+});
+
+/**
+ * Canonical `/usage/summary` response contract.
+ *
+ * This is the SINGLE source of truth for the shape of `GET /usage/summary`.
+ * The use-case produces exactly this shape, the worker parses it at the
+ * boundary before `reply.send`, and the frontend imports the `UsageSummary`
+ * type to render the charts. Field names follow the underlying data model
+ * (`TokenUsageSchema` has separate `inputTokens`/`outputTokens`/`cost`).
+ */
+export const UsageSummarySchema = z.object({
+  totalInputTokens: z.number().int().min(0),
+  totalOutputTokens: z.number().int().min(0),
+  totalCostUSD: z.number().min(0),
+  byModel: z.record(z.string(), UsageBreakdownEntrySchema),
+  bySource: z.record(z.string(), UsageBreakdownEntrySchema),
   byDay: z.array(
     z.object({
-      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      tokens: z.number().int().min(0),
-      cost: z.number().min(0),
-      requests: z.number().int().min(0),
-    })
+      day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      inputTokens: z.number().int().min(0),
+      outputTokens: z.number().int().min(0),
+      costUSD: z.number().min(0),
+    }),
   ),
 });
 
-export type UsageStats = z.infer<typeof UsageStatsSchema>;
+export type UsageSummary = z.infer<typeof UsageSummarySchema>;

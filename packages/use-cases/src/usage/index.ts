@@ -1,7 +1,9 @@
 import { defaultPricingCalculator } from '@wolfkrow/domain';
 import type { TokenUsage, UsageRepo } from '@wolfkrow/domain';
+import type { UsageSummary } from '@wolfkrow/shared-types';
 
 export type { UsageRepo, UsageRecord } from '@wolfkrow/domain';
+export type { UsageSummary } from '@wolfkrow/shared-types';
 
 // --- Record Usage ---
 
@@ -45,57 +47,47 @@ export interface ComputeUsageInput {
   agentId?: string;
 }
 
-export interface UsageSummary {
-  totalInputTokens: number;
-  totalOutputTokens: number;
-  totalCostUSD: number;
-  byModel: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }>;
-  bySource: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }>;
-  byDay: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }>;
-}
-
 export class ComputeUsageUseCase {
   constructor(private readonly repo: UsageRepo) {}
 
   execute(input: ComputeUsageInput): UsageSummary {
     const records = this.repo.findMany(input);
 
-    const summary: UsageSummary = {
-      totalInputTokens: 0,
-      totalOutputTokens: 0,
-      totalCostUSD: 0,
-      byModel: {},
-      bySource: {},
-      byDay: {},
-    };
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    let totalCostUSD = 0;
+    const byModel: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }> = {};
+    const bySource: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }> = {};
+    const byDayMap: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }> = {};
 
     for (const r of records) {
-      summary.totalInputTokens += r.inputTokens;
-      summary.totalOutputTokens += r.outputTokens;
+      totalInputTokens += r.inputTokens;
+      totalOutputTokens += r.outputTokens;
       const costUSD = r.cost / 100;
-      summary.totalCostUSD += costUSD;
+      totalCostUSD += costUSD;
 
-      // byModel
-      const model = (summary.byModel[r.model] ??= { inputTokens: 0, outputTokens: 0, costUSD: 0 });
+      const model = (byModel[r.model] ??= { inputTokens: 0, outputTokens: 0, costUSD: 0 });
       model.inputTokens += r.inputTokens;
       model.outputTokens += r.outputTokens;
       model.costUSD += costUSD;
 
-      // bySource
-      const src = (summary.bySource[r.source] ??= { inputTokens: 0, outputTokens: 0, costUSD: 0 });
+      const src = (bySource[r.source] ??= { inputTokens: 0, outputTokens: 0, costUSD: 0 });
       src.inputTokens += r.inputTokens;
       src.outputTokens += r.outputTokens;
       src.costUSD += costUSD;
 
-      // byDay
       const day = r.timestamp.toISOString().slice(0, 10);
-      const d = (summary.byDay[day] ??= { inputTokens: 0, outputTokens: 0, costUSD: 0 });
+      const d = (byDayMap[day] ??= { inputTokens: 0, outputTokens: 0, costUSD: 0 });
       d.inputTokens += r.inputTokens;
       d.outputTokens += r.outputTokens;
       d.costUSD += costUSD;
     }
 
-    return summary;
+    const byDay = Object.entries(byDayMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, d]) => ({ day, ...d }));
+
+    return { totalInputTokens, totalOutputTokens, totalCostUSD, byModel, bySource, byDay };
   }
 }
 

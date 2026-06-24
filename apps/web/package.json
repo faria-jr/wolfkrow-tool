@@ -50,6 +50,7 @@
     "@wolfkrow/design-tokens": "workspace:*",
     "@wolfkrow/domain": "workspace:*",
     "@wolfkrow/infra": "workspace:*",
+    "@wolfkrow/shared-types": "workspace:*",
     "@wolfkrow/use-cases": "workspace:*",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",

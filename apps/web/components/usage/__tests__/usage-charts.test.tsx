@@ -17,7 +17,7 @@ const summary = {
   totalCostUSD: 0.5,
   byModel: {},
   bySource: { chat: { inputTokens: 100, outputTokens: 50, costUSD: 0.1 } },
-  byDay: { '2024-01-01': { inputTokens: 100, outputTokens: 50, costUSD: 0.1 } },
+  byDay: [{ day: '2024-01-01', inputTokens: 100, outputTokens: 50, costUSD: 0.1 }],
 };
 
 const summaryWithModels = {
@@ -58,6 +58,18 @@ describe('UsageCharts', () => {
     render(<UsageCharts />);
     await waitFor(() => expect(screen.getByText('Cost per Day')).toBeInTheDocument());
     expect(screen.getByText('Cost by Source')).toBeInTheDocument();
+  });
+
+  it('consumes byDay as an array: cost-per-day chart renders the seeded day', async () => {
+    render(<UsageCharts />);
+    // The day chart section header confirms the byDay array was consumed
+    // without throwing. Recharts axis ticks don't render text in jsdom, so
+    // we assert the section mounts; the contract itself (array vs Record)
+    // is enforced by UsageSummarySchema.parse() at the worker boundary.
+    await waitFor(() => expect(screen.getByText('Cost per Day')).toBeInTheDocument());
+    // Both the day chart and the source pie mount ResponsiveContainer; the
+    // canonical byDay array is consumed without throwing.
+    expect(screen.getAllByTestId('container').length).toBeGreaterThanOrEqual(1);
   });
 });
 

@@ -189,6 +189,9 @@ importers:
       '@wolfkrow/infra':
         specifier: workspace:*
         version: link:../../packages/infra
+      '@wolfkrow/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@wolfkrow/use-cases':
         specifier: workspace:*
         version: link:../../packages/use-cases
@@ -906,6 +909,9 @@ importers:
       '@wolfkrow/domain':
         specifier: workspace:*
         version: link:../domain
+      '@wolfkrow/shared-types':
+        specifier: workspace:*
+        version: link:../shared-types
       zod:
         specifier: ^3.23.8
         version: 3.25.76

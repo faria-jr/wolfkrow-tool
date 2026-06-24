@@ -1,6 +1,7 @@
 'use client';
 
 import { formatCost, formatTokens, hasKnownPricing } from '@wolfkrow/domain';
+import type { UsageSummary } from '@wolfkrow/shared-types';
 import { useEffect, useState } from 'react';
 import {
   BarChart,
@@ -15,15 +16,6 @@ import {
   Cell,
   Legend,
 } from 'recharts';
-
-interface UsageSummary {
-  totalInputTokens: number;
-  totalOutputTokens: number;
-  totalCostUSD: number;
-  byModel: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }>;
-  bySource: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }>;
-  byDay: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }>;
-}
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'];
 
@@ -110,10 +102,11 @@ export function UsageCharts() {
 
   if (!summary) return <div className="text-sm text-muted-foreground">Loading usage data…</div>;
 
-  const dayData = Object.entries(summary.byDay)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([date, d]) => ({
-      date: date.slice(5), // MM-DD
+  const dayData = summary.byDay
+    .slice()
+    .sort((a, b) => a.day.localeCompare(b.day))
+    .map((d) => ({
+      date: d.day.slice(5), // MM-DD
       cost: Number(d.costUSD.toFixed(4)),
       inputTokens: d.inputTokens,
       outputTokens: d.outputTokens,

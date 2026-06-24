@@ -4,6 +4,7 @@
 
 
 import { ComputeUsageUseCase, CheckBudgetUseCase } from '@wolfkrow/use-cases';
+import { UsageSummarySchema } from '@wolfkrow/shared-types';
 import { z } from 'zod';
 
 import { getRepos } from '../container';
@@ -43,7 +44,9 @@ export async function usageRoutes(server: AuthFastifyInstance) {
       ...(source ? { source } : {}),
       ...(agentId ? { agentId } : {}),
     });
-    return reply.send(summary);
+    // Parse at the boundary: guarantees the response matches the canonical
+    // UsageSummary contract shared with the frontend (ADR-0005 Zod boundaries).
+    return reply.send(UsageSummarySchema.parse(summary));
   });
 
   // GET /usage/budget?budgetUSD=&agentId=&periodDays=
