@@ -39,7 +39,7 @@ describe('makePlanner — repoSummary injection (RM7.3)', () => {
   });
 
   it('includes repoSummary in user message when provided', async () => {
-    const agents = getHarnessAgents({ plannerModel: 'claude-haiku-4-5-20251001', coderModel: 'x', maxRoundsPerFeature: 3 });
+    const agents = await getHarnessAgents({ plannerModel: 'claude-haiku-4-5-20251001', coderModel: 'x', maxRoundsPerFeature: 3 });
     await agents.planner.plan('# My Spec', { plannerModel: 'claude-haiku-4-5-20251001', repoSummary: '5 files | Languages: typescript' });
 
     expect(completeSpy).toHaveBeenCalledOnce();
@@ -49,7 +49,7 @@ describe('makePlanner — repoSummary injection (RM7.3)', () => {
   });
 
   it('does NOT include repo context section when repoSummary is absent', async () => {
-    const agents = getHarnessAgents({ plannerModel: 'claude-haiku-4-5-20251001', coderModel: 'x', maxRoundsPerFeature: 3 });
+    const agents = await getHarnessAgents({ plannerModel: 'claude-haiku-4-5-20251001', coderModel: 'x', maxRoundsPerFeature: 3 });
     await agents.planner.plan('# My Spec', { plannerModel: 'claude-haiku-4-5-20251001' });
 
     const call = completeSpy.mock.calls[0]![0] as { messages: Array<{ content: string }> };

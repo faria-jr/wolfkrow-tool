@@ -30,7 +30,7 @@ function makeRepos() {
   };
 }
 
-interface CreateProjectBody { userId: string; name: string; specPath: string; description?: string; maxRoundsPerFeature?: number; }
+interface CreateProjectBody { name: string; specPath: string; description?: string; maxRoundsPerFeature?: number; }
 interface PlanBody { specContent?: string; }
 type CoderBody = { featureIndex: number; roundNumber: number; previousFeedback?: string };
 
@@ -44,7 +44,9 @@ async function planHandler(req: FastifyRequest<{ Params: { id: string }; Body: P
   if (!specContent && project.specPath) {
     try { specContent = await readFile(project.specPath, 'utf8'); } catch { specContent = ''; }
   }
-  const { sprints } = await new PlanSprintsUseCase(projectRepo, sprintRepo, getHarnessAgents(project.config).planner).execute({ projectId: project.id, specContent });
+  const userId = req.user?.userId;
+  const { planner } = await getHarnessAgents(project.config, userId);
+  const { sprints } = await new PlanSprintsUseCase(projectRepo, sprintRepo, planner).execute({ projectId: project.id, specContent });
   return sprints.map((s) => s.toProps());
 }
 
@@ -52,7 +54,9 @@ async function runCoderHandler(req: FastifyRequest<{ Params: { id: string; sprin
   const { projectRepo, sprintRepo, roundRepo } = _hRepos;
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
-  const { round } = await new RunCoderRoundUseCase(sprintRepo, roundRepo, getHarnessAgents(project.config).coder).execute({
+  const userId = req.user?.userId;
+  const { coder } = await getHarnessAgents(project.config, userId);
+  const { round } = await new RunCoderRoundUseCase(sprintRepo, roundRepo, coder).execute({
     sprintId: req.params.sprintId,
     featureIndex: req.body.featureIndex,
     roundNumber: req.body.roundNumber,
@@ -76,8 +80,9 @@ async function runSseHandler(
   if (!sprint) return reply.status(404).send({ error: 'Sprint not found' });
 
   const workDir = getHarnessProjectWorkDir(project.id);
-  const coder = makeCoderWithTools(workDir, project.config);
-  const { evaluator } = getHarnessAgents(project.config);
+  const userId = req.user?.userId;
+  const coder = await makeCoderWithTools(workDir, project.config, userId);
+  const { evaluator } = await getHarnessAgents(project.config, userId);
   const { SmokeTestRunner } = await import('@wolfkrow/infra');
   const smokeRunner = new SmokeTestRunner();
 
@@ -111,20 +116,52 @@ async function runSseHandler(
   reply.raw.end();
 }
 
-export async function harnessRoutes(server: AuthFastifyInstance) {
+async function evaluateHandler(req: FastifyRequest<{ Params: { roundId: string } }>, reply: FastifyReply) {
   const { projectRepo, sprintRepo, roundRepo } = _hRepos;
+  try {
+    const round = await roundRepo.findById(req.params.roundId);
+    if (!round) return reply.status(404).send({ error: 'Round not found' });
+    const sprint = await sprintRepo.findById(round.sprintId);
+    const project = sprint ? await projectRepo.findById(sprint.projectId) : null;
+    const config = project?.config ?? { maxRoundsPerFeature: 5, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' };
+    const userId = req.user?.userId;
+    const { evaluator } = await getHarnessAgents(config, userId);
+    const result = await new EvaluateRoundUseCase(roundRepo, evaluator).execute({ roundId: req.params.roundId });
+    return { ...result.round.toProps(), passed: result.passed };
+  } catch {
+    return reply.status(404).send({ error: 'Round not found' });
+  }
+}
 
-  server.post<{ Body: CreateProjectBody }>('/projects', async (req) => {
-    const { project } = await new CreateHarnessProjectUseCase(projectRepo).execute(req.body);
+async function sprintsListHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+  const { projectRepo, sprintRepo } = _hRepos;
+  const project = await projectRepo.findById(req.params.id);
+  if (!project) return reply.status(404).send({ error: 'Project not found' });
+  return (await sprintRepo.findByProjectId(project.id)).map((s) => s.toProps());
+}
+
+async function roundsListHandler(req: FastifyRequest<{ Params: { sprintId: string } }>) {
+  const { roundRepo } = _hRepos;
+  return (await roundRepo.findBySprintId(req.params.sprintId)).map((r) => r.toProps());
+}
+
+export async function harnessRoutes(server: AuthFastifyInstance) {
+  const { projectRepo } = _hRepos;
+  const auth = { preHandler: [server.authenticate] };
+
+  server.post<{ Body: CreateProjectBody }>('/projects', auth, async (req) => {
+    const userId = req.user?.userId ?? 'anonymous';
+    const { project } = await new CreateHarnessProjectUseCase(projectRepo).execute({ ...req.body, userId });
     return project.toProps();
   });
 
-  server.get<{ Querystring: { userId: string } }>('/projects', async (req) => {
-    const { projects } = await new ListHarnessProjectsUseCase(projectRepo).execute({ userId: req.query.userId });
+  server.get('/projects', auth, async (req) => {
+    const userId = req.user?.userId ?? 'anonymous';
+    const { projects } = await new ListHarnessProjectsUseCase(projectRepo).execute({ userId });
     return projects.map((p) => p.toProps());
   });
 
-  server.get<{ Params: { id: string } }>('/projects/:id', async (req, reply) => {
+  server.get<{ Params: { id: string } }>('/projects/:id', auth, async (req, reply) => {
     try {
       const { project } = await new GetHarnessProjectUseCase(projectRepo).execute({ projectId: req.params.id });
       return project.toProps();
@@ -133,44 +170,27 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
     }
   });
 
-  server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/projects/:id', async (req, reply) => {
+  server.delete<{ Params: { id: string } }>('/projects/:id', auth, async (req, reply) => {
     try {
-      await new DeleteHarnessProjectUseCase(projectRepo).execute({ projectId: req.params.id, userId: req.query.userId });
+      const userId = req.user?.userId ?? 'anonymous';
+      await new DeleteHarnessProjectUseCase(projectRepo).execute({ projectId: req.params.id, userId });
       return reply.status(204).send();
     } catch {
       return reply.status(404).send({ error: 'Project not found' });
     }
   });
 
-  server.post<{ Params: { id: string }; Body: PlanBody }>('/projects/:id/plan', planHandler);
+  server.post<{ Params: { id: string }; Body: PlanBody }>('/projects/:id/plan', auth, planHandler);
 
   server.post<{ Params: { id: string; sprintId: string }; Body: CoderBody }>(
-    '/projects/:id/sprints/:sprintId/run-coder', runCoderHandler,
+    '/projects/:id/sprints/:sprintId/run-coder', auth, runCoderHandler,
   );
 
-  server.post<{ Params: { roundId: string } }>('/rounds/:roundId/evaluate', async (req, reply) => {
-    try {
-      const round = await roundRepo.findById(req.params.roundId);
-      if (!round) return reply.status(404).send({ error: 'Round not found' });
-      const sprint = await sprintRepo.findById(round.sprintId);
-      const project = sprint ? await projectRepo.findById(sprint.projectId) : null;
-      const config = project?.config ?? { maxRoundsPerFeature: 5, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' };
-      const result = await new EvaluateRoundUseCase(roundRepo, getHarnessAgents(config).evaluator).execute({ roundId: req.params.roundId });
-      return { ...result.round.toProps(), passed: result.passed };
-    } catch {
-      return reply.status(404).send({ error: 'Round not found' });
-    }
-  });
+  server.post<{ Params: { roundId: string } }>('/rounds/:roundId/evaluate', auth, evaluateHandler);
 
-  server.get<{ Params: { id: string } }>('/projects/:id/sprints', async (req, reply) => {
-    const project = await projectRepo.findById(req.params.id);
-    if (!project) return reply.status(404).send({ error: 'Project not found' });
-    return (await sprintRepo.findByProjectId(project.id)).map((s) => s.toProps());
-  });
+  server.get<{ Params: { id: string } }>('/projects/:id/sprints', auth, sprintsListHandler);
 
-  server.get<{ Params: { sprintId: string } }>('/sprints/:sprintId/rounds', async (req) => {
-    return (await roundRepo.findBySprintId(req.params.sprintId)).map((r) => r.toProps());
-  });
+  server.get<{ Params: { sprintId: string } }>('/sprints/:sprintId/rounds', auth, roundsListHandler);
 
-  server.post<{ Params: { id: string }; Body: RunBody }>('/projects/:id/run', runSseHandler);
+  server.post<{ Params: { id: string }; Body: RunBody }>('/projects/:id/run', auth, runSseHandler);
 }

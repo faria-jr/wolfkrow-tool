@@ -57,38 +57,32 @@ function adapterOptions(
 
 /** Write the AI stream as SSE events (ack/done/text/tool_call/tool_result/artifact). */
 async function writeStreamAsSse(
- stream: AsyncIterable<AIStreamChunk>,
- sse: (data: unknown) => void,
+  stream: AsyncIterable<AIStreamChunk>,
+  sse: (data: unknown) => void,
 ): Promise<void> {
- const { ArtifactDetector } = await import('@wolfkrow/infra');
- const detector = new ArtifactDetector();
- const toolInputs = new Map<string, { name: string; input: Record<string, unknown> }>();
- for await (const chunk of stream) {
- if (chunk.done) {
- sse({ type: 'done', usage: { inputTokens: chunk.inputTokens, outputTokens: chunk.outputTokens } });
- } else if (chunk.toolCall) {
- const { id, name, input } = chunk.toolCall;
- toolInputs.set(id, { name, input });
- sse({ type: 'tool_call', id, name, input });
- } else if (chunk.toolResult) {
- const { callId, output, isError } = chunk.toolResult;
- sse({ type: 'tool_result', callId, output, isError });
- if (!isError) {
- const toolInfo = toolInputs.get(callId);
- if (toolInfo) {
- const artifact = detector.detect(toolInfo.name, toolInfo.input, output, isError, callId);
- if (artifact) {
- sse({ type: 'artifact', artifact: artifact.toJSON() });
- }
- }
- }
- } else if (chunk.toolPermission) {
- const { callId, name, input, prompt } = chunk.toolPermission;
- sse({ type: 'tool_permission', id: callId, name, input, prompt });
- } else if (chunk.delta) {
- sse({ type: 'text', content: chunk.delta });
- }
- }
+  const { createArtifactPipeline } = await import('../chat/artifact-pipeline');
+  const pipeline = createArtifactPipeline();
+  for await (const chunk of stream) {
+    if (chunk.done) {
+      sse({ type: 'done', usage: { inputTokens: chunk.inputTokens, outputTokens: chunk.outputTokens } });
+    } else if (chunk.toolCall) {
+      const { id, name, input } = chunk.toolCall;
+      pipeline.registerToolCall(id, name, input);
+      sse({ type: 'tool_call', id, name, input });
+    } else if (chunk.toolResult) {
+      const { callId, output, isError } = chunk.toolResult;
+      sse({ type: 'tool_result', callId, output, isError });
+      const artifact = pipeline.detectArtifact(callId, output, isError);
+      if (artifact) {
+        sse({ type: 'artifact', artifact: artifact.toJSON() });
+      }
+    } else if (chunk.toolPermission) {
+      const { callId, name, input, prompt } = chunk.toolPermission;
+      sse({ type: 'tool_permission', id: callId, name, input, prompt });
+    } else if (chunk.delta) {
+      sse({ type: 'text', content: chunk.delta });
+    }
+  }
 }
 
 function makeAIAdapter(
@@ -154,17 +148,18 @@ async function handleSendRequest(
 
  //  when the agent declares allowed tools, resolve the agentic provider
  // based on the agent's configured provider (non-Anthropic uses ClaudeCompatProvider).
- if (agentId) {
- const agent = await getRepos().agent.findById(agentId);
- if (agent && agent.allowedTools.length > 0) {
- ai = await resolveAgentStreamPort(
- agent.provider,
- agent.allowedTools,
- getChatWorkDir(userId),
- (callId) => requestToolPermission(callId),
- );
- }
- }
+  if (agentId) {
+    const agent = await getRepos().agent.findById(agentId);
+    if (agent && agent.allowedTools.length > 0) {
+      ai = await resolveAgentStreamPort({
+        agentProvider: agent.provider,
+        allowedTools: agent.allowedTools,
+        workDir: getChatWorkDir(userId),
+        requestPermission: (callId) => requestToolPermission(callId),
+        userId,
+      });
+    }
+  }
 
  const { chatSession: sessionRepo, message: messageRepo, tokenUsage: usageRepo } = getRepos();
  const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, { usageRepo });

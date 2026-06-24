@@ -2,6 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { MgraphEngine } from '@wolfkrow/infra';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { AuthFastifyInstance } from '../types/fastify';
 
@@ -22,6 +23,8 @@ interface UpdateBody {
 
 interface SearchQuery { q?: string; kind?: string; limit?: string; }
 
+interface NoteParams { path: string; }
+
 type VaultKind = 'entity' | 'meeting' | 'decision' | 'project' | 'reference';
 
 function defaultVaultRoot(): string {
@@ -37,10 +40,10 @@ async function makeEngine(): Promise<MgraphEngine> {
 }
 
 async function createHandler(
-  request: { body: CreateBody | null },
-  reply: { status: (n: number) => { send: (b: unknown) => unknown } },
+  request: FastifyRequest<{ Body: CreateBody }>,
+  reply: FastifyReply,
 ) {
-  const { path, kind, title, tags, body, source } = request.body ?? {};
+  const { path, kind, title, tags, body, source } = request.body;
   if (!path || !kind || !title || !body) {
     return reply.status(400).send({ error: 'path, kind, title, body required' });
   }
@@ -48,8 +51,8 @@ async function createHandler(
   try {
     const note = await engine.createNote({
       path, kind, title, body,
-      ...(tags ? { tags } : {}),
-      ...(source ? { source } : {}),
+      ...(tags !== undefined ? { tags } : {}),
+      ...(source !== undefined ? { source } : {}),
     });
     return reply.send(note.toJSON());
   } catch (err) {
@@ -58,8 +61,8 @@ async function createHandler(
 }
 
 async function readHandler(
-  request: { params: { path: string } },
-  reply: { status: (n: number) => { send: (b: unknown) => unknown } },
+  request: FastifyRequest<{ Params: NoteParams }>,
+  reply: FastifyReply,
 ) {
   const engine = await makeEngine();
   const note = await engine.readNote(decodeURIComponent(request.params.path));
@@ -68,10 +71,10 @@ async function readHandler(
 }
 
 async function updateHandler(
-  request: { params: { path: string }; body: UpdateBody | null },
-  reply: { status: (n: number) => { send: (b: unknown) => unknown } },
+  request: FastifyRequest<{ Params: NoteParams; Body: UpdateBody }>,
+  reply: FastifyReply,
 ) {
-  const { body, title, tags } = request.body ?? {};
+  const { body, title, tags } = request.body;
   if (!body) return reply.status(400).send({ error: 'body required' });
   const engine = await makeEngine();
   try {
@@ -82,37 +85,46 @@ async function updateHandler(
   }
 }
 
-async function deleteHandler(request: { params: { path: string } }): Promise<{ ok: true }> {
+async function deleteHandler(
+  request: FastifyRequest<{ Params: NoteParams }>,
+  reply: FastifyReply,
+) {
   const engine = await makeEngine();
   await engine.deleteNote(decodeURIComponent(request.params.path));
-  return { ok: true };
+  return reply.send({ ok: true });
 }
 
-async function graphHandler() {
+async function graphHandler(_request: FastifyRequest, reply: FastifyReply) {
   const engine = await makeEngine();
-  return engine.buildGraphData();
+  const data = await engine.buildGraphData();
+  return reply.send(data);
 }
 
-async function searchHandler(request: { query: SearchQuery }) {
+async function searchHandler(
+  request: FastifyRequest<{ Querystring: SearchQuery }>,
+  reply: FastifyReply,
+) {
   const q = request.query.q ?? '';
   const limit = request.query.limit ? parseInt(request.query.limit, 10) : 20;
   const kind = request.query.kind as VaultKind | undefined;
   const engine = await makeEngine();
-  return engine.searchVault({ query: q, limit, ...(kind ? { kind } : {}) });
+  const results = await engine.searchVault({ query: q, limit, ...(kind !== undefined ? { kind } : {}) });
+  return reply.send(results);
 }
 
-async function statsHandler() {
+async function statsHandler(_request: FastifyRequest, reply: FastifyReply) {
   const engine = await makeEngine();
-  return engine.getStats();
+  const stats = await engine.getStats();
+  return reply.send(stats);
 }
 
 export async function mgraphRoutes(server: AuthFastifyInstance) {
   const auth = { preHandler: [server.authenticate] };
 
-  server.post<{ Body: CreateBody }>('/mgraph/notes', auth, createHandler as never);
-  server.get<{ Params: { path: string } }>('/mgraph/notes/:path', auth, readHandler as never);
-  server.patch<{ Params: { path: string }; Body: UpdateBody }>('/mgraph/notes/:path', auth, updateHandler as never);
-  server.delete<{ Params: { path: string } }>('/mgraph/notes/:path', auth, deleteHandler as never);
+  server.post<{ Body: CreateBody }>('/mgraph/notes', auth, createHandler);
+  server.get<{ Params: { path: string } }>('/mgraph/notes/:path', auth, readHandler);
+  server.patch<{ Params: { path: string }; Body: UpdateBody }>('/mgraph/notes/:path', auth, updateHandler);
+  server.delete<{ Params: { path: string } }>('/mgraph/notes/:path', auth, deleteHandler);
   server.get('/mgraph/graph', auth, graphHandler);
   server.get<{ Querystring: SearchQuery }>('/mgraph/search', auth, searchHandler);
   server.get('/mgraph/stats', auth, statsHandler);

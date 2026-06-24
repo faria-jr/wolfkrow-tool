@@ -47,15 +47,16 @@ async function runImplementationViaHarness(
 ): Promise<unknown> {
  const { projectRepo, phaseRepo } = _repos;
  const r = getRepos();
- try {
- const result = await new ImplementViaHarnessUseCase({
- pipelineProjectRepo: projectRepo,
- pipelinePhaseRepo: phaseRepo,
- harnessProjectRepo: r.harnessProject,
- harnessSprintRepo: r.harnessSprint,
- planner: getHarnessAgents({ maxRoundsPerFeature: 5, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' }).planner,
- artifactWriter: getArtifactWriter(),
- }).execute({
+  try {
+    const { planner } = await getHarnessAgents({ maxRoundsPerFeature: 5, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' });
+    const result = await new ImplementViaHarnessUseCase({
+      pipelineProjectRepo: projectRepo,
+      pipelinePhaseRepo: phaseRepo,
+      harnessProjectRepo: r.harnessProject,
+      harnessSprintRepo: r.harnessSprint,
+      planner,
+      artifactWriter: getArtifactWriter(),
+    }).execute({
  projectId: req.params.id,
  phaseId: req.params.phaseId,
  ...(req.body.userPrompt !== undefined ? { inlineSpec: req.body.userPrompt } : {}),
