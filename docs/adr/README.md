@@ -34,6 +34,7 @@ We use ADRs to document significant architectural decisions. See [README.md](./R
 - [ADR-0029](./0029-node-24-runtime.md) — Node 24 as official runtime
 - [ADR-0030](./0030-claude-compat-providers.md) — Claude-compat providers (Z.ai, Moonshot, Qwen, MiniMax)
 - [ADR-0031](./0031-defer-higgsfield-blotato.md) — Defer Higgsfield + Blotato MCPs to v2
+- [ADR-0032](./0032-remove-knowledge-benchmark.md) — Remove knowledge benchmark from v1.0
 
 ## Process
 

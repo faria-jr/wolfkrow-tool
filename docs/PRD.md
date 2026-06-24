@@ -315,11 +315,25 @@ Wolfkrow Tool é o único assistente que combina:
 
 ### 2.2 Funcionalidades Pós-MVP (Roadmap v1.1+)
 
+#### Iniciadas em v1.0 — conclusão em v1.1
+
+- **Harness execução AI automática**: fundação (domain/infra/UI) entregue; loop Planner→Coder→Evaluator sem intervenção humana em v1.1
+- **Memory page — search UI**: Summaries tab + Compact Now entregues em v1.0; busca semântica em v1.1
+- **Audit log — filtros avançados**: tabela + CSV/JSON export entregues em v1.0; filtros por data/tipo/agente em v1.1
+- **Spec build/validate/enrich seed agents**: depende de harness automático; v1.1
+- **Pipeline report**: core pipeline ✅; relatório final de execução em v1.1
+- **Excalidraw inline no chat**: MCP Excalidraw ✅; embed inline no chat em v1.1
+- **Artifact detection nos tool results**: backend pronto; detecção + render automático em v1.1
+- **Pricing calculator multi-fonte**: estimativa por modelo no Usage page ✅; comparador multi-fonte em v1.1
+- **Knowledge benchmark**: removido de v1.0 (ver ADR-0032); retrieval eval como dev-tool em v1.1
+
+#### Novas funcionalidades v1.1+
+
 - **Multi-workspace**: separar `.wolfkrow/profiles/` por contexto
 - **Cloud sync opcional**: sync entre devices (opt-in)
 - **Plugin marketplace**: registry de MCPs e skills
 - **Screen awareness**: Electron desktopCapturer + Claude vision
-- **Hotkey global**: Cmd+Shift+Space para abrir chat
+- **Hotkey global config**: personalizar Cmd+Shift+Space
 - **Browser extension**: send URL to chat
 - **Mobile companion**: Tauri/Expo app
 - **Inbox Zero para Telegram**: auto-triage
