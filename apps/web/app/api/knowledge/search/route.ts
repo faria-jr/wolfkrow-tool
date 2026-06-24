@@ -2,25 +2,21 @@
  * POST /api/knowledge/search — hybrid semantic + keyword search
  */
 
+import { SearchQuerySchema } from '@wolfkrow/shared-types';
 import { SearchKnowledgeUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
 import { getAdapters, getRepos } from '@/lib/container';
-
-interface SearchBody {
-  query: string;
-  limit?: number;
-  documentIds?: string[];
-}
+import { validateBody } from '@/lib/validation';
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = (await request.json().catch(() => null)) as SearchBody | null;
-  if (!body?.query) return Response.json({ error: 'query required' }, { status: 400 });
+  const body = validateBody(SearchQuerySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   const uc = new SearchKnowledgeUseCase(
     getRepos().knowledgeChunk,

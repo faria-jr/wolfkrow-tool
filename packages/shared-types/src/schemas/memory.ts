@@ -90,3 +90,46 @@ export const CompactSessionInputSchema = z.object({
 });
 
 export type CompactSessionInput = z.infer<typeof CompactSessionInputSchema>;
+
+/**
+ * Create-memory request body (web POST /api/memory).
+ *
+ * Mirrors the handler defaults: `source` defaults to `'user'` and `importance`
+ * uses the handler's 0-100 scale (the use-case scales as needed).
+ */
+export const CreateMemoryRequestBodySchema = z.object({
+  content: NonEmptyStringSchema,
+  source: z.enum(['conversation', 'compaction', 'user', 'agent']).default('user'),
+  importance: z.number().min(0).max(100).default(50),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type CreateMemoryRequestBody = z.infer<typeof CreateMemoryRequestBodySchema>;
+
+/**
+ * Memory search request body (web POST /api/memory/search).
+ */
+export const MemorySearchRequestBodySchema = z.object({
+  query: NonEmptyStringSchema,
+  limit: z.number().int().positive().max(100).optional(),
+});
+
+export type MemorySearchRequestBody = z.infer<typeof MemorySearchRequestBodySchema>;
+
+/**
+ * Daily summary create request body (web POST /api/memory/summaries).
+ *
+ * Both fields optional: `date` defaults to today (handler), `content` defaults
+ * to a generated string (handler).
+ */
+export const CreateDailySummaryRequestBodySchema = z.object({
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  content: z.string().max(10_000).optional(),
+});
+
+export type CreateDailySummaryRequestBody = z.infer<
+  typeof CreateDailySummaryRequestBodySchema
+>;

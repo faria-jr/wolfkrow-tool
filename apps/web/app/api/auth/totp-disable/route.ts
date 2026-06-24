@@ -3,17 +3,14 @@
  */
 
 import { LockoutPolicy, PlainPassword, UnauthorizedError } from '@wolfkrow/domain';
+import { DisableTotpRequestBodySchema } from '@wolfkrow/shared-types';
 import { DisableTotpUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
 import { getSession } from '@/lib/auth';
 import { getAdapters, getRepos } from '@/lib/container';
-
-interface Body {
-  password: string;
-  code: string | undefined;
-}
+import { validateBody } from '@/lib/validation';
 
 const audit = getRepos().authAudit;
 
@@ -24,8 +21,8 @@ function getClientInfo(request: NextRequest): { ip: string | undefined; ua: stri
 }
 
 async function parsePasswordFromBody(request: NextRequest): Promise<{ password: PlainPassword; code: string | undefined } | Response> {
-  const body = (await request.json().catch(() => null)) as Body | null;
-  if (!body?.password) return Response.json({ error: 'Password is required' }, { status: 400 });
+  const body = validateBody(DisableTotpRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
   try {
     return { password: PlainPassword.create(body.password), code: body.code };
   } catch {

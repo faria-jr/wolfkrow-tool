@@ -3,16 +3,14 @@
  */
 
 import { LockoutPolicy, PlainPassword, UnauthorizedError } from '@wolfkrow/domain';
+import { UnlockRequestBodySchema } from '@wolfkrow/shared-types';
 import { UnlockSessionUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
 import { createToken, loadOrCreateKeyPair } from '@/lib/auth';
 import { getAdapters, getRepos } from '@/lib/container';
-
-interface UnlockBody {
-  password: string;
-}
+import { validateBody } from '@/lib/validation';
 
 const audit = getRepos().authAudit;
 
@@ -32,11 +30,8 @@ async function setSessionCookie(userId: string): Promise<void> {
 export async function POST(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? undefined;
   const ua = request.headers.get('user-agent') ?? undefined;
-  const body = (await request.json().catch(() => null)) as UnlockBody | null;
-
-  if (!body?.password) {
-    return Response.json({ error: 'Password is required' }, { status: 400 });
-  }
+  const body = validateBody(UnlockRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   let password: PlainPassword;
   try {

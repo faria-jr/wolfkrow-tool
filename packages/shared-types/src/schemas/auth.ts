@@ -132,3 +132,74 @@ export const LoginResponseSchema = z.discriminatedUnion('status', [
 ]);
 
 export type LoginResponse = z.infer<typeof LoginResponseSchema>;
+
+/**
+ * Setup request body (web onboarding wizard).
+ *
+ * Validates request shape only. Password *strength* is intentionally NOT
+ * enforced here — that remains the responsibility of `PlainPassword.create`
+ * in the handler, exactly as before this schema was introduced.
+ *
+ * Differs from {@link SetupPasswordInputSchema}: `confirmPassword` is optional
+ * (only validated when present) and the wizard also accepts `displayName` /
+ * `email`, which the use-case consumes but the password contract does not.
+ */
+export const SetupRequestBodySchema = z
+  .object({
+    password: z.string().min(1).max(128),
+    confirmPassword: z.string().optional(),
+    displayName: z.string().max(100).optional(),
+    email: EmailSchema.optional(),
+  })
+  .refine(
+    (data) =>
+      data.confirmPassword === undefined || data.confirmPassword === data.password,
+    { message: 'Passwords do not match', path: ['confirmPassword'] },
+  );
+
+export type SetupRequestBody = z.infer<typeof SetupRequestBodySchema>;
+
+/**
+ * Verify-TOTP request body (web 2nd-factor step).
+ *
+ * Carries `userId` (from the `requires_totp` login response) plus the 6-digit
+ * `code`.
+ */
+export const VerifyTotpRequestBodySchema = z.object({
+  userId: UuidSchema,
+  code: z.string().regex(/^\d{6}$/, 'TOTP code must be 6 digits'),
+});
+
+export type VerifyTotpRequestBody = z.infer<typeof VerifyTotpRequestBodySchema>;
+
+/**
+ * Enable-TOTP request body (web). Carries the generated `secret` + `code`.
+ *
+ * Note: {@link EnableTotpInputSchema} uses `password` (re-auth); the web enable
+ * flow instead verifies a code against a freshly generated secret.
+ */
+export const EnableTotpRequestBodySchema = z.object({
+  secret: z.string().min(1).max(256),
+  code: z.string().regex(/^\d{6}$/, 'TOTP code must be 6 digits'),
+});
+
+export type EnableTotpRequestBody = z.infer<typeof EnableTotpRequestBodySchema>;
+
+/**
+ * Disable-TOTP request body (web). Requires `password` (re-auth); `code` optional.
+ */
+export const DisableTotpRequestBodySchema = z.object({
+  password: z.string().min(1).max(128),
+  code: z.string().regex(/^\d{6}$/).optional(),
+});
+
+export type DisableTotpRequestBody = z.infer<typeof DisableTotpRequestBodySchema>;
+
+/**
+ * Unlock-session request body (web lock screen). Same shape as login.
+ */
+export const UnlockRequestBodySchema = z.object({
+  password: z.string().min(1).max(128),
+});
+
+export type UnlockRequestBody = z.infer<typeof UnlockRequestBodySchema>;

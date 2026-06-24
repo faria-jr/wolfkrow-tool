@@ -1,9 +1,11 @@
 import type { Skill } from '@wolfkrow/domain';
+import { UpdateSkillRequestBodySchema } from '@wolfkrow/shared-types';
 import { UpdateSkillUseCase, DeleteSkillUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 interface Params { params: Promise<{ id: string }>; }
 
@@ -13,8 +15,8 @@ export async function PUT(request: Request, { params }: Params) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!body) return Response.json({ error: 'Invalid body' }, { status: 400 });
+  const body = validateBody(UpdateSkillRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   const repo = getRepos().skill;
   const existing = await repo.findById(id);
@@ -23,9 +25,9 @@ export async function PUT(request: Request, { params }: Params) {
   }
 
   const patch: Record<string, unknown> = {};
-  if (body.name !== undefined) patch.name = String(body.name);
-  if (body.description !== undefined) patch.description = String(body.description);
-  if (body.content !== undefined) patch.content = String(body.content);
+  if (body.name !== undefined) patch.name = body.name;
+  if (body.description !== undefined) patch.description = body.description;
+  if (body.content !== undefined) patch.content = body.content;
   if (body.tags !== undefined) patch.tags = body.tags;
 
   const { skill } = await new UpdateSkillUseCase(repo).execute({ id, ...patch });

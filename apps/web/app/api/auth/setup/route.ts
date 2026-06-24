@@ -8,25 +8,15 @@ import {
   PlainPassword,
   type ValidationError as ValidationErrorType,
 } from '@wolfkrow/domain';
+import { SetupRequestBodySchema } from '@wolfkrow/shared-types';
 import { RegisterUseCase } from '@wolfkrow/use-cases';
 
 import { getAdapters, getRepos } from '@/lib/container';
-
-interface SetupBody {
-  password: string;
-  confirmPassword?: string;
-  displayName?: string;
-  email?: string;
-}
+import { validateBody } from '@/lib/validation';
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as SetupBody | null;
-  if (!body?.password) {
-    return Response.json({ error: 'Password is required' }, { status: 400 });
-  }
-  if (body.confirmPassword !== undefined && body.confirmPassword !== body.password) {
-    return Response.json({ error: 'Passwords do not match' }, { status: 400 });
-  }
+  const body = validateBody(SetupRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   let password: PlainPassword;
   try {

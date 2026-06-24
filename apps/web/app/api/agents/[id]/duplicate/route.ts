@@ -3,11 +3,13 @@
  */
 
 import { NotFoundError } from '@wolfkrow/domain';
+import { DuplicateAgentRequestBodySchema } from '@wolfkrow/shared-types';
 import { DuplicateAgentUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 interface Ctx { params: Promise<{ id: string }>; }
 
@@ -17,9 +19,9 @@ export async function POST(request: Request, ctx: Ctx) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await ctx.params;
-  const body = (await request.json().catch(() => null)) as { newName?: string } | null;
-  const newName = body?.newName?.trim();
-  if (!newName) return Response.json({ error: 'newName is required' }, { status: 400 });
+  const body = validateBody(DuplicateAgentRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
+  const newName = body.newName.trim();
 
   try {
     const { agent } = await new DuplicateAgentUseCase(getRepos().agent).execute({ id, userId: session.userId, newName });

@@ -1,9 +1,11 @@
 import type { McpServerVisibility } from '@wolfkrow/domain';
+import { UpdateMcpServerRequestBodySchema } from '@wolfkrow/shared-types';
 import { cookies } from 'next/headers';
 
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 interface Params { params: Promise<{ id: string }>; }
 
@@ -19,8 +21,8 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!body) return Response.json({ error: 'Invalid body' }, { status: 400 });
+  const body = validateBody(UpdateMcpServerRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   const repo = getRepos().mcpServer;
   const existing = repo.findById(id);
@@ -28,10 +30,10 @@ export async function PATCH(request: Request, { params }: Params) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
-  if (typeof body.isActive === 'boolean') {
+  if (body.isActive !== undefined) {
     repo.toggleActive(id, body.isActive);
   }
-  if ('visibility' in body) {
+  if (body.visibility !== undefined) {
     if (!isValidVisibility(body.visibility)) {
       return Response.json(
         { error: `visibility must be one of ${VALID_VISIBILITY.join(', ')}` },

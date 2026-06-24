@@ -94,3 +94,48 @@ export const AgentSyncResultSchema = z.object({
 });
 
 export type AgentSyncResult = z.infer<typeof AgentSyncResultSchema>;
+
+/**
+ * Create-agent request body (web POST /api/agents).
+ *
+ * Like {@link CreateAgentInputSchema} but with the request-level defaults the
+ * web handler has always applied (`model`, `effort`, `runtime`).
+ */
+export const CreateAgentRequestBodySchema = z.object({
+  name: ShortStringSchema,
+  description: z.string().max(1000).optional(),
+  model: NonEmptyStringSchema.default('claude-sonnet-4-6'),
+  effort: EffortSchema.default('medium'),
+  thinking: z.boolean().default(false),
+  thinkingBudget: z.number().int().positive().optional(),
+  maxTurns: z.number().int().positive().default(80),
+  allowedTools: z.array(z.string()).default([]),
+  mcpServers: z.array(z.string()).default([]),
+  isActive: z.boolean().default(true),
+  skills: z.array(z.string()).default([]),
+  runtime: RuntimeSchema.default('cloud'),
+  provider: z.string().max(64).optional(),
+  squad: SquadSchema.optional(),
+  systemPrompt: z.string().max(100_000).optional(),
+});
+
+export type CreateAgentRequestBody = z.infer<typeof CreateAgentRequestBodySchema>;
+
+/**
+ * Duplicate-agent request body.
+ */
+export const DuplicateAgentRequestBodySchema = z.object({
+  newName: ShortStringSchema,
+});
+
+export type DuplicateAgentRequestBody = z.infer<typeof DuplicateAgentRequestBodySchema>;
+
+/**
+ * Agent sync request body (web POST /api/agents/sync).
+ */
+export const AgentSyncRequestBodySchema = z.object({
+  targetRuntime: z.enum(['cloud', 'local', 'codex', 'external']),
+  targetModel: z.string().max(128).optional(),
+});
+
+export type AgentSyncRequestBody = z.infer<typeof AgentSyncRequestBodySchema>;

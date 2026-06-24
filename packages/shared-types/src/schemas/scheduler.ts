@@ -82,3 +82,55 @@ export const TaskRunSchema = z.object({
 });
 
 export type TaskRun = z.infer<typeof TaskRunSchema>;
+
+/**
+ * Task-run review request body (web POST /api/scheduler/runs/[id]/review).
+ */
+export const ReviewTaskRunRequestBodySchema = z.object({
+  verdict: z.enum(['validated', 'rejected']),
+  note: z.string().max(5000).optional(),
+});
+
+export type ReviewTaskRunRequestBody = z.infer<typeof ReviewTaskRunRequestBodySchema>;
+
+/**
+ * Create scheduled-task request body (web POST /api/scheduler/tasks).
+ *
+ * Subset of {@link CreateScheduledTaskInputSchema}: the web handler only
+ * accepts `name`, `cronExpression`, `prompt` (required) plus optional
+ * `description`, `agentId`, `tags`. Optional fields are omitted from the
+ * use-case call when absent (hence `.optional()` without defaults).
+ */
+export const CreateScheduledTaskRequestBodySchema = z.object({
+  name: ShortStringSchema,
+  description: z.string().max(1000).optional(),
+  cronExpression: NonEmptyStringSchema,
+  prompt: NonEmptyStringSchema,
+  agentId: UuidSchema.optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+export type CreateScheduledTaskRequestBody = z.infer<
+  typeof CreateScheduledTaskRequestBodySchema
+>;
+
+/**
+ * Update scheduled-task request body (web PATCH /api/scheduler/tasks/[id]).
+ *
+ * Hand-written partial aligned with the use-case `UpdateScheduledTaskInput`
+ * (the handler only forwards these fields). Keeps the inferred output type
+ * clean under `exactOptionalPropertyTypes`.
+ */
+export const UpdateScheduledTaskRequestBodySchema = z.object({
+  name: ShortStringSchema.optional(),
+  description: z.string().max(1000).optional(),
+  cronExpression: NonEmptyStringSchema.optional(),
+  prompt: NonEmptyStringSchema.optional(),
+  agentId: UuidSchema.optional(),
+  enabled: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+export type UpdateScheduledTaskRequestBody = z.infer<
+  typeof UpdateScheduledTaskRequestBodySchema
+>;

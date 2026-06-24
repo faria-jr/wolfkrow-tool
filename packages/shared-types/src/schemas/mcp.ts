@@ -83,3 +83,39 @@ export const MCPRuntimeStatusSchema = z.object({
 });
 
 export type MCPRuntimeStatus = z.infer<typeof MCPRuntimeStatusSchema>;
+
+/**
+ * Create MCP server request body (web POST /api/mcp-servers).
+ *
+ * Mirrors the handler: `name` and `command` required; `visibility` is NOT
+ * accepted (the handler hardcodes `'always'`).
+ */
+export const CreateMcpServerRequestBodySchema = z.object({
+  name: ShortStringSchema,
+  description: z.string().max(1000).optional(),
+  command: NonEmptyStringSchema,
+  args: z.array(z.string()).default([]),
+  env: z.record(z.string(), z.string()).default({}),
+  isActive: z.boolean().default(false),
+  healthCheck: z.string().optional(),
+});
+
+export type CreateMcpServerRequestBody = z.infer<typeof CreateMcpServerRequestBodySchema>;
+
+/**
+ * Update MCP server request body (web PATCH /api/mcp-servers/[id]).
+ *
+ * Only `isActive` and `visibility` are accepted by the handler. `visibility` is
+ * kept as a plain string here so the handler can return its existing 422 status
+ * with the allowed-values message (rather than a generic 400).
+ */
+export const UpdateMcpServerRequestBodySchema = z
+  .object({
+    isActive: z.boolean().optional(),
+    visibility: z.string().optional(),
+  })
+  .refine((data) => data.isActive !== undefined || data.visibility !== undefined, {
+    message: 'Provide at least one of isActive or visibility',
+  });
+
+export type UpdateMcpServerRequestBody = z.infer<typeof UpdateMcpServerRequestBodySchema>;

@@ -1,8 +1,10 @@
+import { CreateDailySummaryRequestBodySchema } from '@wolfkrow/shared-types';
 import { GenerateDailySummaryUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -19,7 +21,8 @@ export async function POST(req: Request) {
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = (await req.json()) as { date?: string; content?: string };
+  const body = validateBody(CreateDailySummaryRequestBodySchema, await req.json().catch(() => null));
+  if (body instanceof Response) return body;
   const date = body.date ?? new Date().toISOString().slice(0, 10);
 
   const repo = getRepos().dailySummary;

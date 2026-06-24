@@ -1,9 +1,10 @@
-import type { MemorySource } from '@wolfkrow/domain';
+import { CreateMemoryRequestBodySchema } from '@wolfkrow/shared-types';
 import { AddMemoryUseCase, ListMemoriesUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
 import { getAdapters, getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -20,13 +21,8 @@ export async function POST(req: Request) {
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = (await req.json()) as {
-    content?: string;
-    source?: MemorySource;
-    importance?: number;
-    metadata?: Record<string, unknown>;
-  };
-  if (!body.content) return Response.json({ error: 'content required' }, { status: 400 });
+  const body = validateBody(CreateMemoryRequestBodySchema, await req.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   const repo = getRepos().semanticMemory;
   const embedder = getAdapters().embedder;

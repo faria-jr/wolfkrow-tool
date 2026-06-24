@@ -1,8 +1,10 @@
+import { CreateScheduledTaskRequestBodySchema } from '@wolfkrow/shared-types';
 import { CreateScheduledTaskUseCase, ListScheduledTasksUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -19,18 +21,8 @@ export async function POST(req: Request) {
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = (await req.json()) as {
-    name?: string;
-    description?: string;
-    cronExpression?: string;
-    prompt?: string;
-    agentId?: string;
-    tags?: string[];
-  };
-
-  if (!body.name || !body.cronExpression || !body.prompt) {
-    return Response.json({ error: 'name, cronExpression, and prompt are required' }, { status: 400 });
-  }
+  const body = validateBody(CreateScheduledTaskRequestBodySchema, await req.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   const repo = getRepos().scheduledTask;
   const uc = new CreateScheduledTaskUseCase(repo);

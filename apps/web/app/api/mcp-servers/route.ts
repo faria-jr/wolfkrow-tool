@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
+import { CreateMcpServerRequestBodySchema } from '@wolfkrow/shared-types';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -20,22 +22,21 @@ export async function POST(request: Request) {
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!body) return Response.json({ error: 'Invalid body' }, { status: 400 });
-  if (!body.name || !body.command) return Response.json({ error: 'name and command required' }, { status: 422 });
+  const body = validateBody(CreateMcpServerRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   const repo = getRepos().mcpServer;
   const server = repo.save(randomUUID(), {
     userId: session.userId,
-    name: String(body.name),
-    ...(body.description !== undefined ? { description: String(body.description) } : {}),
-    command: String(body.command),
-    args: Array.isArray(body.args) ? (body.args as string[]) : [],
-    env: (body.env as Record<string, string>) ?? {},
-    isActive: Boolean(body.isActive),
+    name: body.name,
+    ...(body.description !== undefined ? { description: body.description } : {}),
+    command: body.command,
+    args: body.args ?? [],
+    env: body.env ?? {},
+    isActive: body.isActive ?? false,
     isBuiltIn: false,
     visibility: 'always',
-    ...(body.healthCheck !== undefined ? { healthCheck: String(body.healthCheck) } : {}),
+    ...(body.healthCheck !== undefined ? { healthCheck: body.healthCheck } : {}),
   });
   return Response.json({ server }, { status: 201 });
 }

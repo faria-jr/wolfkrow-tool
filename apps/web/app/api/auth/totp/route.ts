@@ -4,17 +4,14 @@
  */
 
 import { NotFoundError, UnauthorizedError } from '@wolfkrow/domain';
+import { VerifyTotpRequestBodySchema } from '@wolfkrow/shared-types';
 import { VerifyTotpUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
 import { createToken, loadOrCreateKeyPair } from '@/lib/auth';
 import { getAdapters, getRepos } from '@/lib/container';
-
-interface TotpBody {
-  userId: string;
-  code: string;
-}
+import { validateBody } from '@/lib/validation';
 
 const audit = getRepos().authAudit;
 
@@ -38,11 +35,8 @@ function getIp(request: NextRequest): string {
 export async function POST(request: NextRequest) {
   const ip = getIp(request);
   const ua = request.headers.get('user-agent') ?? undefined;
-  const body = (await request.json().catch(() => null)) as TotpBody | null;
-
-  if (!body?.userId || !body?.code) {
-    return Response.json({ error: 'userId and code are required' }, { status: 400 });
-  }
+  const body = validateBody(VerifyTotpRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   try {
     const out = await new VerifyTotpUseCase(getRepos().user, getAdapters().totp).execute({

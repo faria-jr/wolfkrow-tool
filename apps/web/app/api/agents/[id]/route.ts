@@ -4,6 +4,7 @@
  */
 
 import { NotFoundError } from '@wolfkrow/domain';
+import { UpdateAgentInputSchema } from '@wolfkrow/shared-types';
 import { DeleteAgentUseCase, UpdateAgentUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
@@ -11,6 +12,7 @@ import { parsePatchInput } from '../parse';
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 interface Ctx { params: Promise<{ id: string }>; }
 
@@ -20,8 +22,8 @@ export async function PUT(request: Request, ctx: Ctx) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await ctx.params;
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!body) return Response.json({ error: 'Invalid body' }, { status: 400 });
+  const body = validateBody(UpdateAgentInputSchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   try {
     const { agent } = await new UpdateAgentUseCase(getRepos().agent).execute({ id, userId: session.userId, patch: parsePatchInput(body) });

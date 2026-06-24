@@ -1,9 +1,11 @@
 import type { Skill } from '@wolfkrow/domain';
+import { CreateSkillRequestBodySchema } from '@wolfkrow/shared-types';
 import { CreateSkillUseCase, ListSkillsUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -19,15 +21,15 @@ export async function POST(request: Request) {
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!body) return Response.json({ error: 'Invalid body' }, { status: 400 });
+  const body = validateBody(CreateSkillRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   const { skill } = await new CreateSkillUseCase(getRepos().skill).execute({
     userId: session.userId,
-    name: String(body.name ?? ''),
-    description: String(body.description ?? ''),
-    content: String(body.content ?? ''),
-    tags: Array.isArray(body.tags) ? (body.tags as string[]) : [],
+    name: body.name ?? '',
+    description: body.description ?? '',
+    content: body.content ?? '',
+    tags: body.tags ?? [],
     isBuiltIn: false,
   });
   return Response.json({ skill: skill.toProps() }, { status: 201 });

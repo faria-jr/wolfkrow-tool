@@ -4,6 +4,7 @@
  */
 
 import type { Agent } from '@wolfkrow/domain';
+import { CreateAgentRequestBodySchema } from '@wolfkrow/shared-types';
 import { CreateAgentUseCase, ListAgentsUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
@@ -11,6 +12,7 @@ import { parseCreateInput } from './parse';
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
+import { validateBody } from '@/lib/validation';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -26,8 +28,8 @@ export async function POST(request: Request) {
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!body) return Response.json({ error: 'Invalid body' }, { status: 400 });
+  const body = validateBody(CreateAgentRequestBodySchema, await request.json().catch(() => null));
+  if (body instanceof Response) return body;
 
   const { agent } = await new CreateAgentUseCase(getRepos().agent).execute(parseCreateInput(session.userId, body));
   return Response.json({ agent: agent.toProps() }, { status: 201 });
