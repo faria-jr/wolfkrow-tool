@@ -22,6 +22,13 @@
       "when": 1782251629817,
       "tag": "0002_secret_komodo",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1782261629817,
+      "tag": "0003_pipeline_spec_edits",
+      "breakpoints": true
     }
   ]
 }

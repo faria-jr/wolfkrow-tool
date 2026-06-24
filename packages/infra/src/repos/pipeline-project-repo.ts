@@ -19,6 +19,7 @@ function toRow(p: ReturnType<PipelineProject['toProps']>): PipelineProjectRow {
     currentStage: p.currentStage, status: p.status,
     discoveryNotes: p.discoveryNotes ?? null, specPath: p.specPath ?? null,
     prdPath: p.prdPath ?? null, approvalNotes: p.approvalNotes ?? null,
+    specEdits: p.specEdits ?? null,
     metrics: asJsonField(p.metrics),
     createdAt: p.createdAt, updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
   };
@@ -36,6 +37,7 @@ function toEntity(row: DbRow): PipelineProject {
     specPath: row.specPath ?? undefined,
     prdPath: row.prdPath ?? undefined,
     approvalNotes: row.approvalNotes ?? undefined,
+    specEdits: row.specEdits ?? undefined,
     metrics: fromJson<PipelineMetrics>(row.metrics, EMPTY_METRICS),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

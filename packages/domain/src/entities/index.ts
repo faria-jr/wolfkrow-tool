@@ -30,6 +30,8 @@ export { WorkflowRun } from './workflow-run';
 export type { WorkflowRunProps, WorkflowRunCreateInput, WorkflowRunStatus, WorkflowMetrics } from './workflow-run';
 export { PipelineProject } from './pipeline-project';
 export type { PipelineProjectProps, PipelineProjectCreateInput, PipelineStage, PipelineStatus, PipelineMetrics } from './pipeline-project';
+export { phaseKindFor } from './phase-kind';
+export type { PhaseKind } from './phase-kind';
 export { PipelinePhase } from './pipeline-phase';
 export type { PipelinePhaseProps, PipelinePhaseCreateInput, PhaseStatus, PhaseMetrics } from './pipeline-phase';
 export { PipelineMessage } from './pipeline-message';

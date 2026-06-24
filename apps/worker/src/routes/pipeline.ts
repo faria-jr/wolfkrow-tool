@@ -32,7 +32,7 @@ function makeRepos() {
 interface CreateProjectBody { userId: string; name: string; description?: string; }
 interface StartPhaseBody { stage: string; }
 interface RunPhaseBody { userPrompt?: string; model?: string; }
-interface ApproveBody { approved: boolean; notes?: string; }
+interface ApproveBody { approved: boolean; notes?: string; specEdits?: string; }
 
 const _repos = makeRepos();
 
@@ -80,6 +80,7 @@ async function approvePhaseHandler(req: FastifyRequest<{ Params: RunParams; Body
       projectId: req.params.id, phaseId: req.params.phaseId,
       approved: req.body.approved,
       ...(req.body.notes !== undefined ? { notes: req.body.notes } : {}),
+      ...(req.body.specEdits !== undefined ? { specEdits: req.body.specEdits } : {}),
     });
     return { project: project.toProps(), phase: phase.toProps() };
   } catch {

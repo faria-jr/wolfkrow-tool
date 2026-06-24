@@ -21,6 +21,7 @@ export interface PipelineProjectProps {
   specPath: string | undefined;
   prdPath: string | undefined;
   approvalNotes: string | undefined;
+  specEdits: string | undefined;
   metrics: PipelineMetrics;
   createdAt: Date;
   updatedAt: Date;
@@ -42,6 +43,7 @@ export class PipelineProject {
   readonly specPath: string | undefined;
   readonly prdPath: string | undefined;
   readonly approvalNotes: string | undefined;
+  readonly specEdits: string | undefined;
   readonly metrics: PipelineMetrics;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -58,6 +60,7 @@ export class PipelineProject {
     this.specPath = props.specPath;
     this.prdPath = props.prdPath;
     this.approvalNotes = props.approvalNotes;
+    this.specEdits = props.specEdits;
     this.metrics = props.metrics;
     this.createdAt = props.createdAt;
     this.updatedAt = props.updatedAt;
@@ -77,6 +80,7 @@ export class PipelineProject {
       specPath: undefined,
       prdPath: undefined,
       approvalNotes: undefined,
+      specEdits: undefined,
       metrics: { ...DEFAULT_METRICS },
       createdAt: now,
       updatedAt: now,
@@ -93,11 +97,12 @@ export class PipelineProject {
       id: this.id, userId: this.userId, name: this.name, description: this.description,
       currentStage: this.currentStage, status: this.status, discoveryNotes: this.discoveryNotes,
       specPath: this.specPath, prdPath: this.prdPath, approvalNotes: this.approvalNotes,
+      specEdits: this.specEdits,
       metrics: this.metrics, createdAt: this.createdAt, updatedAt: this.updatedAt, completedAt: this.completedAt,
     };
   }
 
-  withStage(stage: PipelineStage, extraProps?: Partial<Pick<PipelineProjectProps, 'discoveryNotes' | 'specPath' | 'prdPath' | 'approvalNotes' | 'status' | 'completedAt'>>): PipelineProject {
+  withStage(stage: PipelineStage, extraProps?: Partial<Pick<PipelineProjectProps, 'discoveryNotes' | 'specPath' | 'prdPath' | 'approvalNotes' | 'specEdits' | 'status' | 'completedAt'>>): PipelineProject {
     return PipelineProject.fromProps({
       ...this.toProps(), currentStage: stage, updatedAt: new Date(),
       ...(extraProps ?? {}),
