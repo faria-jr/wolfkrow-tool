@@ -21,7 +21,7 @@ import type { FeatureRunResult } from '../harness/runner';
 import { runHarnessFeature } from '../harness/runner';
 import type { AuthFastifyInstance } from '../types/fastify';
 
-function makeRepos() {
+function harnessRepos() {
   const r = getRepos();
   return {
     projectRepo: r.harnessProject,
@@ -34,10 +34,8 @@ interface CreateProjectBody { name: string; specPath: string; description?: stri
 interface PlanBody { specContent?: string; }
 type CoderBody = { featureIndex: number; roundNumber: number; previousFeedback?: string };
 
-const _hRepos = makeRepos();
-
 async function planHandler(req: FastifyRequest<{ Params: { id: string }; Body: PlanBody }>, reply: FastifyReply) {
-  const { projectRepo, sprintRepo } = _hRepos;
+  const { projectRepo, sprintRepo } = harnessRepos();
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
   let specContent = req.body.specContent ?? '';
@@ -51,7 +49,7 @@ async function planHandler(req: FastifyRequest<{ Params: { id: string }; Body: P
 }
 
 async function runCoderHandler(req: FastifyRequest<{ Params: { id: string; sprintId: string }; Body: CoderBody }>, reply: FastifyReply) {
-  const { projectRepo, sprintRepo, roundRepo } = _hRepos;
+  const { projectRepo, sprintRepo, roundRepo } = harnessRepos();
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
   const userId = req.user?.userId;
@@ -72,7 +70,7 @@ async function runSseHandler(
   req: FastifyRequest<{ Params: { id: string }; Body: RunBody }>,
   reply: FastifyReply,
 ) {
-  const { projectRepo, sprintRepo, roundRepo } = _hRepos;
+  const { projectRepo, sprintRepo, roundRepo } = harnessRepos();
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
 
@@ -117,7 +115,7 @@ async function runSseHandler(
 }
 
 async function evaluateHandler(req: FastifyRequest<{ Params: { roundId: string } }>, reply: FastifyReply) {
-  const { projectRepo, sprintRepo, roundRepo } = _hRepos;
+  const { projectRepo, sprintRepo, roundRepo } = harnessRepos();
   try {
     const round = await roundRepo.findById(req.params.roundId);
     if (!round) return reply.status(404).send({ error: 'Round not found' });
@@ -134,36 +132,36 @@ async function evaluateHandler(req: FastifyRequest<{ Params: { roundId: string }
 }
 
 async function sprintsListHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
-  const { projectRepo, sprintRepo } = _hRepos;
+  const { projectRepo, sprintRepo } = harnessRepos();
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
   return (await sprintRepo.findByProjectId(project.id)).map((s) => s.toProps());
 }
 
 async function roundsListHandler(req: FastifyRequest<{ Params: { sprintId: string } }>) {
-  const { roundRepo } = _hRepos;
+  const { roundRepo } = harnessRepos();
   return (await roundRepo.findBySprintId(req.params.sprintId)).map((r) => r.toProps());
 }
 
 export async function harnessRoutes(server: AuthFastifyInstance) {
-  const { projectRepo } = _hRepos;
   const auth = { preHandler: [server.authenticate] };
+  const projectRepo = () => harnessRepos().projectRepo;
 
   server.post<{ Body: CreateProjectBody }>('/projects', auth, async (req) => {
     const userId = req.user?.userId ?? 'anonymous';
-    const { project } = await new CreateHarnessProjectUseCase(projectRepo).execute({ ...req.body, userId });
+    const { project } = await new CreateHarnessProjectUseCase(projectRepo()).execute({ ...req.body, userId });
     return project.toProps();
   });
 
   server.get('/projects', auth, async (req) => {
     const userId = req.user?.userId ?? 'anonymous';
-    const { projects } = await new ListHarnessProjectsUseCase(projectRepo).execute({ userId });
+    const { projects } = await new ListHarnessProjectsUseCase(projectRepo()).execute({ userId });
     return projects.map((p) => p.toProps());
   });
 
   server.get<{ Params: { id: string } }>('/projects/:id', auth, async (req, reply) => {
     try {
-      const { project } = await new GetHarnessProjectUseCase(projectRepo).execute({ projectId: req.params.id });
+      const { project } = await new GetHarnessProjectUseCase(projectRepo()).execute({ projectId: req.params.id });
       return project.toProps();
     } catch {
       return reply.status(404).send({ error: 'Project not found' });
@@ -173,7 +171,7 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
   server.delete<{ Params: { id: string } }>('/projects/:id', auth, async (req, reply) => {
     try {
       const userId = req.user?.userId ?? 'anonymous';
-      await new DeleteHarnessProjectUseCase(projectRepo).execute({ projectId: req.params.id, userId });
+      await new DeleteHarnessProjectUseCase(projectRepo()).execute({ projectId: req.params.id, userId });
       return reply.status(204).send();
     } catch {
       return reply.status(404).send({ error: 'Project not found' });
