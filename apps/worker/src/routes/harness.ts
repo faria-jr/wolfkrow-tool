@@ -20,6 +20,7 @@ import { getHarnessAgents, getHarnessProjectWorkDir, makeCoderWithTools, getRepo
 import type { FeatureRunResult } from '../harness/runner';
 import { runHarnessFeature } from '../harness/runner';
 import type { AuthFastifyInstance } from '../types/fastify';
+import { validate, z } from '../validation';
 
 function harnessRepos() {
   const r = getRepos();
@@ -30,15 +31,26 @@ function harnessRepos() {
   };
 }
 
-interface CreateProjectBody { name: string; specPath: string; description?: string; maxRoundsPerFeature?: number; }
-interface PlanBody { specContent?: string; }
-type CoderBody = { featureIndex: number; roundNumber: number; previousFeedback?: string };
+const createProjectBody = z.object({
+  name: z.string().min(1).max(256),
+  specPath: z.string().min(1).max(4096),
+  description: z.string().max(8192).optional(),
+  maxRoundsPerFeature: z.number().int().min(1).max(50).optional(),
+});
+const planBody = z.object({ specContent: z.string().max(500_000).optional() });
+const coderBody = z.object({
+  featureIndex: z.number().int().min(0),
+  roundNumber: z.number().int().min(1),
+  previousFeedback: z.string().max(65_536).optional(),
+});
+const runBody = z.object({ sprintId: z.string().min(1).max(128) });
 
-async function planHandler(req: FastifyRequest<{ Params: { id: string }; Body: PlanBody }>, reply: FastifyReply) {
+async function planHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
   const { projectRepo, sprintRepo } = harnessRepos();
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
-  let specContent = req.body.specContent ?? '';
+  const body = validate(planBody, req.body ?? {});
+  let specContent = body.specContent ?? '';
   if (!specContent && project.specPath) {
     try { specContent = await readFile(project.specPath, 'utf8'); } catch { specContent = ''; }
   }
@@ -48,33 +60,33 @@ async function planHandler(req: FastifyRequest<{ Params: { id: string }; Body: P
   return sprints.map((s) => s.toProps());
 }
 
-async function runCoderHandler(req: FastifyRequest<{ Params: { id: string; sprintId: string }; Body: CoderBody }>, reply: FastifyReply) {
+async function runCoderHandler(req: FastifyRequest<{ Params: { id: string; sprintId: string } }>, reply: FastifyReply) {
   const { projectRepo, sprintRepo, roundRepo } = harnessRepos();
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
+  const body = validate(coderBody, req.body);
   const userId = req.user?.userId;
   const { coder } = await getHarnessAgents(project.config, userId);
   const { round } = await new RunCoderRoundUseCase(sprintRepo, roundRepo, coder).execute({
     sprintId: req.params.sprintId,
-    featureIndex: req.body.featureIndex,
-    roundNumber: req.body.roundNumber,
+    featureIndex: body.featureIndex,
+    roundNumber: body.roundNumber,
     coderModel: project.config.coderModel,
-    ...(req.body.previousFeedback !== undefined ? { previousFeedback: req.body.previousFeedback } : {}),
+    ...(body.previousFeedback !== undefined ? { previousFeedback: body.previousFeedback } : {}),
   });
   return round.toProps();
 }
 
-interface RunBody { sprintId: string; }
-
 async function runSseHandler(
-  req: FastifyRequest<{ Params: { id: string }; Body: RunBody }>,
+  req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
+  const body = validate(runBody, req.body);
   const { projectRepo, sprintRepo, roundRepo } = harnessRepos();
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
 
-  const sprint = await sprintRepo.findById(req.body.sprintId);
+  const sprint = await sprintRepo.findById(body.sprintId);
   if (!sprint) return reply.status(404).send({ error: 'Sprint not found' });
 
   const workDir = getHarnessProjectWorkDir(project.id);
@@ -147,9 +159,16 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
   const auth = { preHandler: [server.authenticate] };
   const projectRepo = () => harnessRepos().projectRepo;
 
-  server.post<{ Body: CreateProjectBody }>('/projects', auth, async (req) => {
+  server.post('/projects', auth, async (req) => {
     const userId = req.user?.userId ?? 'anonymous';
-    const { project } = await new CreateHarnessProjectUseCase(projectRepo()).execute({ ...req.body, userId });
+    const body = validate(createProjectBody, req.body);
+    const { project } = await new CreateHarnessProjectUseCase(projectRepo()).execute({
+      userId,
+      name: body.name,
+      specPath: body.specPath,
+      ...(body.description !== undefined ? { description: body.description } : {}),
+      ...(body.maxRoundsPerFeature !== undefined ? { maxRoundsPerFeature: body.maxRoundsPerFeature } : {}),
+    });
     return project.toProps();
   });
 
@@ -178,9 +197,9 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
     }
   });
 
-  server.post<{ Params: { id: string }; Body: PlanBody }>('/projects/:id/plan', auth, planHandler);
+  server.post<{ Params: { id: string } }>('/projects/:id/plan', auth, planHandler);
 
-  server.post<{ Params: { id: string; sprintId: string }; Body: CoderBody }>(
+  server.post<{ Params: { id: string; sprintId: string } }>(
     '/projects/:id/sprints/:sprintId/run-coder', auth, runCoderHandler,
   );
 
@@ -190,5 +209,5 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
 
   server.get<{ Params: { sprintId: string } }>('/sprints/:sprintId/rounds', auth, roundsListHandler);
 
-  server.post<{ Params: { id: string }; Body: RunBody }>('/projects/:id/run', auth, runSseHandler);
+  server.post<{ Params: { id: string } }>('/projects/:id/run', auth, runSseHandler);
 }

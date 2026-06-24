@@ -15,6 +15,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getAdapters, getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
+import { validate, z } from '../validation';
 
 function makeRepos() {
   const r = getRepos();
@@ -28,28 +29,32 @@ function makeEmbedder() {
   return getAdapters().embedder;
 }
 
-interface AddMemoryBody {
-  content: string;
-  source: 'conversation' | 'compaction' | 'user' | 'agent';
-  importance?: number;
-  metadata?: Record<string, unknown>;
-}
+const addMemoryBody = z.object({
+  content: z.string().min(1).max(100_000),
+  source: z.enum(['conversation', 'compaction', 'user', 'agent']).default('user'),
+  importance: z.number().int().min(0).max(100).default(50),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
 
-interface SearchBody {
-  query: string;
-  limit?: number;
-}
+const searchMemoryBody = z.object({
+  query: z.string().min(1).max(10_000),
+  limit: z.number().int().min(1).max(200).optional(),
+});
 
-async function handleAddMemory(req: FastifyRequest<{ Body: AddMemoryBody }>, reply: FastifyReply) {
+const createSummaryBody = z.object({
+  date: z.string().max(32).optional(),
+  content: z.string().max(100_000).optional(),
+});
+
+async function handleAddMemory(req: FastifyRequest, reply: FastifyReply) {
   const userId = (req as unknown as { user: { userId: string } }).user.userId;
-  const body = req.body;
-  if (!body?.content) return reply.code(400).send({ error: 'content required' });
+  const body = validate(addMemoryBody, req.body);
   const { memoryRepo } = makeRepos();
   const result = await new AddMemoryUseCase(memoryRepo, makeEmbedder()).execute({
     userId,
     content: body.content,
-    source: body.source ?? 'user',
-    importance: body.importance ?? 50,
+    source: body.source,
+    importance: body.importance,
     ...(body.metadata !== undefined ? { metadata: body.metadata } : {}),
   });
   return reply.code(201).send({ memory: result.memory.toProps() });
@@ -62,10 +67,9 @@ async function handleListMemories(req: FastifyRequest, reply: FastifyReply) {
   return reply.send({ memories: result.memories.map((m: SemanticMemory) => m.toProps()) });
 }
 
-async function handleSearchMemories(req: FastifyRequest<{ Body: SearchBody }>, reply: FastifyReply) {
+async function handleSearchMemories(req: FastifyRequest, reply: FastifyReply) {
   const userId = (req as unknown as { user: { userId: string } }).user.userId;
-  const body = req.body;
-  if (!body?.query) return reply.code(400).send({ error: 'query required' });
+  const body = validate(searchMemoryBody, req.body);
   const { memoryRepo } = makeRepos();
   const result = await new SearchMemoryUseCase(memoryRepo, makeEmbedder()).execute({
     userId,
@@ -93,12 +97,9 @@ async function handleGetSummaries(req: FastifyRequest, reply: FastifyReply) {
   return reply.send({ summaries: summaries.map((s) => s.toProps()) });
 }
 
-async function handleCreateSummary(
-  req: FastifyRequest<{ Body: { date?: string; content?: string } }>,
-  reply: FastifyReply,
-) {
+async function handleCreateSummary(req: FastifyRequest, reply: FastifyReply) {
   const userId = (req as unknown as { user: { userId: string } }).user.userId;
-  const body = req.body ?? {};
+  const body = validate(createSummaryBody, req.body ?? {});
   const date = body.date ?? new Date().toISOString().slice(0, 10);
   const { summaryRepo } = makeRepos();
   const result = await new GenerateDailySummaryUseCase(summaryRepo).execute({
@@ -115,10 +116,10 @@ async function handleCreateSummary(
 
 export async function memoryRoutes(app: AuthFastifyInstance) {
   const auth = { onRequest: [app.authenticate] };
-  app.post<{ Body: AddMemoryBody }>('/memory', auth, handleAddMemory);
+  app.post('/memory', auth, handleAddMemory);
   app.get('/memory', auth, handleListMemories);
-  app.post<{ Body: SearchBody }>('/memory/search', auth, handleSearchMemories);
+  app.post('/memory/search', auth, handleSearchMemories);
   app.delete<{ Params: { id: string } }>('/memory/:id', auth, handleDeleteMemory);
   app.get('/memory/summaries', auth, handleGetSummaries);
-  app.post<{ Body: { date?: string; content?: string } }>('/memory/summaries', auth, handleCreateSummary);
+  app.post('/memory/summaries', auth, handleCreateSummary);
 }

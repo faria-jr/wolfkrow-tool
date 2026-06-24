@@ -11,6 +11,7 @@ import { getRepos } from '../container';
 import { loadBuiltInMcpCatalog } from '../mcp/catalog';
 import { createMcpManager } from '../mcp/manager';
 import type { McpManager, McpServerConfig, McpServerState } from '../mcp/manager';
+import { validate, z } from '../validation';
 
 // Singleton used by the worker boot (startMcpsAsync) and as the default for the
 // route plugin when no manager is injected (e.g. in tests).
@@ -23,15 +24,11 @@ export interface McpRouteOptions {
  manager?: McpManager;
 }
 
-interface McpBody {
- name: string;
- enabled?: boolean;
-}
-
-interface ToolCallBody {
- tool: string;
- arguments?: Record<string, unknown>;
-}
+/** tools/call request body. */
+const toolCallBody = z.object({
+ tool: z.string().min(1).max(128),
+ arguments: z.record(z.string(), z.unknown()).optional(),
+});
 
 interface HealthBody {
  name: string;
@@ -131,7 +128,7 @@ function registerLifecycleActionRoutes(
  manager: McpManager,
  auth: { preHandler: Array<(request: FastifyRequest, reply: FastifyReply) => Promise<void>> },
 ): void {
- server.post<{ Body: McpBody }>('/servers/:name/start', auth, async (request, reply) => {
+ server.post('/servers/:name/start', auth, async (request, reply) => {
  const { name } = paramsOf(request);
  const entry = catalogEntry(name);
  if (!entry) return reply.status(404).send({ error: `MCP server ${name} not found` });
@@ -139,13 +136,13 @@ function registerLifecycleActionRoutes(
  return reply.status(202).send({ name, status: state.status });
  });
 
- server.post<{ Body: McpBody }>('/servers/:name/stop', auth, async (request, reply) => {
+ server.post('/servers/:name/stop', auth, async (request, reply) => {
  const { name } = paramsOf(request);
  await manager.stop(name);
  return reply.status(202).send({ name, status: 'stopped' });
  });
 
- server.post<{ Body: McpBody }>('/servers/:name/restart', auth, async (request, reply) => {
+ server.post('/servers/:name/restart', auth, async (request, reply) => {
  const { name } = paramsOf(request);
  const state = await manager.restart(name);
  return reply.status(202).send({ name, status: state.status });
@@ -221,15 +218,11 @@ function registerToolsListRoute(
 
 async function handleToolCall(
  manager: McpManager,
- request: FastifyRequest<{ Params: { name: string }; Body: ToolCallBody }>,
+ request: FastifyRequest<{ Params: { name: string } }>,
  reply: FastifyReply,
 ): Promise<void> {
  const { name } = request.params;
- const body = request.body ?? {};
- if (!body.tool) {
- reply.status(400).send({ error: 'tools/call requires a "tool" name' });
- return;
- }
+ const body = validate(toolCallBody, request.body);
  if (!manager.get(name)) {
  reply.status(400).send({ error: `MCP server ${name} is not running` });
  return;
@@ -247,7 +240,7 @@ function registerToolCallRoute(
  manager: McpManager,
  auth: { preHandler: Array<(request: FastifyRequest, reply: FastifyReply) => Promise<void>> },
 ): void {
- server.post<{ Params: { name: string }; Body: ToolCallBody }>(
+ server.post<{ Params: { name: string } }>(
  '/servers/:name/tools/call',
  auth,
  async (request, reply) => {

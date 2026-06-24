@@ -15,22 +15,45 @@ import type { Logger } from '../logger';
 import { recordChatTurn } from '../memory/lifecycle';
 import { OrchestratorService } from '../orchestrator';
 import type { AuthFastifyInstance } from '../types/fastify';
+import { validate, z } from '../validation';
 
-import type { AttachmentInput } from './chat-attachments';
 import { processAttachments } from './chat-attachments';
 import { chatSessionRoutes } from './chat-sessions';
 
-interface ChatBody {
- message: string;
- model?: string;
- provider?: string;
- system?: string;
- sessionId?: string;
- agentId?: string;
- attachments?: AttachmentInput[];
-}
+/**
+ * Chat send body (SSE streaming). Worker-specific HTTP input: the message is
+ * free-form text with optional model/provider/session/agent overrides.
+ */
+const chatSendBody = z.object({
+ message: z.string().min(1).max(100_000),
+ model: z.string().max(128).optional(),
+ provider: z.string().max(128).optional(),
+ system: z.string().max(65_536).optional(),
+ sessionId: z.string().max(128).optional(),
+ agentId: z.string().max(128).optional(),
+ attachments: z
+   .array(
+     z.object({
+       filename: z.string().min(1).max(255),
+       mimeType: z.string().min(1).max(128),
+       data: z.string().min(1),
+     }),
+   )
+   .max(20)
+   .default([]),
+});
 
-interface CompactBody { model?: string; tokenThreshold?: number; }
+type ChatBody = z.infer<typeof chatSendBody>;
+
+const compactBody = z.object({
+ model: z.string().max(128).optional(),
+ tokenThreshold: z.number().int().min(100).max(1_000_000).optional(),
+});
+
+const permissionBody = z.object({
+ callId: z.string().min(1).max(128),
+ approved: z.boolean(),
+});
 
 interface SendCtx {
  orchestrator: OrchestratorService;
@@ -187,12 +210,14 @@ export async function chatRoutes(server: AuthFastifyInstance) {
  '/send',
  { preHandler: [server.authenticate] },
  async (request, reply) => {
+ // Validate input BEFORE opening the SSE stream so a bad body yields 400.
+ const body = validate(chatSendBody, request.body);
  reply.raw.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
  const ac = new AbortController();
  request.raw.on('close', () => ac.abort());
  const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
  try {
- await handleSendRequest(request.body, request.user?.userId, {
+ await handleSendRequest(body, request.user?.userId, {
  orchestrator, log: server.log as unknown as Logger, signal: ac.signal, sse,
  });
  } catch (err) {
@@ -205,17 +230,18 @@ export async function chatRoutes(server: AuthFastifyInstance) {
  },
  );
 
- server.post<{ Params: { id: string }; Body: CompactBody }>(
+ server.post<{ Params: { id: string } }>(
  '/sessions/:id/compact',
  { preHandler: [server.authenticate] },
  async (request, reply) => {
  const userId = request.user?.userId ?? 'anonymous';
- const model = request.body.model ?? DEFAULT_MODEL;
+ const body = validate(compactBody, request.body ?? {});
+ const model = body.model ?? DEFAULT_MODEL;
  const ai = makeAIAdapter(orchestrator, adapterOptions(undefined, undefined, userId));
  try {
  const result = await new CompactSessionUseCase(getRepos().message, ai).execute({
  sessionId: request.params.id, userId, model,
- ...(request.body.tokenThreshold !== undefined ? { tokenThreshold: request.body.tokenThreshold } : {}),
+ ...(body.tokenThreshold !== undefined ? { tokenThreshold: body.tokenThreshold } : {}),
  });
  return result;
  } catch (err) {
@@ -227,7 +253,7 @@ export async function chatRoutes(server: AuthFastifyInstance) {
 
  // resolve a pending tool-permission request (UI approves/denies a
  // destructive tool call surfaced via the tool_permission SSE event).
- server.post<{ Body: PermissionBody }>(
+ server.post(
  '/permission',
  { preHandler: [server.authenticate] },
  permissionHandler,
@@ -236,13 +262,11 @@ export async function chatRoutes(server: AuthFastifyInstance) {
  await chatSessionRoutes(server);
 }
 
-interface PermissionBody { callId: string; approved: boolean }
-
 async function permissionHandler(
- request: FastifyRequest<{ Body: PermissionBody }>,
+ request: FastifyRequest,
  reply: FastifyReply,
 ) {
- const { callId, approved } = request.body;
+ const { callId, approved } = validate(permissionBody, request.body);
  const ok = resolveToolPermission(callId, approved);
  if (!ok) return reply.status(404).send({ error: 'No pending permission for callId' });
  return { resolved: true };

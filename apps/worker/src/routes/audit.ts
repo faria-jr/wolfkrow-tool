@@ -5,15 +5,15 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getAdapters, getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
+import { validate, z } from '../validation';
 
-interface RunAuditBody {
-  projectPath: string;
-  model?: string;
-  filesByRole?: Record<string, string[]>;
-  provider?: string;
-}
+const runAuditBody = z.object({
+  projectPath: z.string().min(1).max(4096),
+  model: z.string().max(128).optional(),
+  filesByRole: z.record(z.string(), z.array(z.string())).optional(),
+  provider: z.string().max(128).optional(),
+});
 
-type RunAuditRequest = FastifyRequest<{ Body: RunAuditBody | null }>;
 type ScanRequest = FastifyRequest<{ Params: { scanId: string } }>;
 
 async function resolveProvider(providerId: string | undefined, userId?: string): Promise<unknown> {
@@ -42,12 +42,9 @@ function authUserId(request: { user?: { userId?: string } }): string {
   return userId;
 }
 
-async function runAuditHandler(request: RunAuditRequest, reply: FastifyReply): Promise<unknown> {
+async function runAuditHandler(request: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const userId = authUserId(request);
-  const { projectPath, model, filesByRole, provider } = request.body ?? {};
-  if (!projectPath || typeof projectPath !== 'string') {
-    return reply.status(400).send({ error: 'projectPath is required' });
-  }
+  const { projectPath, model, filesByRole, provider } = validate(runAuditBody, request.body);
 
   const { scanRepo, findingRepo } = getAuditRepos();
   const useCase = new RunAuditUseCase(scanRepo, findingRepo);
@@ -98,7 +95,7 @@ async function listScansHandler(request: FastifyRequest): Promise<unknown> {
 
 export async function auditRoutes(server: AuthFastifyInstance) {
   const auth = { preHandler: [server.authenticate] };
-  server.post<{ Body: RunAuditBody }>('/audit/run', auth, runAuditHandler);
+  server.post('/audit/run', auth, runAuditHandler);
   server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId', auth, getScanHandler);
   server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId/findings', auth, getFindingsHandler);
   server.get('/audit/scans', auth, listScansHandler);

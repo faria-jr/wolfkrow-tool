@@ -4,17 +4,14 @@
  */
 
 import { LockoutPolicy, PlainPassword, UnauthorizedError, ValidationError } from '@wolfkrow/domain';
-import { LoginResponseSchema } from '@wolfkrow/shared-types';
+import { LoginInputSchema, LoginResponseSchema } from '@wolfkrow/shared-types';
 import { LoginUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
 import { checkRateLimit, createToken, loadOrCreateKeyPair } from '@/lib/auth';
 import { getAdapters, getRepos } from '@/lib/container';
-
-interface LoginBody {
-  password: string;
-}
+import { validateBody } from '@/lib/validation';
 
 const audit = getRepos().authAudit;
 
@@ -38,10 +35,12 @@ function getClientInfo(request: NextRequest): { ip: string; ua: string | undefin
 }
 
 async function parsePassword(request: NextRequest): Promise<PlainPassword | Response> {
-  const body = (await request.json().catch(() => null)) as LoginBody | null;
-  if (!body?.password) return Response.json({ error: 'Password is required' }, { status: 400 });
+  const body = (await request.json().catch(() => null)) as unknown;
+  // Validate against the shared input contract (ADR-0005 single source of truth).
+  const parsed = validateBody(LoginInputSchema, body);
+  if (parsed instanceof Response) return parsed; // 400 with validation details
   try {
-    return PlainPassword.create(body.password);
+    return PlainPassword.create(parsed.password);
   } catch {
     return Response.json({ error: 'Invalid password' }, { status: 401 });
   }
@@ -74,18 +73,21 @@ export async function POST(request: NextRequest) {
   if (result.status === 'locked') {
     audit.log({ userId: undefined, action: 'login.fail', ip, userAgent: ua });
     const payload = { status: 'locked' as const, lockedUntil: result.lockedUntil };
-    LoginResponseSchema.parse(payload);
-    return Response.json(payload, { status: 423 });
+    const validated = validateBody(LoginResponseSchema, payload);
+    if (validated instanceof Response) return validated; // 400 on contract drift
+    return Response.json(validated, { status: 423 });
   }
   if (result.status === 'requires_totp') {
     const payload = { status: 'requires_totp' as const, userId: result.userId };
-    LoginResponseSchema.parse(payload);
-    return Response.json(payload);
+    const validated = validateBody(LoginResponseSchema, payload);
+    if (validated instanceof Response) return validated;
+    return Response.json(validated);
   }
 
   await setSessionCookie(result.userId);
   audit.log({ userId: result.userId, action: 'login.success', ip, userAgent: ua });
   const payload = { status: 'success' as const, userId: result.userId };
-  LoginResponseSchema.parse(payload);
-  return Response.json(payload);
+  const validated = validateBody(LoginResponseSchema, payload);
+  if (validated instanceof Response) return validated;
+  return Response.json(validated);
 }

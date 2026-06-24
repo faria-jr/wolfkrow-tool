@@ -4,6 +4,7 @@
 
 import { createCipheriv, createDecipheriv, pbkdf2Sync, randomBytes } from 'node:crypto';
 
+import { SecretCategorySchema, StoreSecretInputSchema } from '@wolfkrow/shared-types';
 import {
   DeleteSecretUseCase,
   GetSecretValueUseCase,
@@ -11,6 +12,10 @@ import {
   StoreSecretUseCase,
 } from '@wolfkrow/use-cases';
 import { z } from 'zod';
+
+import { getAdapters, getRepos } from '../container';
+import type { AuthFastifyInstance } from '../types/fastify';
+import { validate } from '../validation';
 
 const EXPORT_VERSION = 1;
 const KDF_ITERS = 100_000;
@@ -63,17 +68,12 @@ function decryptVault(payload: ExportPayload, passphrase: string): ExportedSecre
   return (JSON.parse(json) as { secrets: ExportedSecret[] }).secrets;
 }
 
-import { getAdapters, getRepos } from '../container';
-import type { AuthFastifyInstance } from '../types/fastify';
-import { validate } from '../validation';
-
-const storeBody = z.object({
-  key: z.string().min(1).max(128).regex(/^[\w.\-:/]+$/),
-  value: z.string().min(1),
-  displayName: z.string().min(1).max(128),
-  category: z.enum(['ai', 'integration', 'oauth', 'other']),
-  description: z.string().max(512).optional(),
-});
+/**
+ * Store-secret body. Built from the shared `StoreSecretInputSchema` (ADR-0005
+ * single source of truth) with `metadata` omitted — the worker sets metadata
+ * server-side, never from the request body.
+ */
+const storeBody = StoreSecretInputSchema.omit({ metadata: true });
 
 function mask(value: string): string {
   if (value.length <= 4) return '••••';
@@ -125,16 +125,29 @@ export async function vaultRoutes(server: AuthFastifyInstance) {
   registerBackupRoutes(server, listUC, storeUC, getValueUC);
 }
 
+/**
+ * Backup export/import bodies (worker-specific; no shared contract).
+ */
+const exportBody = z.object({ passphrase: z.string().min(1) });
+const importBody = z.object({
+  passphrase: z.string().min(1),
+  payload: z.object({
+    version: z.number().int(),
+    salt: z.string().min(1),
+    iv: z.string().min(1),
+    data: z.string().min(1),
+  }),
+});
+
 function registerBackupRoutes(
   server: AuthFastifyInstance,
   listUC: ListSecretsUseCase,
   storeUC: StoreSecretUseCase,
   getValueUC: GetSecretValueUseCase,
 ) {
-  server.post<{ Body: { passphrase: string } }>('/export', async (req, reply) => {
+  server.post('/export', async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
-    const { passphrase } = req.body;
-    if (!passphrase) return reply.status(400).send({ error: 'passphrase required' });
+    const { passphrase } = validate(exportBody, req.body);
     const { secrets } = await listUC.execute({ userId });
     const exported: ExportedSecret[] = [];
     for (const s of secrets) {
@@ -144,18 +157,16 @@ function registerBackupRoutes(
     return reply.send({ payload: encryptVault(exported, passphrase) });
   });
 
-  server.post<{ Body: { passphrase: string; payload: ExportPayload } }>('/import', async (req, reply) => {
+  server.post('/import', async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
-    const { passphrase, payload } = req.body;
-    if (!passphrase || !payload) return reply.status(400).send({ error: 'passphrase and payload required' });
+    const { passphrase, payload } = validate(importBody, req.body);
     let secrets: ExportedSecret[];
     try { secrets = decryptVault(payload, passphrase); }
     catch { return reply.status(400).send({ error: 'Invalid passphrase or corrupted backup' }); }
     let imported = 0;
     for (const s of secrets) {
-      const cat = (['ai', 'integration', 'oauth', 'other'] as const).includes(s.category as never)
-        ? (s.category as 'ai' | 'integration' | 'oauth' | 'other') : 'other';
-      await storeUC.execute({ userId, key: s.key, value: s.value, displayName: s.displayName, category: cat });
+      const parsed = SecretCategorySchema.safeParse(s.category);
+      await storeUC.execute({ userId, key: s.key, value: s.value, displayName: s.displayName, category: parsed.success ? parsed.data : 'other' });
       imported++;
     }
     return reply.send({ imported });

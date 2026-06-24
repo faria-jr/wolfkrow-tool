@@ -17,36 +17,39 @@ import { createAgentExecutor } from '../agent-executor';
 import { getRepos } from '../container';
 import type { Logger } from '../logger';
 import type { AuthFastifyInstance } from '../types/fastify';
+import { validate, z } from '../validation';
 
 function makeRepos() {
   const r = getRepos();
   return { taskRepo: r.scheduledTask, runRepo: r.taskRun };
 }
 
-interface CreateBody {
-  name: string;
-  description?: string;
-  cronExpression: string;
-  prompt: string;
-  agentId?: string;
-  tags?: string[];
-}
+const createTaskBody = z.object({
+  name: z.string().min(1).max(128),
+  description: z.string().max(4096).optional(),
+  cronExpression: z.string().min(1).max(128),
+  prompt: z.string().min(1).max(8192),
+  agentId: z.string().max(128).optional(),
+  tags: z.array(z.string().max(64)).max(20).optional(),
+});
 
-interface UpdateBody {
-  name?: string;
-  description?: string;
-  cronExpression?: string;
-  prompt?: string;
-  enabled?: boolean;
-  tags?: string[];
-}
+const updateTaskBody = z.object({
+  name: z.string().min(1).max(128).optional(),
+  description: z.string().max(4096).optional(),
+  cronExpression: z.string().min(1).max(128).optional(),
+  prompt: z.string().min(1).max(8192).optional(),
+  enabled: z.boolean().optional(),
+  tags: z.array(z.string().max(64)).max(20).optional(),
+});
 
-async function createTaskHandler(req: FastifyRequest<{ Body: CreateBody }>, reply: FastifyReply) {
+const reviewRunBody = z.object({
+  verdict: z.enum(['validated', 'rejected']),
+  note: z.string().max(4096).optional(),
+});
+
+async function createTaskHandler(req: FastifyRequest, reply: FastifyReply) {
   const userId = (req as unknown as { user: { userId: string } }).user.userId;
-  const body = req.body;
-  if (!body?.name || !body.cronExpression || !body.prompt) {
-    return reply.code(400).send({ error: 'name, cronExpression and prompt required' });
-  }
+  const body = validate(createTaskBody, req.body);
   const { taskRepo } = makeRepos();
   const result = await new CreateScheduledTaskUseCase(taskRepo).execute({
     userId,
@@ -68,12 +71,22 @@ export async function schedulerRoutes(server: AuthFastifyInstance) {
     return reply.send({ tasks: tasks.map((t) => t.toProps()), count: tasks.length });
   });
 
-  server.post<{ Body: CreateBody }>('/tasks', { preHandler: [server.authenticate] }, createTaskHandler);
+  server.post('/tasks', { preHandler: [server.authenticate] }, createTaskHandler);
 
-  server.patch<{ Params: { id: string }; Body: UpdateBody }>('/tasks/:id', { preHandler: [server.authenticate] }, async (req, reply) => {
+  server.patch<{ Params: { id: string } }>('/tasks/:id', { preHandler: [server.authenticate] }, async (req, reply) => {
     const userId = (req as unknown as { user: { userId: string } }).user.userId;
+    const body = validate(updateTaskBody, req.body);
     const { taskRepo } = makeRepos();
-    const result = await new UpdateScheduledTaskUseCase(taskRepo).execute({ taskId: req.params.id, userId, ...req.body });
+    const result = await new UpdateScheduledTaskUseCase(taskRepo).execute({
+      taskId: req.params.id,
+      userId,
+      ...(body.name !== undefined ? { name: body.name } : {}),
+      ...(body.description !== undefined ? { description: body.description } : {}),
+      ...(body.cronExpression !== undefined ? { cronExpression: body.cronExpression } : {}),
+      ...(body.prompt !== undefined ? { prompt: body.prompt } : {}),
+      ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+      ...(body.tags !== undefined ? { tags: body.tags } : {}),
+    });
     return reply.send({ task: result.task.toProps() });
   });
 
@@ -105,10 +118,9 @@ export async function schedulerRoutes(server: AuthFastifyInstance) {
     return reply.send({ runs: runs.map((r) => r.toProps()), count: runs.length });
   });
 
-  server.post<{ Params: { id: string }; Body: { verdict: 'validated' | 'rejected'; note?: string } }>('/runs/:id/review', { preHandler: [server.authenticate] }, async (req, reply) => {
+  server.post<{ Params: { id: string } }>('/runs/:id/review', { preHandler: [server.authenticate] }, async (req, reply) => {
     const { runRepo } = makeRepos();
-    const body = req.body;
-    if (!body?.verdict) return reply.code(400).send({ error: 'verdict required' });
+    const body = validate(reviewRunBody, req.body);
     const result = await new ReviewTaskRunUseCase(runRepo).execute({
       runId: req.params.id, verdict: body.verdict,
       ...(body.note !== undefined ? { note: body.note } : {}),
