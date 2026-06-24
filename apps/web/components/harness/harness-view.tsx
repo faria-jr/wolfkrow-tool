@@ -3,7 +3,10 @@
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { RoundsList } from './rounds-list';
+
 import { Input } from '@/components/ui/input';
+
 
 interface ProjectData {
   id: string;
@@ -154,6 +157,7 @@ function SprintPanel({ selected, sprints }: SprintPanelProps) {
                 </div>
               ))}
             </div>
+            <RoundsList sprintId={sprint.id} />
           </div>
         ))
       )}
