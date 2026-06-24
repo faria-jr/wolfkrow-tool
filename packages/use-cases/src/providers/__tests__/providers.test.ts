@@ -1,5 +1,6 @@
 import { ProviderConfig } from '@wolfkrow/domain';
 import { describe, expect, it } from 'vitest';
+
 import { DeleteProviderUseCase } from '../delete-provider';
 import { ListProvidersUseCase } from '../list-providers';
 import { SaveProviderUseCase } from '../save-provider';
@@ -75,5 +76,23 @@ describe('providers use-cases', () => {
     await uc.execute({ userId: 'u1', id: 'custom1' });
     const all = await repo.findAll('u1');
     expect(all.map((p) => p.id)).not.toContain('custom1');
+  });
+
+  it('delete rejects built-in provider (anthropic)', async () => {
+    const repo = makeFakeRepo([]);
+    const uc = new DeleteProviderUseCase(repo);
+    await expect(uc.execute({ userId: 'u1', id: 'anthropic' })).rejects.toThrow(/Cannot delete built-in/);
+  });
+
+  it('delete rejects built-in provider (zai)', async () => {
+    const repo = makeFakeRepo([]);
+    const uc = new DeleteProviderUseCase(repo);
+    await expect(uc.execute({ userId: 'u1', id: 'zai' })).rejects.toThrow(/Cannot delete built-in/);
+  });
+
+  it('delete of unknown id is a no-op (idempotent)', async () => {
+    const repo = makeFakeRepo([]);
+    const uc = new DeleteProviderUseCase(repo);
+    await expect(uc.execute({ userId: 'u1', id: 'does-not-exist' })).resolves.toBeUndefined();
   });
 });
