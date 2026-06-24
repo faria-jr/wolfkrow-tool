@@ -13,7 +13,7 @@
 | 2 | Onboarding c/ escolha de SDK (wizard) | SPEC-001 | 🟡 setup senha ✅; escolha SDK ✅ reconciliamento Task 9 | Task 9 |
 | 3 | Sub-agentes CRUD + runtime + sync massa | SPEC-013 | ✅ | FIX-004/005 |
 | 4 | Skills (editor markdown+frontmatter) | SPEC-014 | ✅ | FIX-016 |
-| 5 | MCP servers (lifecycle start/stop/restart, discovery) | SPEC-008 | ✅ 6 built-in (graph-search, wolfkrow-skills, knowledge-base, youtube, google-calendar, google-gmail) + PLANNED catalog; custom create ✅ Task 10 | FIX-006/017; Task 10; Task 27 |
+| 5 | MCP servers (lifecycle start/stop/restart, discovery) | SPEC-008 | ✅ 15 built-in (M3.3 entregou 9: google-drive, google-sheets, elevenlabs, excalidraw, memory-search, local-agents, local-llm, shopify, nano-banana); custom create ✅ Task 10; remote MCPs (Higgsfield, Blotato) deferidos para v2 (ADR-0031) | FIX-006/017; Task 10; Task 27; M3.3 |
 | 6 | Memory pipeline (compaction/daily/semantic) | SPEC-015 | ✅ | FIX-012 |
 | 7 | Dreaming (idle + turn) | SPEC-015 | ✅ | FIX-013 |
 | 8 | Session management (criar/listar/arquivar/deletar) | SPEC-002 | 🟡 in-memory; persistência parcial | — |
@@ -72,20 +72,23 @@
 | 55 | Graph search | ✅ binary real |
 | 41 | Google Calendar | ✅ binary real (Task 27) |
 | 42 | Google Gmail | ✅ binary real (Task 27) |
+| 43 | Google Drive | ✅ binary real (M3.3) |
+| 44 | Google Sheets | ✅ binary real (M3.3) |
+| 45 | ElevenLabs (TTS) | ✅ binary real (M3.3) |
+| 46 | Excalidraw (drawing) | ✅ binary real (M3.3) |
+| 48 | Memory search | ✅ binary real (M3.3) |
+| 49 | Local agents (wolfkrow-agents) | ✅ binary real (M3.3) |
+| 50 | Local LLM (Ollama) | ✅ binary real (M3.3) |
+| 53 | Shopify | ✅ binary real (M3.3) |
+| 54 | Nano-banana | ✅ binary real (M3.3) |
 
-### Planned (catalog seed — sem binário ainda)
+### Deferred to v2 (ver ADR-0031)
 
 | # | MCP | Status |
 |---|---|---|
-| 43–44 | Google Drive/Sheets | 🟡 PLANNED — sem binário |
-| 45 | ElevenLabs (TTS) | 🟡 PLANNED — sem binário |
-| 46 | Excalidraw (drawing) | 🟡 PLANNED — sem binário |
-| 48 | Memory search | 🟡 PLANNED — sem binário |
-| 49 | Local agents (wolfkrow-agents) | 🟡 PLANNED — sem binário |
-| 50 | Local LLM (Ollama) | 🟡 PLANNED — sem binário |
-| 53 | Shopify | 🟡 PLANNED — sem binário |
-| 54 | Nano-banana (Cohere) | 🟡 PLANNED — sem binário |
-| int | wolfkrow-user-question | 🟡 PLANNED — sem binário |
+| int | Higgsfield (image/video) | ⛔ deferido para v2 (OAuth browser flow incompatível com worker Node-only) |
+| int | Blotato (social posting) | ⛔ deferido para v2 (caso de uso narrow, rate-limit-sensitive) |
+| int | wolfkrow-user-question | ⛔ deferido para v2 (sem demanda registrada) |
 
 ## Providers AI (não mapeados originalmente)
 
@@ -133,7 +136,7 @@
 | ✅ Feito (após Tasks 1-29) | ~44 |
 | 🟡 Parcial | ~6 |
 | ⛔ Não iniciado (out-of-scope v1) | ~5 |
-| MCPs com binário real | 6 |
-| MCPs planned (sem binário) | 9 |
+| MCPs com binário real | 15 |
+| MCPs deferidos para v2 | 3 (Higgsfield, Blotato, wolfkrow-user-question) |
 | Bugs de navegação corrigidos | 2/2 |
 | Gaps de segurança resolvidos | 8/9 |

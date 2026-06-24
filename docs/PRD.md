@@ -55,7 +55,7 @@ Wolfkrow Tool é o único assistente que combina:
 - ✅ Acesso local a terminal/filesystem
 - ✅ Memória persistente estruturada
 - ✅ Multi-agent orchestration (Harness, Pipeline)
-- ✅ 19+ integrações via MCP
+- ✅ 15 integrações via MCP (knowledge-base, wolfkrow-skills, youtube, google-calendar/gmail/drive/sheets, graph-search, elevenlabs, excalidraw, memory-search, local-agents, local-llm, shopify, nano-banana) — Higgsfield e Blotato deferidos para v2 (ADR-0031)
 - ✅ Voice conversation em tempo real
 - ✅ 100% privado (single-machine)
 
@@ -134,7 +134,7 @@ Wolfkrow Tool é o único assistente que combina:
 
 **Critérios de Aceitação**:
 - [ ] CRUD completo de MCPs custom
-- [ ] 19+ MCPs bundled (Google x4, ElevenLabs, Excalidraw, YouTube, Shopify, Nano-banana, Graph search, Local agents, Local LLM, Skills, Memory search, Knowledge base, Wolfkrow internal x3)
+- [x] 15 MCPs bundled (M3.3 entregou google-drive, google-sheets, elevenlabs, excalidraw, memory-search, local-agents, local-llm, shopify, nano-banana, somando aos 6 existentes). Higgsfield, Blotato e wolfkrow-user-question deferidos para v2 (ADR-0031).
 - [ ] Start/stop/restart manual
 - [ ] Auto-start no boot (configurável por MCP)
 - [ ] Visibility toggle (some MCPs só rodam em background)
@@ -513,7 +513,7 @@ Open-source seletivo: extraction de libraries internas para npm público (`@wolf
 ### v1.0 (M6 — dia 136)
 - Chat multi-SDK
 - Sub-agents + Skills
-- 19 MCPs bundled
+- 15 MCPs bundled
 - Knowledge engine
 - Memory pipeline
 - Voice conversation

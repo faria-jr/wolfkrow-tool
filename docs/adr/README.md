@@ -31,6 +31,9 @@ We use ADRs to document significant architectural decisions. See [README.md](./R
 - [ADR-0025](./0025-domain-events-bus.md) — Domain events bus
 - [ADR-0026](./0026-worker-process-vs-electron-renderer.md) — Worker Node (Cenário A) vs Next renderer no Electron (Cenário B)
 - [ADR-0027](./0027-workflow-feature-decision.md) — Workflow: feature viva ou schema morto (proposto)
+- [ADR-0029](./0029-node-24-runtime.md) — Node 24 as official runtime
+- [ADR-0030](./0030-claude-compat-providers.md) — Claude-compat providers (Z.ai, Moonshot, Qwen, MiniMax)
+- [ADR-0031](./0031-defer-higgsfield-blotato.md) — Defer Higgsfield + Blotato MCPs to v2
 
 ## Process
 
