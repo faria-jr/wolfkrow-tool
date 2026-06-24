@@ -11,13 +11,14 @@ import type { AgentPermissions, PermissionResolver } from '@wolfkrow/domain';
 import type { ToolRegistry } from '../tools/tool-registry';
 
 import { accumulate, estimateTokens } from './helpers';
+import { executeWithPermissionGate } from './permission-gate';
 import type {
- AIProvider,
- ChatMessage,
- CompletionOptions,
- CompletionResult,
- StreamChunk,
- ToolPermissionEvent,
+  AIProvider,
+  ChatMessage,
+  CompletionOptions,
+  CompletionResult,
+  StreamChunk,
+  ToolPermissionEvent,
 } from './types';
 
 export interface ToolDefinition {
@@ -148,35 +149,25 @@ export class ClaudeAgentProvider implements AIProvider {
  }
  }
 
- /**
+/**
  * gate tool execution behind the PermissionResolver.
- * - No agent/resolver configured → execute directly (backward compatible).
- * - allow → execute; deny → error result (no execution).
- * - ask → emit a tool_permission chunk, await requestPermission (default: deny if no handler).
+ * Delegates to shared permission-gate helper.
  */
- private async executeWithPermission(
- block: ToolUseBlock,
- input: Record<string, unknown>,
- ): Promise<{ result: ToolResult; permissionChunk?: StreamChunk }> {
- if (!this.agent || !this.permissionResolver) {
- return { result: await this.executeTool(block, input) };
- }
- const decision = this.permissionResolver.canUseTool(this.agent, block.name, input);
- if (decision.type === 'deny') {
- return { result: ToolResult.error(block.id, decision.reason) };
- }
- // 'allow' executes directly; 'ask' gates execution behind user approval.
- let permissionChunk: StreamChunk | undefined;
- if (decision.type === 'ask') {
- const event: ToolPermissionEvent = { callId: block.id, name: block.name, input, prompt: decision.prompt };
- permissionChunk = { delta: '', toolPermission: event };
- const approved = this.requestPermission ? await this.requestPermission(event) : false;
- if (!approved) {
- return { result: ToolResult.error(block.id, `Tool "${block.name}" not approved by user`), permissionChunk };
- }
- }
- return { result: await this.executeTool(block, input), ...(permissionChunk ? { permissionChunk } : {}) };
- }
+private executeWithPermission(
+  block: ToolUseBlock,
+  input: Record<string, unknown>,
+): Promise<{ result: ToolResult; permissionChunk?: StreamChunk }> {
+  return executeWithPermissionGate(
+    {
+      ...(this.agent !== undefined ? { agent: this.agent } : {}),
+      ...(this.permissionResolver !== undefined ? { permissionResolver: this.permissionResolver } : {}),
+      ...(this.requestPermission !== undefined ? { requestPermission: this.requestPermission } : {}),
+    },
+    { id: block.id, name: block.name },
+    input,
+    () => this.executeTool(block, input),
+  );
+}
 
  private buildParams(
  options: CompletionOptions,
