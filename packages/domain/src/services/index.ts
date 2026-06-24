@@ -23,7 +23,7 @@ export {
   computeCooccurrence,
 } from './graph-extraction';
 export type { PositionedEntity } from './graph-extraction';
-export { PricingCalculator, Money, defaultPricingCalculator } from './pricing-calculator';
+export { PricingCalculator, Money, defaultPricingCalculator, hasKnownPricing, formatCost, formatTokens } from './pricing-calculator';
 export type { PricingTier, TokenUsage } from './pricing-calculator';
 export { PermissionResolver, defaultPermissionResolver } from './permission-resolver';
 export type { PermissionResult, AgentPermissions } from './permission-resolver';
