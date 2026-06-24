@@ -4,6 +4,8 @@
  * conveniência não-streaming (acumula chunks). `countTokens()` p/ orçamento.
  */
 
+import type { ProviderConfig } from '@wolfkrow/domain';
+
 export type ChatRole = 'system' | 'user' | 'assistant';
 
 export interface ChatMessage {
@@ -71,5 +73,5 @@ export interface AIProvider {
 
 export interface AIProviderFactory {
  create(provider: string, apiKey: string): AIProvider;
- createFromConfig(cfg: import('@wolfkrow/domain').ProviderConfig, apiKey: string): AIProvider;
+ createFromConfig(cfg: ProviderConfig, apiKey: string): AIProvider;
 }

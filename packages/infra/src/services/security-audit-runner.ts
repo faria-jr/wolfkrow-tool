@@ -4,7 +4,13 @@ import {
   type SecurityDimension,
   type SecuritySeverity,
 } from '@wolfkrow/domain';
+
 import type { AIProvider } from '../ai-providers/types';
+
+import { runInBatches } from './batch-runner';
+import { parseFindingsFromText } from './security-audit-parser';
+
+export { parseFindingsFromText };
 
 export interface SecurityAuditAgentDef {
   id: string;
@@ -45,48 +51,12 @@ export const SECURITY_AUDIT_AGENTS: readonly SecurityAuditAgentDef[] = [
   },
 ] as const;
 
-const VALID_SEVERITIES: ReadonlyArray<SecuritySeverity> = [
-  'info', 'warning', 'major', 'critical', 'blocker',
-];
-
 export interface ParsedFinding {
   severity: SecuritySeverity;
   file: string;
   line?: number;
   message: string;
   rule?: string;
-}
-
-export function parseFindingsFromText(text: string): ParsedFinding[] {
-  const match = text.match(/\[[\s\S]*?\]/);
-  if (!match) return [];
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(match[0]);
-  } catch {
-    return [];
-  }
-  if (!Array.isArray(parsed)) return [];
-  const out: ParsedFinding[] = [];
-  for (const item of parsed) {
-    if (!item || typeof item !== 'object') continue;
-    const obj = item as Record<string, unknown>;
-    const severity = obj['severity'];
-    const file = obj['file'];
-    const message = obj['message'];
-    if (typeof severity !== 'string' || !VALID_SEVERITIES.includes(severity as SecuritySeverity)) continue;
-    if (typeof file !== 'string' || !file) continue;
-    if (typeof message !== 'string' || !message) continue;
-    const finding: ParsedFinding = {
-      severity: severity as SecuritySeverity,
-      file,
-      message,
-    };
-    if (typeof obj['line'] === 'number') finding.line = obj['line'];
-    if (typeof obj['rule'] === 'string') finding.rule = obj['rule'];
-    out.push(finding);
-  }
-  return out;
 }
 
 export interface RunAgentOptions {
@@ -126,6 +96,23 @@ export interface SecurityAuditResult {
   summary: ReturnType<typeof summarizeFindings>;
 }
 
+function toSecurityFinding(
+  parsed: ParsedFinding,
+  agent: SecurityAuditAgentDef,
+  scanId: string,
+): SecurityFinding {
+  return SecurityFinding.create({
+    scanId,
+    severity: parsed.severity,
+    dimension: agent.dimension,
+    file: parsed.file,
+    ...(parsed.line !== undefined ? { line: parsed.line } : {}),
+    message: parsed.message,
+    ...(parsed.rule !== undefined ? { rule: parsed.rule } : {}),
+    agentId: agent.id,
+  });
+}
+
 export class SecurityAuditRunner {
   private readonly maxConcurrency: number;
 
@@ -134,55 +121,34 @@ export class SecurityAuditRunner {
   }
 
   async run(opts: SecurityAuditOptions): Promise<SecurityAuditResult> {
-    const allFindings: SecurityFinding[] = [];
-    const queue = [...SECURITY_AUDIT_AGENTS];
     const maxAgents = opts.maxAgents ?? SECURITY_AUDIT_AGENTS.length;
-    const slice = queue.slice(0, maxAgents);
+    const slice = SECURITY_AUDIT_AGENTS.slice(0, maxAgents);
 
-    const worker = async (agent: SecurityAuditAgentDef): Promise<void> => {
-      const files = this.resolveFilesForAgent(opts.filesByRole, agent.tags);
-      try {
-        const parsed = await runSecurityAgent({ agent, files, model: opts.model, provider: opts.provider });
-        for (const p of parsed) {
-          allFindings.push(
-            SecurityFinding.create({
-              scanId: opts.scanId,
-              severity: p.severity,
-              dimension: agent.dimension,
-              file: p.file,
-              ...(p.line !== undefined ? { line: p.line } : {}),
-              message: p.message,
-              ...(p.rule !== undefined ? { rule: p.rule } : {}),
-              agentId: agent.id,
-            }),
-          );
-        }
-      } catch {
-        // skip failed agent; partial results are valid
-      }
-    };
-
-    const inFlight: Array<Promise<void>> = [];
-    for (const agent of slice) {
-      const p = worker(agent);
-      inFlight.push(p);
-      if (inFlight.length >= this.maxConcurrency) {
-        await Promise.race(inFlight);
-        for (let i = inFlight.length - 1; i >= 0; i--) {
-          const item = inFlight[i];
-          if (item && await Promise.resolve(item).then(() => true, () => true)) {
-            inFlight.splice(i, 1);
-          }
-        }
-      }
-    }
-    await Promise.all(inFlight);
+    const agentResults = await runInBatches(
+      slice,
+      (agent) => this.runAgent(agent, opts),
+      this.maxConcurrency,
+    );
+    const findings = agentResults.flat();
 
     return {
       scanId: opts.scanId,
-      findings: allFindings,
-      summary: summarizeFindings(allFindings),
+      findings,
+      summary: summarizeFindings(findings),
     };
+  }
+
+  private async runAgent(
+    agent: SecurityAuditAgentDef,
+    opts: SecurityAuditOptions,
+  ): Promise<SecurityFinding[]> {
+    const files = this.resolveFilesForAgent(opts.filesByRole, agent.tags);
+    try {
+      const parsed = await runSecurityAgent({ agent, files, model: opts.model, provider: opts.provider });
+      return parsed.map((p) => toSecurityFinding(p, agent, opts.scanId));
+    } catch {
+      return [];
+    }
   }
 
   private resolveFilesForAgent(filesByRole: Record<string, string[]>, tags: string[]): string[] {
@@ -191,10 +157,9 @@ export class SecurityAuditRunner {
     for (const tag of tags) {
       const files = filesByRole[tag] ?? [];
       for (const f of files) {
-        if (!seen.has(f)) {
-          seen.add(f);
-          out.push(f);
-        }
+        if (seen.has(f)) continue;
+        seen.add(f);
+        out.push(f);
       }
     }
     return out;

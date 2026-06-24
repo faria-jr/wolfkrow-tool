@@ -8,20 +8,27 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { ToolResult, getClaudeCompatPreset } from '@wolfkrow/domain';
+import type { AgentPermissions, PermissionResolver } from '@wolfkrow/domain';
 
 import type { ToolRegistry } from '../tools/tool-registry';
 
+import type { ToolUseBlock } from './claude-compat-helpers';
+import {
+  drainTextStream,
+  injectImageParts,
+  parseJson,
+  processStreamEvents,
+  toMessageParams,
+} from './claude-compat-helpers';
 import { accumulate, estimateTokens } from './helpers';
 import type {
   AIProvider,
   ChatMessage,
   CompletionOptions,
   CompletionResult,
-  ImagePart,
   StreamChunk,
+  ToolPermissionEvent,
 } from './types';
-
-type ToolUseBlock = { id: string; name: string; partialJson: string };
 
 interface TurnResult {
   inputTokens: number;
@@ -31,21 +38,37 @@ interface TurnResult {
   done: boolean;
 }
 
+export interface ClaudeCompatOptions {
+  supportsTools?: boolean;
+  toolRegistry?: ToolRegistry;
+  permissionResolver?: PermissionResolver;
+  agent?: AgentPermissions;
+  requestPermission?: (req: ToolPermissionEvent) => Promise<boolean>;
+  workDir?: string;
+}
+
 export class ClaudeCompatProvider implements AIProvider {
   private readonly client: Anthropic;
   private readonly toolRegistry: ToolRegistry | undefined;
+  private readonly permissionResolver: PermissionResolver | undefined;
+  private readonly agent: AgentPermissions | undefined;
+  private readonly requestPermission: ((req: ToolPermissionEvent) => Promise<boolean>) | undefined;
+  private readonly workDir: string | undefined;
 
   constructor(
     apiKey: string,
     source: string | { baseUrl: string },
-    _supportsTools?: boolean,
-    toolRegistry?: ToolRegistry,
+    opts: ClaudeCompatOptions = {},
   ) {
     const baseUrl = typeof source === 'string'
       ? (source.startsWith('http') ? source : getClaudeCompatPreset(source).baseUrl)
       : source.baseUrl;
     this.client = new Anthropic({ apiKey, baseURL: baseUrl });
-    this.toolRegistry = toolRegistry;
+    this.toolRegistry = opts.toolRegistry;
+    this.permissionResolver = opts.permissionResolver;
+    this.agent = opts.agent;
+    this.requestPermission = opts.requestPermission;
+    this.workDir = opts.workDir;
   }
 
   async *query(options: CompletionOptions): AsyncIterable<StreamChunk> {
@@ -56,14 +79,13 @@ export class ClaudeCompatProvider implements AIProvider {
     }
 
     const toolDefs = this.buildToolDefs();
-    const nonSystem = options.messages.filter((m) => m.role !== 'system');
     const systemFromMessages = options.messages
       .filter((m) => m.role === 'system')
       .map((m) => m.content)
       .join('\n');
     const effectiveSystem = options.system ?? (systemFromMessages || undefined);
 
-    const messages: Anthropic.Messages.MessageParam[] = nonSystem.map(toAnthropicMessage);
+    const messages: Anthropic.Messages.MessageParam[] = toMessageParams(options);
     let totalInput = 0;
     let totalOutput = 0;
 
@@ -81,7 +103,8 @@ export class ClaudeCompatProvider implements AIProvider {
       for (const block of result.toolUseBlocks.values()) {
         const input = parseJson(block.partialJson);
         yield { delta: '', toolCall: { id: block.id, name: block.name, input } };
-        const toolResult = await this.executeTool(block, input);
+        const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input);
+        if (permissionChunk) yield permissionChunk;
         yield { delta: '', toolResult: { callId: toolResult.callId, output: toolResult.output, isError: toolResult.isError } };
         toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: toolResult.output, is_error: toolResult.isError });
       }
@@ -96,17 +119,12 @@ export class ClaudeCompatProvider implements AIProvider {
   private buildStream(
     options: CompletionOptions,
     toolDefs: Anthropic.Messages.Tool[],
+    messages?: Anthropic.Messages.MessageParam[],
+    system?: string,
   ): ReturnType<Anthropic['messages']['stream']> {
-    const nonSystem = options.messages.filter((m) => m.role !== 'system');
-    const systemFromMessages = options.messages
-      .filter((m) => m.role === 'system')
-      .map((m) => m.content)
-      .join('\n');
-    const effectiveSystem = options.system ?? (systemFromMessages || undefined);
-
-    const messages = nonSystem.map(toAnthropicMessage);
-    if (options.imageParts?.length) {
-      injectImageParts(messages, options.imageParts);
+    const messageParams = messages ?? toMessageParams(options);
+    if (!messages && options.imageParts?.length) {
+      injectImageParts(messageParams, options.imageParts);
     }
 
     return this.client.messages.stream(
@@ -114,8 +132,8 @@ export class ClaudeCompatProvider implements AIProvider {
         model: options.model,
         max_tokens: options.maxTokens ?? 4096,
         temperature: options.temperature ?? 0.5,
-        ...(effectiveSystem ? { system: effectiveSystem } : {}),
-        messages,
+        ...(system ? { system } : {}),
+        messages: messageParams,
         ...(toolDefs.length > 0 ? { tools: toolDefs } : {}),
       },
       { signal: options.signal },
@@ -135,10 +153,42 @@ export class ClaudeCompatProvider implements AIProvider {
     const executor = this.toolRegistry?.get(block.name);
     if (!executor) return ToolResult.error(block.id, `Tool "${block.name}" not found`);
     try {
-      return await executor.execute(input, { userId: 'agent' });
+      return await executor.execute(input, {
+        userId: 'agent',
+        ...(this.workDir !== undefined ? { workDir: this.workDir } : {}),
+      });
     } catch (err) {
       return ToolResult.error(block.id, err instanceof Error ? err.message : String(err));
     }
+  }
+
+  /**
+   * Gate tool execution behind the PermissionResolver.
+   * - No agent/resolver configured → execute directly (backward compatible).
+   * - allow → execute; deny → error result (no execution).
+   * - ask → emit a tool_permission chunk, await requestPermission (default: deny if no handler).
+   */
+  private async executeWithPermission(
+    block: ToolUseBlock,
+    input: Record<string, unknown>,
+  ): Promise<{ result: ToolResult; permissionChunk?: StreamChunk }> {
+    if (!this.agent || !this.permissionResolver) {
+      return { result: await this.executeTool(block, input) };
+    }
+    const decision = this.permissionResolver.canUseTool(this.agent, block.name, input);
+    if (decision.type === 'deny') {
+      return { result: ToolResult.error(block.id, decision.reason) };
+    }
+    let permissionChunk: StreamChunk | undefined;
+    if (decision.type === 'ask') {
+      const event: ToolPermissionEvent = { callId: block.id, name: block.name, input, prompt: decision.prompt };
+      permissionChunk = { delta: '', toolPermission: event };
+      const approved = this.requestPermission ? await this.requestPermission(event) : false;
+      if (!approved) {
+        return { result: ToolResult.error(block.id, `Tool "${block.name}" not approved by user`), permissionChunk };
+      }
+    }
+    return { result: await this.executeTool(block, input), ...(permissionChunk ? { permissionChunk } : {}) };
   }
 
   private async *streamOneTurn(
@@ -147,48 +197,14 @@ export class ClaudeCompatProvider implements AIProvider {
     system: string | undefined,
     toolDefs: Anthropic.Messages.Tool[],
   ): AsyncGenerator<StreamChunk, TurnResult> {
-    const stream = this.client.messages.stream(
-      {
-        model: options.model,
-        max_tokens: options.maxTokens ?? 4096,
-        temperature: options.temperature ?? 0.5,
-        ...(system ? { system } : {}),
-        messages,
-        ...(toolDefs.length > 0 ? { tools: toolDefs } : {}),
-      },
-      { signal: options.signal },
-    );
-
-    const toolUseBlocks = new Map<string, ToolUseBlock>();
-    let currentToolId: string | null = null;
-
-    for await (const event of stream) {
-      if (event.type === 'content_block_start') {
-        const block = (event as { content_block: Anthropic.Messages.ContentBlock }).content_block;
-        if (block.type === 'tool_use') {
-          currentToolId = block.id;
-          toolUseBlocks.set(block.id, { id: block.id, name: block.name, partialJson: '' });
-        }
-      } else if (event.type === 'content_block_delta') {
-        const delta = (event as { delta: Anthropic.Messages.RawContentBlockDelta }).delta;
-        if (delta.type === 'text_delta') {
-          yield { delta: delta.text };
-        } else if (delta.type === 'input_json_delta' && currentToolId) {
-          const blk = toolUseBlocks.get(currentToolId);
-          if (blk) blk.partialJson += delta.partial_json;
-        }
-      } else if (event.type === 'content_block_stop') {
-        currentToolId = null;
-      }
-    }
-
-    const final = await stream.finalMessage();
+    const stream = this.buildStream(options, toolDefs, messages, system);
+    const { toolUseBlocks, usage, stopReason, assistantContent } = yield* processStreamEvents(stream);
     return {
-      inputTokens: final.usage.input_tokens,
-      outputTokens: final.usage.output_tokens,
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
       toolUseBlocks,
-      assistantContent: final.content,
-      done: final.stop_reason !== 'tool_use' || toolUseBlocks.size === 0,
+      assistantContent,
+      done: stopReason !== 'tool_use' || toolUseBlocks.size === 0,
     };
   }
 
@@ -201,65 +217,3 @@ export class ClaudeCompatProvider implements AIProvider {
   }
 }
 
-async function* drainTextStream(
-  stream: ReturnType<Anthropic['messages']['stream']>,
-): AsyncIterable<StreamChunk> {
-  try {
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        yield { delta: event.delta.text };
-      }
-    }
-    const final = await stream.finalMessage();
-    yield {
-      delta: '',
-      done: true,
-      inputTokens: final.usage.input_tokens,
-      outputTokens: final.usage.output_tokens,
-    };
-  } catch (err) {
-    yield { delta: '', done: true };
-    throw err;
-  }
-}
-
-function parseJson(partial: string): Record<string, unknown> {
-  if (!partial) return {};
-  try { return JSON.parse(partial) as Record<string, unknown>; } catch { return {}; }
-}
-
-function toAnthropicMessage(message: ChatMessage): Anthropic.Messages.MessageParam {
-  return {
-    role: message.role === 'assistant' ? 'assistant' : 'user',
-    content: message.content,
-  };
-}
-
-function injectImageParts(
-  messages: Anthropic.Messages.MessageParam[],
-  parts: ImagePart[],
-): void {
-  const lastUserIdx = messages.reduce(
-    (found, m, i) => (m.role === 'user' ? i : found),
-    -1,
-  );
-  if (lastUserIdx < 0) return;
-
-  const lastMsg = messages[lastUserIdx];
-  if (!lastMsg) return;
-  const text = typeof lastMsg.content === 'string' ? (lastMsg.content as string) : '';
-
-  const imageBlocks: Anthropic.Messages.ImageBlockParam[] = parts.map((p) => ({
-    type: 'image',
-    source: {
-      type: 'base64',
-      media_type: p.mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-      data: p.data,
-    },
-  }));
-
-  messages[lastUserIdx] = {
-    role: 'user',
-    content: [...imageBlocks, { type: 'text', text }],
-  };
-}

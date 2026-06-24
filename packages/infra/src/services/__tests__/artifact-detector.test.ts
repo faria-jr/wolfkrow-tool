@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
+import { describe, expect, it } from 'vitest';
 
 import { ArtifactDetector } from '../artifact-detector';
 
@@ -151,14 +152,14 @@ describe('ArtifactDetector — audio artifacts', () => {
 describe('ArtifactDetector — combined', () => {
   it('detect() returns excalidraw from tool_use', () => {
     const det = new ArtifactDetector();
-    const a = det.detect('excalidraw.create_view', { elements: [{ type: 'line' }] }, null, false);
+    const a = det.detect('excalidraw.create_view', { elements: [{ type: 'line' }] }, { output: null, isError: false });
     expect(a).not.toBeNull();
     expect(a!.type).toBe('mcp_app');
   });
 
   it('detect() returns null when nothing matches', () => {
     const det = new ArtifactDetector();
-    const a = det.detect('bash', { command: 'ls' }, 'file1.txt\nfile2.txt', false);
+    const a = det.detect('bash', { command: 'ls' }, { output: 'file1.txt\nfile2.txt', isError: false });
     expect(a).toBeNull();
   });
 });

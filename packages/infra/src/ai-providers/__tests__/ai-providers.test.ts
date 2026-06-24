@@ -1,4 +1,13 @@
+import { ProviderConfig } from '@wolfkrow/domain';
 import { describe, expect, it, vi } from 'vitest';
+
+import { AnthropicProvider } from '../anthropic';
+import { ClaudeCompatProvider } from '../claude-compat';
+import { CodexProvider } from '../codex';
+import { ProviderAIProviderFactory } from '../factory';
+import { accumulate, estimateTokens } from '../helpers';
+import { MockProvider } from '../mock';
+import type { CompletionOptions, StreamChunk } from '../types';
 
 vi.mock('@anthropic-ai/sdk', () => ({
   default: class MockSdk {
@@ -7,15 +16,6 @@ vi.mock('@anthropic-ai/sdk', () => ({
     };
   },
 }));
-
-import { ProviderConfig } from '@wolfkrow/domain';
-import { AnthropicProvider } from '../anthropic';
-import { ClaudeCompatProvider } from '../claude-compat';
-import { CodexProvider } from '../codex';
-import { ProviderAIProviderFactory } from '../factory';
-import { accumulate, estimateTokens } from '../helpers';
-import { MockProvider } from '../mock';
-import type { CompletionOptions, StreamChunk } from '../types';
 
 const opts = (prompt: string): CompletionOptions => ({
   model: 'claude-3-5-sonnet-20241022',

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { SmokeTestRunner } from '../smoke-test-runner';
 
@@ -22,6 +22,10 @@ function cleanup(dir: string) {
 }
 
 describe('SmokeTestRunner', () => {
+  beforeEach(() => {
+    process.env['WOLFKROW_SMOKE_ALLOWLIST'] = tmpdir();
+  });
+
   it('detects broken imports', async () => {
     const dir = makeFixture('broken', {
       'package.json': JSON.stringify({ name: 'test', scripts: { test: 'echo' } }),

@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync, type Dirent } from 'node:fs';
 import { extname, join, relative } from 'node:path';
+
 import { RepoProfile } from '@wolfkrow/domain';
 
 const EXCLUDED_DIRS = new Set(['.git', 'node_modules', '__pycache__', '.next', 'dist', 'build', '.cache']);
@@ -39,6 +40,15 @@ const PATH_ROLE_HINTS: Array<{ pattern: RegExp; role: string }> = [
   { pattern: /tests?\/|__tests__\/|spec\//i, role: 'test' },
 ];
 
+function tryAddFile(root: string, full: string, out: string[]): void {
+  try {
+    const stat = statSync(full);
+    if (stat.size <= 1_048_576) out.push(relative(root, full));
+  } catch {
+    // skip unreadable
+  }
+}
+
 export class RepoProfilerService {
   async profile(root: string): Promise<RepoProfile> {
     const files = this.collectFiles(root);
@@ -70,12 +80,7 @@ export class RepoProfilerService {
       if (entry.isDirectory()) {
         this.collectFiles(root, full, out);
       } else if (entry.isFile()) {
-        try {
-          const stat = statSync(full);
-          if (stat.size <= 1_048_576) out.push(relative(root, full));
-        } catch {
-          // skip unreadable
-        }
+        tryAddFile(root, full, out);
       }
     }
     return out;

@@ -1,5 +1,5 @@
-import { mkdir, readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { mkdir, readFile, readdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join, normalize, relative, resolve, sep } from 'node:path';
 
 import {
@@ -11,8 +11,16 @@ import {
   type VaultKind,
 } from '@wolfkrow/domain';
 
+import {
+  buildFrontmatter,
+  parseFrontmatter,
+  sanitizeFilename,
+  validateVaultPath,
+} from './mgraph-engine-helpers';
+
+export { sanitizeFilename, validateVaultPath };
+
 const VAULT_SUBDIRS = ['entities', 'meetings', 'decisions', 'projects', 'references'] as const;
-const PATH_RE = /^[a-z0-9\-./]+$/;
 
 export interface MgraphSearchResult {
   path: string;
@@ -32,86 +40,6 @@ export interface MgraphSearchOptions {
   kind?: VaultKind;
 }
 
-export function sanitizeFilename(input: string): string {
-  return input
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .trim()
-    .replace(/[\s]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .substring(0, 50);
-}
-
-export function validateVaultPath(vaultPath: string): { valid: boolean; error?: string } {
-  if (vaultPath.includes('..')) return { valid: false, error: 'Path traversal (..) not allowed' };
-  if (vaultPath.includes('//')) return { valid: false, error: 'Double slashes not allowed' };
-  if (!PATH_RE.test(vaultPath)) return { valid: false, error: 'Invalid characters in path' };
-  const validPrefixes = VAULT_SUBDIRS.map((d) => `${d}/`);
-  if (!validPrefixes.some((p) => vaultPath.startsWith(p))) {
-    return { valid: false, error: `Path must start with one of: ${validPrefixes.join(', ')}` };
-  }
-  return { valid: true };
-}
-
-interface ParsedFrontmatter {
-  title: string;
-  type: VaultKind;
-  tags: string[];
-  source?: string;
-  created?: string;
-  updated?: string;
-  body: string;
-}
-
-function buildFrontmatter(input: ParsedFrontmatter): string {
-  const escape = (s: string) => s.replace(/"/g, '\\"');
-  const lines = [
-    '---',
-    `title: "${escape(input.title)}"`,
-    `type: ${input.type}`,
-    `tags: [${input.tags.map((t) => `"${escape(t)}"`).join(', ')}]`,
-    ...(input.source ? [`source: ${input.source}`] : []),
-    ...(input.created ? [`created: ${input.created}`] : []),
-    ...(input.updated ? [`updated: ${input.updated}`] : []),
-    '---',
-    '',
-  ];
-  return lines.join('\n');
-}
-
-function parseFrontmatter(content: string): ParsedFrontmatter {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-  if (!match || !match[1]) {
-    return { title: '', type: 'entity', tags: [], body: content };
-  }
-  const fm: ParsedFrontmatter = { title: '', type: 'entity', tags: [], body: match[2] ?? '' };
-  const fmBlock = match[1];
-  for (const line of fmBlock.split('\n')) {
-    const colonIdx = line.indexOf(':');
-    if (colonIdx === -1) continue;
-    const key = line.slice(0, colonIdx).trim();
-    const value = line.slice(colonIdx + 1).trim().replace(/^["']|["']$/g, '');
-    if (key === 'title') fm.title = value;
-    else if (key === 'type') {
-      if ((['entity', 'meeting', 'decision', 'project', 'reference'] as readonly string[]).includes(value)) {
-        fm.type = value as VaultKind;
-      }
-    } else if (key === 'tags') {
-      const inner = value.replace(/^\[|\]$/g, '');
-      fm.tags = inner
-        .split(',')
-        .map((t) => t.trim().replace(/^["']|["']$/g, ''))
-        .filter((t) => t.length > 0);
-    } else if (key === 'source') fm.source = value;
-    else if (key === 'created') fm.created = value;
-    else if (key === 'updated') fm.updated = value;
-  }
-  return fm;
-}
-
 export interface CreateVaultNoteInput {
   path: string;
   kind: VaultKind;
@@ -123,6 +51,37 @@ export interface CreateVaultNoteInput {
 
 export interface MgraphEngineOptions {
   vaultRoot: string;
+}
+
+function buildNoteNode(note: VaultNote): VaultGraphNode {
+  return {
+    id: note.path,
+    title: note.title,
+    kind: note.kind,
+    tags: [...note.tags],
+    path: note.path,
+  };
+}
+
+function buildGraphEdges(notes: VaultNote[]): VaultGraphEdge[] {
+  const nodes = notes.map(buildNoteNode);
+  const edges: VaultGraphEdge[] = [];
+  const seen = new Set<string>();
+
+  for (const note of notes) {
+    for (const target of note.wikilinks) {
+      const targetSlug = sanitizeFilename(target);
+      const match = nodes.find(
+        (n) => sanitizeFilename(n.title) === targetSlug || n.path.endsWith(`/${targetSlug}.md`),
+      );
+      if (!match) continue;
+      const edgeKey = `${note.path}->${match.path}`;
+      if (seen.has(edgeKey)) continue;
+      seen.add(edgeKey);
+      edges.push({ source: note.path, target: match.path });
+    }
+  }
+  return edges;
 }
 
 export class MgraphEngine {
@@ -155,7 +114,7 @@ export class MgraphEngine {
     if (existsSync(abs)) throw new Error(`Note already exists: ${input.path}`);
     await mkdir(dirname(abs), { recursive: true });
     const now = new Date().toISOString();
-    const frontmatter: ParsedFrontmatter = {
+    const frontmatter = {
       title: input.title,
       type: input.kind,
       tags: input.tags ?? [],
@@ -197,7 +156,7 @@ export class MgraphEngine {
     const existing = await this.readNote(path);
     if (!existing) throw new Error(`Note not found: ${path}`);
     const abs = this.resolveSafe(path);
-    const frontmatter: ParsedFrontmatter = {
+    const frontmatter = {
       title: title ?? existing.title,
       type: existing.kind,
       tags: tags ?? [...existing.tags],
@@ -248,31 +207,7 @@ export class MgraphEngine {
 
   async buildGraphData(): Promise<VaultGraphData> {
     const notes = await this.listAllNotes();
-    const nodes: VaultGraphNode[] = notes.map((n) => ({
-      id: n.path,
-      title: n.title,
-      kind: n.kind,
-      tags: [...n.tags],
-      path: n.path,
-    }));
-    const edges: VaultGraphEdge[] = [];
-    const seen = new Set<string>();
-    for (const note of notes) {
-      for (const target of note.wikilinks) {
-        const targetSlug = sanitizeFilename(target);
-        const match = nodes.find(
-          (n) => sanitizeFilename(n.title) === targetSlug || n.path.endsWith(`/${targetSlug}.md`),
-        );
-        if (match) {
-          const edgeKey = `${note.path}->${match.path}`;
-          if (!seen.has(edgeKey)) {
-            seen.add(edgeKey);
-            edges.push({ source: note.path, target: match.path });
-          }
-        }
-      }
-    }
-    return { nodes, edges };
+    return { nodes: notes.map(buildNoteNode), edges: buildGraphEdges(notes) };
   }
 
   async searchVault(opts: MgraphSearchOptions): Promise<MgraphSearchResult[]> {

@@ -1,8 +1,10 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import type { PermissionResolver, ToolExecutor, ToolExecutionContext } from '@wolfkrow/domain';
+import { ToolResult } from '@wolfkrow/domain';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
-// Mutable so individual tests can override the stream factory.
-let streamImpl: (...args: unknown[]) => unknown = () =>
-  makeFakeStream(['Hel', 'lo'], { input_tokens: 5, output_tokens: 2 });
+import { ToolRegistry } from '../../tools/tool-registry';
+import { ClaudeCompatProvider } from '../claude-compat';
+import type { CompletionOptions, StreamChunk } from '../types';
 
 vi.mock('@anthropic-ai/sdk', () => ({
   default: class MockSdk {
@@ -10,11 +12,9 @@ vi.mock('@anthropic-ai/sdk', () => ({
   },
 }));
 
-import { ToolResult } from '@wolfkrow/domain';
-import { ClaudeCompatProvider } from '../claude-compat';
-import { ToolRegistry } from '../../tools/tool-registry';
-import type { CompletionOptions, StreamChunk } from '../types';
-import type { ToolExecutor, ToolExecutionContext } from '@wolfkrow/domain';
+// Mutable so individual tests can override the stream factory.
+let streamImpl: (...args: unknown[]) => unknown = () =>
+  makeFakeStream(['Hel', 'lo'], { input_tokens: 5, output_tokens: 2 });
 
 const opts = (prompt: string, overrides: Partial<CompletionOptions> = {}): CompletionOptions => ({
   model: 'glm-4.7',
@@ -94,30 +94,49 @@ describe('ClaudeCompatProvider — tool-calling (RM3.1)', () => {
   it('accepts URL string as baseUrl when supportsTools given', () => {
     const registry = makeEchoRegistry();
     expect(
-      () => new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', true, registry),
+      () => new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry }),
     ).not.toThrow();
   });
 
   it('emits tool_call chunk on tool_use block', async () => {
     const registry = makeEchoRegistry();
-    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', true, registry);
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
     const chunks = await collect(provider.query(opts('use echo')));
     expect(chunks.some((c) => c.toolCall?.name === 'echo')).toBe(true);
   });
 
   it('emits tool_result chunk after tool execution', async () => {
     const registry = makeEchoRegistry();
-    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', true, registry);
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
     const chunks = await collect(provider.query(opts('use echo')));
     expect(chunks.some((c) => c.toolResult !== undefined)).toBe(true);
   });
 
   it('continues to text after tool loop completes', async () => {
     const registry = makeEchoRegistry();
-    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', true, registry);
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
     const chunks = await collect(provider.query(opts('use echo')));
     const textDeltas = chunks.filter((c) => c.delta && c.delta.length > 0 && !c.done);
     expect(textDeltas.length).toBeGreaterThan(0);
+  });
+
+  it('asks permission before destructive tool when resolver denies', async () => {
+    const registry = makeEchoRegistry();
+    const resolver = {
+      canUseTool: vi.fn().mockReturnValue({ type: 'ask', prompt: 'Allow?' }),
+    };
+    const requestPermission = vi.fn().mockResolvedValue(false);
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', {
+      supportsTools: true,
+      toolRegistry: registry,
+      permissionResolver: resolver as unknown as PermissionResolver,
+      agent: { allowedTools: ['echo'] },
+      requestPermission,
+    });
+    const chunks = await collect(provider.query(opts('use echo')));
+    expect(chunks.some((c) => c.toolPermission !== undefined)).toBe(true);
+    expect(chunks.some((c) => c.toolResult?.isError)).toBe(true);
+    expect(requestPermission).toHaveBeenCalled();
   });
 
   it('text-only mode unchanged when no registry', async () => {
