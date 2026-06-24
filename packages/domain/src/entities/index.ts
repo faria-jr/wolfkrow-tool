@@ -44,3 +44,6 @@ export { Secret } from './secret';
 export type { SecretProps, SecretCreateInput, SecretUpdateInput, SecretCategory, SecretRepo } from './secret';
 export { GlobalRule } from './global-rule';
 export type { GlobalRuleProps, GlobalRuleCreateInput, RuleKind, GlobalRuleRepo } from './global-rule';
+
+export { RepoProfile } from './repo-profile';
+export type { RepoProfileProps, RoleMap } from './repo-profile';

@@ -8,12 +8,13 @@ export interface PlannerSprintData {
 }
 
 export interface HarnessPlanner {
-  plan(specContent: string, config: { plannerModel: string }): Promise<PlannerSprintData[]>;
+  plan(specContent: string, config: { plannerModel: string; repoSummary?: string }): Promise<PlannerSprintData[]>;
 }
 
 export interface PlanSprintsInput {
   projectId: string;
   specContent: string;
+  repoSummary?: string;
 }
 
 export interface PlanSprintsOutput {
@@ -31,7 +32,10 @@ export class PlanSprintsUseCase {
     const project = await this.projectRepo.findById(input.projectId);
     if (!project) throw new NotFoundError('HarnessProject', input.projectId);
 
-    const sprintData = await this.planner.plan(input.specContent, { plannerModel: project.config.plannerModel });
+    const sprintData = await this.planner.plan(input.specContent, {
+      plannerModel: project.config.plannerModel,
+      ...(input.repoSummary !== undefined ? { repoSummary: input.repoSummary } : {}),
+    });
 
     const sprints = await Promise.all(
       sprintData.map((data, i) =>

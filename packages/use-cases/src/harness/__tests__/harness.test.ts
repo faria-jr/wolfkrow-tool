@@ -131,6 +131,22 @@ describe('PlanSprintsUseCase', () => {
     const updated = await projectRepo.findById(p.id);
     expect(updated?.status).toBe('ready');
   });
+
+  it('forwards repoSummary to planner.plan when provided', async () => {
+    const projectRepo = new InMemoryProjectRepo();
+    const sprintRepo = new InMemorySprintRepo();
+    const p = HarnessProject.create({ userId: 'u1', name: 'B', specPath: '/b', description: undefined, config: { maxRoundsPerFeature: 3, coderModel: 'x', plannerModel: 'z' } });
+    await projectRepo.save(p);
+
+    const mockPlanner = { plan: vi.fn().mockResolvedValue([{ name: 'Sprint 1', description: 'd', features: FEATURES }]) };
+    const uc = new PlanSprintsUseCase(projectRepo, sprintRepo, mockPlanner);
+    await uc.execute({ projectId: p.id, specContent: '# Spec', repoSummary: '5 files | Languages: typescript' });
+
+    expect(mockPlanner.plan).toHaveBeenCalledWith(
+      '# Spec',
+      expect.objectContaining({ repoSummary: '5 files | Languages: typescript' }),
+    );
+  });
 });
 
 // ── RunCoderRoundUseCase ──────────────────────────────────────────────────────

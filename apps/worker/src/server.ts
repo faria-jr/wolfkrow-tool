@@ -26,6 +26,8 @@ import { mcpRoutes } from './routes/mcp';
 import { memoryRoutes } from './routes/memory';
 import { permissionsRoutes } from './routes/permissions';
 import { pipelineRoutes } from './routes/pipeline';
+import { profilerRoutes } from './routes/profiler';
+import { providerRoutes } from './routes/providers';
 import { ptyRoutes } from './routes/pty';
 import { rulesRoutes } from './routes/rules';
 import { schedulerRoutes } from './routes/scheduler';
@@ -36,7 +38,6 @@ import { telegramRoutes } from './routes/telegram';
 import { usageRoutes } from './routes/usage';
 import { vaultRoutes } from './routes/vault';
 import { voiceRoutes } from './routes/voice';
-import { providerRoutes } from './routes/providers';
 
 async function registerRoutes(server: FastifyInstance) {
   await server.register(healthRoutes, { prefix: '/health' });
@@ -61,6 +62,7 @@ async function registerRoutes(server: FastifyInstance) {
   await server.register(sidecarRoutes, { prefix: '/sidecar' });
   await server.register(skillsRoutes, { prefix: '/skills' });
   await server.register(providerRoutes, { prefix: '/api' });
+  await server.register(profilerRoutes, { prefix: '/api' });
 }
 
 async function registerPlugins(server: FastifyInstance) {

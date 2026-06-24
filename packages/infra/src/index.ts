@@ -17,3 +17,4 @@ export * from './repos';
 export { VoyageEmbedder } from './embeddings/voyage-embedder';
 export * from './tools/index';
 export { FsArtifactWriter } from './services/artifact-writer';
+export { RepoProfilerService } from './services/repo-profiler';

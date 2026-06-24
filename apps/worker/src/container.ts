@@ -192,10 +192,11 @@ function makePlanner(config: HarnessConfig): HarnessPlanner {
   return {
     async plan(specContent, planConfig) {
       const provider = await resolveAIProvider(config.providerId ?? 'anthropic');
+      const repoContext = planConfig.repoSummary ? `\n\nRepository context:\n${planConfig.repoSummary}` : '';
       const result = await provider.complete({
         model: planConfig.plannerModel,
         system: 'You are a senior software architect. Given a spec, output a JSON array of sprints. Each sprint: {name, description, features: [{name, description, acceptanceCriteria: string[]}]}. Respond ONLY with valid JSON array.',
-        messages: [{ role: 'user', content: `Create sprint plan for:\n\n${specContent}` }],
+        messages: [{ role: 'user', content: `Create sprint plan for:\n\n${specContent}${repoContext}` }],
         maxTokens: 4096,
         temperature: 0.3,
       });
