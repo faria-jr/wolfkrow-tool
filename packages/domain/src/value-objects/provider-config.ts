@@ -65,8 +65,16 @@ function normalizeDottedIpv4(raw: string): string | null {
  */
 function normalizeSingleIpv4(raw: string): string | null {
   if (/^0[0-9]+$/.test(raw)) return null
-  const radix = raw.toLowerCase().startsWith('0x') ? 16 : 10
-  const single = parseInt(raw, radix)
+  const isHex = raw.toLowerCase().startsWith('0x')
+  const radix = isHex ? 16 : 10
+  const digits = isHex ? raw.slice(2) : raw
+  if (digits === '') return null
+  // Reject inputs whose digit stream is not fully numeric in the chosen radix.
+  // `parseInt('12ab', 10)` would silently truncate to 12 — a contract violation
+  // that could let a non-numeric suffix bypass canonicalization.
+  const validDigits = isHex ? /^[0-9a-fA-F]+$/ : /^[0-9]+$/
+  if (!validDigits.test(digits)) return null
+  const single = parseInt(digits, radix)
   if (!Number.isFinite(single) || single < 0 || single > 0xffffffff) return null
   return bigintToDotted(BigInt(single))
 }

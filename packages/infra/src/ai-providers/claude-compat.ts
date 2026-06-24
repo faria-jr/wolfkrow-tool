@@ -57,7 +57,7 @@ export class ClaudeCompatProvider implements AIProvider {
   private readonly requestPermission: ((req: ToolPermissionEvent) => Promise<boolean>) | undefined;
   private readonly workDir: string | undefined;
   private readonly resolvedBaseUrl: string | undefined;
-  private ssrfChecked = false;
+  private ssrfPromise: Promise<void> | undefined;
 
   constructor(
     apiKey: string,
@@ -77,9 +77,11 @@ export class ClaudeCompatProvider implements AIProvider {
   }
 
   private async ensureSsrfSafe(): Promise<void> {
-    if (this.ssrfChecked || !this.resolvedBaseUrl) return;
-    this.ssrfChecked = true;
-    await assertPublicProviderHost(this.resolvedBaseUrl);
+    if (!this.resolvedBaseUrl) return;
+    if (!this.ssrfPromise) {
+      this.ssrfPromise = assertPublicProviderHost(this.resolvedBaseUrl);
+    }
+    return this.ssrfPromise;
   }
 
   async *query(options: CompletionOptions): AsyncIterable<StreamChunk> {

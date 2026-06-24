@@ -9,7 +9,7 @@ import { assertPublicProviderHost } from './ssrf-guard';
 
 export class CodexProvider extends OpenAIBaseProvider {
   private readonly baseURL: string | undefined;
-  private ssrfChecked = false;
+  private ssrfPromise: Promise<void> | undefined;
 
   constructor(apiKey: string, baseURL?: string) {
     super(new OpenAI({ apiKey, ...(baseURL ? { baseURL } : {}) }));
@@ -17,8 +17,10 @@ export class CodexProvider extends OpenAIBaseProvider {
   }
 
   protected override async ensureSsrfSafe(): Promise<void> {
-    if (this.ssrfChecked || !this.baseURL) return;
-    this.ssrfChecked = true;
-    await assertPublicProviderHost(this.baseURL);
+    if (!this.baseURL) return;
+    if (!this.ssrfPromise) {
+      this.ssrfPromise = assertPublicProviderHost(this.baseURL);
+    }
+    return this.ssrfPromise;
   }
 }

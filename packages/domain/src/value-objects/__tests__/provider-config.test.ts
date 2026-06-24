@@ -288,6 +288,24 @@ describe('normalizeIpv4', () => {
     expect(normalizeIpv4('2852039166')).toBe('169.254.169.254');
   });
 
+  it('returns null for decimal with trailing non-digits (12ab)', () => {
+    // parseInt('12ab', 10) would truncate to 12 — must be rejected.
+    expect(normalizeIpv4('12ab')).toBeNull();
+  });
+
+  it('returns null for decimal with embedded non-digit exponent (1e5)', () => {
+    // parseInt('1e5', 10) would truncate to 1 — must be rejected.
+    expect(normalizeIpv4('1e5')).toBeNull();
+  });
+
+  it('returns null for hex with non-hex digits after 0x (0xGG)', () => {
+    expect(normalizeIpv4('0xGG')).toBeNull();
+  });
+
+  it('returns null for hex with trailing non-hex digits (0x7fZZ)', () => {
+    expect(normalizeIpv4('0x7fZZ')).toBeNull();
+  });
+
   it('returns null for non-IP hostname', () => {
     expect(normalizeIpv4('api.anthropic.com')).toBeNull();
   });
