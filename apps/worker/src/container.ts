@@ -25,6 +25,7 @@ import {
   aiProviderFactory,
   BashTool,
   ClaudeAgentProvider,
+  ClaudeCompatProvider,
   FilesystemTool,
   FsArtifactWriter,
   type AIProvider,
@@ -36,7 +37,7 @@ import { createRepoRegistry, type RepoRegistry } from '@wolfkrow/infra/repos';
 import { KeytarSecretsAdapter } from '@wolfkrow/infra/secrets/keytar-adapter';
 import type { CoderAgent, EvaluatorAgent, HarnessPlanner } from '@wolfkrow/use-cases';
 
-import { getProviderApiKey } from './lib/keychain';
+import { getAnthropicApiKey, getProviderApiKey } from './lib/keychain';
 
 export type { RepoRegistry };
 
@@ -120,6 +121,53 @@ export function getAgenticStreamPort(opts: {
     complete: (o: AICompletionOptions) =>
       provider.complete(o) as Promise<AICompletionResult>,
   };
+}
+
+/** RM3.2: agentic stream port backed by ClaudeCompatProvider (non-Anthropic with tool support). */
+export function getCompatAgenticStreamPort(opts: {
+  cfg: import('@wolfkrow/domain').ProviderConfig;
+  apiKey: string;
+  allowedTools: readonly string[];
+  requestPermission: (callId: string) => Promise<boolean>;
+  workDir?: string;
+}): AIStreamPort {
+  const filteredTools = getToolRegistry().forAgent([...opts.allowedTools]);
+  const registry = new ToolRegistry(filteredTools);
+  const provider = new ClaudeCompatProvider(opts.apiKey, { baseUrl: opts.cfg.baseUrl }, true, registry);
+  return {
+    query: (o: AICompletionOptions) => provider.query(o) as AsyncIterable<AIStreamChunk>,
+    complete: (o: AICompletionOptions) => provider.complete(o) as Promise<AICompletionResult>,
+  };
+}
+
+/**
+ * RM3.2: resolve the correct agentic AIStreamPort for a chat agent.
+ * Uses ClaudeCompatProvider for non-Anthropic providers with supportsTools.
+ * Falls back to ClaudeAgentProvider (Anthropic) otherwise.
+ */
+export async function resolveAgentStreamPort(
+  agentProvider: string | undefined,
+  allowedTools: readonly string[],
+  workDir: string,
+  requestPermission: (callId: string) => Promise<boolean>,
+): Promise<AIStreamPort> {
+  const provId = agentProvider ?? 'anthropic';
+  const provCfg = getProviderById(BUILT_IN_PROVIDERS, provId);
+
+  if (provCfg && provCfg.supportsTools && provId !== 'anthropic') {
+    const apiKey = (await getAdapters().secrets.get(provCfg.apiKeyAccount))
+      ?? (await getProviderApiKey(provId));
+    return getCompatAgenticStreamPort({
+      cfg: provCfg,
+      apiKey,
+      allowedTools,
+      ...(workDir !== undefined ? { workDir } : {}),
+      requestPermission,
+    });
+  }
+
+  const apiKey = await getAnthropicApiKey();
+  return getAgenticStreamPort({ apiKey, allowedTools, workDir, requestPermission });
 }
 
 export interface HarnessAgents {

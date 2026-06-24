@@ -10,8 +10,7 @@ import { CompactSessionUseCase, SendMessageUseCase } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { requestToolPermission, resolveToolPermission } from '../chat/permission-store';
-import { getAgenticStreamPort, getChatWorkDir, getRepos } from '../container';
-import { getAnthropicApiKey } from '../lib/keychain';
+import { getChatWorkDir, getRepos, resolveAgentStreamPort } from '../container';
 import type { Logger } from '../logger';
 import { recordChatTurn } from '../memory/lifecycle';
 import { OrchestratorService } from '../orchestrator';
@@ -140,19 +139,17 @@ async function handleSendRequest(
   const { content, imageParts } = await processAttachments(message, attachments);
   let ai = makeAIAdapter(ctx.orchestrator, adapterOptions(provider, agentId, authUserId), imageParts);
 
-  // T17: when the agent declares allowed tools, switch to an agentic provider
-  // (claude-agent + tools) so destructive tool calls surface tool_permission
-  // events the UI must approve. Agentic mode does not consume attachments yet.
+  // T17 + RM3.2: when the agent declares allowed tools, resolve the agentic provider
+  // based on the agent's configured provider (non-Anthropic uses ClaudeCompatProvider).
   if (agentId) {
     const agent = await getRepos().agent.findById(agentId);
     if (agent && agent.allowedTools.length > 0) {
-      const apiKey = await getAnthropicApiKey();
-      ai = getAgenticStreamPort({
-        apiKey,
-        allowedTools: agent.allowedTools,
-        workDir: getChatWorkDir(userId),
-        requestPermission: (callId) => requestToolPermission(callId),
-      });
+      ai = await resolveAgentStreamPort(
+        agent.provider,
+        agent.allowedTools,
+        getChatWorkDir(userId),
+        (callId) => requestToolPermission(callId),
+      );
     }
   }
 
