@@ -1,5 +1,5 @@
 import { summarizeFindings, type SecurityFinding } from '@wolfkrow/domain';
-import { BUILT_IN_PROVIDERS, getProviderById } from '@wolfkrow/domain';
+import { getProviderById } from '@wolfkrow/domain';
 import { ListFindingsUseCase, ListScansUseCase, RunAuditUseCase } from '@wolfkrow/use-cases';
 
 import { getAdapters, getRepos } from '../container';
@@ -18,11 +18,13 @@ interface AuditReply {
   send: (b: unknown) => unknown;
 }
 
-async function resolveProvider(providerId: string | undefined): Promise<unknown> {
+async function resolveProvider(providerId: string | undefined, userId?: string): Promise<unknown> {
   const { aiFactory } = getAdapters();
+  const { listAllProviders } = await import('../agent-factory');
   const { getProviderApiKey } = await import('../lib/keychain');
+  const all = await listAllProviders(userId);
   const id = providerId ?? 'anthropic';
-  const cfg = getProviderById(BUILT_IN_PROVIDERS, id) ?? getProviderById(BUILT_IN_PROVIDERS, 'anthropic');
+  const cfg = getProviderById(all, id) ?? getProviderById(all, 'anthropic');
   if (!cfg) throw new Error('No provider config available');
   const apiKey = (await getAdapters().secrets.get(cfg.apiKeyAccount)) ?? (await getProviderApiKey(id));
   return aiFactory.createFromConfig(cfg, apiKey);
@@ -57,7 +59,7 @@ async function runAuditHandler(
   const result = await useCase.execute({
     userId,
     projectPath,
-    provider: await resolveProvider(provider),
+    provider: await resolveProvider(provider, userId),
     runner: getAdapters().securityAuditRunner,
     ...(model !== undefined ? { model } : {}),
     ...(filesByRole !== undefined ? { filesByRole } : {}),

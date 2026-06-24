@@ -42,6 +42,20 @@ vi.mock('../../lib/keychain', () => ({
   getProviderApiKey: vi.fn().mockResolvedValue('sk-test'),
 }));
 
+vi.mock('../../agent-factory', () => ({
+  listAllProviders: vi.fn().mockResolvedValue([
+    {
+      id: 'anthropic',
+      displayName: 'Anthropic',
+      protocol: 'anthropic-compat',
+      baseUrl: 'https://api.anthropic.com',
+      apiKeyAccount: 'anthropic',
+      models: ['claude-sonnet-4-6'],
+      supportsTools: true,
+    },
+  ]),
+}));
+
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { auditRoutes } from '../audit';
 
