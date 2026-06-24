@@ -301,3 +301,56 @@ Para uma branch de release v1.0, priorizar:
 5. **M8 release prep** — auto-update feed, README, migration guide
 
 Após isso, branch `audit-v1` está pronta para merge em `main` e release v1.0.
+
+---
+
+## 9. Pendências do Code Review do `correction_plan_1.md`
+
+Code review sistemático executado em 2026-06-24 sobre as fases 1–4 do `correction_plan_1.md`. Resultado: 28/32 itens OK, 4 com falhas parciais, 14 issues de segurança/qualidade identificados (3 críticos, 5 médios, 6 baixos).
+
+### 9.1 Issues CRÍTICOS (resolver antes de produção)
+
+| # | Issue | Arquivo | Plano de ação |
+|---|-------|---------|---------------|
+| CRIT-1 | **BashTool ainda usa `sh -c`** com string arbitrária. Regex bloqueia metacaracteres mas `bash --norc -c 'cmd'` passa. Vetor de RCE parcial. | `packages/infra/src/tools/bash-tool.ts:61` | Trocar para aceitar array de tokens (`command: string[]`) usando `spawn(command[0], command.slice(1), { shell: false })`. Atualizar callers em `apps/worker/src/agent-factory.ts:146` (substituir `[new BashTool(), new FilesystemTool()]` se necessário) e testes em `packages/infra/src/tools/__tests__/bash-tool.test.ts`. Validar que `command.length > 0` e que cada token passa por allowlist de binários comuns (`bash`, `sh`, `node`, `npm`, `pnpm`, `npx`, `git`, `ls`, `cat`, etc.) ou aceitar todos os primeiros args. |
+| CRIT-2 | **BOLA** em `/audit/scans`: `userId` aceito via query string permite listar scans de outros usuários. | `apps/worker/src/routes/audit.ts:96` | Remover fallback `request.query.userId`. Usar exclusivamente `request.user.userId`. Adicionar teste em `apps/worker/src/routes/__tests__/audit.test.ts` validando que query string `?userId=outro` é ignorada. Aplicar mesmo patch em `/audit/scans/:scanId/findings` (validar ownership do scan antes de retornar findings). |
+| CRIT-3 | **SSRF bypass via IPv6** em `ProviderConfig.baseUrl`. `[::1]`, `[::ffff:127.0.0.1]` passam. | `packages/domain/src/value-objects/provider-config.ts:22-37` | Adicionar normalização via `node:net` `isIP()` e validação de IPv6 loopback/private (`fc00::/7`, `fe80::/10`, `::1`, IPv4-mapped). Adicionar testes em `packages/domain/src/value-objects/__tests__/provider-config.test.ts` para cada caso. Considerar também `[0:0:0:0:0:0:0:0]` e `[::ffff:0:0]` como blocked. |
+
+### 9.2 Issues MÉDIOS (resolver próximo sprint)
+
+| # | Issue | Arquivo | Plano de ação |
+|---|-------|---------|---------------|
+| MED-1 | `_hRepos = makeRepos()` no import-time. Falha em testes/ordem de import. | `apps/worker/src/routes/harness.ts:37` | Lazy initialization: mover `const _hRepos = makeRepos();` para dentro de cada handler ou usar getter. Considerar extrair para factory function. |
+| MED-2 | `resolveProvider` em audit.ts consulta apenas `BUILT_IN_PROVIDERS`, ignorando custom. Falha A1. | `apps/worker/src/routes/audit.ts:21-29` | Usar `listAllProviders(userId)` (já exportado de agent-factory) igual ao `container.ts`. Atualizar testes. |
+| MED-3 | BashTool timeout não validado. `Number(input['timeout'])` aceita NaN/negativo. | `packages/infra/src/tools/bash-tool.ts:32` | Validar `timeoutMs > 0 && Number.isFinite(timeoutMs)`. Default 30000. Adicionar teste para `timeout: -1` e `timeout: 'foo'`. |
+| MED-4 | Q10 incompleto. 2 comentários `RM3.2` ainda presentes. | `apps/worker/src/container.ts:130,163` | Trocar `/** RM3.2: ... */` por descrição funcional pura: `/** Stream port backed by ClaudeCompatProvider (non-Anthropic with tool support). */`. |
+| MED-5 | Q3 parcialmente implementado. | `apps/web/components/settings/provider-config/provider-list.tsx` | (a) Importar `BUILT_IN_PROVIDERS` de `@wolfkrow/domain` em vez de `BUILT_IN_IDS` hardcoded. (b) Adicionar Dialog de confirmação antes de delete. (c) Renderizar `saveMut.error`/`deleteMut.error` com toast/alert. (d) Criar `provider-list.test.tsx` com casos: built-in (não pode deletar), custom (deleta com confirmação), save error. |
+
+### 9.3 Issues BAIXOS (endereçar conforme prioridade)
+
+| # | Issue | Arquivo | Plano de ação |
+|---|-------|---------|---------------|
+| LOW-1 | `ProviderFormModal` 67 linhas > 50 do critério Q2. | `apps/web/components/settings/provider-config/provider-form-modal.tsx` | Mover `buildDefaultValues` e `buildId` para helpers em `schema.ts` ou novo arquivo. Compressão de JSX usando componentes menores. |
+| LOW-2 | A4 sem testes RTL para `/audit`. | `apps/web/app/(app)/audit/page.tsx` | Criar `apps/web/components/audit/__tests__/audit-page.test.tsx` com casos: render empty state, render scans list, submit form, view findings. Mockar `/api/audit` com fetch mock. |
+| LOW-3 | `FindingsTable.severity` é `string` em vez de tipo do domínio. | `apps/web/components/audit/findings-table.tsx:8` | Importar `SecuritySeverity` de `@wolfkrow/domain`. Tipar `severity: SecuritySeverity`. |
+| LOW-4 | `audit.ts` usa tipos manuais `AuditRequest`/`AuditReply` em vez de FastifyRequest/FastifyReply. | `apps/worker/src/routes/audit.ts:15-19` | Substituir por `FastifyRequest<{...}>` e `FastifyReply`. Remover `as never` casts das linhas 102-105. |
+| LOW-5 | DRY violation: `resolveProviderConfig` duplicado entre container.ts e agent-factory.ts. | `apps/worker/src/container.ts:193` e `apps/worker/src/agent-factory.ts:34` | Exportar de `agent-factory.ts` e importar em `container.ts`. Remover cópia local. |
+| LOW-6 | DRY violation: `executeWithPermission` duplicado entre claude-compat e claude-agent. | `packages/infra/src/ai-providers/claude-compat.ts:171` e `claude-agent.ts:157` | Extrair para helper compartilhado `packages/infra/src/ai-providers/permission-gate.ts`. Refatorar ambos os providers para usar. |
+| LOW-7 | Magic string `'anthropic'` hardcoded em 5+ lugares. | `apps/worker/src/container.ts`, `apps/worker/src/agent-factory.ts` | Adicionar constante `ANTHROPIC_BUILTIN_ID = 'anthropic'` em `@wolfkrow/domain` ou `@wolfkrow/infra`. Substituir todas as ocorrências. |
+| LOW-8 | `mgraph.ts` duplica `VaultKind` em vez de importar. | `apps/worker/src/routes/mgraph.ts:28` | Importar `VaultKind` de `@wolfkrow/domain`. Remover type alias local. |
+| LOW-9 | Cobertura infra 70% < meta 85% do §1.3. | `packages/infra/src/services/*` (vários sem testes) | (a) Adicionar testes para `mcp-manager`, `sidecar-manager`, `graph-query-service`. (b) Subir thresholds em `packages/infra/vitest.config.ts` de 25% para 75% (passo intermediário antes da meta final). |
+
+### 9.4 Itens que precisam de ADR antes de implementar
+
+- **CRIT-1 (BashTool array)**: Decidir se aceita `command: string[]` puro OU `command: string` + allowlist estrita de binários. Recomendação: aceitar array + remover string completamente.
+- **MED-2 (audit custom providers)**: Confirmar que audit sempre usa provider custom se configurado, mesmo quando user não especificou. Atualmente `providerId ?? 'anthropic'` força anthropic.
+
+### 9.5 Ordem de execução recomendada
+
+1. **CRIT-1** (1-2 dias, requer mudança de contrato em BashTool)
+2. **CRIT-2** (2-4 horas, mudança simples + testes)
+3. **CRIT-3** (4-8 horas, requer pesquisa de IPv6 ranges)
+4. **MED-1, MED-2, MED-4** (2-3 horas cada, simples)
+5. **MED-3** (1 hora, validação simples)
+6. **MED-5** (4-6 horas, refactor + testes)
+7. **LOWs** em qualquer ordem (1-2 horas cada)
