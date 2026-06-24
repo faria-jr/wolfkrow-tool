@@ -73,4 +73,29 @@ describe('BashTool', () => {
     expect(result.isError).toBe(true);
     expect(result.output).toMatch(/not allowed/i);
   });
+
+  it('falls back to default timeout when negative', async () => {
+    mockSpawn('', '', 0);
+    const tool = new BashTool();
+    await tool.execute({ command: 'echo test', timeout: -1 }, ctx);
+    const spawnMock = vi.mocked(spawn);
+    const spawnOpts = spawnMock.mock.calls[0]?.[2] as { cwd: string };
+    expect(spawnOpts).toBeDefined();
+  });
+
+  it('falls back to default timeout when NaN', async () => {
+    mockSpawn('', '', 0);
+    const tool = new BashTool();
+    await tool.execute({ command: 'echo test', timeout: 'not-a-number' }, ctx);
+    const spawnMock = vi.mocked(spawn);
+    expect(spawnMock).toHaveBeenCalled();
+  });
+
+  it('falls back to default timeout when Infinity', async () => {
+    mockSpawn('', '', 0);
+    const tool = new BashTool();
+    await tool.execute({ command: 'echo test', timeout: Number.POSITIVE_INFINITY }, ctx);
+    const spawnMock = vi.mocked(spawn);
+    expect(spawnMock).toHaveBeenCalled();
+  });
 });

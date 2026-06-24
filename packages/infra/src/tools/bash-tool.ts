@@ -13,6 +13,13 @@ function isPathWithinWorkspace(workDir: string, resolved: string): boolean {
   return resolved === workDir || resolved.startsWith(prefix);
 }
 
+function parseTimeoutMs(raw: unknown): number {
+  if (raw === undefined || raw === null) return DEFAULT_TIMEOUT_MS;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_TIMEOUT_MS;
+  return n;
+}
+
 export class BashTool implements ToolExecutor {
   readonly name = 'bash';
   readonly description = 'Execute a shell command in the project workspace. Dangerous commands require explicit permission.';
@@ -29,7 +36,7 @@ export class BashTool implements ToolExecutor {
   async execute(input: Record<string, unknown>, ctx: ToolExecutionContext): Promise<ToolResult> {
     const callId = `bash-${Date.now()}`;
     const command = String(input['command'] ?? '');
-    const timeoutMs = Number(input['timeout'] ?? DEFAULT_TIMEOUT_MS);
+    const timeoutMs = parseTimeoutMs(input['timeout']);
 
     if (SHELL_METACHARACTERS_RE.test(command)) {
       return ToolResult.error(callId, 'Command blocked: contains shell metacharacters');
