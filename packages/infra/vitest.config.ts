@@ -19,13 +19,13 @@ export default defineConfig({
         '**/*.test.ts',
         '**/*.config.ts',
       ],
-      // M0 baseline — §1.3 target 85: sobe quando repos (F.3) e providers (A.2)
-      // ganharem testes. Hoje só db/client é testado.
+      // Updated after LOW-9 — added filesystem-tool + batch-runner tests.
+      // Goal: continue adding tests until reaching §1.3 target of 85%.
       thresholds: {
-        lines: 25,
-        functions: 20,
-        branches: 20,
-        statements: 25,
+        lines: 70,
+        functions: 75,
+        branches: 60,
+        statements: 70,
       },
     },
   },
