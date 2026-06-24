@@ -43,6 +43,7 @@ import { DrizzleTaskRunRepo } from './task-run-repo';
 import { DrizzleTokenUsageRepo } from './token-usage-repo';
 import { DrizzleUserRepo } from './user-repo';
 import { DrizzleWorkflowRunRepo } from './workflow-run-repo';
+import { DrizzleProviderConfigRepo } from './provider-config-repo';
 
 export interface RepoRegistry {
   user: DrizzleUserRepo;
@@ -73,6 +74,7 @@ export interface RepoRegistry {
   enrichSession: DrizzleEnrichSessionRepo;
   workflowRun: DrizzleWorkflowRunRepo;
   graph: DrizzleGraphRepo;
+  providerConfig: DrizzleProviderConfigRepo;
 }
 
 let _registry: RepoRegistry | null = null;
@@ -111,6 +113,7 @@ export function createRepoRegistry(force = false): RepoRegistry {
     enrichSession: new DrizzleEnrichSessionRepo(db),
     workflowRun: new DrizzleWorkflowRunRepo(db),
     graph: new DrizzleGraphRepo(db),
+    providerConfig: new DrizzleProviderConfigRepo(db),
   };
   return _registry;
 }

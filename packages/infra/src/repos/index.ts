@@ -33,6 +33,7 @@ export { DrizzleSecretRepo } from './secret-repo';
 export { DrizzleTokenUsageRepo } from './token-usage-repo';
 export { DrizzleGlobalRuleRepo } from './global-rule-repo';
 export { DrizzleAuditLogRepo } from './audit-log-repo';
+export { DrizzleProviderConfigRepo } from './provider-config-repo';
 
 import type { ISchedulerRepository } from './scheduler-repo';
 import { DrizzleSchedulerRepository } from './scheduler-repo';

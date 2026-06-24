@@ -10,3 +10,5 @@ export { PasswordHash } from './password-hash';
 export { PlainPassword } from './plain-password';
 export { ToolCall } from './tool-call';
 export { ToolResult } from './tool-result';
+export { ProviderConfig, PROVIDER_PROTOCOLS } from './provider-config';
+export type { ProviderConfigProps, ProviderProtocol } from './provider-config';
