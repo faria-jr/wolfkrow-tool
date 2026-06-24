@@ -1,6 +1,7 @@
 import type {
   ChunkSearchResult,
   EmbeddingPort,
+  HybridChunkSearchResult,
   KeywordSearchResult,
   KnowledgeChunkRepo,
   KnowledgeDocRepo,
@@ -66,6 +67,24 @@ class InMemoryChunkRepo implements KnowledgeChunkRepo {
       .filter((c) => c.content.toLowerCase().includes(query.toLowerCase()))
       .slice(0, limit)
       .map((chunk, i) => ({ chunk, rank: -(i + 1) }));
+  }
+  async hybridSearch(
+    query: string,
+    _embedding: number[],
+    limit: number,
+  ): Promise<HybridChunkSearchResult[]> {
+    const vecResults = await this.vectorSearch(_embedding, limit);
+    const kwResults = await this.keywordSearch(query, limit);
+    return vecResults.map((v, idx) => {
+      const kw = kwResults.find((k) => k.chunk.id === v.chunk.id);
+      const result: HybridChunkSearchResult = {
+        chunk: v.chunk,
+        score: 1 / (60 + idx + 1) + (kw ? 1 / 61 : 0),
+        vectorDistance: v.distance,
+      };
+      if (kw) result.keywordRank = kw.rank;
+      return result;
+    });
   }
 }
 

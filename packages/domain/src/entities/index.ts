@@ -12,6 +12,8 @@ export { KnowledgeDocument } from './knowledge-document';
 export type { KnowledgeDocumentProps, KnowledgeDocumentCreateInput, DocumentStatus, EmbeddingModel, DocumentMetadata } from './knowledge-document';
 export { KnowledgeChunk } from './knowledge-chunk';
 export type { KnowledgeChunkProps, KnowledgeChunkCreateInput, ChunkMetadata, ChunkSourceType } from './knowledge-chunk';
+export { formatCitation, formatCitationLabel, buildCitationIndex } from './citation';
+export type { CitationInput } from './citation';
 export { SemanticMemory } from './semantic-memory';
 export type { SemanticMemoryProps, SemanticMemoryCreateInput, MemorySource } from './semantic-memory';
 export { DailySummary } from './daily-summary';

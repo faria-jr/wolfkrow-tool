@@ -6,6 +6,17 @@ export interface MemorySearchResult {
   distance: number;
 }
 
+/**
+ * M4 — Reciprocal Rank Fusion of memory results across multiple search
+ * strategies. `score` is the RRF sum; per-strategy ranks/distance are
+ * undefined when the strategy did not contribute.
+ */
+export interface HybridMemorySearchResult {
+  memory: SemanticMemory;
+  score: number;
+  vectorDistance?: number;
+}
+
 export interface SemanticMemoryRepo {
   findById(id: string): Promise<SemanticMemory | null>;
   findByUserId(userId: string, limit?: number): Promise<SemanticMemory[]>;
@@ -13,6 +24,15 @@ export interface SemanticMemoryRepo {
   delete(id: string): Promise<void>;
   deleteByUserId(userId: string): Promise<void>;
   vectorSearch(embedding: number[], userId: string, limit: number): Promise<MemorySearchResult[]>;
+  /**
+   * M4 — Fused vector search across user's memories. Defaults to vec0 when
+   * available; falls back to JS cosine. `userId` filters to a single user.
+   */
+  hybridSearch(
+    embedding: number[],
+    userId: string,
+    limit: number,
+  ): Promise<HybridMemorySearchResult[]>;
 }
 
 export interface DailySummaryRepo {
