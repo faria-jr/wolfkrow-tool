@@ -81,7 +81,23 @@ export const UsageSummarySchema = z.object({
   bySource: z.record(z.string(), UsageBreakdownEntrySchema),
   byDay: z.array(
     z.object({
-      day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      day: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .refine((s) => {
+          const parts = s.split('-').map(Number);
+          const y = parts[0]!;
+          const m = parts[1]!;
+          const d = parts[2]!;
+          const date = new Date(Date.UTC(y, m - 1, d));
+          // JS Date rolls overflow (e.g. Feb 30 → Mar 1) instead of producing
+          // NaN, so verify the constructed date matches the input components.
+          return (
+            date.getUTCFullYear() === y &&
+            date.getUTCMonth() === m - 1 &&
+            date.getUTCDate() === d
+          );
+        }, 'invalid calendar date'),
       inputTokens: z.number().int().min(0),
       outputTokens: z.number().int().min(0),
       costUSD: z.number().min(0),

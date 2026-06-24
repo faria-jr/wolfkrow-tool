@@ -24,6 +24,7 @@ vi.mock('../../container', () => ({
 
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { usageRoutes } from '../usage';
+import { UsageSummarySchema } from '@wolfkrow/shared-types';
 
 // Recent timestamps so the budget use-case's 30-day window includes them.
 const today = new Date();
@@ -112,5 +113,37 @@ describe('GET /usage/summary', () => {
     // Both records fall inside the default 30-day window: $35 > $30 → exceeded.
     expect(body.spentUSD).toBeCloseTo(35, 2);
     expect(body.exceeded).toBe(true);
+  });
+});
+
+// The /summary route calls `UsageSummarySchema.parse(summary)` before
+// `reply.send` (ADR-0005 Zod boundary). These tests prove that parse guards the
+// response: a malformed summary from the use-case layer throws rather than
+// leaking garbage to the client.
+describe('GET /usage/summary boundary parse', () => {
+  it('rejects a summary with non-numeric token totals', () => {
+    expect(() =>
+      UsageSummarySchema.parse({
+        totalInputTokens: 'not-a-number',
+        totalOutputTokens: 130,
+        totalCostUSD: 35,
+        byModel: {},
+        bySource: {},
+        byDay: [],
+      }),
+    ).toThrow();
+  });
+
+  it('rejects a summary with byDay as a Record instead of an array', () => {
+    expect(() =>
+      UsageSummarySchema.parse({
+        totalInputTokens: 300,
+        totalOutputTokens: 130,
+        totalCostUSD: 35,
+        byModel: {},
+        bySource: {},
+        byDay: { '2024-01-01': { inputTokens: 1, outputTokens: 1, costUSD: 1 } },
+      }),
+    ).toThrow();
   });
 });

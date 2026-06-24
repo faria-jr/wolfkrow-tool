@@ -53,41 +53,63 @@ export class ComputeUsageUseCase {
   execute(input: ComputeUsageInput): UsageSummary {
     const records = this.repo.findMany(input);
 
+    // Aggregate cost in integer cents per bucket and convert to USD once at the
+    // end. Summing floats (convert-then-sum) accumulates rounding error across
+    // many records; sum-integers-convert-last keeps the monetary value exact.
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
-    let totalCostUSD = 0;
-    const byModel: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }> = {};
-    const bySource: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }> = {};
-    const byDayMap: Record<string, { inputTokens: number; outputTokens: number; costUSD: number }> = {};
+    let totalCostCents = 0;
+    const byModel: Record<string, { inputTokens: number; outputTokens: number; costCents: number }> = {};
+    const bySource: Record<string, { inputTokens: number; outputTokens: number; costCents: number }> = {};
+    const byDayMap: Record<string, { inputTokens: number; outputTokens: number; costCents: number }> = {};
 
     for (const r of records) {
       totalInputTokens += r.inputTokens;
       totalOutputTokens += r.outputTokens;
-      const costUSD = r.cost / 100;
-      totalCostUSD += costUSD;
+      totalCostCents += r.cost;
 
-      const model = (byModel[r.model] ??= { inputTokens: 0, outputTokens: 0, costUSD: 0 });
+      const model = (byModel[r.model] ??= { inputTokens: 0, outputTokens: 0, costCents: 0 });
       model.inputTokens += r.inputTokens;
       model.outputTokens += r.outputTokens;
-      model.costUSD += costUSD;
+      model.costCents += r.cost;
 
-      const src = (bySource[r.source] ??= { inputTokens: 0, outputTokens: 0, costUSD: 0 });
+      const src = (bySource[r.source] ??= { inputTokens: 0, outputTokens: 0, costCents: 0 });
       src.inputTokens += r.inputTokens;
       src.outputTokens += r.outputTokens;
-      src.costUSD += costUSD;
+      src.costCents += r.cost;
 
       const day = r.timestamp.toISOString().slice(0, 10);
-      const d = (byDayMap[day] ??= { inputTokens: 0, outputTokens: 0, costUSD: 0 });
+      const d = (byDayMap[day] ??= { inputTokens: 0, outputTokens: 0, costCents: 0 });
       d.inputTokens += r.inputTokens;
       d.outputTokens += r.outputTokens;
-      d.costUSD += costUSD;
+      d.costCents += r.cost;
     }
 
+    const totalCostUSD = totalCostCents / 100;
+    const byModelUSD = Object.fromEntries(
+      Object.entries(byModel).map(([k, v]) => [k, {
+        inputTokens: v.inputTokens,
+        outputTokens: v.outputTokens,
+        costUSD: v.costCents / 100,
+      }]),
+    );
+    const bySourceUSD = Object.fromEntries(
+      Object.entries(bySource).map(([k, v]) => [k, {
+        inputTokens: v.inputTokens,
+        outputTokens: v.outputTokens,
+        costUSD: v.costCents / 100,
+      }]),
+    );
     const byDay = Object.entries(byDayMap)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([day, d]) => ({ day, ...d }));
+      .map(([day, d]) => ({
+        day,
+        inputTokens: d.inputTokens,
+        outputTokens: d.outputTokens,
+        costUSD: d.costCents / 100,
+      }));
 
-    return { totalInputTokens, totalOutputTokens, totalCostUSD, byModel, bySource, byDay };
+    return { totalInputTokens, totalOutputTokens, totalCostUSD, byModel: byModelUSD, bySource: bySourceUSD, byDay };
   }
 }
 
