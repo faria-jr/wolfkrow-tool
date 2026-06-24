@@ -1,3 +1,5 @@
+import type { ArtifactData, ArtifactKind } from '@wolfkrow/domain';
+
 import type { ToolCall } from './tool-call-inline';
 
 export type SSEEvent =
@@ -8,7 +10,16 @@ export type SSEEvent =
   | { type: 'ask_question'; prompt: string }
   | { type: 'tool_call'; id: string; name: string; input: Record<string, unknown> }
   | { type: 'tool_result'; callId: string; output: string; isError: boolean }
-  | { type: 'tool_permission'; id: string; name: string; input: Record<string, unknown>; prompt: string };
+  | { type: 'tool_permission'; id: string; name: string; input: Record<string, unknown>; prompt: string }
+  | { type: 'artifact'; artifact: ArtifactPayload };
+
+export interface ArtifactPayload {
+  id: string;
+  type: ArtifactKind;
+  toolName: string;
+  title?: string;
+  data: ArtifactData;
+}
 
 export interface PendingPermission {
   callId: string;
@@ -22,6 +33,7 @@ export interface SseCallbacks {
   onToolCall?: (tc: ToolCall) => void;
   onToolResult?: (callId: string, output: string, isError: boolean) => void;
   onToolPermission?: (p: PendingPermission) => void;
+  onArtifact?: (artifact: ArtifactPayload) => void;
 }
 
 function parseSseLine(line: string): SSEEvent | null {
@@ -46,6 +58,9 @@ function dispatchSseEvent(ev: SSEEvent, cb: SseCallbacks): void {
       return;
     case 'tool_permission':
       cb.onToolPermission?.({ callId: ev.id, name: ev.name, prompt: ev.prompt });
+      return;
+    case 'artifact':
+      cb.onArtifact?.(ev.artifact);
   }
 }
 

@@ -47,3 +47,6 @@ export type { GlobalRuleProps, GlobalRuleCreateInput, RuleKind, GlobalRuleRepo }
 
 export { RepoProfile } from './repo-profile';
 export type { RepoProfileProps, RoleMap } from './repo-profile';
+
+export { Artifact, isArtifact } from './artifact';
+export type { ArtifactProps, ArtifactData, ArtifactKind } from './artifact';

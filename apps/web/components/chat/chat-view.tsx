@@ -9,7 +9,7 @@ import { AttachmentDropzone } from './attachment-dropzone';
 import type { DisplayMessage } from './chat-message';
 import { ChatMessage } from './chat-message';
 import { ConfirmDialog } from './confirm-dialog';
-import type { PendingPermission, SseCallbacks } from './sse';
+import type { ArtifactPayload, PendingPermission, SseCallbacks } from './sse';
 import { streamSse } from './sse';
 import { StreamIndicator } from './stream-indicator';
 import type { ToolCall } from './tool-call-inline';
@@ -54,6 +54,12 @@ function applyToolResult(prev: DisplayMessage[], callId: string, output: string,
   });
 }
 
+function appendArtifactToLast(prev: DisplayMessage[], artifact: ArtifactPayload): DisplayMessage[] {
+  const last = prev[prev.length - 1];
+  if (!last || last.role !== 'assistant') return prev;
+  return [...prev.slice(0, -1), { ...last, artifacts: [...(last.artifacts ?? []), artifact] }];
+}
+
 function voiceMessageToDisplay(msg: VoiceConversationMessage): DisplayMessage {
   return { id: crypto.randomUUID(), role: msg.role, content: msg.text, createdAt: new Date() };
 }
@@ -68,7 +74,11 @@ function useMessageState() {
       setMessages((prev) => applyToolResult(prev, callId, output, isError)),
     [],
   );
-  return { messages, setMessages, appendText, appendMessage, appendToolCall, updateToolCall };
+  const appendArtifact = useCallback(
+    (artifact: ArtifactPayload) => setMessages((prev) => appendArtifactToLast(prev, artifact)),
+    [],
+  );
+  return { messages, setMessages, appendText, appendMessage, appendToolCall, updateToolCall, appendArtifact };
 }
 
 function useToolPermission() {
@@ -87,7 +97,7 @@ function useToolPermission() {
 }
 
 function useChatSession(model: string, sessionId?: string) {
-  const { messages, setMessages, appendText, appendMessage, appendToolCall, updateToolCall } = useMessageState();
+  const { messages, setMessages, appendText, appendMessage, appendToolCall, updateToolCall, appendArtifact } = useMessageState();
   const { pendingPermission, onPermission, resolvePermission } = useToolPermission();
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -95,7 +105,7 @@ function useChatSession(model: string, sessionId?: string) {
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
   const abortRef = useRef<AbortController | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement | null>(null);
   const hasSetTitle = useRef(false);
   const onAsk = useCallback((q: string) => setPendingQuestion(q), []);
   const doSend = useCallback(
@@ -111,6 +121,7 @@ function useChatSession(model: string, sessionId?: string) {
       const callbacks: SseCallbacks = {
         onText: appendText, onAskQuestion: onAsk,
         onToolCall: appendToolCall, onToolResult: updateToolCall, onToolPermission: onPermission,
+        onArtifact: appendArtifact,
       };
       try {
         const body: Record<string, unknown> = { message: text, model, sessionId };
@@ -124,7 +135,7 @@ function useChatSession(model: string, sessionId?: string) {
         bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
       }
     },
-    [isStreaming, model, sessionId, setMessages, appendText, onAsk, appendToolCall, updateToolCall, onPermission],
+    [isStreaming, model, sessionId, setMessages, appendText, onAsk, appendToolCall, updateToolCall, onPermission, appendArtifact],
   );
   const send = useCallback(() => {
     const text = input.trim();

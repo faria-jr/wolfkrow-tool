@@ -55,20 +55,33 @@ function adapterOptions(
   };
 }
 
-/** Write the AI stream as SSE events (ack/done/text/tool_call/tool_result). */
+/** Write the AI stream as SSE events (ack/done/text/tool_call/tool_result/artifact). */
 async function writeStreamAsSse(
   stream: AsyncIterable<AIStreamChunk>,
   sse: (data: unknown) => void,
 ): Promise<void> {
+  const { ArtifactDetector } = await import('@wolfkrow/infra');
+  const detector = new ArtifactDetector();
+  const toolInputs = new Map<string, { name: string; input: Record<string, unknown> }>();
   for await (const chunk of stream) {
     if (chunk.done) {
       sse({ type: 'done', usage: { inputTokens: chunk.inputTokens, outputTokens: chunk.outputTokens } });
     } else if (chunk.toolCall) {
       const { id, name, input } = chunk.toolCall;
+      toolInputs.set(id, { name, input });
       sse({ type: 'tool_call', id, name, input });
     } else if (chunk.toolResult) {
       const { callId, output, isError } = chunk.toolResult;
       sse({ type: 'tool_result', callId, output, isError });
+      if (!isError) {
+        const toolInfo = toolInputs.get(callId);
+        if (toolInfo) {
+          const artifact = detector.detect(toolInfo.name, toolInfo.input, output, isError, callId);
+          if (artifact) {
+            sse({ type: 'artifact', artifact: artifact.toJSON() });
+          }
+        }
+      }
     } else if (chunk.toolPermission) {
       const { callId, name, input, prompt } = chunk.toolPermission;
       sse({ type: 'tool_permission', id: callId, name, input, prompt });

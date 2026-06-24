@@ -26,3 +26,5 @@ export type {
   SmokeTestTests,
   BrokenImport,
 } from './services/smoke-test-runner';
+export { ArtifactDetector } from './services/artifact-detector';
+export type { ArtifactDetectionResult } from './services/artifact-detector';
