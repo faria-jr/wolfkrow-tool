@@ -1,8 +1,10 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import type { Control } from 'react-hook-form';
 
 import { ModelSection } from './model-section';
+import type { ProviderDTO } from './model-section';
 import type { AgentFormValues } from './schema';
 import { SkillsSection } from './skills-section';
 import { ThinkingSection } from './thinking-section';
@@ -17,6 +19,12 @@ import { Textarea } from '@/components/ui/textarea';
 interface Props { control: Control<AgentFormValues>; }
 
 export function AgentFormBody({ control }: Props) {
+  const { data: providers } = useQuery<ProviderDTO[]>({
+    queryKey: ['providers'],
+    queryFn: () => fetch('/api/providers').then((r) => r.json() as Promise<ProviderDTO[]>),
+    staleTime: 60_000,
+  });
+
   return (
     <>
       <FormField
@@ -49,7 +57,7 @@ export function AgentFormBody({ control }: Props) {
             <TabsTrigger value="thinking">Thinking</TabsTrigger>
             <TabsTrigger value="skills">Skills</TabsTrigger>
           </TabsList>
-          <TabsContent value="model"><ModelSection control={control} /></TabsContent>
+          <TabsContent value="model"><ModelSection control={control} {...(providers !== undefined ? { providers } : {})} /></TabsContent>
           <TabsContent value="tools"><ToolsSection control={control} /></TabsContent>
           <TabsContent value="thinking"><ThinkingSection control={control} /></TabsContent>
           <TabsContent value="skills"><SkillsSection control={control} /></TabsContent>

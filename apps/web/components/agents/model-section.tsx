@@ -8,27 +8,38 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const MODELS = ['claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'] as const;
+export interface ProviderDTO {
+  id: string;
+  displayName: string;
+  protocol: 'anthropic-compat' | 'openai-compatible';
+  baseUrl: string;
+  apiKeyAccount: string;
+  models: string[];
+  supportsTools: boolean;
+  pricingUrl?: string;
+}
+
+const DEFAULT_MODELS = ['claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'];
 const EFFORTS = ['low', 'medium', 'high', 'max'] as const;
 const RUNTIMES = ['cloud', 'local', 'codex', 'external', 'claude-compat'] as const;
 
-const CLAUDE_COMPAT_PROVIDERS = [
-  { value: 'zai', label: 'Z.ai (GLM)' },
-  { value: 'minimax', label: 'MiniMax TokenPlan' },
-  { value: 'moonshot', label: 'Moonshot (Kimi)' },
-  { value: 'qwen', label: 'Qwen (DashScope)' },
-] as const;
+interface Props {
+  control: Control<AgentFormValues>;
+  providers?: ProviderDTO[];
+}
 
-interface Props { control: Control<AgentFormValues>; }
+function ModelField({ control, providers }: Props) {
+  const selectedProvider = useWatch({ control, name: 'provider' });
+  const providerCfg = providers?.find((p) => p.id === selectedProvider);
+  const models = providerCfg ? providerCfg.models : DEFAULT_MODELS;
 
-function ModelField({ control }: Props) {
   return (
     <FormField control={control} name="model" render={({ field }) => (
       <FormItem>
         <FormLabel>Model</FormLabel>
         <Select onValueChange={field.onChange} value={field.value}>
           <FormControl><SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger></FormControl>
-          <SelectContent>{MODELS.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+          <SelectContent>{models.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
         </Select>
         <FormMessage />
       </FormItem>
@@ -60,7 +71,18 @@ function EffortAndTurnsFields({ control }: Props) {
   );
 }
 
-function ProviderField({ control }: Props) {
+const FALLBACK_CLAUDE_COMPAT = [
+  { id: 'zai', displayName: 'Z.ai (GLM)' },
+  { id: 'minimax', displayName: 'MiniMax TokenPlan' },
+  { id: 'moonshot', displayName: 'Moonshot (Kimi)' },
+  { id: 'qwen', displayName: 'Qwen (DashScope)' },
+];
+
+function ProviderField({ control, providers }: Props) {
+  const claudeCompatProviders = providers
+    ? providers.filter((p) => p.protocol === 'anthropic-compat' && p.id !== 'anthropic')
+    : FALLBACK_CLAUDE_COMPAT;
+
   return (
     <FormField control={control} name="provider" render={({ field }) => (
       <FormItem>
@@ -68,8 +90,8 @@ function ProviderField({ control }: Props) {
         <Select onValueChange={field.onChange} value={field.value ?? ''}>
           <FormControl><SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger></FormControl>
           <SelectContent>
-            {CLAUDE_COMPAT_PROVIDERS.map((p) => (
-              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+            {claudeCompatProviders.map((p) => (
+              <SelectItem key={p.id} value={p.id}>{p.displayName}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -79,13 +101,13 @@ function ProviderField({ control }: Props) {
   );
 }
 
-export function ModelSection({ control }: Props) {
+export function ModelSection({ control, providers }: Props) {
   const runtime = useWatch({ control, name: 'runtime' });
 
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium text-muted-foreground">Model</h3>
-      <ModelField control={control} />
+      <ModelField control={control} {...(providers !== undefined ? { providers } : {})} />
       <EffortAndTurnsFields control={control} />
       <FormField control={control} name="runtime" render={({ field }) => (
         <FormItem>
@@ -97,7 +119,7 @@ export function ModelSection({ control }: Props) {
           <FormMessage />
         </FormItem>
       )} />
-      {runtime === 'claude-compat' && <ProviderField control={control} />}
+      {runtime === 'claude-compat' && <ProviderField control={control} {...(providers !== undefined ? { providers } : {})} />}
     </div>
   );
 }
