@@ -17,15 +17,17 @@ import type {
   AIStreamChunk,
   AIStreamPort,
   EmbeddingPort,
+  HarnessConfig,
   SecretsAdapter,
 } from '@wolfkrow/domain';
-import { defaultPermissionResolver } from '@wolfkrow/domain';
+import { BUILT_IN_PROVIDERS, defaultPermissionResolver, getProviderById } from '@wolfkrow/domain';
 import {
   aiProviderFactory,
   BashTool,
   ClaudeAgentProvider,
   FilesystemTool,
   FsArtifactWriter,
+  type AIProvider,
   type AIProviderFactory,
   ToolRegistry,
   VoyageEmbedder,
@@ -126,17 +128,24 @@ export interface HarnessAgents {
   evaluator: EvaluatorAgent;
 }
 
-export function getHarnessAgents(): HarnessAgents {
-  return { planner: makePlanner(), coder: makeCoder(), evaluator: makeEvaluator() };
+export function getHarnessAgents(config: HarnessConfig): HarnessAgents {
+  return { planner: makePlanner(config), coder: makeCoder(config), evaluator: makeEvaluator(config) };
 }
 
-function makePlanner(): HarnessPlanner {
+async function resolveAIProvider(providerId: string): Promise<AIProvider> {
+  const cfg = getProviderById(BUILT_IN_PROVIDERS, providerId)
+    ?? getProviderById(BUILT_IN_PROVIDERS, 'anthropic')!;
+  const apiKey = (await getAdapters().secrets.get(cfg.apiKeyAccount))
+    ?? (await getProviderApiKey(cfg.id));
+  return getAdapters().aiFactory.createFromConfig(cfg, apiKey);
+}
+
+function makePlanner(config: HarnessConfig): HarnessPlanner {
   return {
-    async plan(specContent, config) {
-      const apiKey = await getProviderApiKey('anthropic');
-      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
+    async plan(specContent, planConfig) {
+      const provider = await resolveAIProvider(config.providerId ?? 'anthropic');
       const result = await provider.complete({
-        model: config.plannerModel,
+        model: planConfig.plannerModel,
         system: 'You are a senior software architect. Given a spec, output a JSON array of sprints. Each sprint: {name, description, features: [{name, description, acceptanceCriteria: string[]}]}. Respond ONLY with valid JSON array.',
         messages: [{ role: 'user', content: `Create sprint plan for:\n\n${specContent}` }],
         maxTokens: 4096,
@@ -152,11 +161,10 @@ function makePlanner(): HarnessPlanner {
   };
 }
 
-function makeCoder(): CoderAgent {
+function makeCoder(config: HarnessConfig): CoderAgent {
   return {
     async implement(input) {
-      const apiKey = await getProviderApiKey('anthropic');
-      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
+      const provider = await resolveAIProvider(config.providerId ?? 'anthropic');
       const previousContext = input.previousFeedback ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}` : '';
       const result = await provider.complete({
         model: input.coderModel,
@@ -173,11 +181,10 @@ function makeCoder(): CoderAgent {
   };
 }
 
-function makeEvaluator(): EvaluatorAgent {
+function makeEvaluator(config: HarnessConfig): EvaluatorAgent {
   return {
     async evaluate(input) {
-      const apiKey = await getProviderApiKey('anthropic');
-      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
+      const provider = await resolveAIProvider(config.providerId ?? 'anthropic');
       const result = await provider.complete({
         model: 'claude-sonnet-4-6',
         system: 'You are a QA engineer. Evaluate if the implementation meets the acceptance criteria. Respond with JSON: {passed: boolean, feedback: string}',
@@ -209,10 +216,14 @@ export function getHarnessProjectWorkDir(projectId: string): string {
 }
 
 /** CoderAgent backed by ClaudeAgentProvider with bash + filesystem tools sandboxed to workDir. */
-export function makeCoderWithTools(workDir: string): CoderAgent {
+export function makeCoderWithTools(workDir: string, config: HarnessConfig): CoderAgent {
   return {
     async implement(input) {
-      const apiKey = await getProviderApiKey('anthropic');
+      const providerId = config.providerId ?? 'anthropic';
+      const cfg = getProviderById(BUILT_IN_PROVIDERS, providerId)
+        ?? getProviderById(BUILT_IN_PROVIDERS, 'anthropic')!;
+      const apiKey = (await getAdapters().secrets.get(cfg.apiKeyAccount))
+        ?? (await getProviderApiKey(cfg.id));
       const registry = new ToolRegistry([new BashTool(), new FilesystemTool()]);
       const provider = new ClaudeAgentProvider(apiKey, registry, undefined, { maxTurns: 80, workDir });
       const previousContext = input.previousFeedback

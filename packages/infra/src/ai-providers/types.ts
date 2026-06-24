@@ -71,4 +71,5 @@ export interface AIProvider {
 
 export interface AIProviderFactory {
   create(provider: string, apiKey: string): AIProvider;
+  createFromConfig(cfg: import('@wolfkrow/domain').ProviderConfig, apiKey: string): AIProvider;
 }

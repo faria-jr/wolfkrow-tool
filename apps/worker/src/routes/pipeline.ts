@@ -53,7 +53,7 @@ async function runImplementationViaHarness(
       pipelinePhaseRepo: phaseRepo,
       harnessProjectRepo: r.harnessProject,
       harnessSprintRepo: r.harnessSprint,
-      planner: getHarnessAgents().planner,
+      planner: getHarnessAgents({ maxRoundsPerFeature: 5, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' }).planner,
       artifactWriter: getArtifactWriter(),
     }).execute({
       projectId: req.params.id,
