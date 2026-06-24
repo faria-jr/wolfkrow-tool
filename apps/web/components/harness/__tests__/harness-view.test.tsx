@@ -39,7 +39,7 @@ describe('HarnessView', () => {
 
   it('renders header and create form', () => {
     render(<HarnessView />);
-    expect(screen.getByText('Harness Projects')).toBeInTheDocument();
+    expect(screen.getByText('Projects')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Project name')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create Project' })).toBeInTheDocument();
   });

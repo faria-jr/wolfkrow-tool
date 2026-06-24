@@ -1,16 +1,17 @@
 'use client';
 
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Bot, BookOpen, Calendar, Database, FileText, Folder, KeyRound, ListTodo, MessageSquare, Network, Settings, ShieldAlert, ShieldCheck, Sparkles, Workflow, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { Bot, BookOpen, Calendar, Database, FileText, Folder, KeyRound, ListTodo, MessageSquare, Network, Settings, ShieldCheck, Sparkles, Workflow, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 interface CommandEntry {
   label: string;
-  url: string;
+  url?: string;
   group: string;
   icon: React.ComponentType<{ className?: string }>;
-  shortcut?: string[];
+  onSelect?: () => void;
 }
 
 const ENTRIES: CommandEntry[] = [
@@ -24,6 +25,7 @@ const ENTRIES: CommandEntry[] = [
   { label: 'Scheduler', url: '/scheduler', group: 'Automation', icon: Calendar },
   { label: 'Harness', url: '/harness', group: 'Automation', icon: Zap },
   { label: 'Pipeline', url: '/pipeline', group: 'Automation', icon: Workflow },
+  { label: 'Security Audit', url: '/audit', group: 'Automation', icon: ShieldAlert },
   { label: 'Memory', url: '/memory', group: 'Knowledge', icon: Database },
   { label: 'Rules', url: '/rules', group: 'Knowledge', icon: FileText },
   { label: 'Vault', url: '/vault', group: 'System', icon: KeyRound },
@@ -32,6 +34,12 @@ const ENTRIES: CommandEntry[] = [
   { label: 'Settings', url: '/settings', group: 'System', icon: Settings },
   { label: 'Usage', url: '/usage', group: 'System', icon: FileText },
   { label: 'Logs', url: '/logs', group: 'System', icon: FileText },
+  { label: 'New agent', url: '/agents/new', group: 'Actions', icon: Bot },
+  { label: 'Run audit', url: '/audit', group: 'Actions', icon: ShieldAlert },
+  { label: 'New provider', url: '/settings/providers', group: 'Actions', icon: Settings },
+  { label: 'Toggle theme', group: 'Actions', icon: Sparkles, onSelect: () => { document.documentElement.classList.toggle('dark'); } },
+  { label: 'Copy page URL', group: 'Actions', icon: FileText, onSelect: () => { if (typeof window !== 'undefined') void navigator.clipboard.writeText(window.location.href); } },
+  { label: 'Reload page', group: 'Actions', icon: Zap, onSelect: () => { if (typeof window !== 'undefined') window.location.reload(); } },
 ];
 
 export function CommandPalette() {
@@ -63,11 +71,15 @@ export function CommandPalette() {
           <CommandGroup key={group} heading={group}>
             {items.map((e) => (
               <CommandItem
-                key={e.url}
+                key={e.label + (e.url ?? '')}
                 value={`${e.label} ${e.group}`}
                 onSelect={() => {
                   setOpen(false);
-                  router.push(e.url);
+                  if (e.onSelect) {
+                    e.onSelect();
+                  } else if (e.url) {
+                    router.push(e.url);
+                  }
                 }}
               >
                 <e.icon className="mr-2 h-4 w-4" />

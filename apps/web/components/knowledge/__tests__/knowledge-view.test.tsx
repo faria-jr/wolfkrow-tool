@@ -18,8 +18,8 @@ describe('KnowledgeView', () => {
 
   it('renders title and upload zone', () => {
     render(<KnowledgeView />);
-    expect(screen.getByRole('heading', { name: /Knowledge Base/i })).toBeInTheDocument();
     expect(screen.getByText(/drag files here/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /documents/i })).toBeInTheDocument();
   });
 
   it('loads documents and shows count badge', async () => {

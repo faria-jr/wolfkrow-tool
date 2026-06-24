@@ -25,11 +25,7 @@ const SECTIONS = [
 
 export function SettingsView() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground text-sm">Configure your Wolfkrow workspace.</p>
-      </div>
+    <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2">
         {SECTIONS.map(({ title, href, icon: Icon, description }) => (
           <Link

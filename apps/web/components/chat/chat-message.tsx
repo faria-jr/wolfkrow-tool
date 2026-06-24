@@ -24,43 +24,52 @@ const markdownComponents = {
   ),
 };
 
+function ImageArtifact({ artifact }: { artifact: ArtifactPayload }) {
+  const b64 = artifact.data['imageBase64'];
+  const mime = artifact.data['mimeType'];
+  if (typeof b64 !== 'string' || typeof mime !== 'string') return null;
+  return (
+    <div className="mt-2 rounded-md border bg-card p-2">
+      {artifact.title && <div className="mb-1 text-xs font-medium text-muted-foreground">{artifact.title}</div>}
+      <img src={`data:${mime};base64,${b64}`} alt={artifact.title ?? 'Generated image'} className="max-w-full rounded" />
+    </div>
+  );
+}
+
+function AudioArtifact({ artifact }: { artifact: ArtifactPayload }) {
+  const b64 = artifact.data['audioBase64'];
+  if (typeof b64 !== 'string') return null;
+  const mime = artifact.data['mimeType'] ?? 'audio/mpeg';
+  return (
+    <div className="mt-2 rounded-md border bg-card p-2">
+      {artifact.title && <div className="mb-1 text-xs font-medium text-muted-foreground">{artifact.title}</div>}
+      <audio controls src={`data:${mime};base64,${b64}`} className="w-full" />
+    </div>
+  );
+}
+
+function McpAppArtifact({ artifact }: { artifact: ArtifactPayload }) {
+  const file = artifact.data['excalidrawFile'];
+  if (typeof file !== 'string') return null;
+  return (
+    <div className="mt-2 rounded-md border bg-card p-2">
+      {artifact.title && <div className="mb-1 text-xs font-medium text-muted-foreground">{artifact.title}</div>}
+      <a
+        href={`https://excalidraw.com/#json=${btoa(file)}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+      >
+        Open in Excalidraw
+      </a>
+    </div>
+  );
+}
+
 function ArtifactInline({ artifact }: { artifact: ArtifactPayload }) {
-  if (artifact.type === 'image' && typeof artifact.data['imageBase64'] === 'string' && typeof artifact.data['mimeType'] === 'string') {
-    const b64 = artifact.data['imageBase64'];
-    const mime = artifact.data['mimeType'];
-    return (
-      <div className="mt-2 rounded-md border bg-card p-2">
-        {artifact.title && <div className="mb-1 text-xs font-medium text-muted-foreground">{artifact.title}</div>}
-        <img src={`data:${mime};base64,${b64}`} alt={artifact.title ?? 'Generated image'} className="max-w-full rounded" />
-      </div>
-    );
-  }
-  if (artifact.type === 'audio' && typeof artifact.data['audioBase64'] === 'string') {
-    const b64 = artifact.data['audioBase64'];
-    const mime = artifact.data['mimeType'] ?? 'audio/mpeg';
-    return (
-      <div className="mt-2 rounded-md border bg-card p-2">
-        {artifact.title && <div className="mb-1 text-xs font-medium text-muted-foreground">{artifact.title}</div>}
-        <audio controls src={`data:${mime};base64,${b64}`} className="w-full" />
-      </div>
-    );
-  }
-  if (artifact.type === 'mcp_app' && typeof artifact.data['excalidrawFile'] === 'string') {
-    const file = artifact.data['excalidrawFile'];
-    return (
-      <div className="mt-2 rounded-md border bg-card p-2">
-        {artifact.title && <div className="mb-1 text-xs font-medium text-muted-foreground">{artifact.title}</div>}
-        <a
-          href={`https://excalidraw.com/#json=${btoa(file)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-        >
-          Open in Excalidraw
-        </a>
-      </div>
-    );
-  }
+  if (artifact.type === 'image') return <ImageArtifact artifact={artifact} />;
+  if (artifact.type === 'audio') return <AudioArtifact artifact={artifact} />;
+  if (artifact.type === 'mcp_app') return <McpAppArtifact artifact={artifact} />;
   return null;
 }
 

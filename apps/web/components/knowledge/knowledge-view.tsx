@@ -32,14 +32,7 @@ export function KnowledgeView() {
   useEffect(() => { void loadDocs(); }, [loadDocs]);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Knowledge Base</h1>
-        <p className="text-muted-foreground text-sm">
-          Upload documents and search them with semantic + keyword search.
-        </p>
-      </div>
-
+    <div className="space-y-6">
       <UploadDropZone onUploaded={() => void loadDocs()} />
 
       <div className="flex gap-1 border-b">

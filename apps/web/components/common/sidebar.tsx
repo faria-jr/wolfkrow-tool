@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Network,
   Settings,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Workflow,
@@ -53,6 +54,7 @@ const AUTOMATION_NAV: NavItem[] = [
   { title: 'Scheduler', url: '/scheduler', icon: Calendar },
   { title: 'Harness', url: '/harness', icon: Zap },
   { title: 'Pipeline', url: '/pipeline', icon: Workflow },
+  { title: 'Security Audit', url: '/audit', icon: ShieldAlert },
 ];
 
 const SYSTEM_NAV: NavItem[] = [

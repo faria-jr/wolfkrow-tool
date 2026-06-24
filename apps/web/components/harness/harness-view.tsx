@@ -7,7 +7,6 @@ import { RoundsList } from './rounds-list';
 
 import { Input } from '@/components/ui/input';
 
-
 interface ProjectData {
   id: string;
   userId: string;
@@ -125,6 +124,36 @@ function ProjectListItem({ project: p, isSelected, onSelect, onPlan, onDelete, p
   );
 }
 
+function SprintFeature({ feature: f, index }: { feature: SprintData['features'][number]; index: number }) {
+  return (
+    <div key={index} className="rounded bg-gray-50 p-3">
+      <p className="font-medium text-sm">{f.name}</p>
+      <p className="text-xs text-gray-600">{f.description}</p>
+      {f.acceptanceCriteria.length > 0 && (
+        <ul className="mt-1 list-disc list-inside text-xs text-gray-500">
+          {f.acceptanceCriteria.map((c, j) => <li key={j}>{c}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function SprintCard({ sprint }: { sprint: SprintData }) {
+  return (
+    <div key={sprint.id} className="rounded border p-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium">Sprint {sprint.number}: {sprint.name}</h3>
+        <span className={`rounded px-2 py-0.5 text-xs ${statusColor(sprint.status)}`}>{sprint.status}</span>
+      </div>
+      {sprint.description && <p className="mt-1 text-sm text-gray-600">{sprint.description}</p>}
+      <div className="mt-3 space-y-2">
+        {sprint.features.map((f, i) => <SprintFeature key={i} feature={f} index={i} />)}
+      </div>
+      <RoundsList sprintId={sprint.id} />
+    </div>
+  );
+}
+
 interface SprintPanelProps { selected: ProjectData | null; sprints: SprintData[]; }
 function SprintPanel({ selected, sprints }: SprintPanelProps) {
   if (!selected) return <div className="flex h-full flex-1 items-center justify-center text-gray-400">Select a project to view sprints</div>;
@@ -137,30 +166,44 @@ function SprintPanel({ selected, sprints }: SprintPanelProps) {
       {sprints.length === 0 ? (
         <p className="text-sm text-gray-500">No sprints yet. Click &quot;Plan Sprints&quot; to generate them.</p>
       ) : (
-        sprints.map((sprint) => (
-          <div key={sprint.id} className="rounded border p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">Sprint {sprint.number}: {sprint.name}</h3>
-              <span className={`rounded px-2 py-0.5 text-xs ${statusColor(sprint.status)}`}>{sprint.status}</span>
-            </div>
-            {sprint.description && <p className="mt-1 text-sm text-gray-600">{sprint.description}</p>}
-            <div className="mt-3 space-y-2">
-              {sprint.features.map((f, i) => (
-                <div key={i} className="rounded bg-gray-50 p-3">
-                  <p className="font-medium text-sm">{f.name}</p>
-                  <p className="text-xs text-gray-600">{f.description}</p>
-                  {f.acceptanceCriteria.length > 0 && (
-                    <ul className="mt-1 list-disc list-inside text-xs text-gray-500">
-                      {f.acceptanceCriteria.map((c, j) => <li key={j}>{c}</li>)}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-            <RoundsList sprintId={sprint.id} />
-          </div>
-        ))
+        sprints.map((sprint) => <SprintCard key={sprint.id} sprint={sprint} />)
       )}
+    </div>
+  );
+}
+
+interface ProjectListPanelProps {
+  form: NewProjectForm;
+  setForm: (f: NewProjectForm) => void;
+  creating: boolean;
+  error: string | null;
+  projects: ProjectData[];
+  selected: ProjectData | null;
+  planning: string | null;
+  onCreate: (e: React.FormEvent) => void;
+  onSelect: (p: ProjectData) => void;
+  onPlan: (id: string) => void;
+  onDelete: (id: string) => void;
+}
+function ProjectListPanel({ form, setForm, creating, error, projects, selected, planning, onCreate, onSelect, onPlan, onDelete }: ProjectListPanelProps) {
+  return (
+    <div className="w-80 flex-shrink-0 space-y-4">
+      <h2 className="text-lg font-semibold">Projects</h2>
+      <ProjectCreateForm form={form} setForm={setForm} creating={creating} onSubmit={onCreate} />
+      {error && <p className="text-sm text-red-600">{error}</p>}
+      <ul className="space-y-2">
+        {projects.map((p) => (
+          <ProjectListItem
+            key={p.id}
+            project={p}
+            isSelected={selected?.id === p.id}
+            onSelect={() => { void onSelect(p); }}
+            onPlan={() => onPlan(p.id)}
+            onDelete={() => { void onDelete(p.id); }}
+            planning={planning === p.id}
+          />
+        ))}
+      </ul>
     </div>
   );
 }
@@ -198,25 +241,20 @@ export function HarnessView() {
   };
 
   return (
-    <div className="flex h-full gap-6 p-6">
-      <div className="w-80 flex-shrink-0 space-y-4">
-        <h2 className="text-lg font-semibold">Harness Projects</h2>
-        <ProjectCreateForm form={form} setForm={setForm} creating={creating} onSubmit={handleCreate} />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <ul className="space-y-2">
-          {projects.map((p) => (
-            <ProjectListItem
-              key={p.id}
-              project={p}
-              isSelected={selected?.id === p.id}
-              onSelect={() => { void handleSelect(p); }}
-              onPlan={() => handlePlan(p.id)}
-              onDelete={() => { void handleDelete(p.id); }}
-              planning={planning === p.id}
-            />
-          ))}
-        </ul>
-      </div>
+    <div className="flex h-full flex-col gap-6">
+      <ProjectListPanel
+        form={form}
+        setForm={setForm}
+        creating={creating}
+        error={error}
+        projects={projects}
+        selected={selected}
+        planning={planning}
+        onCreate={handleCreate}
+        onSelect={handleSelect}
+        onPlan={handlePlan}
+        onDelete={handleDelete}
+      />
       <SprintPanel selected={selected} sprints={sprints} />
     </div>
   );

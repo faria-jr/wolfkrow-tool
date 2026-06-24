@@ -1,6 +1,15 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useForm } from 'react-hook-form';
 import { beforeAll, describe, expect, it } from 'vitest';
+
+
+import type { ProviderDTO } from '../model-section';
+import { ModelSection } from '../model-section';
+import { agentSchema, type AgentFormValues } from '../schema';
+
+import { Form } from '@/components/ui/form';
 
 beforeAll(() => {
   if (!Element.prototype.hasPointerCapture) {
@@ -13,12 +22,6 @@ beforeAll(() => {
     Element.prototype.setPointerCapture = () => undefined;
   }
 });
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Form } from '@/components/ui/form';
-import type { ProviderDTO } from '../model-section';
-import { ModelSection } from '../model-section';
-import { agentSchema, type AgentFormValues } from '../schema';
 
 const defaultValues: AgentFormValues = {
   name: 'test',
@@ -73,9 +76,20 @@ describe('ModelSection', () => {
   it('shows provider-specific models when providers prop given and provider selected', async () => {
     const user = userEvent.setup();
     render(<Wrapper providers={customProviders} />);
-    const runtimeSelect = screen.getAllByRole('combobox')[1];
-    if (runtimeSelect) {
-      await user.click(runtimeSelect);
-    }
+
+    const runtimeSelect = screen.getByRole('combobox', { name: /runtime/i });
+    await user.click(runtimeSelect);
+    const compatOption = await screen.findByRole('option', { name: 'claude-compat' });
+    await user.click(compatOption);
+
+    const providerSelect = await screen.findByRole('combobox', { name: /provider/i });
+    await user.click(providerSelect);
+    const zaiOption = await screen.findByRole('option', { name: 'Z.ai' });
+    await user.click(zaiOption);
+
+    const modelSelect = screen.getByRole('combobox', { name: /model/i });
+    await user.click(modelSelect);
+    expect(await screen.findByRole('option', { name: 'glm-4.7' })).toBeTruthy();
+    expect(await screen.findByRole('option', { name: 'glm-5.1' })).toBeTruthy();
   });
 });

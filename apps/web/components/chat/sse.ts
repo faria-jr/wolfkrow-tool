@@ -42,26 +42,20 @@ function parseSseLine(line: string): SSEEvent | null {
   return raw ? (JSON.parse(raw) as SSEEvent) : null;
 }
 
+const EVENT_DISPATCHERS: Record<SSEEvent['type'], ((ev: SSEEvent, cb: SseCallbacks) => void) | undefined> = {
+  ack: () => undefined,
+  text: (ev, cb) => cb.onText((ev as Extract<SSEEvent, { type: 'text' }>).content),
+  ask_question: (ev, cb) => cb.onAskQuestion?.((ev as Extract<SSEEvent, { type: 'ask_question' }>).prompt),
+  tool_call: (ev, cb) => cb.onToolCall?.({ id: (ev as Extract<SSEEvent, { type: 'tool_call' }>).id, name: (ev as Extract<SSEEvent, { type: 'tool_call' }>).name, input: (ev as Extract<SSEEvent, { type: 'tool_call' }>).input, status: 'running' }),
+  tool_result: (ev, cb) => cb.onToolResult?.((ev as Extract<SSEEvent, { type: 'tool_result' }>).callId, (ev as Extract<SSEEvent, { type: 'tool_result' }>).output, (ev as Extract<SSEEvent, { type: 'tool_result' }>).isError),
+  tool_permission: (ev, cb) => cb.onToolPermission?.({ callId: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).id, name: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).name, prompt: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).prompt }),
+  artifact: (ev, cb) => cb.onArtifact?.((ev as Extract<SSEEvent, { type: 'artifact' }>).artifact),
+  done: () => undefined,
+  error: () => undefined,
+};
+
 function dispatchSseEvent(ev: SSEEvent, cb: SseCallbacks): void {
-  switch (ev.type) {
-    case 'text':
-      cb.onText(ev.content);
-      return;
-    case 'ask_question':
-      cb.onAskQuestion?.(ev.prompt);
-      return;
-    case 'tool_call':
-      cb.onToolCall?.({ id: ev.id, name: ev.name, input: ev.input, status: 'running' });
-      return;
-    case 'tool_result':
-      cb.onToolResult?.(ev.callId, ev.output, ev.isError);
-      return;
-    case 'tool_permission':
-      cb.onToolPermission?.({ callId: ev.id, name: ev.name, prompt: ev.prompt });
-      return;
-    case 'artifact':
-      cb.onArtifact?.(ev.artifact);
-  }
+  EVENT_DISPATCHERS[ev.type]?.(ev, cb);
 }
 
 function processLine(line: string, cb: SseCallbacks): void {
