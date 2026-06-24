@@ -78,6 +78,8 @@ async function runSseHandler(
   const workDir = getHarnessProjectWorkDir(project.id);
   const coder = makeCoderWithTools(workDir, project.config);
   const { evaluator } = getHarnessAgents(project.config);
+  const { SmokeTestRunner } = await import('@wolfkrow/infra');
+  const smokeRunner = new SmokeTestRunner();
 
   reply.raw.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -90,10 +92,17 @@ async function runSseHandler(
 
   for (let i = 0; i < sprint.features.length; i++) {
     const result = await runHarnessFeature(
-      { sprintId: sprint.id, featureIndex: i, coderModel: project.config.coderModel, maxRounds: project.config.maxRoundsPerFeature },
+      {
+        sprintId: sprint.id,
+        featureIndex: i,
+        coderModel: project.config.coderModel,
+        maxRounds: project.config.maxRoundsPerFeature,
+        workDir,
+      },
       { sprintRepo, roundRepo },
       { coder, evaluator },
       (event) => sse({ type: 'progress', sprintId: sprint.id, featureIndex: i, ...event }),
+      { smokeRunner },
     );
     results.push(result);
     sse({ type: 'feature_done', ...result });

@@ -18,3 +18,11 @@ export { VoyageEmbedder } from './embeddings/voyage-embedder';
 export * from './tools/index';
 export { FsArtifactWriter } from './services/artifact-writer';
 export { RepoProfilerService } from './services/repo-profiler';
+export { SmokeTestRunner } from './services/smoke-test-runner';
+export type {
+  SmokeTestResult,
+  SmokeTestTypecheck,
+  SmokeTestLint,
+  SmokeTestTests,
+  BrokenImport,
+} from './services/smoke-test-runner';

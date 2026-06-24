@@ -1,9 +1,10 @@
 /**
- * Tests: T25 — runHarnessFeature auto loop (Planner→Coder→Evaluator→retry).
+ * Tests: T25 — runHarnessFeature auto loop (Planner→Coder→Smoke→Evaluator→retry).
  */
 
 import type { HarnessRoundRepo, HarnessSprintRepo } from '@wolfkrow/domain';
 import { HarnessSprint, HarnessRound } from '@wolfkrow/domain';
+import type { SmokeTestRunner } from '@wolfkrow/infra';
 import type { CoderAgent, EvaluatorAgent } from '@wolfkrow/use-cases';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -129,7 +130,7 @@ describe('runHarnessFeature', () => {
   });
 
   it('calls onProgress for each round', async () => {
-    const progress: Array<{ round: number; status: string }> = [];
+    const progress: Array<{ round: number; status: string; stage?: string }> = [];
     const evaluator = makeEvaluator(async () => ({ passed: true, feedback: 'ok', tokens: 5 }));
     const coder = makeCoder(async () => ({ output: 'code', tokens: 10 }));
 
@@ -141,6 +142,65 @@ describe('runHarnessFeature', () => {
     );
 
     expect(progress).toHaveLength(1);
-    expect(progress[0]).toEqual({ round: 1, status: 'passed' });
+    expect(progress[0]).toMatchObject({ round: 1, status: 'passed' });
+  });
+});
+
+describe('runHarnessFeature — smoke gate', () => {
+  it('blocks the round with smoke feedback when broken imports detected', async () => {
+    const coderInputs: string[] = [];
+    const coder = makeCoder(async (input) => {
+      coderInputs.push(input.previousFeedback ?? '');
+      return { output: 'code', tokens: 10 };
+    });
+    const evaluator = makeEvaluator(async () => ({ passed: true, feedback: 'ok', tokens: 5 }));
+    const smokeRunner = {
+      run: vi.fn().mockResolvedValue({
+        typecheck: { ok: true, errors: 0, output: '' },
+        lint: { available: false, ok: true, warnings: 0, errors: 0, output: '' },
+        tests: { available: false, passed: 0, failed: 0, output: '' },
+        brokenImports: [{ file: 'src/x.ts', importPath: './missing' }],
+        missingFiles: [],
+        durationMs: 1,
+      }),
+    } as unknown as SmokeTestRunner;
+
+    const result = await runHarnessFeature(
+      {
+        sprintId: 'sprint-1',
+        featureIndex: 0,
+        coderModel: 'claude-sonnet-4-6',
+        maxRounds: 2,
+        workDir: '/tmp/work',
+      },
+      { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
+      { coder, evaluator },
+      undefined,
+      { smokeRunner },
+    );
+
+    expect(result.passed).toBe(false);
+    expect(smokeRunner.run).toHaveBeenCalled();
+    // First round: empty feedback. Second round: smoke feedback injected.
+    expect(coderInputs[0]).toBe('');
+    expect(coderInputs[1]).toMatch(/Smoke test gate failed/);
+    expect(coderInputs[1]).toMatch(/broken imports/);
+  });
+
+  it('skips smoke gate when workDir is absent', async () => {
+    const coder = makeCoder(async () => ({ output: 'code', tokens: 10 }));
+    const evaluator = makeEvaluator(async () => ({ passed: true, feedback: 'ok', tokens: 5 }));
+    const smokeRunner = { run: vi.fn() } as unknown as SmokeTestRunner;
+
+    const result = await runHarnessFeature(
+      { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 2 },
+      { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
+      { coder, evaluator },
+      undefined,
+      { smokeRunner },
+    );
+
+    expect(result.passed).toBe(true);
+    expect(smokeRunner.run).not.toHaveBeenCalled();
   });
 });
