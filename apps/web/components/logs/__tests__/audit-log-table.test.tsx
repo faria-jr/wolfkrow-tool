@@ -64,6 +64,66 @@ describe('AuditLogTable', () => {
     expect(screen.getByText('127.0.0.1')).toBeInTheDocument();
   });
 
+  it('renders CSV and JSON export buttons after loading', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ entries: mockEntries }),
+    } as Response);
+    render(<AuditLogTable />);
+    await waitFor(() => {
+      expect(screen.getByTestId('audit-export')).toBeInTheDocument();
+    });
+    expect(screen.getByLabelText(/Export audit log as CSV/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Export audit log as JSON/)).toBeInTheDocument();
+  });
+
+  it('disables export buttons when no entries are loaded', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ entries: [] }),
+    } as Response);
+    render(<AuditLogTable />);
+    await waitFor(() => {
+      expect(screen.getByText(/no audit log entries/i)).toBeInTheDocument();
+    });
+    const csvBtn = screen.getByLabelText(/Export audit log as CSV/) as HTMLButtonElement;
+    const jsonBtn = screen.getByLabelText(/Export audit log as JSON/) as HTMLButtonElement;
+    expect(csvBtn.disabled).toBe(true);
+    expect(jsonBtn.disabled).toBe(true);
+  });
+
+  it('triggers a CSV download when the export button is clicked', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ entries: mockEntries }),
+    } as Response);
+    const clickSpy = vi.fn();
+    const createSpy = vi.fn().mockReturnValue('blob:mock');
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    URL.createObjectURL = createSpy;
+    URL.revokeObjectURL = vi.fn();
+    const origCreate = document.createElement.bind(document);
+    const createElementSpy = vi.fn((tag: string) => {
+      const el = origCreate(tag);
+      if (tag === 'a') (el as HTMLAnchorElement).click = clickSpy;
+      return el;
+    });
+    document.createElement = createElementSpy as typeof document.createElement;
+
+    render(<AuditLogTable />);
+    await waitFor(() => {
+      expect(screen.getByTestId('audit-export')).toBeInTheDocument();
+    });
+    await userEvent.click(screen.getByLabelText(/Export audit log as CSV/));
+
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    URL.createObjectURL = originalCreate;
+    URL.revokeObjectURL = originalRevoke;
+    document.createElement = origCreate;
+  });
+
   it('renders empty state when no entries returned', async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
