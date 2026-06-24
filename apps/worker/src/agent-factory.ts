@@ -29,7 +29,7 @@ async function listAllProviders(userId?: string): Promise<ProviderConfig[]> {
   return mergeProviders(BUILT_IN_PROVIDERS, custom);
 }
 
-export { listAllProviders };
+export { listAllProviders, resolveProviderConfig };
 
 async function resolveProviderConfig(providerId: string, userId?: string): Promise<ProviderConfig> {
   const all = await listAllProviders(userId);

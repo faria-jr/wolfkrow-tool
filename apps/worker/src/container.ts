@@ -42,6 +42,7 @@ import { getAnthropicApiKey, getProviderApiKey } from './lib/keychain';
 export type { RepoRegistry };
 export { getHarnessAgents, makeCoderWithTools } from './agent-factory';
 export type { HarnessAgents } from './agent-factory';
+export { resolveProviderConfig } from './agent-factory';
 
 /** Singleton repo registry for the worker process. */
 export function getRepos(): RepoRegistry {
@@ -171,6 +172,7 @@ export async function resolveAgentStreamPort({
   requestPermission,
   userId,
 }: ResolveAgentStreamPortOptions): Promise<AIStreamPort> {
+  const { resolveProviderConfig } = await import('./agent-factory');
   const provId = agentProvider ?? 'anthropic';
   const provCfg = await resolveProviderConfig(provId, userId);
 
@@ -188,13 +190,6 @@ export async function resolveAgentStreamPort({
 
   const apiKey = await getAnthropicApiKey();
   return getAgenticStreamPort({ apiKey, allowedTools, workDir, requestPermission });
-}
-
-async function resolveProviderConfig(providerId: string, userId?: string): Promise<ProviderConfig> {
-  const { listAllProviders } = await import('./agent-factory');
-  const all = await listAllProviders(userId);
-  const { getProviderById } = await import('@wolfkrow/domain');
-  return getProviderById(all, providerId) ?? getProviderById(all, 'anthropic')!;
 }
 
 /** Workspace dir scoped per project for harness coder sandboxing. */
