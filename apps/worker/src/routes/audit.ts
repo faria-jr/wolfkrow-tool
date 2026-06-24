@@ -36,11 +36,17 @@ function getAuditRepos() {
   };
 }
 
+function authUserId(request: { user?: { userId?: string } }): string {
+  const userId = request.user?.userId;
+  if (!userId) throw new Error('authenticated user required');
+  return userId;
+}
+
 async function runAuditHandler(
   request: AuditRequest,
   reply: AuditReply,
 ): Promise<unknown> {
-  const userId = request.user?.userId ?? 'anonymous';
+  const userId = authUserId(request);
   const { projectPath, model, filesByRole, provider } = request.body ?? {};
   if (!projectPath || typeof projectPath !== 'string') {
     return reply.status(400).send({ error: 'projectPath is required' });
@@ -67,9 +73,11 @@ async function getScanHandler(
   request: AuditRequest,
   reply: AuditReply,
 ): Promise<unknown> {
+  const userId = authUserId(request);
   const { scanRepo } = getAuditRepos();
   const scan = scanRepo.findById(request.params.scanId);
   if (!scan) return reply.status(404).send({ error: 'Scan not found' });
+  if (scan.userId !== userId) return reply.status(404).send({ error: 'Scan not found' });
   return reply.send(scan);
 }
 
@@ -77,10 +85,12 @@ async function getFindingsHandler(
   request: AuditRequest,
   reply: AuditReply,
 ): Promise<unknown> {
+  const userId = authUserId(request);
   const { scanRepo, findingRepo } = getAuditRepos();
+  const scan = scanRepo.findById(request.params.scanId);
+  if (!scan || scan.userId !== userId) return reply.status(404).send({ error: 'Scan not found' });
   const useCase = new ListFindingsUseCase(scanRepo, findingRepo);
-  const { scan, findings } = await useCase.execute({ scanId: request.params.scanId, userId: request.user?.userId ?? 'anonymous' });
-  if (!scan) return reply.status(404).send({ error: 'Scan not found' });
+  const { findings } = await useCase.execute({ scanId: request.params.scanId, userId });
   return reply.send({
     scanId: scan.id,
     findings: findings.map((f: SecurityFinding) => f.toJSON()),
@@ -88,12 +98,10 @@ async function getFindingsHandler(
   });
 }
 
-interface ListQuery { userId?: string }
-
-async function listScansHandler(request: { user?: { userId?: string }; query: ListQuery }): Promise<unknown> {
+async function listScansHandler(request: { user?: { userId?: string } }): Promise<unknown> {
+  const userId = authUserId(request);
   const { scanRepo } = getAuditRepos();
   const useCase = new ListScansUseCase(scanRepo);
-  const userId = request.user?.userId ?? request.query.userId ?? 'anonymous';
   return useCase.execute({ userId });
 }
 
@@ -102,5 +110,5 @@ export async function auditRoutes(server: AuthFastifyInstance) {
   server.post<{ Body: RunAuditBody }>('/audit/run', auth, runAuditHandler as never);
   server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId', auth, getScanHandler as never);
   server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId/findings', auth, getFindingsHandler as never);
-  server.get<{ Querystring: ListQuery }>('/audit/scans', auth, listScansHandler as never);
+  server.get('/audit/scans', auth, listScansHandler as never);
 }

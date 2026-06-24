@@ -49,7 +49,9 @@ let app: ReturnType<typeof Fastify>;
 
 beforeAll(async () => {
   app = Fastify();
-  app.decorate('authenticate', async () => undefined);
+  app.decorate('authenticate', async (request: { user?: { userId?: string } }) => {
+    request.user = { userId: 'u1' };
+  });
   await auditRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
 });
@@ -89,5 +91,38 @@ describe('audit routes', () => {
     expect(body.scanId).toBe('scan-1');
     expect(body.findings).toEqual([]);
     expect(body.summary.total).toBe(0);
+  });
+
+  it('returns 404 when accessing scan owned by another user', async () => {
+    const otherApp = Fastify();
+    otherApp.decorate('authenticate', async (request: { user?: { userId?: string } }) => {
+      request.user = { userId: 'attacker' };
+    });
+    await auditRoutes(otherApp as unknown as AuthFastifyInstance);
+    await otherApp.ready();
+    const res = await otherApp.inject({ method: 'GET', url: '/audit/scans/scan-1/findings' });
+    expect(res.statusCode).toBe(404);
+    await otherApp.close();
+  });
+
+  it('returns 404 when accessing scan via /scans/:id owned by another user', async () => {
+    const otherApp = Fastify();
+    otherApp.decorate('authenticate', async (request: { user?: { userId?: string } }) => {
+      request.user = { userId: 'attacker' };
+    });
+    await auditRoutes(otherApp as unknown as AuthFastifyInstance);
+    await otherApp.ready();
+    const res = await otherApp.inject({ method: 'GET', url: '/audit/scans/scan-1' });
+    expect(res.statusCode).toBe(404);
+    await otherApp.close();
+  });
+
+  it('listScans ignores userId query string and uses authenticated user only', async () => {
+    const res = await app.inject({ method: 'GET', url: '/audit/scans?userId=someone-else' });
+    expect(res.statusCode).toBe(200);
+    // listByUser should be called with authenticated userId 'u1', NOT 'someone-else'
+    const { getRepos } = await import('../../container');
+    const repos = vi.mocked(getRepos());
+    expect(repos.securityScan.listByUser).toHaveBeenCalledWith('u1', undefined);
   });
 });
