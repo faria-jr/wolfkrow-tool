@@ -36,6 +36,7 @@ import { telegramRoutes } from './routes/telegram';
 import { usageRoutes } from './routes/usage';
 import { vaultRoutes } from './routes/vault';
 import { voiceRoutes } from './routes/voice';
+import { providerRoutes } from './routes/providers';
 
 async function registerRoutes(server: FastifyInstance) {
   await server.register(healthRoutes, { prefix: '/health' });
@@ -59,6 +60,7 @@ async function registerRoutes(server: FastifyInstance) {
   await server.register(graphRoutes, { prefix: '/graph' });
   await server.register(sidecarRoutes, { prefix: '/sidecar' });
   await server.register(skillsRoutes, { prefix: '/skills' });
+  await server.register(providerRoutes, { prefix: '/api' });
 }
 
 async function registerPlugins(server: FastifyInstance) {
