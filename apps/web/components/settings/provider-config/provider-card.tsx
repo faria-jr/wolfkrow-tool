@@ -16,7 +16,7 @@ interface ProviderCardProps {
   provider: ProviderRow;
   isBuiltIn: boolean;
   onEdit: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
 }
 
 export function ProviderCard({ provider, isBuiltIn, onEdit, onDelete }: ProviderCardProps) {
