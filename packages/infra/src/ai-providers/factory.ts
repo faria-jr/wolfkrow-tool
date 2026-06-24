@@ -1,9 +1,4 @@
-/**
- * AI provider factory — Strategy selection (§1.5 O).
- * Novos SDKs = novo case, zero edição nos callers.
- */
-
-import type { PermissionResolver } from '@wolfkrow/domain';
+import type { PermissionResolver, ProviderConfig } from '@wolfkrow/domain';
 
 import type { ToolRegistry } from '../tools/tool-registry';
 
@@ -76,6 +71,19 @@ export class ProviderAIProviderFactory implements AIProviderFactory {
     if (simple) return simple;
 
     throw new Error(`Unsupported AI provider: ${provider}`);
+  }
+
+  createFromConfig(cfg: ProviderConfig, apiKey: string): AIProvider {
+    switch (cfg.protocol) {
+      case 'anthropic-compat':
+        return new ClaudeCompatProvider(apiKey, { baseUrl: cfg.baseUrl });
+      case 'openai-compatible':
+        return new CodexProvider(apiKey, cfg.baseUrl);
+      default: {
+        const exhaustiveCheck: never = cfg.protocol;
+        throw new Error(`Unknown protocol: ${String(exhaustiveCheck)}`);
+      }
+    }
   }
 }
 

@@ -1,4 +1,5 @@
-import { ProviderConfig, ProviderProtocol } from '@wolfkrow/domain';
+import { ProviderConfig } from '@wolfkrow/domain';
+import type { ProviderProtocol } from '@wolfkrow/domain';
 import { and, eq } from 'drizzle-orm';
 
 import { getDb } from '../db/client';

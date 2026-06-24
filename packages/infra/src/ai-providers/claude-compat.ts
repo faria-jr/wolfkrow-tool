@@ -22,9 +22,11 @@ import type {
 export class ClaudeCompatProvider implements AIProvider {
   private readonly client: Anthropic;
 
-  constructor(apiKey: string, presetId: string) {
-    const preset = getClaudeCompatPreset(presetId);
-    this.client = new Anthropic({ apiKey, baseURL: preset.baseUrl });
+  constructor(apiKey: string, source: string | { baseUrl: string }) {
+    const baseUrl = typeof source === 'string'
+      ? getClaudeCompatPreset(source).baseUrl
+      : source.baseUrl;
+    this.client = new Anthropic({ apiKey, baseURL: baseUrl });
   }
 
   async *query(options: CompletionOptions): AsyncIterable<StreamChunk> {

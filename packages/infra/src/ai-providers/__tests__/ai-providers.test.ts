@@ -8,8 +8,10 @@ vi.mock('@anthropic-ai/sdk', () => ({
   },
 }));
 
+import { ProviderConfig } from '@wolfkrow/domain';
 import { AnthropicProvider } from '../anthropic';
 import { ClaudeCompatProvider } from '../claude-compat';
+import { CodexProvider } from '../codex';
 import { ProviderAIProviderFactory } from '../factory';
 import { accumulate, estimateTokens } from '../helpers';
 import { MockProvider } from '../mock';
@@ -92,6 +94,22 @@ describe('ProviderAIProviderFactory', () => {
 
   it('throws on unknown provider', () => {
     expect(() => factory.create('nope', 'key')).toThrow(/Unsupported/);
+  });
+
+  it('createFromConfig creates ClaudeCompatProvider for anthropic-compat protocol', () => {
+    const cfg = ProviderConfig.create({
+      id: 'zai', displayName: 'Z', protocol: 'anthropic-compat',
+      baseUrl: 'https://api.z.ai/api/anthropic', apiKeyAccount: 'zai', models: ['glm-4.7'], supportsTools: true,
+    });
+    expect(factory.createFromConfig(cfg, 'key')).toBeInstanceOf(ClaudeCompatProvider);
+  });
+
+  it('createFromConfig creates CodexProvider for openai-compatible protocol', () => {
+    const cfg = ProviderConfig.create({
+      id: 'openai', displayName: 'OAI', protocol: 'openai-compatible',
+      baseUrl: 'https://api.openai.com/v1', apiKeyAccount: 'openai', models: ['gpt-4o'], supportsTools: true,
+    });
+    expect(factory.createFromConfig(cfg, 'key')).toBeInstanceOf(CodexProvider);
   });
 });
 
