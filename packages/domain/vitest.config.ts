@@ -12,6 +12,8 @@ export default defineConfig({
       exclude: [
         'src/**/index.ts',
         'src/__tests__/**',
+        'src/**/__tests__/**',
+        '**/*.test.ts',
         '**/*.config.ts',
         'src/repos/**',
         'src/services/ai-stream-port.ts',

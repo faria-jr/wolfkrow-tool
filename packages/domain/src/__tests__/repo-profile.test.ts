@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { RepoProfile } from '../entities/repo-profile';
 
 describe('RepoProfile', () => {

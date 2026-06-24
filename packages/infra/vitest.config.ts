@@ -15,6 +15,8 @@ export default defineConfig({
         'src/db/migrate.ts',
         'src/seed/**',
         'src/**/index.ts',
+        'src/**/__tests__/**',
+        '**/*.test.ts',
         '**/*.config.ts',
       ],
       // M0 baseline — §1.3 target 85: sobe quando repos (F.3) e providers (A.2)

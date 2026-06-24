@@ -23,7 +23,6 @@ export default defineConfig({
         '**/__tests__/**',
         '**/types.ts',
         'components/ui/**',
-        'components/common/**',
         'lib/presentation/**',
         'app/**/layout.tsx',
         'app/**/loading.tsx',
