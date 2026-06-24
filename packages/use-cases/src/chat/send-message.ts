@@ -4,11 +4,12 @@ import type {
   AIStreamPort,
   ChatSession,
   ChatSessionRepo,
+  EventBus,
   Message,
   MessageRepo,
   UsageRepo,
 } from '@wolfkrow/domain';
-import { Message as MessageEntity, ChatSession as ChatSessionEntity, defaultPricingCalculator } from '@wolfkrow/domain';
+import { Message as MessageEntity, ChatSession as ChatSessionEntity, createDomainEvent, defaultPricingCalculator } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
@@ -24,13 +25,24 @@ export interface SendMessageInput {
 
 export type SendMessageOutput = AsyncIterable<AIStreamChunk>;
 
+export interface SendMessageOptions {
+  usageRepo?: UsageRepo;
+  eventBus?: EventBus;
+}
+
 export class SendMessageUseCase implements UseCase<SendMessageInput, SendMessageOutput> {
+  private readonly usageRepo: UsageRepo | undefined;
+  private readonly eventBus: EventBus | undefined;
+
   constructor(
     private readonly sessionRepo: ChatSessionRepo,
     private readonly messageRepo: MessageRepo,
     private readonly ai: AIStreamPort,
-    private readonly usageRepo?: UsageRepo,
-  ) {}
+    opts: SendMessageOptions = {},
+  ) {
+    this.usageRepo = opts.usageRepo;
+    this.eventBus = opts.eventBus;
+  }
 
   async execute(input: SendMessageInput): Promise<SendMessageOutput> {
     const session = await this.loadOrCreateSession(input);
@@ -82,6 +94,14 @@ export class SendMessageUseCase implements UseCase<SendMessageInput, SendMessage
     }
 
     await this.finalizeTurn({ session, input, accumulated, inputTokens, outputTokens, aborted });
+
+    if (!aborted && this.eventBus) {
+      void this.eventBus.publish(createDomainEvent({
+        type: 'message.turn.completed',
+        aggregateId: session.id,
+        payload: { userId: input.userId, inputTokens, outputTokens },
+      }));
+    }
 
     if (aborted) {
       // Close the stream cleanly so the SSE layer flushes the partial message to the client.

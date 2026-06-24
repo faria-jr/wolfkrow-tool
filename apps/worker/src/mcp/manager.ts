@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 
-import { DrizzleMcpServerRepo, DrizzleMcpToolRegistryRepo } from '@wolfkrow/infra';
+import type { McpServerRepo, McpToolRegistryRepo } from '@wolfkrow/domain';
 
 import { createLogger } from '../logger';
 
@@ -19,6 +19,8 @@ export interface McpServerConfig {
 
 export interface McpManagerOptions {
   rpcTimeoutMs?: number;
+  mcpServerRepo?: McpServerRepo;
+  mcpToolRepo?: McpToolRegistryRepo;
 }
 
 export interface McpServerState {
@@ -50,10 +52,14 @@ class McpManagerImpl implements McpManager {
   private readonly servers = new Map<string, McpServerState>();
   private readonly maxRestarts = 5;
   private readonly timeoutMs: number;
+  private readonly mcpServerRepo: McpServerRepo | undefined;
+  private readonly mcpToolRepo: McpToolRegistryRepo | undefined;
   private requestCounter = 0;
 
   constructor(opts: McpManagerOptions = {}) {
     this.timeoutMs = opts.rpcTimeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.mcpServerRepo = opts.mcpServerRepo;
+    this.mcpToolRepo = opts.mcpToolRepo;
   }
 
   async start(config: McpServerConfig): Promise<McpServerState> {
@@ -136,10 +142,11 @@ class McpManagerImpl implements McpManager {
   }
 
   private persistToolRegistry(state: McpServerState): void {
+    if (!this.mcpServerRepo || !this.mcpToolRepo) return;
     try {
-      const serverRecord = new DrizzleMcpServerRepo().findByName(state.config.name);
+      const serverRecord = this.mcpServerRepo.findByName(state.config.name);
       if (!serverRecord) return;
-      new DrizzleMcpToolRegistryRepo().upsertMany(
+      this.mcpToolRepo.upsertMany(
         serverRecord.id,
         state.tools.map((t) => ({
           name: t.name,

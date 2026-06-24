@@ -26,6 +26,10 @@ import {
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
 
+import { createLogger } from './logger';
+
+const logger = createLogger('main');
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -65,7 +69,7 @@ function spawnChild(name: string, cmd: string, args: string[], cwd: string): Chi
     process.stderr.write(`[${name}] ${d}`);
   });
   proc.on('exit', (code) => {
-    console.warn(`[${name}] exited with code ${code ?? '?'}`);
+    logger.warn(`Process exited`, { name, code: code ?? '?' });
   });
 
   children.push({ name, proc });
@@ -192,18 +196,19 @@ function createTray(window: BrowserWindow): void {
 // ---------------------------------------------------------------------------
 
 function bootstrapAutoUpdater(): void {
-  autoUpdater.logger = null; // use console
+  const updaterLog = createLogger('updater');
+  autoUpdater.logger = null;
   autoUpdater.on('update-available', () => {
-    console.warn('[updater] Update available — downloading...');
+    updaterLog.warn('Update available — downloading');
   });
   autoUpdater.on('update-downloaded', () => {
-    console.warn('[updater] Update downloaded — will install on next restart.');
+    updaterLog.info('Update downloaded — will install on next restart');
   });
   autoUpdater.on('error', (err: Error) => {
-    console.warn('[updater] Auto-update error:', err.message);
+    updaterLog.error('Auto-update error', err.message);
   });
   autoUpdater.checkForUpdatesAndNotify().catch((e: unknown) => {
-    console.warn('[updater] Check failed:', e);
+    updaterLog.warn('Check failed', e);
   });
 }
 
@@ -243,7 +248,7 @@ async function main(): Promise<void> {
   try {
     await waitForPort(WEB_PORT, BOOT_TIMEOUT_MS);
   } catch {
-    console.error('Web server failed to start in time — continuing anyway.');
+    logger.error('Web server failed to start in time — continuing anyway');
   }
 
   win = createWindow();
@@ -264,6 +269,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((e) => {
-  console.error('Wrapper fatal error:', e);
+  logger.error('Wrapper fatal error', e);
   app.quit();
 });

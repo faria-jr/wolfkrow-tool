@@ -55,7 +55,9 @@ export function Terminal({ autoConnect = true, className }: TerminalProps) {
       disconnect();
       term.dispose();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Mount-once: xterm must be initialized exactly once per DOM node.
+  // usePty callbacks are stable (useCallback), so omitting them from deps is safe.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-once for xterm imperative setup
   }, []);
 
   return (

@@ -7,13 +7,17 @@
 
 import type { FastifyInstance, FastifyPluginAsync, FastifyReply, FastifyRequest } from 'fastify';
 
+import { getRepos } from '../container';
 import { loadBuiltInMcpCatalog } from '../mcp/catalog';
 import { createMcpManager } from '../mcp/manager';
 import type { McpManager, McpServerConfig, McpServerState } from '../mcp/manager';
 
 // Singleton used by the worker boot (startMcpsAsync) and as the default for the
 // route plugin when no manager is injected (e.g. in tests).
-export const mcpManager: McpManager = createMcpManager();
+export const mcpManager: McpManager = createMcpManager({
+  mcpServerRepo: getRepos().mcpServer,
+  mcpToolRepo: getRepos().mcpToolRegistry,
+});
 
 export interface McpRouteOptions {
   manager?: McpManager;

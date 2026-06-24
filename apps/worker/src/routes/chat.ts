@@ -157,7 +157,7 @@ async function handleSendRequest(
   }
 
   const { chatSession: sessionRepo, message: messageRepo, tokenUsage: usageRepo } = getRepos();
-  const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, usageRepo);
+  const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, { usageRepo });
 
   const stream = await useCase.execute({
     sessionId, userId, agentId, content, model, signal: ctx.signal,
