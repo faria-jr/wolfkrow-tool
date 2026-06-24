@@ -5,8 +5,20 @@ import { ToolResult } from '@wolfkrow/domain';
 import type { ToolExecutionContext, ToolExecutor } from '@wolfkrow/domain';
 
 const FORBIDDEN_PATTERNS = [/\bsudo\b/, /\bsu\s+/, /\bchmod\s+[0-9]*7/];
-const SHELL_METACHARACTERS_RE = /[;|&$`(){}<>\r\n*?[\]~#]/;
 const DEFAULT_TIMEOUT_MS = 30_000;
+const MAX_COMMAND_LENGTH = 4096;
+
+const ALLOWED_BINARIES = new Set([
+  'ls', 'cat', 'head', 'tail', 'wc', 'echo', 'pwd', 'env',
+  'grep', 'find', 'sort', 'uniq', 'tr', 'cut', 'sed', 'awk',
+  'node', 'npm', 'pnpm', 'npx', 'yarn',
+  'git', 'mkdir', 'rmdir', 'touch', 'cp', 'mv', 'ln',
+  'tar', 'gzip', 'gunzip', 'zip', 'unzip',
+  'curl', 'wget', 'jq',
+  'bash', 'sh', 'dash', 'zsh',
+  'make', 'cmake', 'gcc', 'clang',
+  'test', 'true', 'false',
+]);
 
 function isPathWithinWorkspace(workDir: string, resolved: string): boolean {
   const prefix = workDir.endsWith(path.sep) ? workDir : workDir + path.sep;
@@ -20,13 +32,40 @@ function parseTimeoutMs(raw: unknown): number {
   return n;
 }
 
+function parseCommand(raw: unknown): string[] | { error: string } {
+  if (Array.isArray(raw)) {
+    if (raw.length === 0) return { error: 'Command cannot be empty' };
+    const parts: string[] = [];
+    for (const part of raw) {
+      if (typeof part !== 'string') return { error: 'Each command token must be a string' };
+      parts.push(part);
+    }
+    return parts;
+  }
+  if (typeof raw === 'string') {
+    if (raw.length === 0) return { error: 'Command cannot be empty' };
+    if (raw.length > MAX_COMMAND_LENGTH) {
+      return { error: `Command exceeds maximum length of ${MAX_COMMAND_LENGTH}` };
+    }
+    const tokens = raw.split(/\s+/).filter((t) => t.length > 0);
+    return tokens;
+  }
+  return { error: 'Command must be string or string[]' };
+}
+
 export class BashTool implements ToolExecutor {
   readonly name = 'bash';
   readonly description = 'Execute a shell command in the project workspace. Dangerous commands require explicit permission.';
   readonly inputSchema = {
     type: 'object',
     properties: {
-      command: { type: 'string', description: 'Shell command to execute' },
+      command: {
+        oneOf: [
+          { type: 'string', description: 'Shell command tokens separated by whitespace' },
+          { type: 'array', items: { type: 'string' }, description: 'Shell command as array of tokens (preferred)' },
+        ],
+        description: 'Command to execute (string or array of tokens)',
+      },
       cwd: { type: 'string', description: 'Working directory (must be within workspace)' },
       timeout: { type: 'number', description: 'Timeout in milliseconds (default 30000)' },
     },
@@ -35,50 +74,67 @@ export class BashTool implements ToolExecutor {
 
   async execute(input: Record<string, unknown>, ctx: ToolExecutionContext): Promise<ToolResult> {
     const callId = `bash-${Date.now()}`;
-    const command = String(input['command'] ?? '');
-    const timeoutMs = parseTimeoutMs(input['timeout']);
+    const validation = this.validateCommand(input);
+    if (validation) return validation;
+    const exec = this.resolveExecution(input, ctx);
+    if ('error' in exec) return ToolResult.error(callId, exec.error);
+    return this.runProcess(callId, exec);
+  }
 
-    if (SHELL_METACHARACTERS_RE.test(command)) {
-      return ToolResult.error(callId, 'Command blocked: contains shell metacharacters');
+  private validateCommand(input: Record<string, unknown>): ToolResult | null {
+    const callId = `bash-${Date.now()}`;
+    const parsed = parseCommand(input['command']);
+    if ('error' in parsed) {
+      return ToolResult.error(callId, parsed.error);
     }
-
-    for (const pattern of FORBIDDEN_PATTERNS) {
-      if (pattern.test(command)) {
-        return ToolResult.error(callId, `Command blocked: contains forbidden pattern (${pattern.source})`);
+    const tokens = parsed;
+    const binary = tokens[0];
+    if (!binary || !ALLOWED_BINARIES.has(binary)) {
+      return ToolResult.error(callId, `Binary "${binary}" not in allowlist`);
+    }
+    for (const token of tokens) {
+      for (const pattern of FORBIDDEN_PATTERNS) {
+        if (pattern.test(token)) {
+          return ToolResult.error(callId, `Command blocked: contains forbidden pattern (${pattern.source})`);
+        }
       }
     }
+    return null;
+  }
 
+  private resolveExecution(input: Record<string, unknown>, ctx: ToolExecutionContext): { binary: string; args: string[]; cwd: string; timeoutMs: number } | { error: string } {
+    const tokens = parseCommand(input['command']) as string[];
+    const binary = tokens[0] ?? '';
+    const args = tokens.slice(1);
     const workDir = ctx.workDir ?? process.cwd();
     let cwd = workDir;
-
     if (input['cwd']) {
       const requestedCwd = String(input['cwd']);
       const resolved = path.resolve(workDir, requestedCwd);
       if (!isPathWithinWorkspace(workDir, resolved)) {
-        return ToolResult.error(callId, `cwd "${requestedCwd}" not allowed — must stay within workspace`);
+        return { error: `cwd "${requestedCwd}" not allowed — must stay within workspace` };
       }
       cwd = resolved;
     }
+    return { binary, args, cwd, timeoutMs: parseTimeoutMs(input['timeout']) };
+  }
 
+  private runProcess(callId: string, exec: { binary: string; args: string[]; cwd: string; timeoutMs: number }): Promise<ToolResult> {
     return new Promise<ToolResult>((resolve) => {
       let stdout = '';
       let stderr = '';
       let timedOut = false;
-
-      const child = spawn('sh', ['-c', command], { cwd });
-
+      const child = spawn(exec.binary, exec.args, { cwd: exec.cwd, shell: false });
       const timer = setTimeout(() => {
         timedOut = true;
         child.kill('SIGTERM');
-      }, timeoutMs);
-
+      }, exec.timeoutMs);
       child.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
       child.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
-
       child.on('close', (code: number | null) => {
         clearTimeout(timer);
         if (timedOut) {
-          resolve(ToolResult.error(callId, `Command timed out after ${timeoutMs}ms`));
+          resolve(ToolResult.error(callId, `Command timed out`));
           return;
         }
         if (code !== 0) {

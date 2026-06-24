@@ -32,8 +32,16 @@ describe('BashTool', () => {
   it('executes command and returns stdout on success', async () => {
     mockSpawn('hello world\n', '', 0);
     const tool = new BashTool();
-    const result = await tool.execute({ command: 'echo hello world' }, ctx);
+    const result = await tool.execute({ command: ['echo', 'hello world'] }, ctx);
     expect(result).toBeInstanceOf(ToolResult);
+    expect(result.isError).toBe(false);
+    expect(result.output).toContain('hello world');
+  });
+
+  it('accepts command as string and splits on whitespace', async () => {
+    mockSpawn('hello world\n', '', 0);
+    const tool = new BashTool();
+    const result = await tool.execute({ command: 'echo hello world' }, ctx);
     expect(result.isError).toBe(false);
     expect(result.output).toContain('hello world');
   });
@@ -41,37 +49,50 @@ describe('BashTool', () => {
   it('returns error result when command exits non-zero', async () => {
     mockSpawn('', 'command not found', 127);
     const tool = new BashTool();
-    const result = await tool.execute({ command: 'badcmd' }, ctx);
+    const result = await tool.execute({ command: ['ls', 'missing'] }, ctx);
     expect(result.isError).toBe(true);
     expect(result.output).toContain('command not found');
   });
 
+  it('rejects binary not in allowlist', async () => {
+    const tool = new BashTool();
+    const result = await tool.execute({ command: ['badcmd', 'arg'] }, ctx);
+    expect(result.isError).toBe(true);
+    expect(result.output).toMatch(/allowlist/i);
+  });
+
   it('rejects sudo commands', async () => {
     const tool = new BashTool();
-    const result = await tool.execute({ command: 'sudo rm -rf /' }, ctx);
+    const result = await tool.execute({ command: ['sudo', 'rm', '-rf', '/'] }, ctx);
     expect(result.isError).toBe(true);
-    expect(result.output).toMatch(/sudo/i);
+    expect(result.output).toMatch(/sudo|forbidden/i);
   });
 
   it('rejects path traversal via cwd', async () => {
     const tool = new BashTool();
-    const result = await tool.execute({ command: 'ls', cwd: '/etc' }, ctx);
+    const result = await tool.execute({ command: ['ls'], cwd: '/etc' }, ctx);
     expect(result.isError).toBe(true);
     expect(result.output).toMatch(/not allowed/i);
-  });
-
-  it('rejects shell metacharacters', async () => {
-    const tool = new BashTool();
-    const result = await tool.execute({ command: 'echo hello; rm -rf /' }, ctx);
-    expect(result.isError).toBe(true);
-    expect(result.output).toMatch(/metacharacters/i);
   });
 
   it('rejects cwd path traversal by prefix', async () => {
     const tool = new BashTool();
-    const result = await tool.execute({ command: 'ls', cwd: '../test-workspace-evil' }, ctx);
+    const result = await tool.execute({ command: ['ls'], cwd: '../test-workspace-evil' }, ctx);
     expect(result.isError).toBe(true);
     expect(result.output).toMatch(/not allowed/i);
+  });
+
+  it('rejects empty command', async () => {
+    const tool = new BashTool();
+    const result = await tool.execute({ command: [] }, ctx);
+    expect(result.isError).toBe(true);
+    expect(result.output).toMatch(/empty/i);
+  });
+
+  it('rejects non-string command', async () => {
+    const tool = new BashTool();
+    const result = await tool.execute({ command: 42 }, ctx);
+    expect(result.isError).toBe(true);
   });
 
   it('falls back to default timeout when negative', async () => {
