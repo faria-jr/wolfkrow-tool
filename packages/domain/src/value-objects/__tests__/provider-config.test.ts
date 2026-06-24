@@ -119,4 +119,91 @@ describe('ProviderConfig', () => {
       }),
     ).toThrow('private host');
   });
+
+  it('allows IPv6 loopback [::1] over https', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://[::1]/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).not.toThrow();
+  });
+
+  it('allows IPv6 loopback [::1] over http', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'http://[::1]/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects IPv6 unspecified [::] as private host', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://[::]/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('private host');
+  });
+
+  it('rejects IPv6 link-local [fe80::...]', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://[fe80::1]/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('private host');
+  });
+
+  it('rejects IPv6 unique-local [fc00::...] and [fd00::...]', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://[fc00::1]/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('private host');
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://[fd00::1]/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('private host');
+  });
+
+  it('rejects IPv4-mapped IPv6 [::ffff:127.0.0.1]', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://[::ffff:127.0.0.1]/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('private host');
+  });
+
+  it('rejects IPv4-mapped IPv6 [::ffff:169.254.169.254]', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://[::ffff:169.254.169.254]/latest', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('private host');
+  });
+
+  it('allows public IPv6 host', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://[2606:4700:4700::1111]/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects 0.0.0.0', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://0.0.0.0/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('private host');
+  });
 });
