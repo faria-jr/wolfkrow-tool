@@ -1,9 +1,6 @@
 /**
- * Claude-compat presets — value object + catalog for providers that expose an
- * Anthropic-compatible messages API (Z.ai/GLM, MiniMax TokenPlan, Moonshot/Kimi,
- * Qwen/DashScope).
- *
- * Domain puro: não depende de SDKs de infraestrutura.
+ * @deprecated Use `provider-registry.ts` — it is the canonical source.
+ * This file kept for backwards-compat of existing callers until RM1 migration is complete.
  */
 
 export const CLAUDE_COMPAT_PROVIDER_IDS = ['zai', 'minimax', 'moonshot', 'qwen'] as const;
