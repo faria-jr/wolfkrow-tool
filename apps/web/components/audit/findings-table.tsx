@@ -1,9 +1,11 @@
+import type { SecuritySeverity } from '@wolfkrow/domain';
+
 import { SeverityBadge } from './severity-badge';
 
 export interface Finding {
   id: string;
   scanId: string;
-  severity: string;
+  severity: SecuritySeverity;
   dimension: string;
   file: string;
   line?: number;

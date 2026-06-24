@@ -1,6 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import type { VaultKind } from '@wolfkrow/domain';
 import { MgraphEngine } from '@wolfkrow/infra';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
@@ -8,7 +9,7 @@ import type { AuthFastifyInstance } from '../types/fastify';
 
 interface CreateBody {
   path: string;
-  kind: 'entity' | 'meeting' | 'decision' | 'project' | 'reference';
+  kind: VaultKind;
   title: string;
   tags?: string[];
   body: string;
@@ -24,8 +25,6 @@ interface UpdateBody {
 interface SearchQuery { q?: string; kind?: string; limit?: string; }
 
 interface NoteParams { path: string; }
-
-type VaultKind = 'entity' | 'meeting' | 'decision' | 'project' | 'reference';
 
 function defaultVaultRoot(): string {
   return process.env['WOLFKROW_VAULT_ROOT'] ?? join(process.cwd(), '.wolfkrow', 'vault');
