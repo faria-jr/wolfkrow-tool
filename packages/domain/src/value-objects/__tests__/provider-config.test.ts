@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+
 import { ProviderConfig, PROVIDER_PROTOCOLS } from '../provider-config';
 
 describe('ProviderConfig', () => {
@@ -90,5 +91,32 @@ describe('ProviderConfig', () => {
       pricingUrl: 'https://b/pricing',
     });
     expect(p.pricingUrl).toBe('https://b/pricing');
+  });
+
+  it('rejects non-http protocols', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'file:///etc/passwd', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('http/https');
+  });
+
+  it('rejects http for non-loopback hosts', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'http://api.example.com/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('localhost/loopback');
+  });
+
+  it('rejects private hosts (SSRF)', () => {
+    expect(() =>
+      ProviderConfig.create({
+        id: 'x', displayName: 'X', protocol: 'openai-compatible',
+        baseUrl: 'https://169.254.169.254/latest/meta-data/', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+      }),
+    ).toThrow('private host');
   });
 });

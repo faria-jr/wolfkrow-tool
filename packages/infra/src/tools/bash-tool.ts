@@ -5,7 +5,13 @@ import { ToolResult } from '@wolfkrow/domain';
 import type { ToolExecutionContext, ToolExecutor } from '@wolfkrow/domain';
 
 const FORBIDDEN_PATTERNS = [/\bsudo\b/, /\bsu\s+/, /\bchmod\s+[0-9]*7/];
+const SHELL_METACHARACTERS_RE = /[;|&$`(){}<>\r\n*?[\]~#]/;
 const DEFAULT_TIMEOUT_MS = 30_000;
+
+function isPathWithinWorkspace(workDir: string, resolved: string): boolean {
+  const prefix = workDir.endsWith(path.sep) ? workDir : workDir + path.sep;
+  return resolved === workDir || resolved.startsWith(prefix);
+}
 
 export class BashTool implements ToolExecutor {
   readonly name = 'bash';
@@ -25,6 +31,10 @@ export class BashTool implements ToolExecutor {
     const command = String(input['command'] ?? '');
     const timeoutMs = Number(input['timeout'] ?? DEFAULT_TIMEOUT_MS);
 
+    if (SHELL_METACHARACTERS_RE.test(command)) {
+      return ToolResult.error(callId, 'Command blocked: contains shell metacharacters');
+    }
+
     for (const pattern of FORBIDDEN_PATTERNS) {
       if (pattern.test(command)) {
         return ToolResult.error(callId, `Command blocked: contains forbidden pattern (${pattern.source})`);
@@ -37,7 +47,7 @@ export class BashTool implements ToolExecutor {
     if (input['cwd']) {
       const requestedCwd = String(input['cwd']);
       const resolved = path.resolve(workDir, requestedCwd);
-      if (!resolved.startsWith(workDir)) {
+      if (!isPathWithinWorkspace(workDir, resolved)) {
         return ToolResult.error(callId, `cwd "${requestedCwd}" not allowed — must stay within workspace`);
       }
       cwd = resolved;

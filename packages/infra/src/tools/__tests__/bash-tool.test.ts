@@ -59,4 +59,18 @@ describe('BashTool', () => {
     expect(result.isError).toBe(true);
     expect(result.output).toMatch(/not allowed/i);
   });
+
+  it('rejects shell metacharacters', async () => {
+    const tool = new BashTool();
+    const result = await tool.execute({ command: 'echo hello; rm -rf /' }, ctx);
+    expect(result.isError).toBe(true);
+    expect(result.output).toMatch(/metacharacters/i);
+  });
+
+  it('rejects cwd path traversal by prefix', async () => {
+    const tool = new BashTool();
+    const result = await tool.execute({ command: 'ls', cwd: '../test-workspace-evil' }, ctx);
+    expect(result.isError).toBe(true);
+    expect(result.output).toMatch(/not allowed/i);
+  });
 });
