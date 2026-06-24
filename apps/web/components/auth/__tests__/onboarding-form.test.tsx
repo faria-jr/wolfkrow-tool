@@ -118,6 +118,28 @@ describe('OnboardingForm', () => {
     expect(mockPush).toHaveBeenCalledWith('/chat');
   });
 
+  it('provider select includes all built-in providers (RM2.4)', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({ userId: 'u1' }),
+    } as Response);
+
+    render(<OnboardingForm />);
+    await userEvent.type(screen.getByLabelText(/^password$/i), 'Password1');
+    await userEvent.type(screen.getByLabelText(/confirm password/i), 'Password1');
+    await userEvent.click(screen.getByRole('button', { name: /create account/i }));
+
+    const select = await screen.findByRole('combobox');
+    const options = Array.from((select as HTMLSelectElement).options).map((o) => o.textContent ?? '');
+
+    expect(options).toContain('Z.ai (GLM)');
+    expect(options).toContain('MiniMax TokenPlan');
+    expect(options).toContain('Moonshot (Kimi)');
+    expect(options).toContain('Qwen (DashScope)');
+    expect(options).toContain('Anthropic (Claude)');
+  });
+
   it('shows 409 conflict error when owner already exists', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: false,

@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { BUILT_IN_PROVIDERS } from '@wolfkrow/domain';
+
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -29,12 +31,11 @@ const step1Schema = z
 export type Step1Form = z.infer<typeof step1Schema>;
 type OnboardingStep = 1 | 2 | 3;
 
-const PROVIDERS = [
-  { value: 'anthropic', label: 'Anthropic (Claude)', placeholder: 'sk-ant-...' },
-  { value: 'openrouter', label: 'OpenRouter', placeholder: 'sk-or-...' },
-  { value: 'openai', label: 'OpenAI', placeholder: 'sk-...' },
-  { value: 'ollama', label: 'Ollama (local)', placeholder: 'ollama' },
-] as const;
+const PROVIDERS = BUILT_IN_PROVIDERS.map((p) => ({
+  value: p.id,
+  label: p.displayName,
+  isLocal: p.id === 'ollama',
+}));
 
 export function OnboardingForm() {
   const router = useRouter();
@@ -84,10 +85,10 @@ function ProviderFormFields({ provider, apiKey, onProviderChange, onApiKeyChange
           {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
         </select>
       </div>
-      {selected.value !== 'ollama' && (
+      {selected && !selected.isLocal && (
         <div>
           <label className="text-sm font-medium" htmlFor="api-key-input">API Key</label>
-          <Input id="api-key-input" type="password" placeholder={`API key (${selected.placeholder})`} value={apiKey} onChange={(e) => onApiKeyChange(e.target.value)} className="mt-1" />
+          <Input id="api-key-input" type="password" placeholder={`API key for ${selected.label}`} value={apiKey} onChange={(e) => onApiKeyChange(e.target.value)} className="mt-1" />
         </div>
       )}
     </div>
