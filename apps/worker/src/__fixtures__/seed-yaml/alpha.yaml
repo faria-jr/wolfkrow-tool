@@ -1,0 +1,13 @@
+name: Alpha
+description: First seed agent
+model: claude-sonnet-4-6
+effort: medium
+thinking: false
+maxTurns: 80
+allowedTools: []
+mcpServers: []
+isActive: true
+skills: []
+runtime: cloud
+squad: custom
+tags: []

@@ -1,4 +1,27 @@
 /**
+ * Seed built-in agents for any existing user that owns zero agents.
+ *
+ * The worker owns the DB and runs after onboarding (web app creates the user;
+ * next worker start seeds them). Safe to call on every restart: users that
+ * already have agents are skipped — no duplicates, no overwrites, no resurrects.
+ */
+async function seedAgentsForExistingUsers(): Promise<void> {
+ try {
+  const repos = getRepos();
+  const owner = await repos.user.findOwner();
+  if (!owner) return;
+  const dir = resolveSeedAgentsDir();
+  const inserted = await ensureSeedAgents(repos.agent, owner.id, dir);
+  if (inserted > 0) {
+   logger.info({ userId: owner.id, count: inserted }, 'Seeded built-in agents');
+  }
+ } catch (err) {
+  // Seeding must never block worker startup — log and continue.
+  logger.error({ err }, 'Agent seeding failed (non-fatal)');
+ }
+}
+
+/**
  * Wolfkrow background worker
  *
  * Runs scheduled tasks, migrations, and background jobs.
@@ -16,6 +39,8 @@ import { createLogger } from './logger';
 import { loadBuiltInMcpCatalog } from './mcp/catalog';
 import { stopMemoryLifecycle } from './memory/lifecycle';
 import { mcpManager } from './routes/mcp';
+import { ensureSeedAgents } from './seed-agents/seeder';
+import { resolveSeedAgentsDir } from './seed-agents/paths';
 import { Scheduler } from './scheduler';
 import { createServer } from './server';
 
@@ -50,6 +75,8 @@ async function main(): Promise<void> {
 
  runMigrations();
  getDb();
+
+ await seedAgentsForExistingUsers();
 
  const repository = getScheduledTasksRepository();
  const executor = createAgentExecutor({ logger });

@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:cov": "vitest run --coverage"
+    "test:cov": "vitest run --coverage",
+    "seed:agents": "tsx src/seed-agents/cli.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.0",

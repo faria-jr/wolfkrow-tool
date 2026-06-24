@@ -1,0 +1,13 @@
+name: Beta
+description: Second seed agent
+model: claude-sonnet-4-6
+effort: high
+thinking: true
+maxTurns: 100
+allowedTools: []
+mcpServers: []
+isActive: true
+skills: []
+runtime: cloud
+squad: harness
+tags: []
