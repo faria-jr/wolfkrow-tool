@@ -19,3 +19,4 @@ export * from './usage/index';
 export * from './rules/index';
 export * from './permissions/index';
 export * from './graph/index';
+export * from './providers/index';
