@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { BUILT_IN_PROVIDERS, mergeProviders, getProviderById } from '../provider-registry';
+
 import { ProviderConfig } from '../../value-objects/provider-config';
+import { BUILT_IN_PROVIDERS, mergeProviders, getProviderById } from '../provider-registry';
 
 describe('ProviderRegistry', () => {
   it('ships built-in providers including anthropic and claude-compat presets', () => {

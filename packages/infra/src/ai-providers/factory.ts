@@ -73,10 +73,19 @@ export class ProviderAIProviderFactory implements AIProviderFactory {
     throw new Error(`Unsupported AI provider: ${provider}`);
   }
 
-  createFromConfig(cfg: ProviderConfig, apiKey: string): AIProvider {
+  createFromConfig(
+    cfg: ProviderConfig,
+    apiKey: string,
+    toolRegistry?: ToolRegistry,
+    permissionResolver?: PermissionResolver,
+  ): AIProvider {
     switch (cfg.protocol) {
       case 'anthropic-compat':
-        return new ClaudeCompatProvider(apiKey, { baseUrl: cfg.baseUrl });
+        return new ClaudeCompatProvider(apiKey, { baseUrl: cfg.baseUrl }, {
+          supportsTools: cfg.supportsTools,
+          ...(cfg.supportsTools && toolRegistry ? { toolRegistry } : {}),
+          ...(cfg.supportsTools && permissionResolver ? { permissionResolver } : {}),
+        });
       case 'openai-compatible':
         return new CodexProvider(apiKey, cfg.baseUrl);
       default: {

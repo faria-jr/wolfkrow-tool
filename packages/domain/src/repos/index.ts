@@ -53,3 +53,4 @@ export type {
   GraphEdgeUpsertInput,
 } from './graph-repo';
 export type { ProviderConfigRepo } from './provider-config-repo';
+export type { SecurityScanRepo, SecurityFindingRepo, SecurityScanRecord } from './security-audit-repos';

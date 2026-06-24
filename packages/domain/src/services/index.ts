@@ -27,4 +27,5 @@ export { PricingCalculator, Money, defaultPricingCalculator, hasKnownPricing, fo
 export type { PricingTier, TokenUsage } from './pricing-calculator';
 export { PermissionResolver, defaultPermissionResolver } from './permission-resolver';
 export type { PermissionResult, AgentPermissions } from './permission-resolver';
+export type { SecurityAuditRunner, SecurityAuditRunInput, SecurityAuditRunResult } from './security-audit-runner-port';
 export type { ToolExecutor, ToolExecutionContext } from './tool-port';

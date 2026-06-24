@@ -34,8 +34,10 @@ import { DrizzleMcpToolRegistryRepo } from './mcp-tool-registry-repo';
 import { DrizzlePipelineMessageRepo } from './pipeline-message-repo';
 import { DrizzlePipelinePhaseRepo } from './pipeline-phase-repo';
 import { DrizzlePipelineProjectRepo } from './pipeline-project-repo';
+import { DrizzleProviderConfigRepo } from './provider-config-repo';
 import { DrizzleScheduledTaskRepo } from './scheduled-task-repo';
 import { DrizzleSecretRepo } from './secret-repo';
+import { DrizzleSecurityFindingRepo, DrizzleSecurityScanRepo } from './security-audit-repo';
 import { DrizzleSemanticMemoryRepo } from './semantic-memory-repo';
 import { DrizzleSkillRepo } from './skill-repo';
 import { DrizzleTaskRepo } from './task-repo';
@@ -43,8 +45,6 @@ import { DrizzleTaskRunRepo } from './task-run-repo';
 import { DrizzleTokenUsageRepo } from './token-usage-repo';
 import { DrizzleUserRepo } from './user-repo';
 import { DrizzleWorkflowRunRepo } from './workflow-run-repo';
-import { DrizzleProviderConfigRepo } from './provider-config-repo';
-import { DrizzleSecurityFindingRepo, DrizzleSecurityScanRepo } from './security-audit-repo';
 
 export interface RepoRegistry {
  user: DrizzleUserRepo;
