@@ -1,6 +1,7 @@
 import { summarizeFindings, type SecurityFinding } from '@wolfkrow/domain';
 import { getProviderById } from '@wolfkrow/domain';
 import { ListFindingsUseCase, ListScansUseCase, RunAuditUseCase } from '@wolfkrow/use-cases';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getAdapters, getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
@@ -12,11 +13,8 @@ interface RunAuditBody {
   provider?: string;
 }
 
-interface AuditRequest { user?: { userId?: string }; params: { scanId: string }; body: RunAuditBody | null; }
-interface AuditReply {
-  status: (n: number) => { send: (b: unknown) => unknown };
-  send: (b: unknown) => unknown;
-}
+type RunAuditRequest = FastifyRequest<{ Body: RunAuditBody | null }>;
+type ScanRequest = FastifyRequest<{ Params: { scanId: string } }>;
 
 async function resolveProvider(providerId: string | undefined, userId?: string): Promise<unknown> {
   const { aiFactory } = getAdapters();
@@ -44,10 +42,7 @@ function authUserId(request: { user?: { userId?: string } }): string {
   return userId;
 }
 
-async function runAuditHandler(
-  request: AuditRequest,
-  reply: AuditReply,
-): Promise<unknown> {
+async function runAuditHandler(request: RunAuditRequest, reply: FastifyReply): Promise<unknown> {
   const userId = authUserId(request);
   const { projectPath, model, filesByRole, provider } = request.body ?? {};
   if (!projectPath || typeof projectPath !== 'string') {
@@ -71,10 +66,7 @@ async function runAuditHandler(
   return reply.send(result);
 }
 
-async function getScanHandler(
-  request: AuditRequest,
-  reply: AuditReply,
-): Promise<unknown> {
+async function getScanHandler(request: ScanRequest, reply: FastifyReply): Promise<unknown> {
   const userId = authUserId(request);
   const { scanRepo } = getAuditRepos();
   const scan = scanRepo.findById(request.params.scanId);
@@ -83,10 +75,7 @@ async function getScanHandler(
   return reply.send(scan);
 }
 
-async function getFindingsHandler(
-  request: AuditRequest,
-  reply: AuditReply,
-): Promise<unknown> {
+async function getFindingsHandler(request: ScanRequest, reply: FastifyReply): Promise<unknown> {
   const userId = authUserId(request);
   const { scanRepo, findingRepo } = getAuditRepos();
   const scan = scanRepo.findById(request.params.scanId);
@@ -100,7 +89,7 @@ async function getFindingsHandler(
   });
 }
 
-async function listScansHandler(request: { user?: { userId?: string } }): Promise<unknown> {
+async function listScansHandler(request: FastifyRequest): Promise<unknown> {
   const userId = authUserId(request);
   const { scanRepo } = getAuditRepos();
   const useCase = new ListScansUseCase(scanRepo);
@@ -109,8 +98,8 @@ async function listScansHandler(request: { user?: { userId?: string } }): Promis
 
 export async function auditRoutes(server: AuthFastifyInstance) {
   const auth = { preHandler: [server.authenticate] };
-  server.post<{ Body: RunAuditBody }>('/audit/run', auth, runAuditHandler as never);
-  server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId', auth, getScanHandler as never);
-  server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId/findings', auth, getFindingsHandler as never);
-  server.get('/audit/scans', auth, listScansHandler as never);
+  server.post<{ Body: RunAuditBody }>('/audit/run', auth, runAuditHandler);
+  server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId', auth, getScanHandler);
+  server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId/findings', auth, getFindingsHandler);
+  server.get('/audit/scans', auth, listScansHandler);
 }
