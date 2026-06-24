@@ -21,9 +21,14 @@ const streamQuery = z.object({
 });
 
 export async function logsRoutes(server: AuthFastifyInstance) {
+  // Both endpoints expose system logs and require authentication (P0-7).
+  // Matches sibling routes: knowledge.ts:80,84,94,104; graph.ts:30; memory.ts:117.
+  const auth = { onRequest: [server.authenticate] };
+
   // GET /logs/history?limit=&level=&module=
   server.get<{ Querystring: unknown }>(
     '/history',
+    auth,
     async (req, reply) => {
       const { level, module: mod, limit } = validate(logQuery, req.query);
       let entries = logBus.history(limit);
@@ -38,6 +43,7 @@ export async function logsRoutes(server: AuthFastifyInstance) {
   // GET /logs/stream — SSE live tail
   server.get<{ Querystring: unknown }>(
     '/stream',
+    auth,
     async (req, reply) => {
       const { level: levelFilter, module: moduleFilter } = validate(streamQuery, req.query);
 
