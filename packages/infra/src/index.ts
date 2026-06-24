@@ -46,3 +46,12 @@ export {
   DrizzleSecurityFindingRepo,
 } from './repos/security-audit-repo';
 export type { SecurityScanRecord } from './repos/security-audit-repo';
+
+export { MgraphEngine, sanitizeFilename, validateVaultPath } from './services/mgraph-engine';
+export type {
+  MgraphSearchResult,
+  MgraphStats,
+  MgraphSearchOptions,
+  MgraphEngineOptions,
+  CreateVaultNoteInput,
+} from './services/mgraph-engine';

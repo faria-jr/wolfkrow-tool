@@ -53,3 +53,6 @@ export type { ArtifactProps, ArtifactData, ArtifactKind } from './artifact';
 
 export { SecurityFinding, summarizeFindings, SECURITY_SEVERITIES, SECURITY_DIMENSIONS } from './security-finding';
 export type { SecurityFindingProps, SecuritySeverity, SecurityDimension, SecurityScanSummary } from './security-finding';
+
+export { VaultNote, extractWikilinks, VAULT_KINDS } from './vault-note';
+export type { VaultNoteProps, VaultKind, VaultGraphNode, VaultGraphEdge, VaultGraphData } from './vault-note';

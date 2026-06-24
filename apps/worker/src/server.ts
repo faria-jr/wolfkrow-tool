@@ -25,6 +25,7 @@ import { knowledgeRoutes } from './routes/knowledge';
 import { logsRoutes } from './routes/logs';
 import { mcpRoutes } from './routes/mcp';
 import { memoryRoutes } from './routes/memory';
+import { mgraphRoutes } from './routes/mgraph';
 import { permissionsRoutes } from './routes/permissions';
 import { pipelineRoutes } from './routes/pipeline';
 import { profilerRoutes } from './routes/profiler';
@@ -60,6 +61,7 @@ async function registerRoutes(server: FastifyInstance) {
   await server.register(permissionsRoutes, { prefix: '/permissions' });
   await server.register(tasksRoutes, { prefix: '/tasks' });
   await server.register(graphRoutes, { prefix: '/graph' });
+  await server.register(mgraphRoutes, { prefix: '/api' });
   await server.register(sidecarRoutes, { prefix: '/sidecar' });
   await server.register(skillsRoutes, { prefix: '/skills' });
   await server.register(providerRoutes, { prefix: '/api' });
