@@ -38,7 +38,14 @@ function toStreamChunks(chunk: OAIChunk): StreamChunk[] {
 export abstract class OpenAIBaseProvider implements AIProvider {
   constructor(protected readonly client: OpenAI) {}
 
+  /**
+   * Hook for subclasses to enforce SSRF DNS-rebind revalidation before the
+   * first request. Default is a no-op; providers with a custom baseURL override.
+   */
+  protected async ensureSsrfSafe(): Promise<void> {}
+
   async *query(options: CompletionOptions): AsyncIterable<StreamChunk> {
+    await this.ensureSsrfSafe();
     const stream = await this.client.chat.completions.create(
       {
         model: options.model,

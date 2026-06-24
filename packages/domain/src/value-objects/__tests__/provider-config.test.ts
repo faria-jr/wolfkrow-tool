@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ProviderConfig, PROVIDER_PROTOCOLS } from '../provider-config';
+import { ProviderConfig, PROVIDER_PROTOCOLS, normalizeIpv4 } from '../provider-config';
 
 describe('ProviderConfig', () => {
   it('creates a valid anthropic-compat provider', () => {
@@ -205,5 +205,110 @@ describe('ProviderConfig', () => {
         baseUrl: 'https://0.0.0.0/v1', apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
       }),
     ).toThrow('private host');
+  });
+});
+
+describe('ProviderConfig SSRF — numeric IP bypass vectors', () => {
+  // Helper: build the minimal props object for a custom provider.
+  const props = (baseUrl: string) => ({
+    id: 'x', displayName: 'X', protocol: 'openai-compatible' as const,
+    baseUrl, apiKeyAccount: 'x', models: ['m1'], supportsTools: false,
+  });
+
+  // These vectors resolve to private-but-NOT-loopback addresses (cloud metadata,
+  // internal subnets) and MUST be blocked regardless of numeric encoding.
+  const blockedVectors: Array<[string, string]> = [
+    ['cloud metadata decimal', 'https://2852039166/'],
+    ['cloud metadata octal', 'https://0251.0376.0251.0376/'],
+    ['IPv4-mapped IPv6 hex', 'https://[::ffff:7f00:1]/'],
+    ['IPv4-mapped IPv6 metadata hex', 'https://[::ffff:a9fe:a9fe]/'],
+  ];
+
+  for (const [label, baseUrl] of blockedVectors) {
+    it(`rejects ${label} (${baseUrl}) — resolves to private/loopback`, () => {
+      expect(() => ProviderConfig.create(props(baseUrl))).toThrow();
+    });
+  }
+
+  // Loopback over https is explicitly permitted by policy (matches existing
+  // https://127.0.0.1/ and https://[::1]/ allowances). Numeric encodings of
+  // 127.0.0.1 must be treated identically to its dotted form.
+  it('allows loopback https via decimal single-int (2130706433 → 127.0.0.1)', () => {
+    expect(() => ProviderConfig.create(props('https://2130706433/'))).not.toThrow();
+  });
+
+  it('allows loopback https via octal per-octet (0177.0.0.1)', () => {
+    expect(() => ProviderConfig.create(props('https://0177.0.0.1/'))).not.toThrow();
+  });
+
+  it('rejects http for numeric-encoded non-loopback (0177.0.0.1 → 127.0.0.1 still loopback-ok)', () => {
+    // 127.0.0.1 IS loopback, so http is allowed — this documents the policy.
+    expect(() => ProviderConfig.create(props('http://0177.0.0.1:11434/v1'))).not.toThrow();
+  });
+
+  it('allows public IP literal https://8.8.8.8/', () => {
+    expect(() => ProviderConfig.create(props('https://8.8.8.8/'))).not.toThrow();
+  });
+
+  it('allows public https://api.anthropic.com/', () => {
+    expect(() => ProviderConfig.create(props('https://api.anthropic.com/'))).not.toThrow();
+  });
+
+  it('allows public https://api.openai.com/', () => {
+    expect(() => ProviderConfig.create(props('https://api.openai.com/'))).not.toThrow();
+  });
+});
+
+describe('normalizeIpv4', () => {
+  it('canonicalizes decimal single-int', () => {
+    expect(normalizeIpv4('2130706433')).toBe('127.0.0.1');
+  });
+
+  it('canonicalizes octal per-octet', () => {
+    expect(normalizeIpv4('0177.0.0.1')).toBe('127.0.0.1');
+  });
+
+  it('canonicalizes hex single-int', () => {
+    expect(normalizeIpv4('0x7f000001')).toBe('127.0.0.1');
+  });
+
+  it('canonicalizes mixed hex+short (0x7f.1)', () => {
+    expect(normalizeIpv4('0x7f.1')).toBe('127.0.0.1');
+  });
+
+  it('canonicalizes dotted decimal already-canonical', () => {
+    expect(normalizeIpv4('127.0.0.1')).toBe('127.0.0.1');
+  });
+
+  it('canonicalizes short form 127.1', () => {
+    expect(normalizeIpv4('127.1')).toBe('127.0.0.1');
+  });
+
+  it('canonicalizes cloud metadata decimal', () => {
+    expect(normalizeIpv4('2852039166')).toBe('169.254.169.254');
+  });
+
+  it('returns null for non-IP hostname', () => {
+    expect(normalizeIpv4('api.anthropic.com')).toBeNull();
+  });
+
+  it('returns null for integer overflow (99999999999)', () => {
+    expect(normalizeIpv4('99999999999')).toBeNull();
+  });
+
+  it('returns null for octet overflow (0x100.0.0.1)', () => {
+    expect(normalizeIpv4('0x100.0.0.1')).toBeNull();
+  });
+
+  it('returns null for octet > 255 decimal (192.168.1.300)', () => {
+    expect(normalizeIpv4('192.168.1.300')).toBeNull();
+  });
+
+  it('returns null for too many octets (1.2.3.4.5)', () => {
+    expect(normalizeIpv4('1.2.3.4.5')).toBeNull();
+  });
+
+  it('returns null for empty string', () => {
+    expect(normalizeIpv4('')).toBeNull();
   });
 });

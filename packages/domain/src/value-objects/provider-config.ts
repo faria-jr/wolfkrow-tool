@@ -9,13 +9,115 @@ const PRIVATE_IPV4_PREFIXES: readonly RegExp[] = [
   /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
 ];
 
+/**
+ * Canonicalizes an IPv4 hostname expressed in any numeric form into dotted
+ * decimal (`a.b.c.d`). Recognizes:
+ *  - single 32-bit decimal integer  (`2130706433` → `127.0.0.1`)
+ *  - single hex integer             (`0x7f000001` → `127.0.0.1`)
+ *  - octal per octet                (`0177.0.0.1` → `127.0.0.1`)
+ *  - hex per octet                  (`0x7f.0.0.1` → `127.0.0.1`)
+ *  - short forms (1-3 octets)       (`127.1` → `127.0.0.1`)
+ *  - mixed radix per octet          (`0x7f.1` → `127.0.0.1`)
+ *
+ * Returns the canonical `a.b.c.d` string, or `null` when the input is not a
+ * numeric IPv4 representation (e.g. a DNS hostname) or overflows 32 bits.
+ *
+ * Pure (no I/O) — safe for the domain package.
+ */
+export function normalizeIpv4(hostname: string): string | null {
+  const raw = hostname.trim()
+  if (!raw) return null
+  return raw.includes('.') ? normalizeDottedIpv4(raw) : normalizeSingleIpv4(raw)
+}
+
+/**
+ * Canonicalizes a dotted IPv4 form (1-4 octets, BSD inet_aton semantics).
+ * Each octet may use a radix prefix (0x=hex, 0=octal, else decimal).
+ */
+function normalizeDottedIpv4(raw: string): string | null {
+  const parts = raw.split('.')
+  if (parts.length < 1 || parts.length > 4) return null
+
+  const octets: number[] = []
+  for (const part of parts) {
+    const oct = parseOctet(part)
+    if (oct === null) return null
+    octets.push(oct)
+  }
+
+  // Pack octets into a 32-bit value: the last octet occupies the low bits,
+  // earlier octets shift left. With <4 octets the trailing value absorbs the
+  // remainder (e.g. `127.1` → 127<<24 | 1).
+  let value = 0n
+  for (let i = 0; i < octets.length - 1; i++) {
+    value = (value << 8n) | BigInt(octets[i]!)
+  }
+  const last = BigInt(octets[octets.length - 1]!)
+  const remainingBits = BigInt((4 - (octets.length - 1)) * 8)
+  if (last >= 1n << remainingBits) return null
+  value = (value << remainingBits) | last
+  return bigintToDotted(value)
+}
+
+/**
+ * Canonicalizes a non-dotted single-integer IPv4 form (decimal or hex).
+ * Bare octal single-ints (`0177`) are rejected as non-standard.
+ */
+function normalizeSingleIpv4(raw: string): string | null {
+  if (/^0[0-9]+$/.test(raw)) return null
+  const radix = raw.toLowerCase().startsWith('0x') ? 16 : 10
+  const single = parseInt(raw, radix)
+  if (!Number.isFinite(single) || single < 0 || single > 0xffffffff) return null
+  return bigintToDotted(BigInt(single))
+}
+
+/**
+ * Parses a single octet that may use a radix prefix:
+ *  - `0x...` → hex
+ *  - `0...` → octal
+ *  - otherwise → decimal
+ * Returns the numeric value (0-255) or null on parse failure / overflow.
+ */
+function parseOctet(part: string): number | null {
+  if (part === '') return null
+  const lower = part.toLowerCase()
+  let radix = 10
+  let digits = part
+  if (lower.startsWith('0x')) {
+    radix = 16
+    digits = part.slice(2)
+  } else if (part.length > 1 && part.startsWith('0')) {
+    radix = 8
+    digits = part.slice(1)
+  }
+  if (digits === '') return null
+  if (!digits.match(/^[0-9a-fA-F]+$/)) return null
+  const value = parseInt(digits, radix)
+  if (!Number.isFinite(value) || value < 0 || value > 255) return null
+  return value
+}
+
+function bigintToDotted(value: bigint): string | null {
+  if (value < 0n || value > 0xffffffffn) return null
+  const a = Number((value >> 24n) & 0xffn)
+  const b = Number((value >> 16n) & 0xffn)
+  const c = Number((value >> 8n) & 0xffn)
+  const d = Number(value & 0xffn)
+  return `${a}.${b}.${c}.${d}`
+}
+
 function isPrivateIPv4(hostname: string): boolean {
-  if (hostname === 'localhost' || hostname === '0.0.0.0') return true;
-  return PRIVATE_IPV4_PREFIXES.some((re) => re.test(hostname));
+  if (hostname === 'localhost' || hostname === '0.0.0.0') return true
+  const canonical = normalizeIpv4(hostname)
+  const subject = canonical ?? hostname
+  return PRIVATE_IPV4_PREFIXES.some((re) => re.test(subject))
 }
 
 function isLoopbackHost(hostname: string): boolean {
-  return hostname === 'localhost' || hostname.startsWith('127.');
+  if (hostname === 'localhost') return true
+  const canonical = normalizeIpv4(hostname)
+  const subject = canonical ?? hostname
+  return subject.startsWith('127.')
 }
 
 function stripIPv6Brackets(hostname: string): string {
@@ -64,6 +166,20 @@ function isLoopbackAny(hostname: string): boolean {
   const inner = stripIPv6Brackets(hostname);
   if (inner.includes(':')) return isLoopbackIPv6(inner);
   return isLoopbackHost(inner);
+}
+
+/**
+ * Public SSRF gate for infra adapters: true when the hostname points at a
+ * private or loopback address (in any numeric encoding). Used by the infra
+ * DNS-rebinding revalidation to check the resolved IP at connection time.
+ *
+ * Mirrors the policy in {@link validateBaseUrl}: a host is blocked when it is
+ * private and NOT loopback over https, OR non-loopback over http. For the raw
+ * host check (used post-resolution) we treat loopback as allowed — the caller
+ * (infra guard) re-applies the http/https distinction if needed.
+ */
+export function isSsrfBlockedHost(hostname: string): boolean {
+  return isPrivateHost(hostname)
 }
 
 function validateBaseUrl(baseUrl: string): void {

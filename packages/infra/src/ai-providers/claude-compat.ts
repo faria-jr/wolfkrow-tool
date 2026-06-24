@@ -22,6 +22,7 @@ import {
 } from './claude-compat-helpers';
 import { accumulate, estimateTokens } from './helpers';
 import { executeWithPermissionGate } from './permission-gate';
+import { assertPublicProviderHost } from './ssrf-guard';
 import type {
   AIProvider,
   ChatMessage,
@@ -55,6 +56,8 @@ export class ClaudeCompatProvider implements AIProvider {
   private readonly agent: AgentPermissions | undefined;
   private readonly requestPermission: ((req: ToolPermissionEvent) => Promise<boolean>) | undefined;
   private readonly workDir: string | undefined;
+  private readonly resolvedBaseUrl: string | undefined;
+  private ssrfChecked = false;
 
   constructor(
     apiKey: string,
@@ -65,6 +68,7 @@ export class ClaudeCompatProvider implements AIProvider {
       ? (source.startsWith('http') ? source : getClaudeCompatPreset(source).baseUrl)
       : source.baseUrl;
     this.client = new Anthropic({ apiKey, baseURL: baseUrl });
+    this.resolvedBaseUrl = baseUrl;
     this.toolRegistry = opts.toolRegistry;
     this.permissionResolver = opts.permissionResolver;
     this.agent = opts.agent;
@@ -72,7 +76,14 @@ export class ClaudeCompatProvider implements AIProvider {
     this.workDir = opts.workDir;
   }
 
+  private async ensureSsrfSafe(): Promise<void> {
+    if (this.ssrfChecked || !this.resolvedBaseUrl) return;
+    this.ssrfChecked = true;
+    await assertPublicProviderHost(this.resolvedBaseUrl);
+  }
+
   async *query(options: CompletionOptions): AsyncIterable<StreamChunk> {
+    await this.ensureSsrfSafe();
     if (!this.toolRegistry) {
       const stream = this.buildStream(options, []);
       yield* drainTextStream(stream);
