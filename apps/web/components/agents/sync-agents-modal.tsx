@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-type Runtime = 'cloud' | 'local' | 'codex' | 'external';
+type Runtime = 'cloud' | 'local' | 'codex' | 'external' | 'claude-compat';
 
 interface RuntimeSelectorProps { value: Runtime; onChange: (v: Runtime) => void; }
 function RuntimeSelector({ value, onChange }: RuntimeSelectorProps) {
@@ -21,6 +21,7 @@ function RuntimeSelector({ value, onChange }: RuntimeSelectorProps) {
           <SelectItem value="local">Local (Ollama)</SelectItem>
           <SelectItem value="codex">Codex (OpenAI)</SelectItem>
           <SelectItem value="external">External</SelectItem>
+          <SelectItem value="claude-compat">Claude-compat (Z.ai, MiniMax, Moonshot, Qwen)</SelectItem>
         </SelectContent>
       </Select>
     </div>

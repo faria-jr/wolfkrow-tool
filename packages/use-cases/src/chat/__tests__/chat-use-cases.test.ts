@@ -180,7 +180,7 @@ describe('SendMessageUseCase', () => {
       findMany: () => [] as UsageRecord[],
       totalCostCents: () => 0,
     };
-    const uc = new SendMessageUseCase(sessionRepo, messageRepo, ai, usageRepo);
+    const uc = new SendMessageUseCase(sessionRepo, messageRepo, ai, { usageRepo });
     await collect(await uc.execute(input({ model: 'claude-sonnet-4-6' })));
     expect(insertMock).toHaveBeenCalledOnce();
     const record = insertMock.mock.calls[0]?.[0] as UsageRecordInput;

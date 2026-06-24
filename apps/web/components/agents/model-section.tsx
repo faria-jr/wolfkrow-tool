@@ -1,6 +1,6 @@
 'use client';
 
-import type { Control } from 'react-hook-form';
+import { useWatch, type Control } from 'react-hook-form';
 
 import type { AgentFormValues } from './schema';
 
@@ -10,7 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 const MODELS = ['claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'] as const;
 const EFFORTS = ['low', 'medium', 'high', 'max'] as const;
-const RUNTIMES = ['cloud', 'local', 'codex', 'external'] as const;
+const RUNTIMES = ['cloud', 'local', 'codex', 'external', 'claude-compat'] as const;
+
+const CLAUDE_COMPAT_PROVIDERS = [
+  { value: 'zai', label: 'Z.ai (GLM)' },
+  { value: 'minimax', label: 'MiniMax TokenPlan' },
+  { value: 'moonshot', label: 'Moonshot (Kimi)' },
+  { value: 'qwen', label: 'Qwen (DashScope)' },
+] as const;
 
 interface Props { control: Control<AgentFormValues>; }
 
@@ -53,7 +60,28 @@ function EffortAndTurnsFields({ control }: Props) {
   );
 }
 
+function ProviderField({ control }: Props) {
+  return (
+    <FormField control={control} name="provider" render={({ field }) => (
+      <FormItem>
+        <FormLabel>Provider</FormLabel>
+        <Select onValueChange={field.onChange} value={field.value ?? ''}>
+          <FormControl><SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger></FormControl>
+          <SelectContent>
+            {CLAUDE_COMPAT_PROVIDERS.map((p) => (
+              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <FormMessage />
+      </FormItem>
+    )} />
+  );
+}
+
 export function ModelSection({ control }: Props) {
+  const runtime = useWatch({ control, name: 'runtime' });
+
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium text-muted-foreground">Model</h3>
@@ -69,6 +97,7 @@ export function ModelSection({ control }: Props) {
           <FormMessage />
         </FormItem>
       )} />
+      {runtime === 'claude-compat' && <ProviderField control={control} />}
     </div>
   );
 }

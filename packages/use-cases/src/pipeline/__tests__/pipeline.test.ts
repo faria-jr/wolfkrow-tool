@@ -161,4 +161,38 @@ describe('ApprovePipelinePhaseUseCase', () => {
     });
     expect(project.status).toBe('paused');
   });
+
+  it('approve-with-edits persists specEdits and advances to implementation (M5.5)', async () => {
+    const projectRepo = new InMemoryProjectRepo();
+    const phaseRepo = new InMemoryPhaseRepo();
+    let p = PipelineProject.create({ userId: 'u1', name: 'P' });
+    p = p.withStage('approval', { status: 'awaiting_approval' });
+    await projectRepo.save(p);
+    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: p.id, stage: 'approval' }).start().awaitUser());
+
+    const editedSpec = '# Revised Spec\n\nOnly use Postgres, no MySQL fallback.';
+    const { project } = await new ApprovePipelinePhaseUseCase(projectRepo, phaseRepo).execute({
+      projectId: p.id, phaseId: phase.id, approved: true,
+      notes: 'Approve with edit', specEdits: editedSpec,
+    });
+    expect(project.currentStage).toBe('implementation');
+    expect(project.specEdits).toBe(editedSpec);
+    expect(project.approvalNotes).toBe('Approve with edit');
+    expect(project.status).toBe('running');
+  });
+
+  it('approve-with-edits on a non-approval stage keeps currentStage and only sets specEdits', async () => {
+    const projectRepo = new InMemoryProjectRepo();
+    const phaseRepo = new InMemoryPhaseRepo();
+    let p = PipelineProject.create({ userId: 'u1', name: 'P' });
+    p = p.withStage('spec_validate', { status: 'awaiting_approval' });
+    await projectRepo.save(p);
+    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: p.id, stage: 'spec_validate' }).start().awaitUser());
+
+    const { project } = await new ApprovePipelinePhaseUseCase(projectRepo, phaseRepo).execute({
+      projectId: p.id, phaseId: phase.id, approved: true, specEdits: '# Edited spec',
+    });
+    expect(project.currentStage).toBe('spec_validate');
+    expect(project.specEdits).toBe('# Edited spec');
+  });
 });

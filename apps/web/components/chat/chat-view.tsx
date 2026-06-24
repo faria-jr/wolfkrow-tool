@@ -1,7 +1,3 @@
-/* eslint-disable max-lines, max-lines-per-function --
-   Chat view aggregates voice, tools, attachments, and the tool-permission flow
-   by domain; these are cohesive UI concerns and splitting would fragment state
-   without clarifying behavior. */
 'use client';
 
 import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
@@ -13,6 +9,8 @@ import { AttachmentDropzone } from './attachment-dropzone';
 import type { DisplayMessage } from './chat-message';
 import { ChatMessage } from './chat-message';
 import { ConfirmDialog } from './confirm-dialog';
+import type { PendingPermission, SseCallbacks } from './sse';
+import { streamSse } from './sse';
 import { StreamIndicator } from './stream-indicator';
 import type { ToolCall } from './tool-call-inline';
 
@@ -23,80 +21,6 @@ import { useVoiceConversation } from '@/hooks/use-voice-conversation';
 import type { UseVoiceConversationReturn, VoiceConversationMessage } from '@/hooks/use-voice-conversation';
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
-
-type SSEEvent =
-  | { type: 'ack'; message?: string }
-  | { type: 'text'; content: string }
-  | { type: 'done'; usage?: unknown }
-  | { type: 'error'; message: string }
-  | { type: 'ask_question'; prompt: string }
-  | { type: 'tool_call'; id: string; name: string; input: Record<string, unknown> }
-  | { type: 'tool_result'; callId: string; output: string; isError: boolean }
-  | { type: 'tool_permission'; id: string; name: string; input: Record<string, unknown>; prompt: string };
-
-interface PendingPermission {
-  callId: string;
-  name: string;
-  prompt: string;
-}
-
-interface SseCallbacks {
-  onText: (t: string) => void;
-  onAskQuestion?: (q: string) => void;
-  onToolCall?: (tc: ToolCall) => void;
-  onToolResult?: (callId: string, output: string, isError: boolean) => void;
-  onToolPermission?: (p: PendingPermission) => void;
-}
-
-function parseSseLine(line: string): SSEEvent | null {
-  if (!line.startsWith('data: ')) return null;
-  const raw = line.slice(6).trim();
-  return raw ? (JSON.parse(raw) as SSEEvent) : null;
-}
-
-function dispatchSseEvent(ev: SSEEvent, cb: SseCallbacks): void {
-  switch (ev.type) {
-    case 'text':
-      cb.onText(ev.content);
-      return;
-    case 'ask_question':
-      cb.onAskQuestion?.(ev.prompt);
-      return;
-    case 'tool_call':
-      cb.onToolCall?.({ id: ev.id, name: ev.name, input: ev.input, status: 'running' });
-      return;
-    case 'tool_result':
-      cb.onToolResult?.(ev.callId, ev.output, ev.isError);
-      return;
-    case 'tool_permission':
-      cb.onToolPermission?.({ callId: ev.id, name: ev.name, prompt: ev.prompt });
-  }
-}
-
-function processLine(line: string, cb: SseCallbacks): void {
-  const ev = parseSseLine(line);
-  if (ev) dispatchSseEvent(ev, cb);
-}
-
-async function readSseStream(stream: ReadableStream<Uint8Array>, cb: SseCallbacks): Promise<void> {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let buf = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    const lines = buf.split('\n');
-    buf = lines.pop() ?? '';
-    for (const line of lines) processLine(line, cb);
-  }
-}
-
-async function streamSse(url: string, body: unknown, signal: AbortSignal, cb: SseCallbacks): Promise<void> {
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify(body), signal });
-  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
-  await readSseStream(res.body, cb);
-}
 
 function deriveTitle(text: string): string {
   const t = text.trim();
@@ -121,7 +45,12 @@ function applyToolCall(prev: DisplayMessage[], tc: ToolCall): DisplayMessage[] {
 function applyToolResult(prev: DisplayMessage[], callId: string, output: string, isError: boolean): DisplayMessage[] {
   return prev.map((msg) => {
     if (!msg.toolCalls) return msg;
-    return { ...msg, toolCalls: msg.toolCalls.map((tc) => tc.id === callId ? { ...tc, output, status: isError ? 'error' as const : 'done' as const } : tc) };
+    return {
+      ...msg,
+      toolCalls: msg.toolCalls.map((tc) =>
+        tc.id === callId ? { ...tc, output, status: isError ? ('error' as const) : ('done' as const) } : tc,
+      ),
+    };
   });
 }
 
@@ -129,20 +58,21 @@ function voiceMessageToDisplay(msg: VoiceConversationMessage): DisplayMessage {
   return { id: crypto.randomUUID(), role: msg.role, content: msg.text, createdAt: new Date() };
 }
 
-function useChatSession(model: string, sessionId?: string) {
+function useMessageState() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [sessionTitle, setSessionTitle] = useState('New Chat');
-  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
-  const [pendingPermission, setPendingPermission] = useState<PendingPermission | null>(null);
-  const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
-  const abortRef = useRef<AbortController | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const hasSetTitle = useRef(false);
   const appendText = useCallback((delta: string) => setMessages((prev) => appendDeltaToLast(prev, delta)), []);
   const appendMessage = useCallback((msg: DisplayMessage) => setMessages((prev) => [...prev, msg]), []);
-  const onAsk = useCallback((q: string) => setPendingQuestion(q), []);
+  const appendToolCall = useCallback((tc: ToolCall) => setMessages((prev) => applyToolCall(prev, tc)), []);
+  const updateToolCall = useCallback(
+    (callId: string, output: string, isError: boolean) =>
+      setMessages((prev) => applyToolResult(prev, callId, output, isError)),
+    [],
+  );
+  return { messages, setMessages, appendText, appendMessage, appendToolCall, updateToolCall };
+}
+
+function useToolPermission() {
+  const [pendingPermission, setPendingPermission] = useState<PendingPermission | null>(null);
   const onPermission = useCallback((p: PendingPermission) => setPendingPermission(p), []);
   const resolvePermission = useCallback(async (callId: string, approved: boolean) => {
     setPendingPermission(null);
@@ -153,29 +83,49 @@ function useChatSession(model: string, sessionId?: string) {
       body: JSON.stringify({ callId, approved }),
     });
   }, []);
-  const appendToolCall = useCallback((tc: ToolCall) => setMessages((prev) => applyToolCall(prev, tc)), []);
-  const updateToolCall = useCallback((callId: string, output: string, isError: boolean) => setMessages((prev) => applyToolResult(prev, callId, output, isError)), []);
-  const doSend = useCallback(async (text: string, attachments: AttachmentData[]) => {
-    if (!text || isStreaming) return;
-    if (!hasSetTitle.current) { setSessionTitle(deriveTitle(text)); hasSetTitle.current = true; }
-    const userMsg: DisplayMessage = { id: crypto.randomUUID(), role: 'user', content: text, createdAt: new Date() };
-    const asstMsg: DisplayMessage = { id: crypto.randomUUID(), role: 'assistant', content: '', createdAt: new Date() };
-    setMessages((prev) => [...prev, userMsg, asstMsg]);
-    setIsStreaming(true);
-    const ac = new AbortController();
-    abortRef.current = ac;
-    try {
-      const body: Record<string, unknown> = { message: text, model, sessionId };
-      if (attachments.length) body['attachments'] = attachments;
-      await streamSse(`${WORKER_URL}/chat/send`, body, ac.signal, { onText: appendText, onAskQuestion: onAsk, onToolCall: appendToolCall, onToolResult: updateToolCall, onToolPermission: onPermission });
-    } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') appendText('[Error: could not connect to AI]');
-    } finally {
-      setIsStreaming(false);
-      abortRef.current = null;
-      bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
-    }
-  }, [isStreaming, model, sessionId, appendText, onAsk, appendToolCall, updateToolCall, onPermission]);
+  return { pendingPermission, onPermission, resolvePermission };
+}
+
+function useChatSession(model: string, sessionId?: string) {
+  const { messages, setMessages, appendText, appendMessage, appendToolCall, updateToolCall } = useMessageState();
+  const { pendingPermission, onPermission, resolvePermission } = useToolPermission();
+  const [input, setInput] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [sessionTitle, setSessionTitle] = useState('New Chat');
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const hasSetTitle = useRef(false);
+  const onAsk = useCallback((q: string) => setPendingQuestion(q), []);
+  const doSend = useCallback(
+    async (text: string, attachments: AttachmentData[]) => {
+      if (!text || isStreaming) return;
+      if (!hasSetTitle.current) { setSessionTitle(deriveTitle(text)); hasSetTitle.current = true; }
+      const userMsg: DisplayMessage = { id: crypto.randomUUID(), role: 'user', content: text, createdAt: new Date() };
+      const asstMsg: DisplayMessage = { id: crypto.randomUUID(), role: 'assistant', content: '', createdAt: new Date() };
+      setMessages((prev) => [...prev, userMsg, asstMsg]);
+      setIsStreaming(true);
+      const ac = new AbortController();
+      abortRef.current = ac;
+      const callbacks: SseCallbacks = {
+        onText: appendText, onAskQuestion: onAsk,
+        onToolCall: appendToolCall, onToolResult: updateToolCall, onToolPermission: onPermission,
+      };
+      try {
+        const body: Record<string, unknown> = { message: text, model, sessionId };
+        if (attachments.length) body['attachments'] = attachments;
+        await streamSse(`${WORKER_URL}/chat/send`, body, ac.signal, callbacks);
+      } catch (err) {
+        if (err instanceof Error && err.name !== 'AbortError') appendText('[Error: could not connect to AI]');
+      } finally {
+        setIsStreaming(false);
+        abortRef.current = null;
+        bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
+      }
+    },
+    [isStreaming, model, sessionId, setMessages, appendText, onAsk, appendToolCall, updateToolCall, onPermission],
+  );
   const send = useCallback(() => {
     const text = input.trim();
     if (!text || isStreaming) return;
@@ -186,9 +136,13 @@ function useChatSession(model: string, sessionId?: string) {
   }, [doSend, input, isStreaming, pendingAttachments]);
   const answerQuestion = useCallback((a: string) => { setPendingQuestion(null); void doSend(a, []); }, [doSend]);
   const dismissQuestion = useCallback(() => setPendingQuestion(null), []);
-  const clear = useCallback(() => { setMessages([]); setSessionTitle('New Chat'); hasSetTitle.current = false; }, []);
+  const clear = useCallback(() => { setMessages([]); setSessionTitle('New Chat'); hasSetTitle.current = false; }, [setMessages]);
   const stop = useCallback(() => { abortRef.current?.abort(); }, []);
-  return { messages, input, setInput, isStreaming, sessionTitle, pendingQuestion, dismissQuestion, send, stop, clear, answerQuestion, appendMessage, bottomRef, pendingAttachments, setPendingAttachments, pendingPermission, resolvePermission };
+  return {
+    messages, input, setInput, isStreaming, sessionTitle, pendingQuestion, dismissQuestion,
+    send, stop, clear, answerQuestion, appendMessage, bottomRef,
+    pendingAttachments, setPendingAttachments, pendingPermission, resolvePermission,
+  };
 }
 
 interface ChatHeaderProps { title: string; onClear: () => void; }
@@ -280,7 +234,11 @@ interface Props { model?: string; sessionId?: string; }
 
 export function ChatView({ model = DEFAULT_CHAT_MODEL, sessionId }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const { messages, input, setInput, isStreaming, sessionTitle, pendingQuestion, dismissQuestion, send, stop, clear, answerQuestion, appendMessage, bottomRef, pendingAttachments, setPendingAttachments, pendingPermission, resolvePermission } = useChatSession(model, sessionId);
+  const {
+    messages, input, setInput, isStreaming, sessionTitle, pendingQuestion, dismissQuestion,
+    send, stop, clear, answerQuestion, appendMessage, bottomRef,
+    pendingAttachments, setPendingAttachments, pendingPermission, resolvePermission,
+  } = useChatSession(model, sessionId);
   const voice = useVoiceConversation({ onMessage: (msg) => appendMessage(voiceMessageToDisplay(msg)) });
   const handleClearConfirm = () => { clear(); setConfirmOpen(false); };
   const handleAttach = useCallback((items: AttachmentData[]) => {
@@ -294,15 +252,8 @@ export function ChatView({ model = DEFAULT_CHAT_MODEL, sessionId }: Props) {
       <ChatHeader title={sessionTitle} onClear={() => setConfirmOpen(true)} />
       <ChatTranscript messages={messages} isStreaming={isStreaming} bottomRef={bottomRef} />
       <ChatFooter
-        input={input}
-        onInputChange={setInput}
-        onSend={send}
-        onStop={stop}
-        disabled={isStreaming}
-        voice={voice}
-        pendingAttachments={pendingAttachments}
-        onAttach={handleAttach}
-        onRemoveAttachment={handleRemoveAttachment}
+        input={input} onInputChange={setInput} onSend={send} onStop={stop} disabled={isStreaming}
+        voice={voice} pendingAttachments={pendingAttachments} onAttach={handleAttach} onRemoveAttachment={handleRemoveAttachment}
       />
       <ConfirmDialog open={confirmOpen} title="Clear chat?" description="All messages will be removed." onConfirm={handleClearConfirm} onCancel={() => setConfirmOpen(false)} />
       {pendingQuestion !== null && (

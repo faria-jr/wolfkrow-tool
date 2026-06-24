@@ -329,7 +329,7 @@ chore: update dependencies
 3. Ler `docs/ARCHITECTURE.md` para entender a arquitetura
 4. Ler ADRs relevantes para área de trabalho
 5. Verificar SPECs das features em desenvolvimento
-6. Rodar `pnpm install && pnpm turbo build` para validar setup
+6. Rodar `pnpm install && pnpm turbo build` para validar setup (requer Node 24+, pnpm 9+)
 7. Rodar `pnpm test` para validar testes existentes
 8. Escolher uma issue/tarefa e seguir TDD
 

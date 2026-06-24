@@ -17,6 +17,8 @@ export default defineConfig({
         'src/services/ai-stream-port.ts',
         'src/services/embedding-port.ts',
         'src/services/password-hasher.ts',
+        'src/services/secrets-port.ts',
+        'src/services/tool-port.ts',
         'src/services/totp-verifier.ts',
       ],
       // §1.3 domain gate — entidades/VOs são puros, sem mocks.

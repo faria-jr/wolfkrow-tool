@@ -12,7 +12,8 @@ export const agentSchema = z.object({
   mcpServers: z.array(z.string()),
   isActive: z.boolean(),
   skills: z.array(z.string()),
-  runtime: z.enum(['cloud', 'local', 'codex', 'external']),
+  runtime: z.enum(['cloud', 'local', 'codex', 'external', 'claude-compat']),
+  provider: z.string().optional(),
   squad: z.enum(['harness', 'workflow', 'enrich', 'custom']).optional(),
   systemPrompt: z.string().optional(),
 });
@@ -32,6 +33,7 @@ export const agentDefaults: AgentFormValues = {
   isActive: true,
   skills: [],
   runtime: 'cloud',
+  provider: '',
   squad: undefined,
   systemPrompt: '',
 };

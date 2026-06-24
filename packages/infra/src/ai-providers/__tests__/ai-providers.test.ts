@@ -9,6 +9,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
 }));
 
 import { AnthropicProvider } from '../anthropic';
+import { ClaudeCompatProvider } from '../claude-compat';
 import { ProviderAIProviderFactory } from '../factory';
 import { accumulate, estimateTokens } from '../helpers';
 import { MockProvider } from '../mock';
@@ -78,6 +79,15 @@ describe('ProviderAIProviderFactory', () => {
 
   it('creates anthropic provider', () => {
     expect(factory.create('anthropic', 'key')).toBeInstanceOf(AnthropicProvider);
+  });
+
+  it('creates claude-compat provider with preset prefix', () => {
+    expect(factory.create('claude-compat:zai', 'key')).toBeInstanceOf(ClaudeCompatProvider);
+    expect(factory.create('claude-compat:qwen', 'key')).toBeInstanceOf(ClaudeCompatProvider);
+  });
+
+  it('throws when claude-compat is used without a preset suffix', () => {
+    expect(() => factory.create('claude-compat', 'key')).toThrow(/preset suffix/);
   });
 
   it('throws on unknown provider', () => {

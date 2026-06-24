@@ -37,14 +37,31 @@ const RUNTIME_TO_PROVIDER: Record<Runtime, string> = {
   codex: 'codex',
   local: 'ollama',
   external: 'anthropic',
+  'claude-compat': 'claude-compat',
 };
 
 interface AgentRuntimeLike {
   userId: string;
   model: string;
   runtime: Runtime;
+  provider: string | undefined;
   systemPrompt: string | undefined;
   skills: string[];
+}
+
+function resolveClaudeCompatProvider(model: string, explicitProvider: string | undefined): string {
+  if (explicitProvider) return `claude-compat:${explicitProvider}`;
+
+  const m = model.toLowerCase();
+  if (m.startsWith('glm-')) return 'claude-compat:zai';
+  if (m.startsWith('minimax-')) return 'claude-compat:minimax';
+  if (m.startsWith('kimi-')) return 'claude-compat:moonshot';
+  if (m.startsWith('qwen-')) return 'claude-compat:qwen';
+
+  throw new Error(
+    `Cannot infer claude-compat preset for model "${model}". ` +
+    `Set the agent's provider field to one of: zai, minimax, moonshot, qwen.`,
+  );
 }
 
 /** FIX-005: resolve a persisted Agent → provider/model/system overrides. */
@@ -57,8 +74,13 @@ async function resolveAgentRuntime(
   if (!agent) return null;
   const userId = requestUserId ?? agent.userId;
   const system = await buildAgentSystemPrompt(agent, userId);
-  logger?.info({ agentId, runtime: agent.runtime }, 'Orchestrator: agent resolved');
-  return { provider: RUNTIME_TO_PROVIDER[agent.runtime], model: agent.model, system };
+  const baseProvider = RUNTIME_TO_PROVIDER[agent.runtime];
+  const provider =
+    agent.runtime === 'claude-compat'
+      ? resolveClaudeCompatProvider(agent.model, agent.provider)
+      : baseProvider;
+  logger?.info({ agentId, runtime: agent.runtime, provider }, 'Orchestrator: agent resolved');
+  return { provider, model: agent.model, system };
 }
 
 export interface OrchestratorOptions {

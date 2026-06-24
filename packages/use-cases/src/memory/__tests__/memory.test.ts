@@ -36,6 +36,14 @@ class InMemoryMemoryRepo implements SemanticMemoryRepo {
     return [...this.store.values()].filter((m) => m.userId === userId).slice(0, limit)
       .map((memory, i) => ({ memory, distance: i * 0.1 }));
   }
+  async hybridSearch(
+    embedding: number[],
+    userId: string,
+    limit: number,
+  ): Promise<{ memory: SemanticMemory; score: number; vectorDistance?: number }[]> {
+    const results = await this.vectorSearch(embedding, userId, limit);
+    return results.map((r) => ({ memory: r.memory, score: 1 - r.distance, vectorDistance: r.distance }));
+  }
 }
 
 class InMemoryDailySummaryRepo implements DailySummaryRepo {

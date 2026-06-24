@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { ValidationError } from '../errors/domain-error';
 
-export type Runtime = 'cloud' | 'local' | 'codex' | 'external';
+export type Runtime = 'cloud' | 'local' | 'codex' | 'external' | 'claude-compat';
 export type Squad = 'harness' | 'workflow' | 'enrich' | 'custom';
 export type Effort = 'low' | 'medium' | 'high' | 'max';
 
@@ -21,6 +21,7 @@ export interface AgentProps {
   isActive: boolean;
   skills: string[];
   runtime: Runtime;
+  provider: string | undefined;
   squad: Squad | undefined;
   systemPrompt: string | undefined;
   createdAt: Date;
@@ -57,6 +58,7 @@ export class Agent {
   readonly isActive: boolean;
   readonly skills: readonly string[];
   readonly runtime: Runtime;
+  readonly provider: string | undefined;
   readonly squad: Squad | undefined;
   readonly systemPrompt: string | undefined;
   readonly createdAt: Date;
@@ -77,6 +79,7 @@ export class Agent {
     this.isActive = props.isActive;
     this.skills = props.skills;
     this.runtime = props.runtime;
+    this.provider = props.provider;
     this.squad = props.squad;
     this.systemPrompt = props.systemPrompt;
     this.createdAt = props.createdAt;
@@ -110,6 +113,7 @@ export class Agent {
       isActive: this.isActive,
       skills: [...this.skills],
       runtime: this.runtime,
+      provider: this.provider,
       squad: this.squad,
       systemPrompt: this.systemPrompt,
       createdAt: this.createdAt,

@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
@@ -16,7 +18,7 @@
     "@wolfkrow/mcp-shared": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^22.7.0",
+    "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^2.1.4",
     "typescript": "^5.6.3",
     "vitest": "^2.1.4"

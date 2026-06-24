@@ -50,6 +50,7 @@ const baseInput = {
   isActive: true,
   skills: [] as string[],
   runtime: 'cloud' as const,
+  provider: undefined,
   squad: undefined,
   systemPrompt: 'You are helpful.',
 };
@@ -68,6 +69,13 @@ describe('CreateAgentUseCase', () => {
     expect(result.agent.name).toBe('my-agent');
     const found = await repo.findById(result.agent.id);
     expect(found).not.toBeNull();
+  });
+
+  it('creates agent with claude-compat provider', async () => {
+    const uc = new CreateAgentUseCase(repo);
+    const result = await uc.execute({ ...baseInput, runtime: 'claude-compat', provider: 'zai', model: 'glm-4.7' });
+    expect(result.agent.runtime).toBe('claude-compat');
+    expect(result.agent.provider).toBe('zai');
   });
 
   it('throws ValidationError for empty name', async () => {

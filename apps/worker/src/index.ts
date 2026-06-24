@@ -4,11 +4,13 @@
  * Runs scheduled tasks, migrations, and background jobs.
  */
 
-import { DrizzleMcpServerRepo, getDb, runMigrations } from '@wolfkrow/infra';
+import { getDb, runMigrations } from '@wolfkrow/infra';
 import { getScheduledTasksRepository } from '@wolfkrow/infra/repos';
 
 import { createAgentExecutor } from './agent-executor';
 import { config } from './config';
+import { getRepos } from './container';
+import { clearAllPendingPermissions } from './chat/permission-store';
 import { installGlobalErrorHandlers } from './error-handlers';
 import { createLogger } from './logger';
 import { loadBuiltInMcpCatalog } from './mcp/catalog';
@@ -25,7 +27,7 @@ installGlobalErrorHandlers(logger);
 
 async function startMcpsAsync(): Promise<void> {
   const catalogEntries = loadBuiltInMcpCatalog().filter((s) => s.visibility === 'always');
-  const dbEntries = new DrizzleMcpServerRepo()
+  const dbEntries = getRepos().mcpServer
     .findActive()
     .filter((r) => !catalogEntries.some((c) => c.name === r.name))
     .map((r) => ({ name: r.name, command: r.command, args: r.args, env: r.env }));
@@ -70,6 +72,7 @@ async function main(): Promise<void> {
   const shutdown = (signal: string) => {
     logger.info({ signal }, 'Shutting down worker');
     scheduler.stop();
+    clearAllPendingPermissions();
     stopMemoryLifecycle();
     void mcpManager.stopAll();
     void server

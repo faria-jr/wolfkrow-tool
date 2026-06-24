@@ -55,6 +55,10 @@ export class DrizzleMcpServerRepo implements McpServerRepo {
     this.db.update(mcpServers).set({ isActive, updatedAt: new Date() }).where(eq(mcpServers.id, id)).run();
   }
 
+  setVisibility(id: string, visibility: McpServerVisibility): void {
+    this.db.update(mcpServers).set({ visibility, updatedAt: new Date() }).where(eq(mcpServers.id, id)).run();
+  }
+
   delete(id: string): void {
     this.db.delete(mcpServers).where(eq(mcpServers.id, id)).run();
   }

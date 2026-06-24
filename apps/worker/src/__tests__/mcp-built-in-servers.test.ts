@@ -20,6 +20,18 @@ const SERVERS: ReadonlyArray<readonly [name: string, toolCount: number]> = [
   ['graph-search', 2],
   ['wolfkrow-skills', 1],
   ['knowledge-base', 1],
+  ['memory-search', 3],
+  ['local-agents', 4],
+  ['local-llm', 3],
+  ['youtube', 2],
+  ['google-calendar', 2],
+  ['google-gmail', 2],
+  ['google-drive', 3],
+  ['google-sheets', 3],
+  ['elevenlabs', 2],
+  ['excalidraw', 3],
+  ['shopify', 3],
+  ['nano-banana', 1],
 ];
 
 // Skip when the dist bundles are not built yet (e.g. `test` ran before `build`

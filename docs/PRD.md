@@ -55,7 +55,7 @@ Wolfkrow Tool é o único assistente que combina:
 - ✅ Acesso local a terminal/filesystem
 - ✅ Memória persistente estruturada
 - ✅ Multi-agent orchestration (Harness, Pipeline)
-- ✅ 19+ integrações via MCP
+- ✅ 15 integrações via MCP (knowledge-base, wolfkrow-skills, youtube, google-calendar/gmail/drive/sheets, graph-search, elevenlabs, excalidraw, memory-search, local-agents, local-llm, shopify, nano-banana) — Higgsfield e Blotato deferidos para v2 (ADR-0031)
 - ✅ Voice conversation em tempo real
 - ✅ 100% privado (single-machine)
 
@@ -134,7 +134,7 @@ Wolfkrow Tool é o único assistente que combina:
 
 **Critérios de Aceitação**:
 - [ ] CRUD completo de MCPs custom
-- [ ] 19+ MCPs bundled (Google x4, ElevenLabs, Excalidraw, YouTube, Shopify, Nano-banana, Graph search, Local agents, Local LLM, Skills, Memory search, Knowledge base, Wolfkrow internal x3)
+- [x] 15 MCPs bundled (M3.3 entregou google-drive, google-sheets, elevenlabs, excalidraw, memory-search, local-agents, local-llm, shopify, nano-banana, somando aos 6 existentes). Higgsfield, Blotato e wolfkrow-user-question deferidos para v2 (ADR-0031).
 - [ ] Start/stop/restart manual
 - [ ] Auto-start no boot (configurável por MCP)
 - [ ] Visibility toggle (some MCPs só rodam em background)
@@ -315,11 +315,25 @@ Wolfkrow Tool é o único assistente que combina:
 
 ### 2.2 Funcionalidades Pós-MVP (Roadmap v1.1+)
 
+#### Iniciadas em v1.0 — conclusão em v1.1
+
+- **Harness execução AI automática**: fundação (domain/infra/UI) entregue; loop Planner→Coder→Evaluator sem intervenção humana em v1.1
+- **Memory page — search UI**: Summaries tab + Compact Now entregues em v1.0; busca semântica em v1.1
+- **Audit log — filtros avançados**: tabela + CSV/JSON export entregues em v1.0; filtros por data/tipo/agente em v1.1
+- **Spec build/validate/enrich seed agents**: depende de harness automático; v1.1
+- **Pipeline report**: core pipeline ✅; relatório final de execução em v1.1
+- **Excalidraw inline no chat**: MCP Excalidraw ✅; embed inline no chat em v1.1
+- **Artifact detection nos tool results**: backend pronto; detecção + render automático em v1.1
+- **Pricing calculator multi-fonte**: estimativa por modelo no Usage page ✅; comparador multi-fonte em v1.1
+- **Knowledge benchmark**: removido de v1.0 (ver ADR-0032); retrieval eval como dev-tool em v1.1
+
+#### Novas funcionalidades v1.1+
+
 - **Multi-workspace**: separar `.wolfkrow/profiles/` por contexto
 - **Cloud sync opcional**: sync entre devices (opt-in)
 - **Plugin marketplace**: registry de MCPs e skills
 - **Screen awareness**: Electron desktopCapturer + Claude vision
-- **Hotkey global**: Cmd+Shift+Space para abrir chat
+- **Hotkey global config**: personalizar Cmd+Shift+Space
 - **Browser extension**: send URL to chat
 - **Mobile companion**: Tauri/Expo app
 - **Inbox Zero para Telegram**: auto-triage
@@ -455,7 +469,7 @@ Meta v1.0: **50 WAC** (single-user pode ter 50+ conversas/semana).
 
 3. **Source build** (open-source, devs)
    - `pnpm install && pnpm dev`
-   - Requer Node 20+, pnpm 9+
+   - Requer Node 24+, pnpm 9+
 
 4. **Cloud self-hosted** (futuro, v2.0)
    - Docker image
@@ -478,7 +492,7 @@ Open-source seletivo: extraction de libraries internas para npm público (`@wolf
 | OS | macOS 12+, Windows 10+, Linux (Ubuntu 22+) | macOS 14+ |
 | RAM | 8 GB | 16 GB |
 | Disk | 2 GB | 5 GB |
-| Node | 20+ | 22+ |
+| Node | 24+ | 24+ (LTS recomendado) |
 | Browser | Chrome 120+ | Chrome latest |
 
 ### 7.2 Opcionais (funcionalidades específicas)
@@ -513,7 +527,7 @@ Open-source seletivo: extraction de libraries internas para npm público (`@wolf
 ### v1.0 (M6 — dia 136)
 - Chat multi-SDK
 - Sub-agents + Skills
-- 19 MCPs bundled
+- 15 MCPs bundled
 - Knowledge engine
 - Memory pipeline
 - Voice conversation

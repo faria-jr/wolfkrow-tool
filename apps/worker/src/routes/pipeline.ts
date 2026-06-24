@@ -1,6 +1,8 @@
 /**
  * Pipeline routes — discovery→spec→validate→approval→implementation lifecycle.
  * B.2: BuildPlan pipeline with AI-driven phases.
+ * M5.7: `implementation` stage delegates to the Harness (creates Harness project +
+ * sprints) instead of running AI directly.
  */
 
 import { NotFoundError } from '@wolfkrow/domain';
@@ -11,13 +13,14 @@ import {
   DeletePipelineProjectUseCase,
   GeneratePipelineReportUseCase,
   GetPipelineProjectUseCase,
+  ImplementViaHarnessUseCase,
   ListPipelineProjectsUseCase,
   RunPhaseUseCase,
   StartPhaseUseCase,
 } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { getAdapters, getArtifactWriter, getRepos } from '../container';
+import { getAdapters, getArtifactWriter, getHarnessAgents, getRepos } from '../container';
 import { getAnthropicApiKey } from '../lib/keychain';
 import type { AuthFastifyInstance } from '../types/fastify';
 
@@ -32,12 +35,48 @@ function makeRepos() {
 interface CreateProjectBody { userId: string; name: string; description?: string; }
 interface StartPhaseBody { stage: string; }
 interface RunPhaseBody { userPrompt?: string; model?: string; }
-interface ApproveBody { approved: boolean; notes?: string; }
+interface ApproveBody { approved: boolean; notes?: string; specEdits?: string; }
 
 const _repos = makeRepos();
 
 type RunParams = { id: string; phaseId: string };
-async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: RunPhaseBody }>, reply: FastifyReply) {
+
+async function runImplementationViaHarness(
+  req: FastifyRequest<{ Params: RunParams; Body: RunPhaseBody }>,
+  reply: FastifyReply,
+): Promise<unknown> {
+  const { projectRepo, phaseRepo } = _repos;
+  const r = getRepos();
+  try {
+    const result = await new ImplementViaHarnessUseCase({
+      pipelineProjectRepo: projectRepo,
+      pipelinePhaseRepo: phaseRepo,
+      harnessProjectRepo: r.harnessProject,
+      harnessSprintRepo: r.harnessSprint,
+      planner: getHarnessAgents().planner,
+      artifactWriter: getArtifactWriter(),
+    }).execute({
+      projectId: req.params.id,
+      phaseId: req.params.phaseId,
+      ...(req.body.userPrompt !== undefined ? { inlineSpec: req.body.userPrompt } : {}),
+    });
+    return {
+      phase: result.phase.toProps(),
+      project: result.pipeline.toProps(),
+      output: result.artifact,
+      harnessProjectId: result.harness.toProps().id,
+      sprintCount: result.sprints.length,
+    };
+  } catch (err) {
+    req.log.error({ err }, 'ImplementViaHarnessUseCase failed');
+    return reply.status(500).send({ error: 'Implementation via Harness failed' });
+  }
+}
+
+async function runAiPhase(
+  req: FastifyRequest<{ Params: RunParams; Body: RunPhaseBody }>,
+  reply: FastifyReply,
+): Promise<unknown> {
   const { projectRepo, phaseRepo } = _repos;
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Not found' });
@@ -73,6 +112,17 @@ async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: Ru
   }
 }
 
+async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: RunPhaseBody }>, reply: FastifyReply) {
+  const { phaseRepo } = _repos;
+  const phase = await phaseRepo.findById(req.params.phaseId);
+  if (!phase) return reply.status(404).send({ error: 'Phase not found' });
+
+  if (phase.stage === 'implementation') {
+    return runImplementationViaHarness(req, reply);
+  }
+  return runAiPhase(req, reply);
+}
+
 async function approvePhaseHandler(req: FastifyRequest<{ Params: RunParams; Body: ApproveBody }>, reply: FastifyReply) {
   const { projectRepo, phaseRepo } = _repos;
   try {
@@ -80,6 +130,7 @@ async function approvePhaseHandler(req: FastifyRequest<{ Params: RunParams; Body
       projectId: req.params.id, phaseId: req.params.phaseId,
       approved: req.body.approved,
       ...(req.body.notes !== undefined ? { notes: req.body.notes } : {}),
+      ...(req.body.specEdits !== undefined ? { specEdits: req.body.specEdits } : {}),
     });
     return { project: project.toProps(), phase: phase.toProps() };
   } catch {

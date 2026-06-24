@@ -16,10 +16,19 @@ describe('McpServersView', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ servers: [makeServer()] }),
-    } as Response);
+    fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/catalog')) {
+        return {
+          ok: true,
+          json: async () => ({ builtIn: [], planned: [] }),
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({ servers: [makeServer()] }),
+      } as Response;
+    });
     vi.stubGlobal('fetch', fetchMock);
   });
 

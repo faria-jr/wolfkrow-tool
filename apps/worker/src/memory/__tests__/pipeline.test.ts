@@ -25,6 +25,7 @@ function fakeMemoryRepo(): { saved: SemanticMemory[] } & SemanticMemoryRepo {
     delete: async () => undefined,
     deleteByUserId: async () => undefined,
     vectorSearch: async () => [],
+    hybridSearch: async () => [],
   };
 }
 

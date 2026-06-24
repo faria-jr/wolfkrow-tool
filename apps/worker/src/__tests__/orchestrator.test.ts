@@ -115,6 +115,7 @@ describe('OrchestratorService', () => {
       userId: 'u1',
       model: 'agent-specific-model',
       runtime: 'codex',
+      provider: undefined,
       systemPrompt: 'You are the persisted agent.',
       skills: [],
     });
@@ -130,5 +131,47 @@ describe('OrchestratorService', () => {
     // runtime 'codex' maps to the 'codex' provider (agent drove resolution)
     expect(createSpy).toHaveBeenCalledWith('codex', expect.any(String));
     expect(chunks.length).toBeGreaterThan(0);
+  });
+
+  it('M2: uses explicit provider when agent runtime is claude-compat', async () => {
+    fakeRepos.agent.findById = async () => ({
+      userId: 'u1',
+      model: 'glm-4.7',
+      runtime: 'claude-compat',
+      provider: 'zai',
+      systemPrompt: 'You are a Z.ai agent.',
+      skills: [],
+    });
+    const createSpy = vi.fn().mockReturnValue(new MockProvider(['zai reply']));
+    await collect(
+      new OrchestratorService({ factory: { create: createSpy } }).stream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'claude-3-5-sonnet-20241022',
+        agentId: 'a1',
+        userId: 'u1',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('claude-compat:zai', expect.any(String));
+  });
+
+  it('M2: infers claude-compat provider by model prefix when provider omitted', async () => {
+    fakeRepos.agent.findById = async () => ({
+      userId: 'u1',
+      model: 'kimi-k2',
+      runtime: 'claude-compat',
+      provider: undefined,
+      systemPrompt: 'You are a Kimi agent.',
+      skills: [],
+    });
+    const createSpy = vi.fn().mockReturnValue(new MockProvider(['kimi reply']));
+    await collect(
+      new OrchestratorService({ factory: { create: createSpy } }).stream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'claude-3-5-sonnet-20241022',
+        agentId: 'a1',
+        userId: 'u1',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('claude-compat:moonshot', expect.any(String));
   });
 });

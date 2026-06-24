@@ -48,7 +48,7 @@ function makeAgent() {
   return Agent.create({
     userId: USER, name: 'my-agent', description: undefined, model: 'claude-sonnet-4-6', effort: 'medium',
     thinking: false, thinkingBudget: undefined, maxTurns: 80, allowedTools: [], mcpServers: [],
-    isActive: true, skills: [], runtime: 'cloud', squad: undefined, systemPrompt: undefined,
+    isActive: true, skills: [], runtime: 'cloud', provider: undefined, squad: undefined, systemPrompt: undefined,
   });
 }
 

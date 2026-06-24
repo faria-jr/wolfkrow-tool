@@ -15,6 +15,27 @@
       "when": 1782134637624,
       "tag": "0001_legal_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782251629817,
+      "tag": "0002_secret_komodo",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1782261629817,
+      "tag": "0003_pipeline_spec_edits",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1782262629817,
+      "tag": "0004_pipeline_harness_project_id",
+      "breakpoints": true
     }
   ]
 }

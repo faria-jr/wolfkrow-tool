@@ -16,8 +16,10 @@ import {
   StaleWhileRevalidate,
 } from 'serwist';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare const self: any;
+interface SerwistSelf {
+  __SW_MANIFEST: Array<{ url: string; revision: string | null }>;
+}
+declare const self: SerwistSelf;
 
 const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,

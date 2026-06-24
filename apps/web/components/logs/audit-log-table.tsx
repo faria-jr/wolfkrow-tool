@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
+import {
+  buildAuditFilename,
+  downloadAuditFile,
+  formatAuditCsv,
+  formatAuditJson,
+  type ExportableAuditEntry,
+} from './audit-export';
+
 const AUDIT_ACTIONS = [
   'agent.create', 'agent.update', 'agent.delete', 'agent.sync',
   'skill.create', 'skill.update', 'skill.delete',
@@ -13,15 +21,8 @@ const AUDIT_ACTIONS = [
   'memory.compact', 'session.archive', 'session.delete',
 ] as const;
 
-interface AuditEntry {
-  id: string;
-  userId: string;
-  action: string;
-  resourceType: string;
-  resourceId?: string;
-  ip?: string;
+interface AuditEntry extends Omit<ExportableAuditEntry, 'timestamp'> {
   timestamp: string | Date;
-  metadata: Record<string, unknown>;
 }
 
 const fmtTs = (ts: string | Date) => (typeof ts === 'string' ? new Date(ts) : ts).toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
@@ -56,6 +57,58 @@ function AuditFilters({ action, resourceType, since, onAction, onResourceType, o
         Since
         <input type="date" className="rounded border px-2 py-1 text-sm" value={since} onChange={(e) => onSince(e.target.value)} />
       </label>
+    </div>
+  );
+}
+
+interface ExportButtonsProps {
+  entries: AuditEntry[];
+  /** Disable when no rows are visible (still allow on empty filter results). */
+  disabled: boolean;
+}
+
+function normalizeForExport(entries: ReadonlyArray<AuditEntry>): ExportableAuditEntry[] {
+  return entries.map((e) => ({
+    id: e.id,
+    userId: e.userId,
+    action: e.action,
+    resourceType: e.resourceType,
+    resourceId: e.resourceId,
+    ip: e.ip,
+    timestamp: typeof e.timestamp === 'string' ? e.timestamp : e.timestamp.toISOString(),
+    metadata: e.metadata,
+  }));
+}
+
+function ExportButtons({ entries, disabled }: ExportButtonsProps) {
+  const handleCsv = () => {
+    const csv = formatAuditCsv(normalizeForExport(entries));
+    downloadAuditFile(csv, buildAuditFilename('csv', entries.length), 'text/csv;charset=utf-8');
+  };
+  const handleJson = () => {
+    const json = formatAuditJson(normalizeForExport(entries));
+    downloadAuditFile(json, buildAuditFilename('json', entries.length), 'application/json');
+  };
+  return (
+    <div className="flex items-center gap-2" data-testid="audit-export">
+      <button
+        type="button"
+        onClick={handleCsv}
+        disabled={disabled}
+        className="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-50"
+        aria-label="Export audit log as CSV"
+      >
+        Export CSV
+      </button>
+      <button
+        type="button"
+        onClick={handleJson}
+        disabled={disabled}
+        className="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-50"
+        aria-label="Export audit log as JSON"
+      >
+        Export JSON
+      </button>
     </div>
   );
 }
@@ -112,7 +165,10 @@ export function AuditLogTable() {
 
   return (
     <div className="flex flex-col gap-4">
-      <AuditFilters action={actionFilter} resourceType={resourceTypeFilter} since={since} onAction={setActionFilter} onResourceType={setResourceTypeFilter} onSince={setSince} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <AuditFilters action={actionFilter} resourceType={resourceTypeFilter} since={since} onAction={setActionFilter} onResourceType={setResourceTypeFilter} onSince={setSince} />
+        <ExportButtons entries={entries ?? []} disabled={(entries ?? []).length === 0} />
+      </div>
       {entries && entries.length === 0
         ? <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">No audit log entries found.</div>
         : <AuditTableBody entries={entries ?? []} />}

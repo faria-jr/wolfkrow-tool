@@ -25,7 +25,8 @@ import { runMigrations } from '../db/migrate';
 import { users } from '../db/schema/auth';
 import { knowledgeDocuments, knowledgeChunks } from '../db/schema/knowledge';
 import { isVecLoaded } from '../db/vec-extension';
-import { cosineSimilarity, DrizzleKnowledgeChunkRepo } from '../repos/knowledge-chunk-repo';
+import { DrizzleKnowledgeChunkRepo } from '../repos/knowledge-chunk-repo';
+import { cosineSimilarity } from '../repos/knowledge-cosine';
 
 // Resolve migrations folder: __tests__/ is inside src/, which is inside packages/infra/
 // So ../../drizzle goes: __tests__ → src → infra → drizzle

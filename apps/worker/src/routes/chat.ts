@@ -19,6 +19,7 @@ import type { AuthFastifyInstance } from '../types/fastify';
 
 import type { AttachmentInput } from './chat-attachments';
 import { processAttachments } from './chat-attachments';
+import { chatSessionRoutes } from './chat-sessions';
 
 interface ChatBody {
   message: string;
@@ -156,7 +157,7 @@ async function handleSendRequest(
   }
 
   const { chatSession: sessionRepo, message: messageRepo, tokenUsage: usageRepo } = getRepos();
-  const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, usageRepo);
+  const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, { usageRepo });
 
   const stream = await useCase.execute({
     sessionId, userId, agentId, content, model, signal: ctx.signal,
@@ -226,6 +227,8 @@ export async function chatRoutes(server: AuthFastifyInstance) {
     { preHandler: [server.authenticate] },
     permissionHandler,
   );
+
+  await chatSessionRoutes(server);
 }
 
 interface PermissionBody { callId: string; approved: boolean }
@@ -239,3 +242,4 @@ async function permissionHandler(
   if (!ok) return reply.status(404).send({ error: 'No pending permission for callId' });
   return { resolved: true };
 }
+

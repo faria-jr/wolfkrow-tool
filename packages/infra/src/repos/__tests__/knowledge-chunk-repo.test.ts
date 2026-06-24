@@ -4,7 +4,8 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { describe, expect, it } from 'vitest';
 
 import * as schema from '../../db/schema';
-import { cosineSimilarity, DrizzleKnowledgeChunkRepo } from '../knowledge-chunk-repo';
+import { DrizzleKnowledgeChunkRepo } from '../knowledge-chunk-repo';
+import { cosineSimilarity } from '../knowledge-cosine';
 
 function makeRepo() {
   const sqlite = new Database(':memory:');
@@ -95,6 +96,57 @@ describe('DrizzleKnowledgeChunkRepo search', () => {
       chunk('c', 'learning three', undefined),
     ]);
     const results = await repo.keywordSearch('learning', 2);
+    expect(results).toHaveLength(2);
+  });
+});
+
+describe('DrizzleKnowledgeChunkRepo.hybridSearch (M4)', () => {
+  it('returns only keyword-strategy results when vector has no match (orthogonal)', async () => {
+    const repo = makeRepo();
+    await repo.saveMany([chunk('a', 'unrelated content', [0, 0, 1])]);
+    const results = await repo.hybridSearch('totally missing terms', [1, 0, 0], 5);
+    // vector returns 'a' (orthogonal, distance 1), keyword returns nothing
+    // → hybrid still returns 'a' from the vector strategy only
+    expect(results.length).toBe(1);
+    expect(results[0]!.chunk.id).toBe('a');
+    expect(results[0]!.vectorDistance).toBeDefined();
+    expect(results[0]!.keywordRank).toBeUndefined();
+  });
+
+  it('fuses vector and keyword hits and assigns a score', async () => {
+    const repo = makeRepo();
+    await repo.saveMany([
+      chunk('a', 'machine learning overview', [1, 0, 0]),
+      chunk('b', 'unrelated cooking recipe', [0, 1, 0]),
+      chunk('c', 'machine learning deep dive', [0.95, 0.05, 0]),
+    ]);
+    const results = await repo.hybridSearch('machine learning', [1, 0, 0], 5);
+    expect(results.length).toBeGreaterThanOrEqual(2);
+    expect(results[0]!.chunk.id).toMatch(/a|c/);
+    expect(results[0]!.score).toBeGreaterThan(0);
+    // 'a' or 'c' are returned in both vector and keyword strategies → both
+    // per-strategy fields populated
+    const a = results.find((r) => r.chunk.id === 'a');
+    const c = results.find((r) => r.chunk.id === 'c');
+    expect(a?.vectorDistance).toBeDefined();
+    expect(a?.keywordRank).toBeDefined();
+    expect(c?.vectorDistance).toBeDefined();
+    expect(c?.keywordRank).toBeDefined();
+    // 'b' matches the embedding but not the keyword
+    const b = results.find((r) => r.chunk.id === 'b');
+    expect(b).toBeDefined();
+    expect(b?.vectorDistance).toBeDefined();
+    expect(b?.keywordRank).toBeUndefined();
+  });
+
+  it('respects the limit', async () => {
+    const repo = makeRepo();
+    await repo.saveMany([
+      chunk('a', 'machine learning 1', [1, 0, 0]),
+      chunk('b', 'machine learning 2', [0.9, 0.1, 0]),
+      chunk('c', 'machine learning 3', [0.8, 0.2, 0]),
+    ]);
+    const results = await repo.hybridSearch('machine', [1, 0, 0], 2);
     expect(results).toHaveLength(2);
   });
 });

@@ -1,7 +1,7 @@
 # Wolfkrow Tool — Feature Matrix (Rastreabilidade reconciliada)
 
-> Reconciliado em 2026-06-23 contra código real (Tasks 13–29 concluídas).
-> Legenda: ✅ feito · 🟡 parcial/placeholder · ⛔ não iniciado
+> Reconciliado em 2026-06-24 contra código real (Tasks 13–29 + M1–M8 concluídos).
+> Legenda: ✅ feito · 🟡 parcial/placeholder · ⛔ não iniciado/descoped v1
 
 ---
 
@@ -13,7 +13,7 @@
 | 2 | Onboarding c/ escolha de SDK (wizard) | SPEC-001 | 🟡 setup senha ✅; escolha SDK ✅ reconciliamento Task 9 | Task 9 |
 | 3 | Sub-agentes CRUD + runtime + sync massa | SPEC-013 | ✅ | FIX-004/005 |
 | 4 | Skills (editor markdown+frontmatter) | SPEC-014 | ✅ | FIX-016 |
-| 5 | MCP servers (lifecycle start/stop/restart, discovery) | SPEC-008 | ✅ 6 built-in (graph-search, wolfkrow-skills, knowledge-base, youtube, google-calendar, google-gmail) + PLANNED catalog; custom create ✅ Task 10 | FIX-006/017; Task 10; Task 27 |
+| 5 | MCP servers (lifecycle start/stop/restart, discovery) | SPEC-008 | ✅ 15 built-in (M3.3 entregou 9: google-drive, google-sheets, elevenlabs, excalidraw, memory-search, local-agents, local-llm, shopify, nano-banana); custom create ✅ Task 10; remote MCPs (Higgsfield, Blotato) deferidos para v2 (ADR-0031) | FIX-006/017; Task 10; Task 27; M3.3 |
 | 6 | Memory pipeline (compaction/daily/semantic) | SPEC-015 | ✅ | FIX-012 |
 | 7 | Dreaming (idle + turn) | SPEC-015 | ✅ | FIX-013 |
 | 8 | Session management (criar/listar/arquivar/deletar) | SPEC-002 | 🟡 in-memory; persistência parcial | — |
@@ -29,7 +29,7 @@
 
 | # | Funcionalidade | SPEC | Status | Commit/FIX |
 |---|---|---|---|---|
-| 16 | Harness (Planner→Coder→Evaluator, sprints/rounds/métricas) | SPEC-005 | 🟡 domain+infra+use-cases+UI ✅; sem execução AI automática | — |
+| 16 | Harness (Planner→Coder→Evaluator, sprints/rounds/métricas) | SPEC-005 | 🟡 domain+infra+use-cases+UI ✅; DiffViewer rounds ✅ (M5.3); sem execução AI automática (v1.1) | M5.3 |
 | 17 | Pipeline (BuildPlan multi-fase) | SPEC-006 | 🟡 domain+infra+routes+UI ✅; templates nomeados ✅ Task 11 | Task 11 |
 | 18 | Open Design Studio (sidecar Next.js) | SPEC-007 | ✅ apps/sidecar + DesignStudio iframe embed | S.6 commit 1329c87 |
 | 19 | Enrich pipeline (Validator→Enricher) | SPEC-016 | 🟡 API backend ✅; UI ✅ Task 8 | Task 8 |
@@ -47,7 +47,7 @@
 | 26 | Auth (bcrypt + TOTP + auto-lock + middleware) | SPEC-001 | ✅ middleware.ts + layout verify-assinatura | FIX-007 |
 | 27 | Vault (segredos via keytar) | SPEC-011 | ✅ CRUD via keytar | FIX-007 |
 | 28 | Rules page | SPEC-021 | ✅ CRUD backend + UI | FIX-004 |
-| 29 | Memory page | SPEC-015 | 🟡 schema ✅; UI básica | — |
+| 29 | Memory page | SPEC-015 | 🟡 schema ✅; Summaries tab ✅ (M6.1); Compact Now ✅ (M6.1); search UI ⛔ v1.1 | M6.1 |
 | 30 | Usage page (token cost analytics) | SPEC-018 | ✅ charts + budget banner | FIX-032 |
 | 31 | Logs page (system logs filtráveis) | SPEC-019 | ✅ LogViewer + SSE stream | — |
 | 32 | Permissions page | SPEC-020 | 🟡 CRUD backend + UI básica | — |
@@ -56,7 +56,7 @@
 | 35 | CodeBurn (terminal PTY) | SPEC-017 | ✅ TerminalPage + pty/server.ts | — |
 | 36 | Artifact detection (tool results) | SPEC-002 | ⛔ | — |
 | 37 | Pipeline report (relatório final) | SPEC-006 | ⛔ | — |
-| 38 | Audit log (todas tool calls) | SPEC-020 | 🟡 schema+port ✅; sem UI | FIX-027 |
+| 38 | Audit log (todas tool calls) | SPEC-020 | 🟡 schema+port ✅; tabela UI ✅; CSV/JSON export ✅ (M6.4); filtros avançados ⛔ v1.1 | FIX-027; M6.4 |
 | 39 | Auto-update (electron-updater) | SPEC-012 | ✅ | FIX-010 |
 | 40 | Pricing calculator (multi-fonte) | SPEC-018 | ⛔ | — |
 
@@ -72,20 +72,23 @@
 | 55 | Graph search | ✅ binary real |
 | 41 | Google Calendar | ✅ binary real (Task 27) |
 | 42 | Google Gmail | ✅ binary real (Task 27) |
+| 43 | Google Drive | ✅ binary real (M3.3) |
+| 44 | Google Sheets | ✅ binary real (M3.3) |
+| 45 | ElevenLabs (TTS) | ✅ binary real (M3.3) |
+| 46 | Excalidraw (drawing) | ✅ binary real (M3.3) |
+| 48 | Memory search | ✅ binary real (M3.3) |
+| 49 | Local agents (wolfkrow-agents) | ✅ binary real (M3.3) |
+| 50 | Local LLM (Ollama) | ✅ binary real (M3.3) |
+| 53 | Shopify | ✅ binary real (M3.3) |
+| 54 | Nano-banana | ✅ binary real (M3.3) |
 
-### Planned (catalog seed — sem binário ainda)
+### Deferred to v2 (ver ADR-0031)
 
 | # | MCP | Status |
 |---|---|---|
-| 43–44 | Google Drive/Sheets | 🟡 PLANNED — sem binário |
-| 45 | ElevenLabs (TTS) | 🟡 PLANNED — sem binário |
-| 46 | Excalidraw (drawing) | 🟡 PLANNED — sem binário |
-| 48 | Memory search | 🟡 PLANNED — sem binário |
-| 49 | Local agents (wolfkrow-agents) | 🟡 PLANNED — sem binário |
-| 50 | Local LLM (Ollama) | 🟡 PLANNED — sem binário |
-| 53 | Shopify | 🟡 PLANNED — sem binário |
-| 54 | Nano-banana (Cohere) | 🟡 PLANNED — sem binário |
-| int | wolfkrow-user-question | 🟡 PLANNED — sem binário |
+| int | Higgsfield (image/video) | ⛔ deferido para v2 (OAuth browser flow incompatível com worker Node-only) |
+| int | Blotato (social posting) | ⛔ deferido para v2 (caso de uso narrow, rate-limit-sensitive) |
+| int | wolfkrow-user-question | ⛔ deferido para v2 (sem demanda registrada) |
 
 ## Providers AI (não mapeados originalmente)
 
@@ -125,15 +128,31 @@
 
 ---
 
-## Resumo de cobertura (reconciliado 2026-06-23, Tasks 1–29)
+## Funcionalidades descoped para v1.1+
+
+| # | Feature | Razão |
+|---|---|---|
+| 16 | Harness — execução AI automática | Complexidade de orquestração; fundação entregue em v1.0 |
+| 20 | Spec build/validate/enrich seed agents | Depende de harness automático |
+| 22 | Knowledge benchmark (retrieval eval) | Removido intencionalmente (FIX-031; ADR-0032) |
+| 29 | Memory page — search UI | Prioridade menor; summaries + compact ✅ em v1.0 |
+| 34 | Excalidraw inline no chat | MCP Excalidraw entregue; embed inline é UX extra |
+| 36 | Artifact detection (tool results) | UX enhancement; backend pronto |
+| 37 | Pipeline report | Pipeline core ✅; relatório final UX extra |
+| 38 | Audit log — filtros avançados | Tabela + export ✅ em v1.0; filtros são UX extra |
+| 40 | Pricing calculator multi-fonte | Estimativa custo dentro do Usage page suficiente |
+
+---
+
+## Resumo de cobertura (reconciliado 2026-06-24, Tasks 1–29 + M1–M8)
 
 | | Quantidade |
 |---|---|
 | Funcionalidades mapeadas | 55 + providers + infra |
-| ✅ Feito (após Tasks 1-29) | ~44 |
-| 🟡 Parcial | ~6 |
-| ⛔ Não iniciado (out-of-scope v1) | ~5 |
-| MCPs com binário real | 6 |
-| MCPs planned (sem binário) | 9 |
+| ✅ Feito | ~44 |
+| 🟡 Parcial (core entregue, UI/automação em v1.1) | ~7 |
+| ⛔ Descoped para v1.1+ | 9 |
+| MCPs com binário real | 15 |
+| MCPs deferidos para v2 | 3 (Higgsfield, Blotato, wolfkrow-user-question) |
 | Bugs de navegação corrigidos | 2/2 |
 | Gaps de segurança resolvidos | 8/9 |

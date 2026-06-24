@@ -16,6 +16,7 @@ const base = {
   isActive: true,
   skills: [],
   runtime: 'cloud' as const,
+  provider: undefined,
   squad: undefined,
   systemPrompt: 'You are a code reviewer.',
 };
@@ -31,6 +32,14 @@ describe('Agent.create', () => {
     expect(agent.isActive).toBe(true);
     expect(agent.createdAt).toBeInstanceOf(Date);
     expect(agent.updatedAt).toBeInstanceOf(Date);
+    expect(agent.provider).toBeUndefined();
+  });
+
+  it('supports claude-compat runtime with provider', () => {
+    const agent = Agent.create({ ...base, runtime: 'claude-compat', provider: 'zai', model: 'glm-4.7' });
+    expect(agent.runtime).toBe('claude-compat');
+    expect(agent.provider).toBe('zai');
+    expect(agent.model).toBe('glm-4.7');
   });
 
   it('generates unique ids', () => {
@@ -72,17 +81,33 @@ describe('Agent.fromProps / toProps', () => {
     const agent = Agent.fromProps(props);
     expect(agent.toProps()).toEqual(props);
   });
+
+  it('roundtrip preserves provider when set', () => {
+    const now = new Date('2024-01-01');
+    const props = {
+      id: 'a1',
+      ...base,
+      runtime: 'claude-compat' as const,
+      provider: 'moonshot',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const agent = Agent.fromProps(props);
+    expect(agent.toProps().provider).toBe('moonshot');
+    expect(agent.toProps().runtime).toBe('claude-compat');
+  });
 });
 
 describe('Agent.duplicate', () => {
   it('creates new agent with different id and name', () => {
-    const original = Agent.create(base);
+    const original = Agent.create({ ...base, provider: 'qwen' });
     const copy = original.duplicate('code-reviewer-v2');
     expect(copy.id).not.toBe(original.id);
     expect(copy.name).toBe('code-reviewer-v2');
     expect(copy.model).toBe(original.model);
     expect(copy.systemPrompt).toBe(original.systemPrompt);
     expect(copy.allowedTools).toEqual(original.allowedTools);
+    expect(copy.provider).toBe('qwen');
   });
 
   it('throws ValidationError for empty duplicate name', () => {
@@ -135,6 +160,13 @@ describe('Agent.update', () => {
     expect(updated.model).toBe('claude-haiku-4-5-20251001');
     expect(updated.id).toBe(agent.id);
     expect(updated.userId).toBe(agent.userId);
+  });
+
+  it('patches provider and runtime', () => {
+    const agent = Agent.create(base);
+    const updated = agent.update({ runtime: 'claude-compat', provider: 'minimax' });
+    expect(updated.runtime).toBe('claude-compat');
+    expect(updated.provider).toBe('minimax');
   });
 
   it('updatedAt changes after update', () => {

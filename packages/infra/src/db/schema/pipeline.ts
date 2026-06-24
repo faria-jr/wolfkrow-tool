@@ -24,6 +24,8 @@ export const pipelineProjects = sqliteTable('pipeline_projects', {
   specPath: text('spec_path'),
   prdPath: text('prd_path'),
   approvalNotes: text('approval_notes'),
+  specEdits: text('spec_edits'),
+  harnessProjectId: text('harness_project_id'),
   metrics: metadata(),
   createdAt: timestamp('created_at').notNull(),
   updatedAt: timestamp('updated_at').notNull(),

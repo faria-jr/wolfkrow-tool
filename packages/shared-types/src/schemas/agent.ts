@@ -31,6 +31,7 @@ export const AgentSchema = z.object({
   isActive: z.boolean().default(true),
   skills: z.array(z.string()).default([]),
   runtime: RuntimeSchema,
+  provider: z.string().max(64).optional(),
   squad: SquadSchema.optional(),
   systemPrompt: z.string().max(100_000).optional(),
   metadata: MetadataSchema,

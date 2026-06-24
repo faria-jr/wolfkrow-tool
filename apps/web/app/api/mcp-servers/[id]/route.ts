@@ -1,9 +1,17 @@
+import type { McpServerVisibility } from '@wolfkrow/domain';
 import { cookies } from 'next/headers';
+
 
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
 
 interface Params { params: Promise<{ id: string }>; }
+
+const VALID_VISIBILITY: ReadonlyArray<McpServerVisibility> = ['always', 'on-demand', 'background'];
+
+function isValidVisibility(value: unknown): value is McpServerVisibility {
+  return typeof value === 'string' && VALID_VISIBILITY.includes(value as McpServerVisibility);
+}
 
 export async function PATCH(request: Request, { params }: Params) {
   const cookieStore = await cookies();
@@ -22,6 +30,15 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (typeof body.isActive === 'boolean') {
     repo.toggleActive(id, body.isActive);
+  }
+  if ('visibility' in body) {
+    if (!isValidVisibility(body.visibility)) {
+      return Response.json(
+        { error: `visibility must be one of ${VALID_VISIBILITY.join(', ')}` },
+        { status: 422 },
+      );
+    }
+    repo.setVisibility(id, body.visibility);
   }
   return Response.json({ server: repo.findById(id) });
 }
