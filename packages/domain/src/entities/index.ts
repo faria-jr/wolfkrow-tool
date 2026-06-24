@@ -50,3 +50,6 @@ export type { RepoProfileProps, RoleMap } from './repo-profile';
 
 export { Artifact, isArtifact } from './artifact';
 export type { ArtifactProps, ArtifactData, ArtifactKind } from './artifact';
+
+export { SecurityFinding, summarizeFindings, SECURITY_SEVERITIES, SECURITY_DIMENSIONS } from './security-finding';
+export type { SecurityFindingProps, SecuritySeverity, SecurityDimension, SecurityScanSummary } from './security-finding';

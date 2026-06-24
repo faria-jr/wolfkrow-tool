@@ -25,3 +25,4 @@ export * from './usage';
 export * from './rules';
 export * from './graph';
 export * from './providers';
+export * from './security-audit';

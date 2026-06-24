@@ -28,3 +28,21 @@ export type {
 } from './services/smoke-test-runner';
 export { ArtifactDetector } from './services/artifact-detector';
 export type { ArtifactDetectionResult } from './services/artifact-detector';
+
+export {
+  SecurityAuditRunner,
+  SECURITY_AUDIT_AGENTS,
+  parseFindingsFromText,
+  runSecurityAgent,
+} from './services/security-audit-runner';
+export type {
+  SecurityAuditAgentDef,
+  SecurityAuditOptions,
+  SecurityAuditResult,
+  ParsedFinding,
+} from './services/security-audit-runner';
+export {
+  DrizzleSecurityScanRepo,
+  DrizzleSecurityFindingRepo,
+} from './repos/security-audit-repo';
+export type { SecurityScanRecord } from './repos/security-audit-repo';

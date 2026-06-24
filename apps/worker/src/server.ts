@@ -15,6 +15,7 @@ import type { FastifyInstance } from 'fastify';
 import { config } from './config';
 import { createLogger } from './logger';
 import { authPlugin } from './plugins/auth';
+import { auditRoutes } from './routes/audit';
 import { chatRoutes } from './routes/chat';
 import { enrichRoutes } from './routes/enrich';
 import { graphRoutes } from './routes/graph';
@@ -63,6 +64,7 @@ async function registerRoutes(server: FastifyInstance) {
   await server.register(skillsRoutes, { prefix: '/skills' });
   await server.register(providerRoutes, { prefix: '/api' });
   await server.register(profilerRoutes, { prefix: '/api' });
+  await server.register(auditRoutes, { prefix: '/api' });
 }
 
 async function registerPlugins(server: FastifyInstance) {

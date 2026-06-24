@@ -43,6 +43,13 @@
       "when": 1782306100783,
       "tag": "0005_keen_songbird",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1782312294181,
+      "tag": "0006_steep_alex_power",
+      "breakpoints": true
     }
   ]
 }
