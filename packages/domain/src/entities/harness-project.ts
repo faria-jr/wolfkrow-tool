@@ -6,6 +6,7 @@ export interface HarnessConfig {
   maxRoundsPerFeature: number;
   coderModel: string;
   plannerModel: string;
+  providerId?: string;
 }
 
 export interface ProjectMetrics {

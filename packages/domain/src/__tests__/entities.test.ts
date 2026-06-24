@@ -286,6 +286,16 @@ describe('HarnessProject', () => {
     const props = p.toProps();
     expect(HarnessProject.fromProps(props).toProps()).toEqual(props);
   });
+
+  it('accepts optional providerId in config', () => {
+    const p = HarnessProject.create({ ...base, config: { ...base.config, providerId: 'zai' } });
+    expect(p.config.providerId).toBe('zai');
+  });
+
+  it('providerId defaults to undefined when omitted', () => {
+    const p = HarnessProject.create(base);
+    expect(p.config.providerId).toBeUndefined();
+  });
 });
 
 // ─── HarnessRound ─────────────────────────────────────────────────────────────
