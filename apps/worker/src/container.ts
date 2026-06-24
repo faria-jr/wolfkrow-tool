@@ -127,7 +127,7 @@ export function getAgenticStreamPort(opts: {
   };
 }
 
-/** RM3.2: agentic stream port backed by ClaudeCompatProvider (non-Anthropic with tool support). */
+/** Agentic stream port backed by ClaudeCompatProvider (non-Anthropic providers with tool support). */
 export function getCompatAgenticStreamPort(opts: {
   cfg: ProviderConfig;
   apiKey: string;
@@ -160,7 +160,7 @@ export interface ResolveAgentStreamPortOptions {
 }
 
 /**
- * RM3.2: resolve the correct agentic AIStreamPort for a chat agent.
+ * Resolve the agentic AIStreamPort for a chat agent.
  * Uses ClaudeCompatProvider for non-Anthropic providers with supportsTools.
  * Falls back to ClaudeAgentProvider (Anthropic) otherwise.
  */
