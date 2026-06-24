@@ -13,5 +13,8 @@ export function createTestAIProviderFactory(
     create() {
       return provider;
     },
+    createFromConfig() {
+      return provider;
+    },
   };
 }

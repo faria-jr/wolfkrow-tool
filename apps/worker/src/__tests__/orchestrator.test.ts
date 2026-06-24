@@ -26,8 +26,13 @@ async function collect(stream: AsyncIterable<StreamChunk>): Promise<StreamChunk[
   return out;
 }
 
+function spyFactory(spy: ReturnType<typeof vi.fn>): AIProviderFactory {
+  return { create: spy, createFromConfig: spy };
+}
+
 const mockFactory: AIProviderFactory = {
   create: (_provider: string, _key: string) => new MockProvider(['Hello', ' world']),
+  createFromConfig: () => new MockProvider(['Hello', ' world']),
 };
 
 describe('OrchestratorService', () => {
@@ -48,7 +53,7 @@ describe('OrchestratorService', () => {
   it('uses explicit provider name from request', async () => {
     const createSpy = vi.fn().mockReturnValue(new MockProvider(['explicit']));
     await collect(
-      new OrchestratorService({ factory: { create: createSpy } }).stream({
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'hi' }],
         model: 'gpt-4o',
         provider: 'codex',
@@ -60,7 +65,7 @@ describe('OrchestratorService', () => {
   it('infers anthropic provider for claude-* models', async () => {
     const createSpy = vi.fn().mockReturnValue(new MockProvider());
     await collect(
-      new OrchestratorService({ factory: { create: createSpy } }).stream({
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'claude-3-5-sonnet-20241022',
       }),
@@ -71,7 +76,7 @@ describe('OrchestratorService', () => {
   it('infers codex provider for gpt-* models', async () => {
     const createSpy = vi.fn().mockReturnValue(new MockProvider());
     await collect(
-      new OrchestratorService({ factory: { create: createSpy } }).stream({
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'gpt-4o',
       }),
@@ -82,7 +87,7 @@ describe('OrchestratorService', () => {
   it('infers ollama provider for llama-* models', async () => {
     const createSpy = vi.fn().mockReturnValue(new MockProvider());
     await collect(
-      new OrchestratorService({ factory: { create: createSpy } }).stream({
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'llama-3.2',
       }),
@@ -101,7 +106,7 @@ describe('OrchestratorService', () => {
   it('passes system prompt through to the query call', async () => {
     const createSpy = vi.fn().mockReturnValue(new MockProvider(['ok']));
     await collect(
-      new OrchestratorService({ factory: { create: createSpy } }).stream({
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'hi' }],
         model: 'claude-3-5-sonnet-20241022',
         system: 'Be helpful',
@@ -121,7 +126,7 @@ describe('OrchestratorService', () => {
     });
     const createSpy = vi.fn().mockReturnValue(new MockProvider(['agent reply']));
     const chunks = await collect(
-      new OrchestratorService({ factory: { create: createSpy } }).stream({
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'hi' }],
         model: 'claude-3-5-sonnet-20241022', // should be overridden by the agent
         agentId: 'a1',
@@ -144,7 +149,7 @@ describe('OrchestratorService', () => {
     });
     const createSpy = vi.fn().mockReturnValue(new MockProvider(['zai reply']));
     await collect(
-      new OrchestratorService({ factory: { create: createSpy } }).stream({
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'hi' }],
         model: 'claude-3-5-sonnet-20241022',
         agentId: 'a1',
@@ -165,7 +170,7 @@ describe('OrchestratorService', () => {
     });
     const createSpy = vi.fn().mockReturnValue(new MockProvider(['kimi reply']));
     await collect(
-      new OrchestratorService({ factory: { create: createSpy } }).stream({
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'hi' }],
         model: 'claude-3-5-sonnet-20241022',
         agentId: 'a1',

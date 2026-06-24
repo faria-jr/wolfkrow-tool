@@ -171,6 +171,9 @@ describe('POST /projects/:id/run SSE route (T25)', () => {
     });
 
     expect(vi.mocked(getHarnessProjectWorkDir)).toHaveBeenCalledWith('proj-1');
-    expect(vi.mocked(makeCoderWithTools)).toHaveBeenCalledWith('/tmp/wolfkrow-harness/proj-1');
+    expect(vi.mocked(makeCoderWithTools)).toHaveBeenCalledWith(
+      '/tmp/wolfkrow-harness/proj-1',
+      { maxRoundsPerFeature: 3, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' },
+    );
   });
 });

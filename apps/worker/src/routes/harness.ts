@@ -44,7 +44,7 @@ async function planHandler(req: FastifyRequest<{ Params: { id: string }; Body: P
   if (!specContent && project.specPath) {
     try { specContent = await readFile(project.specPath, 'utf8'); } catch { specContent = ''; }
   }
-  const { sprints } = await new PlanSprintsUseCase(projectRepo, sprintRepo, getHarnessAgents().planner).execute({ projectId: project.id, specContent });
+  const { sprints } = await new PlanSprintsUseCase(projectRepo, sprintRepo, getHarnessAgents(project.config).planner).execute({ projectId: project.id, specContent });
   return sprints.map((s) => s.toProps());
 }
 
@@ -52,7 +52,7 @@ async function runCoderHandler(req: FastifyRequest<{ Params: { id: string; sprin
   const { projectRepo, sprintRepo, roundRepo } = _hRepos;
   const project = await projectRepo.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Project not found' });
-  const { round } = await new RunCoderRoundUseCase(sprintRepo, roundRepo, getHarnessAgents().coder).execute({
+  const { round } = await new RunCoderRoundUseCase(sprintRepo, roundRepo, getHarnessAgents(project.config).coder).execute({
     sprintId: req.params.sprintId,
     featureIndex: req.body.featureIndex,
     roundNumber: req.body.roundNumber,
@@ -76,8 +76,8 @@ async function runSseHandler(
   if (!sprint) return reply.status(404).send({ error: 'Sprint not found' });
 
   const workDir = getHarnessProjectWorkDir(project.id);
-  const coder = makeCoderWithTools(workDir);
-  const { evaluator } = getHarnessAgents();
+  const coder = makeCoderWithTools(workDir, project.config);
+  const { evaluator } = getHarnessAgents(project.config);
 
   reply.raw.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -142,7 +142,12 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
 
   server.post<{ Params: { roundId: string } }>('/rounds/:roundId/evaluate', async (req, reply) => {
     try {
-      const result = await new EvaluateRoundUseCase(roundRepo, getHarnessAgents().evaluator).execute({ roundId: req.params.roundId });
+      const round = await roundRepo.findById(req.params.roundId);
+      if (!round) return reply.status(404).send({ error: 'Round not found' });
+      const sprint = await sprintRepo.findById(round.sprintId);
+      const project = sprint ? await projectRepo.findById(sprint.projectId) : null;
+      const config = project?.config ?? { maxRoundsPerFeature: 5, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' };
+      const result = await new EvaluateRoundUseCase(roundRepo, getHarnessAgents(config).evaluator).execute({ roundId: req.params.roundId });
       return { ...result.round.toProps(), passed: result.passed };
     } catch {
       return reply.status(404).send({ error: 'Round not found' });
