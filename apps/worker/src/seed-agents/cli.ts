@@ -19,12 +19,12 @@ import { seedAgents } from './seeder';
 
 const logger = createLogger('seed:agents');
 
-interface ParsedArgs {
+export interface ParsedArgs {
   user: string | null;
   help: boolean;
 }
 
-function parseArgs(argv: string[]): ParsedArgs {
+export function parseArgs(argv: string[]): ParsedArgs {
   const out: ParsedArgs = { user: null, help: false };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
@@ -39,7 +39,7 @@ function parseArgs(argv: string[]): ParsedArgs {
 
 const HELP = `Usage: seed:agents --user <userId>
 
-Seed the 72 built-in wolfkrow agents for a user.
+Seed the built-in wolfkrow agents for a user.
 
 Options:
   --user <id>   The user id to seed agents for (required).
@@ -68,8 +68,13 @@ async function run(): Promise<void> {
   process.stdout.write(`Seeded ${inserted} new agent(s) for user ${args.user}.\n`);
 }
 
-run().catch((err) => {
-  logger.error({ err }, 'seed:agents failed');
-  process.stderr.write(`seed:agents failed: ${String(err)}\n`);
-  process.exit(1);
-});
+// Only execute when run as the entry point (`tsx src/seed-agents/cli.ts`),
+// not when imported (e.g. by tests importing parseArgs).
+const isMain = import.meta.url === `file://${process.argv[1]}`;
+if (isMain) {
+  run().catch((err) => {
+    logger.error({ err }, 'seed:agents failed');
+    process.stderr.write(`seed:agents failed: ${String(err)}\n`);
+    process.exit(1);
+  });
+}

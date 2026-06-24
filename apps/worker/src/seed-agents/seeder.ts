@@ -17,7 +17,7 @@ export function seedAgentId(userId: string, name: string): string {
     .toLowerCase()
     .trim()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // strip accents
+    .replace(/\p{Diacritic}/gu, '') // strip accents
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '');
   return `${userId}::${slug}`;

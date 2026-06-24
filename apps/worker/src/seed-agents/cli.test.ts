@@ -1,26 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-// parseArgs is not exported from cli.ts (it triggers DB/migrations on import
-// via run()). We re-implement a thin parse spec here to lock the CLI contract.
-// The canonical implementation lives in cli.ts; keep these in sync.
-
-interface ParsedArgs {
-  user: string | null;
-  help: boolean;
-}
-
-function parseArgs(argv: string[]): ParsedArgs {
-  const out: ParsedArgs = { user: null, help: false };
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i]!;
-    if (arg === '--help' || arg === '-h') {
-      out.help = true;
-    } else if (arg === '--user') {
-      out.user = argv[++i] ?? null;
-    }
-  }
-  return out;
-}
+import { parseArgs } from './cli';
 
 describe('seed:agents cli arg parsing', () => {
   it('parses --user <id>', () => {

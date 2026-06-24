@@ -1,5 +1,5 @@
 import { readlinkSync, realpathSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 /**
  * Resolve the seed-agent YAML directory.
@@ -30,9 +30,4 @@ export function resolveSeedAgentsDir(): string {
 
   // fallback: assume repo-root sibling layout (.wolfkrow/agents)
   return resolve(process.cwd(), '.wolfkrow', 'agents');
-}
-
-function dirname(p: string): string {
-  const idx = p.lastIndexOf('/');
-  return idx === -1 ? '.' : p.slice(0, idx);
 }
