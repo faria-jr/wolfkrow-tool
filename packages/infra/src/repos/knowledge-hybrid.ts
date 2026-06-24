@@ -4,7 +4,7 @@ import type {
   KeywordSearchResult,
 } from '@wolfkrow/domain';
 import type { KnowledgeChunk } from '@wolfkrow/domain';
-import { eq } from 'drizzle-orm';
+import { inArray } from 'drizzle-orm';
 
 import type { DatabaseClient } from '../db/client';
 import { knowledgeChunks } from '../db/schema/knowledge';
@@ -40,10 +40,17 @@ export function vectorSearchVec0(
     )
     .all(JSON.stringify(embedding), queryLimit) as Array<{ chunk_id: string; distance: number }>;
 
+  if (candidates.length === 0) return [];
+
+  // Batch-fetch all candidates in a single IN query — avoids N individual lookups.
+  const ids = candidates.map((c) => c.chunk_id);
+  const rows = db.select().from(knowledgeChunks).where(inArray(knowledgeChunks.id, ids)).all();
+  const rowMap = new Map(rows.map((r) => [r.id, r]));
+
   const results: ChunkSearchResult[] = [];
   for (const { chunk_id, distance } of candidates) {
     if (results.length >= limit) break;
-    const row = db.select().from(knowledgeChunks).where(eq(knowledgeChunks.id, chunk_id)).get();
+    const row = rowMap.get(chunk_id);
     if (!row) continue;
     if (documentIds && documentIds.length > 0 && !documentIds.includes(row.documentId)) continue;
     results.push({ chunk: toEntity(row), distance });
@@ -79,10 +86,30 @@ export function keywordSearchFts5(
     )
     .all(ftsQuery, fetchLimit) as Array<{ chunk_id: string; rank: number }>;
 
+  if (rows.length === 0) return [];
+
+  // Batch-fetch all candidates in a single IN query — avoids N individual lookups.
+  const ids = rows.map((r) => r.chunk_id);
+  const chunkRows = db.select().from(knowledgeChunks).where(inArray(knowledgeChunks.id, ids)).all();
+  const rowMap = new Map(chunkRows.map((r) => [r.id, r]));
+
+  return collectFtsResults({ rows, rowMap, documentIds, limit, toEntity });
+}
+
+interface CollectFtsOptions {
+  rows: Array<{ chunk_id: string; rank: number }>;
+  rowMap: Map<string, typeof knowledgeChunks.$inferSelect>;
+  documentIds: string[] | undefined;
+  limit: number;
+  toEntity: (row: typeof knowledgeChunks.$inferSelect) => KnowledgeChunk;
+}
+
+function collectFtsResults(opts: CollectFtsOptions): KeywordSearchResult[] {
+  const { rows, rowMap, documentIds, limit, toEntity } = opts;
   const results: KeywordSearchResult[] = [];
   for (const { chunk_id, rank } of rows) {
     if (results.length >= limit) break;
-    const row = db.select().from(knowledgeChunks).where(eq(knowledgeChunks.id, chunk_id)).get();
+    const row = rowMap.get(chunk_id);
     if (!row) continue;
     if (documentIds && documentIds.length > 0 && !documentIds.includes(row.documentId)) continue;
     results.push({ chunk: toEntity(row), rank });

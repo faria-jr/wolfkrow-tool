@@ -37,23 +37,6 @@ function hasVec0Table(sqlite: DatabaseClient['$client'], name: string): boolean 
 }
 
 const VEC_DIM = 1024;
-const RRF_K = 60;
-
-interface RankedMemory {
-  id: string;
-  rank: number;
-}
-
-function reciprocalRankFusion(ranksLists: RankedMemory[][]): Map<string, number> {
-  const scores = new Map<string, number>();
-  for (const list of ranksLists) {
-    list.forEach((entry, idx) => {
-      const rrf = 1 / (RRF_K + idx + 1);
-      scores.set(entry.id, (scores.get(entry.id) ?? 0) + rrf);
-    });
-  }
-  return scores;
-}
 
 export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
   constructor(private readonly db = getDb()) {}
@@ -212,30 +195,16 @@ export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
     userId: string,
     limit: number,
   ): Promise<HybridMemorySearchResult[]> {
-    const fetchLimit = Math.max(limit * 3, 30);
-    const vecResults = await this.vectorSearch(embedding, userId, fetchLimit);
-
-    const ranks: RankedMemory[] = vecResults.map((r, idx) => ({
-      id: r.memory.toProps().id,
-      rank: idx,
-    }));
-    const fused = reciprocalRankFusion([ranks]);
-    const distanceById = new Map<string, number>();
-    for (const r of vecResults) distanceById.set(r.memory.toProps().id, r.distance);
-
-    return Array.from(fused.entries())
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, limit)
-      .map(([id, score]) => {
-        const result = vecResults.find((r) => r.memory.toProps().id === id);
-        if (!result) throw new Error(`hybridSearch: missing memory for fused id ${id}`);
-        const fused: HybridMemorySearchResult = {
-          memory: result.memory,
-          score,
-        };
-        const dist = distanceById.get(id);
-        if (dist !== undefined) fused.vectorDistance = dist;
-        return fused;
-      });
+    // Currently vector-only; keyword signal can be added here when a full-text
+    // index for semantic_memories is introduced.
+    const vecResults = await this.vectorSearch(embedding, userId, limit);
+    return vecResults.map((r) => {
+      const result: HybridMemorySearchResult = {
+        memory: r.memory,
+        score: 1 - r.distance,
+        vectorDistance: r.distance,
+      };
+      return result;
+    });
   }
 }

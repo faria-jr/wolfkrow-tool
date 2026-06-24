@@ -49,6 +49,7 @@ const VEC_DIM = 1024;
  */
 export function loadKnowledgeExtensions(db: Database.Database): boolean {
   if (!_vec) return false;
+  let vec0Ok = false;
   try {
     _vec.load(db);
     db.exec(`
@@ -61,17 +62,24 @@ export function loadKnowledgeExtensions(db: Database.Database): boolean {
         memory_id TEXT PRIMARY KEY,
         embedding FLOAT[${VEC_DIM}]
       );
-
+    `);
+    vec0Ok = true;
+  } catch {
+    // vec0 unavailable — repositories fall back to in-memory cosine similarity.
+  }
+  try {
+    // FTS5 is built-in to SQLite; failure here is a genuine misconfiguration.
+    db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_chunks_fts USING fts5(
         chunk_id UNINDEXED,
         content,
-        tokenize = 'porter unicode61 remove_diacritics 2'
+        tokenize = 'porter unicode61 remove_diacritics 1'
       );
     `);
-    return true;
-  } catch {
-    return false;
+  } catch (err) {
+    console.warn('[vec-extension] FTS5 setup failed:', err instanceof Error ? err.message : String(err));
   }
+  return vec0Ok;
 }
 
 /**

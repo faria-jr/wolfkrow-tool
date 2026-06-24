@@ -86,8 +86,8 @@ describe('ProviderAIProviderFactory', () => {
     expect(factory.create('claude-compat:qwen', 'key')).toBeInstanceOf(ClaudeCompatProvider);
   });
 
-  it('creates claude-compat provider without preset for backward compatibility', () => {
-    expect(factory.create('claude-compat', 'key')).toBeInstanceOf(ClaudeCompatProvider);
+  it('throws when claude-compat is used without a preset suffix', () => {
+    expect(() => factory.create('claude-compat', 'key')).toThrow(/preset suffix/);
   });
 
   it('throws on unknown provider', () => {

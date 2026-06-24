@@ -38,7 +38,10 @@ function createSimpleProvider(
     case 'claude-agent':
       return new ClaudeAgentProvider(apiKey, toolRegistry, permissionResolver);
     case 'claude-compat':
-      return new ClaudeCompatProvider(apiKey, 'zai');
+      throw new Error(
+        'Provider "claude-compat" requires a preset suffix — use "claude-compat:zai", ' +
+        '"claude-compat:minimax", "claude-compat:moonshot", or "claude-compat:qwen".',
+      );
     case 'codex':
     case 'openai':
       return new CodexProvider(apiKey);

@@ -6,7 +6,7 @@ import type {
   KnowledgeChunkRepo,
 } from '@wolfkrow/domain';
 import { KnowledgeChunk } from '@wolfkrow/domain';
-import { and, eq, inArray, isNotNull, like } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
 
 import { getDb, type DatabaseClient } from '../db/client';
 import { knowledgeChunks } from '../db/schema/knowledge';
@@ -85,24 +85,30 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
 
   private persistChunk(chunk: KnowledgeChunk, stmts: ChunkProjectionStmts): void {
     const p = chunk.toProps();
-    this.db.insert(knowledgeChunks).values({
-      id: p.id,
-      documentId: p.documentId,
-      content: p.content,
-      embedding: p.embedding ?? null,
-      metadata: p.metadata,
-      position: p.position,
-      createdAt: p.createdAt,
-    }).run();
+    const sqlite = this.db.$client;
 
-    const { vec0Insert, ftsDelete, ftsInsert } = stmts;
-    if (vec0Insert && p.embedding && p.embedding.length === VEC_DIM) {
-      swallowVecError(() => vec0Insert.run(p.id, JSON.stringify(p.embedding)));
-    }
-    if (ftsDelete && ftsInsert) {
-      ftsDelete.run(p.id);
-      ftsInsert.run(p.id, p.content);
-    }
+    // Wrap primary insert + shadow-index writes in a single transaction so
+    // the primary row and its search projections are always consistent.
+    sqlite.transaction(() => {
+      this.db.insert(knowledgeChunks).values({
+        id: p.id,
+        documentId: p.documentId,
+        content: p.content,
+        embedding: p.embedding ?? null,
+        metadata: p.metadata,
+        position: p.position,
+        createdAt: p.createdAt,
+      }).run();
+
+      const { vec0Insert, ftsDelete, ftsInsert } = stmts;
+      if (vec0Insert && p.embedding && p.embedding.length === VEC_DIM) {
+        swallowVecError(() => vec0Insert.run(p.id, JSON.stringify(p.embedding)));
+      }
+      if (ftsDelete && ftsInsert) {
+        ftsDelete.run(p.id);
+        ftsInsert.run(p.id, p.content);
+      }
+    })();
   }
 
   async findByDocumentId(documentId: string): Promise<KnowledgeChunk[]> {
@@ -199,9 +205,11 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
     limit: number,
     documentIds?: string[],
   ): KeywordSearchResult[] {
-    const pattern = `%${query}%`;
+    // Escape LIKE metacharacters so user input is treated literally.
+    const escaped = query.replace(/[%_\\]/g, '\\$&');
+    const pattern = `%${escaped}%`;
     const where = and(
-      like(knowledgeChunks.content, pattern),
+      sql`${knowledgeChunks.content} LIKE ${pattern} ESCAPE '\\'`,
       documentIds && documentIds.length > 0 ? inArray(knowledgeChunks.documentId, documentIds) : undefined,
     );
     const rows = this.db.select().from(knowledgeChunks).where(where).all();

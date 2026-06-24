@@ -205,7 +205,10 @@ export class ImplementViaHarnessUseCase {
     if (this.artifactWriter) {
       return this.artifactWriter.write(`${projectId}/spec`, spec);
     }
-    return `inline:${projectId}`;
+    // No artifact writer: spec is embedded in sprints via specContent passed to
+    // planHarnessSprints. Return empty string so the harness doesn't attempt to
+    // read a non-existent file path.
+    return '';
   }
 
   private renderArtifact(input: {

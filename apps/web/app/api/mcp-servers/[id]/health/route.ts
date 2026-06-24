@@ -9,6 +9,7 @@ interface Params { params: Promise<{ id: string }>; }
 export async function GET(_request: Request, { params }: Params) {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('session')?.value;
+  if (!sessionCookie) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   const session = await getSession(sessionCookie);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -19,9 +20,6 @@ export async function GET(_request: Request, { params }: Params) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
-  if (!sessionCookie) {
-    return Response.json({ error: 'Missing session token' }, { status: 401 });
-  }
   const res = await workerFetch(`/mcp/servers/${encodeURIComponent(server.name)}/health`, {
     bearerToken: sessionCookie,
   });

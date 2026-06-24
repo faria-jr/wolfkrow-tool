@@ -28,7 +28,16 @@ export class ClaudeCompatProvider implements AIProvider {
   }
 
   async *query(options: CompletionOptions): AsyncIterable<StreamChunk> {
-    const messages = options.messages.map(toAnthropicMessage);
+    // Extract system messages from the messages array; Anthropic API requires
+    // them as the top-level `system` param, not as message turns.
+    const nonSystemMessages = options.messages.filter((m) => m.role !== 'system');
+    const systemFromMessages = options.messages
+      .filter((m) => m.role === 'system')
+      .map((m) => m.content)
+      .join('\n');
+    const effectiveSystem = options.system ?? (systemFromMessages || undefined);
+
+    const messages = nonSystemMessages.map(toAnthropicMessage);
     if (options.imageParts?.length) {
       injectImageParts(messages, options.imageParts);
     }
@@ -38,25 +47,13 @@ export class ClaudeCompatProvider implements AIProvider {
         model: options.model,
         max_tokens: options.maxTokens ?? 4096,
         temperature: options.temperature ?? 0.5,
-        ...(options.system ? { system: options.system } : {}),
+        ...(effectiveSystem ? { system: effectiveSystem } : {}),
         messages,
       },
       { signal: options.signal },
     );
 
-    for await (const event of stream) {
-      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-        yield { delta: event.delta.text };
-      }
-    }
-
-    const final = await stream.finalMessage();
-    yield {
-      delta: '',
-      done: true,
-      inputTokens: final.usage.input_tokens,
-      outputTokens: final.usage.output_tokens,
-    };
+    yield* drainStream(stream);
   }
 
   async complete(options: CompletionOptions): Promise<CompletionResult> {
@@ -65,6 +62,29 @@ export class ClaudeCompatProvider implements AIProvider {
 
   async countTokens(messages: ChatMessage[], _model: string): Promise<number> {
     return estimateTokens(messages.map((m) => m.content).join(''));
+  }
+}
+
+async function* drainStream(
+  stream: ReturnType<Anthropic['messages']['stream']>,
+): AsyncIterable<StreamChunk> {
+  try {
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        yield { delta: event.delta.text };
+      }
+    }
+    const final = await stream.finalMessage();
+    yield {
+      delta: '',
+      done: true,
+      inputTokens: final.usage.input_tokens,
+      outputTokens: final.usage.output_tokens,
+    };
+  } catch (err) {
+    // Always emit the done sentinel so callers don't hang waiting for it.
+    yield { delta: '', done: true };
+    throw err;
   }
 }
 

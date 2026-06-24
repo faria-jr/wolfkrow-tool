@@ -89,9 +89,14 @@ export async function loadBuiltInSkills(dir?: string): Promise<LoadedSkill[]> {
   const results: LoadedSkill[] = [];
   for (const file of mdFiles) {
     const filePath = join(skillsDir, file);
-    const raw = await readFile(filePath, 'utf-8');
-    const skill = buildSkillFromMarkdown(raw);
-    results.push({ name: skill.name, filePath, skill });
+    try {
+      const raw = await readFile(filePath, 'utf-8');
+      const skill = buildSkillFromMarkdown(raw);
+      results.push({ name: skill.name, filePath, skill });
+    } catch (err) {
+      // Skip malformed files so one bad skill doesn't abort the whole load.
+      console.warn(`[skill-loader] Skipping ${file}: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
   return results;
 }

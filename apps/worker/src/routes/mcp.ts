@@ -210,7 +210,8 @@ function registerToolsListRoute(
     if (!manager.get(name)) {
       return reply.status(400).send({ error: `MCP server ${name} is not running` });
     }
-    return reply.send({ tools: manager.listTools(name) });
+    const tools = await manager.listTools(name);
+    return reply.send({ tools });
   });
 }
 

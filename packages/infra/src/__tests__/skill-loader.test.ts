@@ -109,12 +109,13 @@ body 1`,
     expect(names).toContain('second');
   });
 
-  it('throws on missing frontmatter', async () => {
+  it('skips file with missing frontmatter instead of throwing', async () => {
     await writeFile(join(workDir, 'broken.md'), 'no frontmatter here');
-    await expect(loadBuiltInSkills(workDir)).rejects.toThrow(/frontmatter/);
+    const results = await loadBuiltInSkills(workDir);
+    expect(results.map((r) => r.name)).not.toContain('broken');
   });
 
-  it('throws when name missing', async () => {
+  it('skips file with missing name instead of throwing', async () => {
     await writeFile(
       join(workDir, 'no-name.md'),
       `---
@@ -122,10 +123,11 @@ description: missing name
 ---
 body`,
     );
-    await expect(loadBuiltInSkills(workDir)).rejects.toThrow(/name/);
+    const results = await loadBuiltInSkills(workDir);
+    expect(results.map((r) => r.name)).not.toContain('no-name');
   });
 
-  it('throws when description missing', async () => {
+  it('skips file with missing description instead of throwing', async () => {
     await writeFile(
       join(workDir, 'no-desc.md'),
       `---
@@ -133,7 +135,8 @@ name: no-desc
 ---
 body`,
     );
-    await expect(loadBuiltInSkills(workDir)).rejects.toThrow(/description/);
+    const results = await loadBuiltInSkills(workDir);
+    expect(results.map((r) => r.name)).not.toContain('no-desc');
   });
 
   it('preserves author when present', async () => {

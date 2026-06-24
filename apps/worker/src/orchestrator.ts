@@ -58,8 +58,10 @@ function resolveClaudeCompatProvider(model: string, explicitProvider: string | u
   if (m.startsWith('kimi-')) return 'claude-compat:moonshot';
   if (m.startsWith('qwen-')) return 'claude-compat:qwen';
 
-  // Fallback mantém compatibilidade com criação antiga sem provider.
-  return 'claude-compat:zai';
+  throw new Error(
+    `Cannot infer claude-compat preset for model "${model}". ` +
+    `Set the agent's provider field to one of: zai, minimax, moonshot, qwen.`,
+  );
 }
 
 /** FIX-005: resolve a persisted Agent → provider/model/system overrides. */

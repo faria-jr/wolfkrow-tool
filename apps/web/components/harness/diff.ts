@@ -47,7 +47,7 @@ function computeLcsRow(a: string[], b: string[]): number[] {
         : Math.max(prev[j] ?? 0, curr[j + 1] ?? 0);
     }
     [prev, curr] = [curr, prev];
-    curr = new Array(n + 1).fill(0);
+    curr.fill(0);
   }
   return prev;
 }

@@ -153,8 +153,12 @@ describe('ProviderAIProviderFactory — A.2 providers', () => {
     expect(factory.create('claude-agent', 'key')).toBeInstanceOf(ClaudeAgentProvider);
   });
 
-  it('creates claude-compat provider', () => {
-    expect(factory.create('claude-compat', 'key')).toBeInstanceOf(ClaudeCompatProvider);
+  it('creates claude-compat provider with preset suffix', () => {
+    expect(factory.create('claude-compat:zai', 'key')).toBeInstanceOf(ClaudeCompatProvider);
+  });
+
+  it('throws when claude-compat is used without a preset suffix', () => {
+    expect(() => factory.create('claude-compat', 'key')).toThrow(/preset suffix/);
   });
 
   it('creates codex provider', () => {

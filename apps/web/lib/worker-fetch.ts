@@ -9,7 +9,8 @@
  * (M3.5 — used by mcp-servers/[id]/{health,restart} proxies.)
  */
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
+// Prefer server-only WORKER_URL; fall back to NEXT_PUBLIC_WORKER_URL for backward compat.
+const WORKER_URL = process.env.WORKER_URL ?? process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
 
 export interface WorkerFetchOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -26,11 +27,16 @@ export async function workerFetch<T>(
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';
   if (options.bearerToken) headers['Authorization'] = `Bearer ${options.bearerToken}`;
 
-  const res = await fetch(`${WORKER_URL}${path}`, {
-    method: options.method ?? 'GET',
-    headers,
-    ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${WORKER_URL}${path}`, {
+      method: options.method ?? 'GET',
+      headers,
+      ...(options.body !== undefined ? { body: JSON.stringify(options.body) } : {}),
+    });
+  } catch {
+    return { status: 503, body: { error: 'Worker unavailable' } as unknown as T };
+  }
   const text = await res.text();
   let parsed: unknown = null;
   try {
