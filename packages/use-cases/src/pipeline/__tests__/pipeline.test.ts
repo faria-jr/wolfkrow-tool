@@ -175,7 +175,6 @@ describe('ApprovePipelinePhaseUseCase', () => {
       projectId: p.id, phaseId: phase.id, approved: true,
       notes: 'Approve with edit', specEdits: editedSpec,
     });
-    console.log('DEBUG project:', project.toProps());
     expect(project.currentStage).toBe('implementation');
     expect(project.specEdits).toBe(editedSpec);
     expect(project.approvalNotes).toBe('Approve with edit');

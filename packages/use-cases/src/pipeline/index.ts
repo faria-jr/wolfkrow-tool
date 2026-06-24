@@ -16,3 +16,9 @@ export { RunPhaseUseCase } from './run-phase';
 export type { RunPhaseInput, RunPhaseOutput } from './run-phase';
 export { GeneratePipelineReportUseCase } from './generate-pipeline-report';
 export type { GenerateReportInput, GenerateReportOutput } from './generate-pipeline-report';
+export { ImplementViaHarnessUseCase } from './implement-via-harness';
+export type {
+  ImplementViaHarnessInput,
+  ImplementViaHarnessOutput,
+  ImplementViaHarnessOptions,
+} from './implement-via-harness';

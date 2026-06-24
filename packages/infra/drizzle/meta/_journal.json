@@ -29,6 +29,13 @@
       "when": 1782261629817,
       "tag": "0003_pipeline_spec_edits",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1782262629817,
+      "tag": "0004_pipeline_harness_project_id",
+      "breakpoints": true
     }
   ]
 }
