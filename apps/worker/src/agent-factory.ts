@@ -3,7 +3,7 @@ import type {
   ProviderConfig,
   ToolExecutor,
 } from '@wolfkrow/domain';
-import { BUILT_IN_PROVIDERS, defaultPermissionResolver, getProviderById, mergeProviders } from '@wolfkrow/domain';
+import { ANTHROPIC_BUILTIN_ID, BUILT_IN_PROVIDERS, defaultPermissionResolver, getProviderById, mergeProviders } from '@wolfkrow/domain';
 import {
   BashTool,
   ClaudeAgentProvider,
@@ -33,7 +33,7 @@ export { listAllProviders, resolveProviderConfig };
 
 async function resolveProviderConfig(providerId: string, userId?: string): Promise<ProviderConfig> {
   const all = await listAllProviders(userId);
-  return getProviderById(all, providerId) ?? getProviderById(all, 'anthropic')!;
+  return getProviderById(all, providerId) ?? getProviderById(all, ANTHROPIC_BUILTIN_ID)!;
 }
 
 async function resolveAIProvider(providerId: string, userId?: string): Promise<AIProvider> {
@@ -55,7 +55,7 @@ export async function getHarnessAgents(config: HarnessConfig, userId?: string): 
 async function makePlanner(config: HarnessConfig, userId?: string): Promise<HarnessPlanner> {
   return {
     async plan(specContent: string, planConfig: { plannerModel: string; repoSummary?: string }) {
-      const provider = await resolveAIProvider(config.providerId ?? 'anthropic', userId);
+      const provider = await resolveAIProvider(config.providerId ?? ANTHROPIC_BUILTIN_ID, userId);
       const repoContext = planConfig.repoSummary ? `\n\nRepository context:\n${planConfig.repoSummary}` : '';
       const result = await provider.complete({
         model: planConfig.plannerModel,
@@ -77,7 +77,7 @@ async function makePlanner(config: HarnessConfig, userId?: string): Promise<Harn
 async function makeCoder(config: HarnessConfig, userId?: string): Promise<CoderAgent> {
   return {
     async implement(input: { sprintName: string; featureName: string; featureDescription: string; acceptanceCriteria: string[]; previousFeedback?: string; coderModel: string }) {
-      const provider = await resolveAIProvider(config.providerId ?? 'anthropic', userId);
+      const provider = await resolveAIProvider(config.providerId ?? ANTHROPIC_BUILTIN_ID, userId);
       const previousContext = input.previousFeedback ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}` : '';
       const result = await provider.complete({
         model: input.coderModel,
@@ -97,7 +97,7 @@ async function makeCoder(config: HarnessConfig, userId?: string): Promise<CoderA
 async function makeEvaluator(config: HarnessConfig, userId?: string): Promise<EvaluatorAgent> {
   return {
     async evaluate(input: { coderOutput: string; acceptanceCriteria: string[] }) {
-      const provider = await resolveAIProvider(config.providerId ?? 'anthropic', userId);
+      const provider = await resolveAIProvider(config.providerId ?? ANTHROPIC_BUILTIN_ID, userId);
       const result = await provider.complete({
         model: 'claude-sonnet-4-6',
         system: 'You are a QA engineer. Evaluate if the implementation meets the acceptance criteria. Respond with JSON: {passed: boolean, feedback: string}',
@@ -139,7 +139,7 @@ function createToolProvider(cfg: ProviderConfig, apiKey: string, tools: ToolExec
 
 /** CoderAgent backed by the configured provider with bash + filesystem tools sandboxed to workDir. */
 export async function makeCoderWithTools(workDir: string, config: HarnessConfig, userId?: string): Promise<CoderAgent> {
-  const providerId = config.providerId ?? 'anthropic';
+  const providerId = config.providerId ?? ANTHROPIC_BUILTIN_ID;
   const cfg = await resolveProviderConfig(providerId, userId);
   const apiKey = (await getAdapters().secrets.get(cfg.apiKeyAccount))
     ?? (await getProviderApiKey(cfg.id));

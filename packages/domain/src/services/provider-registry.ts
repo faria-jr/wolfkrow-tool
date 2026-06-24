@@ -1,9 +1,14 @@
 import { ProviderConfig } from '../value-objects/provider-config';
 
+export const ANTHROPIC_BUILTIN_ID = 'anthropic';
+export const BUILT_IN_PROVIDER_IDS: readonly string[] = [
+  'anthropic', 'zai', 'minimax', 'moonshot', 'qwen', 'openrouter', 'openai', 'ollama',
+];
+
 export const BUILT_IN_PROVIDERS: ProviderConfig[] = [
- ProviderConfig.create({
- id: 'anthropic',
- displayName: 'Anthropic (Claude)',
+  ProviderConfig.create({
+    id: ANTHROPIC_BUILTIN_ID,
+    displayName: 'Anthropic (Claude)',
  protocol: 'anthropic-compat',
  baseUrl: 'https://api.anthropic.com',
  apiKeyAccount: 'anthropic',

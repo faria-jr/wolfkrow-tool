@@ -21,7 +21,7 @@ import type {
   SecretsAdapter,
   SecurityAuditRunner as SecurityAuditRunnerPort,
 } from '@wolfkrow/domain';
-import { defaultPermissionResolver } from '@wolfkrow/domain';
+import { ANTHROPIC_BUILTIN_ID, defaultPermissionResolver } from '@wolfkrow/domain';
 import {
   aiProviderFactory,
   BashTool,
@@ -173,10 +173,10 @@ export async function resolveAgentStreamPort({
   userId,
 }: ResolveAgentStreamPortOptions): Promise<AIStreamPort> {
   const { resolveProviderConfig } = await import('./agent-factory');
-  const provId = agentProvider ?? 'anthropic';
+  const provId = agentProvider ?? ANTHROPIC_BUILTIN_ID;
   const provCfg = await resolveProviderConfig(provId, userId);
 
-  if (provCfg.supportsTools && provId !== 'anthropic') {
+  if (provCfg.supportsTools && provId !== ANTHROPIC_BUILTIN_ID) {
     const apiKey = (await getAdapters().secrets.get(provCfg.apiKeyAccount))
       ?? (await getProviderApiKey(provId));
     return getCompatAgenticStreamPort({
