@@ -2,107 +2,35 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-interface MemoryData {
-  id: string;
-  content: string;
-  source: string;
-  importance: number;
-  accessCount: number;
-  createdAt: string;
-}
-
-interface SearchResult { memory: MemoryData; distance: number; }
-
-const SOURCE_COLOR: Record<string, string> = {
-  user: 'bg-blue-100 text-blue-800',
-  agent: 'bg-purple-100 text-purple-800',
-  conversation: 'bg-green-100 text-green-800',
-  compaction: 'bg-amber-100 text-amber-800',
-};
-
-interface TabNavProps { tab: 'list' | 'search'; setTab: (t: 'list' | 'search') => void; count: number; }
-function MemoryTabNav({ tab, setTab, count }: TabNavProps) {
-  return (
-    <div className="flex gap-1 border-b">
-      {(['list', 'search'] as const).map((t) => (
-        <button
-          key={t}
-          onClick={() => setTab(t)}
-          className={[
-            'px-4 py-2 text-sm font-medium capitalize transition-colors',
-            tab === t ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground',
-          ].join(' ')}
-        >
-          {t}
-          {t === 'list' && count > 0 && <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs">{count}</span>}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-interface ListTabProps { memories: MemoryData[]; onDelete: (id: string) => void; }
-function MemoryListTab({ memories, onDelete }: ListTabProps) {
-  if (memories.length === 0) return <p className="text-muted-foreground py-8 text-center text-sm">No memories yet.</p>;
-  return (
-    <div className="space-y-3">
-      {memories.map((m) => (
-        <div key={m.id} className="bg-card flex items-start justify-between rounded-lg border p-4">
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-sm">{m.content}</p>
-            <div className="flex items-center gap-2 text-xs">
-              <span className={`rounded px-1.5 py-0.5 font-medium ${SOURCE_COLOR[m.source] ?? 'bg-gray-100 text-gray-700'}`}>{m.source}</span>
-              <span className="text-muted-foreground">importance: {m.importance}</span>
-              <span className="text-muted-foreground">accessed: {m.accessCount}×</span>
-              <span className="text-muted-foreground">{new Date(m.createdAt).toLocaleDateString()}</span>
-            </div>
-          </div>
-          <button onClick={() => onDelete(m.id)} className="text-muted-foreground hover:text-destructive ml-4 text-xs transition-colors">delete</button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-interface SearchTabProps { results: SearchResult[]; query: string; onQueryChange: (q: string) => void; onSearch: () => void; searching: boolean; }
-function MemorySearchTab({ results, query, onQueryChange, onSearch, searching }: SearchTabProps) {
-  return (
-    <div className="space-y-4">
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => onQueryChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
-          placeholder="Search memories…"
-          className="border-input bg-background flex-1 rounded-md border px-3 py-2 text-sm outline-none"
-        />
-        <button onClick={onSearch} disabled={searching} className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50">
-          {searching ? 'Searching…' : 'Search'}
-        </button>
-      </div>
-      {results.length === 0 && !searching && query && <p className="text-muted-foreground text-sm">No results found.</p>}
-      <div className="space-y-3">
-        {results.map((r, i) => (
-          <div key={r.memory.id} className="bg-card rounded-lg border p-4">
-            <div className="mb-1 flex items-center justify-between">
-              <span className="text-muted-foreground text-xs">#{i + 1} — distance: {r.distance.toFixed(4)}</span>
-              <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${SOURCE_COLOR[r.memory.source] ?? 'bg-gray-100 text-gray-700'}`}>{r.memory.source}</span>
-            </div>
-            <p className="text-sm">{r.memory.content}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+import { MemoryViewBody, type MemoryViewState } from './memory-body';
+import type {
+  DailySummaryData,
+  MemoryData,
+  MemorySearchResult,
+  MemoryTabKey,
+} from './memory-types';
+import { buildCompactionContent } from './memory-utils';
 
 export function MemoryView() {
+  const state = useMemoryViewState();
+  return <MemoryViewBody state={state} />;
+}
+
+function useMemoryViewState(): MemoryViewState {
+  const state = useMemoryViewBase();
+  useMemoryViewEffects(state);
+  return state;
+}
+
+function useMemoryViewBase(): MemoryViewState {
   const [memories, setMemories] = useState<MemoryData[]>([]);
-  const [tab, setTab] = useState<'list' | 'search'>('list');
+  const [tab, setTab] = useState<MemoryTabKey>('list');
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<MemorySearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [compactPending, setCompactPending] = useState(false);
+  const [summaries, setSummaries] = useState<DailySummaryData[] | null>(null);
+  const [summariesError, setSummariesError] = useState<string | null>(null);
 
   const loadMemories = useCallback(async () => {
     const res = await fetch('/api/memory', { credentials: 'include' });
@@ -112,38 +40,94 @@ export function MemoryView() {
     }
   }, []);
 
-  useEffect(() => { void loadMemories(); }, [loadMemories]);
-
-  const handleSearch = async () => {
-    if (!query.trim()) return;
-    setSearching(true);
+  const loadSummaries = useCallback(async () => {
+    setSummariesError(null);
     try {
-      const res = await fetch('/api/memory/search', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, limit: 10 }),
-      });
-      if (res.ok) setResults(((await res.json()) as { results: SearchResult[] }).results ?? []);
-    } finally {
-      setSearching(false);
+      const res = await fetch('/api/memory/summaries', { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as { summaries: DailySummaryData[] };
+      setSummaries(data.summaries ?? []);
+    } catch (err) {
+      setSummariesError(err instanceof Error ? err.message : 'Failed to load');
+      setSummaries([]);
     }
-  };
+  }, []);
 
-  const handleDelete = async (id: string) => {
+  const search = useCallback(async () => {
+    return runSearch(query, setSearching, setResults);
+  }, [query]);
+
+  const deleteOne = useCallback(async (id: string) => {
     await fetch(`/api/memory/${id}`, { method: 'DELETE', credentials: 'include' });
-    void loadMemories();
-  };
+    await loadMemories();
+  }, [loadMemories]);
 
-  return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Memory</h1>
-        <p className="text-muted-foreground text-sm">Semantic memories extracted from conversations and stored for recall.</p>
-      </div>
-      <MemoryTabNav tab={tab} setTab={setTab} count={memories.length} />
-      {tab === 'list' && <MemoryListTab memories={memories} onDelete={(id) => { void handleDelete(id); }} />}
-      {tab === 'search' && <MemorySearchTab results={results} query={query} onQueryChange={setQuery} onSearch={() => { void handleSearch(); }} searching={searching} />}
-    </div>
-  );
+  const compact = useCallback(async () => {
+    return runCompact({ memories, tab, loadSummaries, setTab, setCompactPending });
+  }, [memories, tab, loadSummaries]);
+
+  return {
+    memories, tab, query, results, searching, compactPending, summaries, summariesError,
+    loadMemories, loadSummaries, setTab, setQuery, search, deleteOne, compact,
+  };
+}
+
+function useMemoryViewEffects(state: MemoryViewState): void {
+  const { loadMemories, loadSummaries, tab, summaries } = state;
+  useEffect(() => {
+    void loadMemories();
+  }, [loadMemories]);
+  useEffect(() => {
+    if (tab === 'summaries' && summaries === null) {
+      void loadSummaries();
+    }
+  }, [tab, summaries, loadSummaries]);
+}
+
+async function runSearch(
+  query: string,
+  setSearching: (v: boolean) => void,
+  setResults: (r: MemorySearchResult[]) => void,
+): Promise<void> {
+  if (!query.trim()) return;
+  setSearching(true);
+  try {
+    const res = await fetch('/api/memory/search', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, limit: 10 }),
+    });
+    if (res.ok) setResults(((await res.json()) as { results: MemorySearchResult[] }).results ?? []);
+  } finally {
+    setSearching(false);
+  }
+}
+
+async function runCompact(deps: {
+  memories: MemoryData[];
+  tab: MemoryTabKey;
+  loadSummaries: () => Promise<void>;
+  setTab: (t: MemoryTabKey) => void;
+  setCompactPending: (v: boolean) => void;
+}): Promise<void> {
+  deps.setCompactPending(true);
+  try {
+    const content = buildCompactionContent(deps.memories);
+    const res = await fetch('/api/memory/summaries', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    });
+    if (res.ok) {
+      if (deps.tab === 'summaries') {
+        await deps.loadSummaries();
+      } else {
+        deps.setTab('summaries');
+      }
+    }
+  } finally {
+    deps.setCompactPending(false);
+  }
 }
