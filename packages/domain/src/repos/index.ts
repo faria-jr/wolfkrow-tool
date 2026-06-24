@@ -52,3 +52,4 @@ export type {
   GraphNodeUpsertInput,
   GraphEdgeUpsertInput,
 } from './graph-repo';
+export type { ProviderConfigRepo } from './provider-config-repo';
