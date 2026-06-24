@@ -1,5 +1,6 @@
 'use client';
 
+import { formatCost, formatTokens, hasKnownPricing } from '@wolfkrow/domain';
 import { useEffect, useState } from 'react';
 import {
   BarChart,
@@ -25,6 +26,40 @@ interface UsageSummary {
 }
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'];
+
+function ModelBreakdownTable({ byModel }: { byModel: UsageSummary['byModel'] }) {
+  const rows = Object.entries(byModel).sort(([, a], [, b]) => b.costUSD - a.costUSD);
+  if (rows.length === 0) return null;
+  return (
+    <div className="rounded border p-4">
+      <h3 className="mb-4 text-sm font-semibold">Usage by Model</h3>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b text-left text-xs text-muted-foreground">
+            <th className="pb-2 pr-4">Model</th>
+            <th className="pb-2 pr-4 text-right">Input</th>
+            <th className="pb-2 pr-4 text-right">Output</th>
+            <th className="pb-2 text-right">Cost (USD)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([model, d]) => (
+            <tr key={model} className="border-b last:border-0">
+              <td className="py-2 pr-4 font-mono text-xs">{model}</td>
+              <td className="py-2 pr-4 text-right">{formatTokens(d.inputTokens)}</td>
+              <td className="py-2 pr-4 text-right">{formatTokens(d.outputTokens)}</td>
+              <td className="py-2 text-right">
+                {hasKnownPricing(model)
+                  ? <span>{formatCost(d.costUSD)}</span>
+                  : <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">unknown</span>}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 function UsageSummaryCards({ summary }: { summary: UsageSummary }) {
   return (
@@ -92,6 +127,7 @@ export function UsageCharts() {
   return (
     <div className="flex flex-col gap-6">
       <UsageSummaryCards summary={summary} />
+      <ModelBreakdownTable byModel={summary.byModel} />
       <DayChart data={dayData} />
 
       {/* Cost by source */}

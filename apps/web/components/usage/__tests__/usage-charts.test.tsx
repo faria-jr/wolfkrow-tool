@@ -20,6 +20,14 @@ const summary = {
   byDay: { '2024-01-01': { inputTokens: 100, outputTokens: 50, costUSD: 0.1 } },
 };
 
+const summaryWithModels = {
+  ...summary,
+  byModel: {
+    'claude-sonnet-4-6': { inputTokens: 5000, outputTokens: 2000, costUSD: 0.0045 },
+    'my-custom-unknown-model': { inputTokens: 1000, outputTokens: 500, costUSD: 0 },
+  },
+};
+
 describe('UsageCharts', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
@@ -50,5 +58,42 @@ describe('UsageCharts', () => {
     render(<UsageCharts />);
     await waitFor(() => expect(screen.getByText('Cost per Day')).toBeInTheDocument());
     expect(screen.getByText('Cost by Source')).toBeInTheDocument();
+  });
+});
+
+describe('UsageCharts — model breakdown table (RM6.2)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('shows Cost (USD) column header when models present', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => summaryWithModels,
+    } as Response));
+
+    render(<UsageCharts />);
+    await waitFor(() => expect(screen.getByText('Cost (USD)')).toBeInTheDocument());
+  });
+
+  it('shows formatted cost for known model', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => summaryWithModels,
+    } as Response));
+
+    render(<UsageCharts />);
+    await waitFor(() => expect(screen.getByText('claude-sonnet-4-6')).toBeInTheDocument());
+    // costUSD 0.0045 < 0.01 → formatCost → "$0.0045"
+    expect(screen.getByText('$0.0045')).toBeInTheDocument();
+  });
+
+  it('shows "unknown" badge for model without known pricing', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => summaryWithModels,
+    } as Response));
+
+    render(<UsageCharts />);
+    await waitFor(() => expect(screen.getByText('my-custom-unknown-model')).toBeInTheDocument());
+    expect(screen.getByText('unknown')).toBeInTheDocument();
   });
 });
