@@ -7,10 +7,12 @@ import {
   KeyRound,
   Network,
   ShieldCheck,
+  Cpu,
 } from 'lucide-react';
 import Link from 'next/link';
 
 const SECTIONS = [
+  { title: 'Providers', href: '/settings/providers', icon: Cpu, description: 'LLM providers and API configuration' },
   { title: 'Vault', href: '/vault', icon: KeyRound, description: 'API keys and secrets' },
   { title: 'Agents', href: '/agents', icon: Bot, description: 'Manage AI agents' },
   { title: 'MCP Servers', href: '/mcp-servers', icon: Network, description: 'Model Context Protocol servers' },
