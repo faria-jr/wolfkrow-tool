@@ -123,7 +123,7 @@ export const LoginResponseSchema = z.discriminatedUnion('status', [
   }),
   z.object({
     status: z.literal('requires_totp'),
-    challengeId: UuidSchema,
+    userId: UuidSchema,
   }),
   z.object({
     status: z.literal('locked'),

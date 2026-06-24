@@ -4,6 +4,7 @@
  */
 
 import { LockoutPolicy, PlainPassword, UnauthorizedError, ValidationError } from '@wolfkrow/domain';
+import { LoginResponseSchema } from '@wolfkrow/shared-types';
 import { LoginUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
@@ -72,13 +73,19 @@ export async function POST(request: NextRequest) {
 
   if (result.status === 'locked') {
     audit.log({ userId: undefined, action: 'login.fail', ip, userAgent: ua });
-    return Response.json({ status: 'locked', lockedUntil: result.lockedUntil }, { status: 423 });
+    const payload = { status: 'locked' as const, lockedUntil: result.lockedUntil };
+    LoginResponseSchema.parse(payload);
+    return Response.json(payload, { status: 423 });
   }
   if (result.status === 'requires_totp') {
-    return Response.json({ status: 'requires_totp', userId: result.userId });
+    const payload = { status: 'requires_totp' as const, userId: result.userId };
+    LoginResponseSchema.parse(payload);
+    return Response.json(payload);
   }
 
   await setSessionCookie(result.userId);
   audit.log({ userId: result.userId, action: 'login.success', ip, userAgent: ua });
-  return Response.json({ status: 'success', userId: result.userId });
+  const payload = { status: 'success' as const, userId: result.userId };
+  LoginResponseSchema.parse(payload);
+  return Response.json(payload);
 }
