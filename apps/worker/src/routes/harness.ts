@@ -100,9 +100,8 @@ async function runSseHandler(
         workDir,
       },
       { sprintRepo, roundRepo },
-      { coder, evaluator },
+      { coder, evaluator, smokeRunner },
       (event) => sse({ type: 'progress', sprintId: sprint.id, featureIndex: i, ...event }),
-      { smokeRunner },
     );
     results.push(result);
     sse({ type: 'feature_done', ...result });

@@ -1,5 +1,5 @@
 /**
- * Port de adapter de secrets (keytar / key-value store externo) — FIX-007.
+ * Port de adapter de secrets (keytar / key-value store externo).
  *
  * Distinto de `SecretRepo` (metadata de secrets no DB): este port abstrai o
  * armazenamento do VALOR (keytar, vault, etc.). Antes `SecretsAdapter` vivia
@@ -8,8 +8,8 @@
  */
 
 export interface SecretsAdapter {
-  get(key: string): Promise<string | null>;
-  set(key: string, value: string): Promise<void>;
-  delete(key: string): Promise<boolean>;
-  list(): Promise<string[]>;
+ get(key: string): Promise<string | null>;
+ set(key: string, value: string): Promise<void>;
+ delete(key: string): Promise<boolean>;
+ list(): Promise<string[]>;
 }

@@ -1,5 +1,5 @@
 /**
- * Repository registry — the infra-side composition root (FIX-007).
+ * Repository registry — the infra-side composition root .
  *
  * Routes used to do `new DrizzleXxxRepo()` inline + import `@wolfkrow/infra`
  * directly, violating Clean Arch §1.1 (no infra in routes). This registry is
@@ -47,83 +47,83 @@ import { DrizzleProviderConfigRepo } from './provider-config-repo';
 import { DrizzleSecurityFindingRepo, DrizzleSecurityScanRepo } from './security-audit-repo';
 
 export interface RepoRegistry {
-  user: DrizzleUserRepo;
-  agent: DrizzleAgentRepo;
-  chatSession: DrizzleChatSessionRepo;
-  message: DrizzleMessageRepo;
-  skill: DrizzleSkillRepo;
-  secret: DrizzleSecretRepo;
-  globalRule: DrizzleGlobalRuleRepo;
-  auditLog: DrizzleAuditLogRepo;
-  authAudit: DrizzleAuthAuditRepo;
-  tokenUsage: DrizzleTokenUsageRepo;
-  mcpServer: DrizzleMcpServerRepo;
-  mcpToolRegistry: DrizzleMcpToolRegistryRepo;
-  knowledgeDoc: DrizzleKnowledgeDocRepo;
-  knowledgeChunk: DrizzleKnowledgeChunkRepo;
-  semanticMemory: DrizzleSemanticMemoryRepo;
-  dailySummary: DrizzleDailySummaryRepo;
-  scheduledTask: DrizzleScheduledTaskRepo;
-  taskRun: DrizzleTaskRunRepo;
-  task: DrizzleTaskRepo;
-  harnessProject: DrizzleHarnessProjectRepo;
-  harnessSprint: DrizzleHarnessSprintRepo;
-  harnessRound: DrizzleHarnessRoundRepo;
-  pipelineProject: DrizzlePipelineProjectRepo;
-  pipelinePhase: DrizzlePipelinePhaseRepo;
-  pipelineMessage: DrizzlePipelineMessageRepo;
-  enrichSession: DrizzleEnrichSessionRepo;
-  workflowRun: DrizzleWorkflowRunRepo;
-  graph: DrizzleGraphRepo;
-  providerConfig: DrizzleProviderConfigRepo;
-  securityScan: DrizzleSecurityScanRepo;
-  securityFinding: DrizzleSecurityFindingRepo;
+ user: DrizzleUserRepo;
+ agent: DrizzleAgentRepo;
+ chatSession: DrizzleChatSessionRepo;
+ message: DrizzleMessageRepo;
+ skill: DrizzleSkillRepo;
+ secret: DrizzleSecretRepo;
+ globalRule: DrizzleGlobalRuleRepo;
+ auditLog: DrizzleAuditLogRepo;
+ authAudit: DrizzleAuthAuditRepo;
+ tokenUsage: DrizzleTokenUsageRepo;
+ mcpServer: DrizzleMcpServerRepo;
+ mcpToolRegistry: DrizzleMcpToolRegistryRepo;
+ knowledgeDoc: DrizzleKnowledgeDocRepo;
+ knowledgeChunk: DrizzleKnowledgeChunkRepo;
+ semanticMemory: DrizzleSemanticMemoryRepo;
+ dailySummary: DrizzleDailySummaryRepo;
+ scheduledTask: DrizzleScheduledTaskRepo;
+ taskRun: DrizzleTaskRunRepo;
+ task: DrizzleTaskRepo;
+ harnessProject: DrizzleHarnessProjectRepo;
+ harnessSprint: DrizzleHarnessSprintRepo;
+ harnessRound: DrizzleHarnessRoundRepo;
+ pipelineProject: DrizzlePipelineProjectRepo;
+ pipelinePhase: DrizzlePipelinePhaseRepo;
+ pipelineMessage: DrizzlePipelineMessageRepo;
+ enrichSession: DrizzleEnrichSessionRepo;
+ workflowRun: DrizzleWorkflowRunRepo;
+ graph: DrizzleGraphRepo;
+ providerConfig: DrizzleProviderConfigRepo;
+ securityScan: DrizzleSecurityScanRepo;
+ securityFinding: DrizzleSecurityFindingRepo;
 }
 
 let _registry: RepoRegistry | null = null;
 
 export function createRepoRegistry(force = false): RepoRegistry {
-  if (_registry && !force) return _registry;
-  // Touch getDb() once so a missing DB / failed migration surfaces here, at the
-  // composition root, rather than deep inside the first repo call.
-  const db = getDb();
-  _registry = {
-    user: new DrizzleUserRepo(db),
-    agent: new DrizzleAgentRepo(db),
-    chatSession: new DrizzleChatSessionRepo(db),
-    message: new DrizzleMessageRepo(db),
-    skill: new DrizzleSkillRepo(db),
-    secret: new DrizzleSecretRepo(db),
-    globalRule: new DrizzleGlobalRuleRepo(db),
-    auditLog: new DrizzleAuditLogRepo(db),
-    authAudit: new DrizzleAuthAuditRepo(db),
-    tokenUsage: new DrizzleTokenUsageRepo(db),
-    mcpServer: new DrizzleMcpServerRepo(db),
-    mcpToolRegistry: new DrizzleMcpToolRegistryRepo(db),
-    knowledgeDoc: new DrizzleKnowledgeDocRepo(db),
-    knowledgeChunk: new DrizzleKnowledgeChunkRepo(db),
-    semanticMemory: new DrizzleSemanticMemoryRepo(db),
-    dailySummary: new DrizzleDailySummaryRepo(db),
-    scheduledTask: new DrizzleScheduledTaskRepo(db),
-    taskRun: new DrizzleTaskRunRepo(db),
-    task: new DrizzleTaskRepo(db),
-    harnessProject: new DrizzleHarnessProjectRepo(db),
-    harnessSprint: new DrizzleHarnessSprintRepo(db),
-    harnessRound: new DrizzleHarnessRoundRepo(db),
-    pipelineProject: new DrizzlePipelineProjectRepo(db),
-    pipelinePhase: new DrizzlePipelinePhaseRepo(db),
-    pipelineMessage: new DrizzlePipelineMessageRepo(db),
-    enrichSession: new DrizzleEnrichSessionRepo(db),
-    workflowRun: new DrizzleWorkflowRunRepo(db),
-    graph: new DrizzleGraphRepo(db),
-    providerConfig: new DrizzleProviderConfigRepo(db),
-    securityScan: new DrizzleSecurityScanRepo(db),
-    securityFinding: new DrizzleSecurityFindingRepo(db),
-  };
-  return _registry;
+ if (_registry && !force) return _registry;
+ // Touch getDb() once so a missing DB / failed migration surfaces here, at the
+ // composition root, rather than deep inside the first repo call.
+ const db = getDb();
+ _registry = {
+ user: new DrizzleUserRepo(db),
+ agent: new DrizzleAgentRepo(db),
+ chatSession: new DrizzleChatSessionRepo(db),
+ message: new DrizzleMessageRepo(db),
+ skill: new DrizzleSkillRepo(db),
+ secret: new DrizzleSecretRepo(db),
+ globalRule: new DrizzleGlobalRuleRepo(db),
+ auditLog: new DrizzleAuditLogRepo(db),
+ authAudit: new DrizzleAuthAuditRepo(db),
+ tokenUsage: new DrizzleTokenUsageRepo(db),
+ mcpServer: new DrizzleMcpServerRepo(db),
+ mcpToolRegistry: new DrizzleMcpToolRegistryRepo(db),
+ knowledgeDoc: new DrizzleKnowledgeDocRepo(db),
+ knowledgeChunk: new DrizzleKnowledgeChunkRepo(db),
+ semanticMemory: new DrizzleSemanticMemoryRepo(db),
+ dailySummary: new DrizzleDailySummaryRepo(db),
+ scheduledTask: new DrizzleScheduledTaskRepo(db),
+ taskRun: new DrizzleTaskRunRepo(db),
+ task: new DrizzleTaskRepo(db),
+ harnessProject: new DrizzleHarnessProjectRepo(db),
+ harnessSprint: new DrizzleHarnessSprintRepo(db),
+ harnessRound: new DrizzleHarnessRoundRepo(db),
+ pipelineProject: new DrizzlePipelineProjectRepo(db),
+ pipelinePhase: new DrizzlePipelinePhaseRepo(db),
+ pipelineMessage: new DrizzlePipelineMessageRepo(db),
+ enrichSession: new DrizzleEnrichSessionRepo(db),
+ workflowRun: new DrizzleWorkflowRunRepo(db),
+ graph: new DrizzleGraphRepo(db),
+ providerConfig: new DrizzleProviderConfigRepo(db),
+ securityScan: new DrizzleSecurityScanRepo(db),
+ securityFinding: new DrizzleSecurityFindingRepo(db),
+ };
+ return _registry;
 }
 
 /** Test helper: drop the cached singleton (use after `resetDb` in tests). */
 export function resetRepoRegistry(): void {
-  _registry = null;
+ _registry = null;
 }

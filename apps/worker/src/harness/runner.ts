@@ -1,5 +1,5 @@
 /**
- * T25: Harness auto-loop runner — Planner→Coder→Smoke→Evaluator→retry.
+ * Harness auto-loop runner — Planner→Coder→Smoke→Evaluator→retry.
  * Orchestrates RunCoderRoundUseCase + optional SmokeTest gate + EvaluateRoundUseCase
  * in a loop until passed or maxRounds exhausted.
  */
@@ -14,9 +14,7 @@ export interface RunFeatureInput {
   featureIndex: number;
   coderModel: string;
   maxRounds: number;
-  /** Workdir where the coder wrote files; smoke test runs there. */
   workDir?: string;
-  /** Files the smoke runner should expect to exist (e.g. feature outputs). */
   expectedFiles?: readonly string[];
 }
 
@@ -28,10 +26,12 @@ export interface FeatureRunResult {
   smokeFeedback?: string;
 }
 
+export type ProgressStage = 'coder' | 'smoke' | 'evaluator';
+
 export interface ProgressEvent {
   round: number;
   status: 'passed' | 'failed';
-  stage?: 'coder' | 'smoke' | 'evaluator';
+  stage?: ProgressStage;
 }
 
 type Repos = {
@@ -39,98 +39,114 @@ type Repos = {
   roundRepo: HarnessRoundRepo;
 };
 
-type Agents = {
+type HarnessCtx = {
   coder: CoderAgent;
   evaluator: EvaluatorAgent;
-};
-
-type Services = {
   smokeRunner?: SmokeTestRunner;
 };
+
+type SmokeFailure = { failed: true; feedback: string };
+type SmokeOutcome = { failed: false; feedback: undefined } | SmokeFailure;
+
+interface SmokeCheck {
+  triggered: boolean;
+  describe(): string | null;
+}
+
+function check(label: string, value: string, triggered: boolean): SmokeCheck {
+  return { triggered, describe: () => triggered ? `- ${label}: ${value}` : null };
+}
+
+function collectFailureLines(checks: SmokeCheck[]): string[] {
+  return checks.map((c) => c.describe()).filter((s): s is string => s !== null);
+}
+
+function extractSmokeFailure(result: Awaited<ReturnType<SmokeTestRunner['run']>>): string | null {
+  const sample = result.brokenImports.slice(0, 5).map((b) => `${b.file} -> ${b.importPath}`).join(', ');
+  const checks: SmokeCheck[] = [
+    check('typecheck', `${result.typecheck.errors} error(s)`, !result.typecheck.ok && result.typecheck.errors > 0),
+    check('lint', `${result.lint.errors} error(s), ${result.lint.warnings} warning(s)`, result.lint.available && !result.lint.ok),
+    check('tests', `${result.tests.failed} failed`, result.tests.available && result.tests.failed > 0),
+    check('broken imports', `${result.brokenImports.length} (e.g. ${sample})`, result.brokenImports.length > 0),
+    check('missing files', result.missingFiles.join(', '), result.missingFiles.length > 0),
+  ];
+  const lines = collectFailureLines(checks);
+  if (lines.length === 0) return null;
+  return ['Smoke test gate failed:', ...lines].join('\n');
+}
+
+async function runSmoke(ctx: HarnessCtx, input: RunFeatureInput): Promise<SmokeOutcome> {
+  if (!ctx.smokeRunner || !input.workDir) return { failed: false, feedback: undefined };
+  try {
+    const result = await ctx.smokeRunner.run(input.workDir, [...(input.expectedFiles ?? [])]);
+    const feedback = extractSmokeFailure(result);
+    return feedback ? { failed: true, feedback } : { failed: false, feedback: undefined };
+  } catch (err) {
+    return { failed: true, feedback: `Smoke runner error: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+function buildFinalFeedback(evalFeedback: string, smokeFeedback: string | undefined): string {
+  return smokeFeedback ? `${evalFeedback}\n\n${smokeFeedback}` : evalFeedback;
+}
+
+function makeResult(args: { input: RunFeatureInput; rounds: number; passed: boolean; finalOutput: string | undefined; smokeFeedback: string | undefined }): FeatureRunResult {
+  return {
+    featureIndex: args.input.featureIndex,
+    rounds: args.rounds,
+    passed: args.passed,
+    finalOutput: args.finalOutput,
+    ...(args.smokeFeedback !== undefined ? { smokeFeedback: args.smokeFeedback } : {}),
+  };
+}
+
+interface CoderArgs { input: RunFeatureInput; round: number; prevFeedback: string | undefined; repos: Repos; ctx: HarnessCtx; }
+interface TickArgs extends CoderArgs { onProgress: ((event: ProgressEvent) => void) | undefined; }
+
+async function runCoder(args: CoderArgs) {
+  return new RunCoderRoundUseCase(args.repos.sprintRepo, args.repos.roundRepo, args.ctx.coder).execute({
+    sprintId: args.input.sprintId,
+    featureIndex: args.input.featureIndex,
+    roundNumber: args.round + 1,
+    coderModel: args.input.coderModel,
+    ...(args.prevFeedback !== undefined ? { previousFeedback: args.prevFeedback } : {}),
+  });
+}
+
+async function runEvaluator(repos: Repos, ctx: HarnessCtx, roundId: string) {
+  return new EvaluateRoundUseCase(repos.roundRepo, ctx.evaluator).execute({ roundId });
+}
+
+interface TickResult { result: FeatureRunResult | null; nextFeedback: string | undefined; }
+
+async function tickRound(args: TickArgs): Promise<TickResult> {
+  const coderOut = await runCoder(args);
+  const smoke = await runSmoke(args.ctx, args.input);
+  if (smoke.failed) {
+    args.onProgress?.({ round: args.round + 1, status: 'failed', stage: 'smoke' });
+    return { result: makeResult({ input: args.input, rounds: args.round + 1, passed: false, finalOutput: undefined, smokeFeedback: smoke.feedback }), nextFeedback: smoke.feedback };
+  }
+  const evalOut = await runEvaluator(args.repos, args.ctx, coderOut.round.id);
+  args.onProgress?.({ round: args.round + 1, status: evalOut.passed ? 'passed' : 'failed', stage: 'evaluator' });
+  if (evalOut.passed) {
+    const output = evalOut.round.coderOutput ?? undefined;
+    return { result: makeResult({ input: args.input, rounds: args.round + 1, passed: true, finalOutput: output, smokeFeedback: smoke.feedback }), nextFeedback: undefined };
+  }
+  const evalFeedback = evalOut.round.evaluatorFeedback ?? '';
+  return { result: null, nextFeedback: buildFinalFeedback(evalFeedback, smoke.feedback) };
+}
 
 export async function runHarnessFeature(
   input: RunFeatureInput,
   repos: Repos,
-  agents: Agents,
+  ctx: HarnessCtx,
   onProgress?: (event: ProgressEvent) => void,
-  services: Services = {},
 ): Promise<FeatureRunResult> {
   let prevFeedback: string | undefined;
-
   for (let round = 0; round < input.maxRounds; round++) {
-    const { round: coderRound } = await new RunCoderRoundUseCase(
-      repos.sprintRepo,
-      repos.roundRepo,
-      agents.coder,
-    ).execute({
-      sprintId: input.sprintId,
-      featureIndex: input.featureIndex,
-      roundNumber: round + 1,
-      coderModel: input.coderModel,
-      ...(prevFeedback !== undefined ? { previousFeedback: prevFeedback } : {}),
-    });
-
-    let smokeFeedback: string | undefined;
-    let smokeFailed = false;
-    if (services.smokeRunner && input.workDir) {
-      try {
-        const result = await services.smokeRunner.run(input.workDir, [...(input.expectedFiles ?? [])]);
-        const typecheckFailed = !result.typecheck.ok && result.typecheck.errors > 0;
-        const lintFailed = result.lint.available && !result.lint.ok;
-        const testsFailed = result.tests.available && result.tests.failed > 0;
-        const importsBroken = result.brokenImports.length > 0;
-        const filesMissing = result.missingFiles.length > 0;
-
-        if (typecheckFailed || lintFailed || testsFailed || importsBroken || filesMissing) {
-          const parts: string[] = ['Smoke test gate failed:'];
-          if (typecheckFailed) parts.push(`- typecheck: ${result.typecheck.errors} error(s)`);
-          if (lintFailed) parts.push(`- lint: ${result.lint.errors} error(s), ${result.lint.warnings} warning(s)`);
-          if (testsFailed) parts.push(`- tests: ${result.tests.failed} failed`);
-          if (importsBroken) {
-            const sample = result.brokenImports.slice(0, 5).map((b) => `${b.file} -> ${b.importPath}`).join(', ');
-            parts.push(`- broken imports: ${result.brokenImports.length} (e.g. ${sample})`);
-          }
-          if (filesMissing) parts.push(`- missing files: ${result.missingFiles.join(', ')}`);
-          smokeFeedback = parts.join('\n');
-          smokeFailed = true;
-        }
-      } catch (err) {
-        smokeFeedback = `Smoke runner error: ${err instanceof Error ? err.message : String(err)}`;
-        smokeFailed = true;
-      }
-    }
-
-    if (smokeFailed) {
-      onProgress?.({ round: round + 1, status: 'failed', stage: 'smoke' });
-      prevFeedback = smokeFeedback;
-      continue;
-    }
-
-    const { passed, round: evalRound } = await new EvaluateRoundUseCase(
-      repos.roundRepo,
-      agents.evaluator,
-    ).execute({ roundId: coderRound.id });
-
-    onProgress?.({ round: round + 1, status: passed ? 'passed' : 'failed', stage: 'evaluator' });
-
-    if (passed) {
-      return {
-        featureIndex: input.featureIndex,
-        rounds: round + 1,
-        passed: true,
-        finalOutput: evalRound.coderOutput ?? undefined,
-        ...(smokeFeedback !== undefined ? { smokeFeedback } : {}),
-      };
-    }
-
-    const evalFeedback = evalRound.evaluatorFeedback ?? '';
-    prevFeedback = smokeFeedback ? `${evalFeedback}\n\n${smokeFeedback}` : evalFeedback;
+    const { result, nextFeedback } = await tickRound({ input, round, prevFeedback, repos, ctx, onProgress });
+    if (result?.passed) return result;
+    prevFeedback = nextFeedback;
   }
-
-  return {
-    featureIndex: input.featureIndex,
-    rounds: input.maxRounds,
-    passed: false,
-    finalOutput: undefined,
-  };
+  return makeResult({ input, rounds: input.maxRounds, passed: false, finalOutput: undefined, smokeFeedback: undefined });
 }

@@ -174,9 +174,8 @@ describe('runHarnessFeature — smoke gate', () => {
         workDir: '/tmp/work',
       },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
-      { coder, evaluator },
+      { coder, evaluator, smokeRunner },
       undefined,
-      { smokeRunner },
     );
 
     expect(result.passed).toBe(false);
@@ -195,9 +194,8 @@ describe('runHarnessFeature — smoke gate', () => {
     const result = await runHarnessFeature(
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 2 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
-      { coder, evaluator },
+      { coder, evaluator, smokeRunner },
       undefined,
-      { smokeRunner },
     );
 
     expect(result.passed).toBe(true);

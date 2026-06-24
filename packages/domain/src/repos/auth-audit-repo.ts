@@ -1,5 +1,5 @@
 /**
- * Port de repositório de auth audit (FIX-027).
+ * Port de repositório de auth audit .
  *
  * Antes `AuthAuditEntry`/`AuthAuditAction` eram tipos inline em infra. Contrato
  * movido para o domínio; `DrizzleAuthAuditRepo` o implementa. `action` é
@@ -7,12 +7,12 @@
  */
 
 export interface AuthAuditEntry {
-  userId: string | undefined;
-  action: string;
-  ip: string | undefined;
-  userAgent: string | undefined;
+ userId: string | undefined;
+ action: string;
+ ip: string | undefined;
+ userAgent: string | undefined;
 }
 
 export interface AuthAuditRepo {
-  log(entry: AuthAuditEntry): void;
+ log(entry: AuthAuditEntry): void;
 }

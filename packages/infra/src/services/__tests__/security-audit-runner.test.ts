@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { AICompletionResult, AIProvider } from '../../ai-providers/types';
+import type { AIProvider, CompletionResult } from '../../ai-providers/types';
 import {
   SecurityAuditRunner,
   parseFindingsFromText,
@@ -11,10 +11,12 @@ import {
 function makeProvider(responses: string[]): AIProvider {
   let i = 0;
   return {
-    complete: vi.fn().mockImplementation(async (): Promise<AICompletionResult> => {
+    complete: vi.fn().mockImplementation(async (): Promise<CompletionResult> => {
       const content = responses[i++] ?? '[]';
       return { content, usage: { inputTokens: 10, outputTokens: 5 } };
     }),
+    query: vi.fn(),
+    countTokens: vi.fn().mockReturnValue(0),
   };
 }
 
@@ -110,6 +112,8 @@ describe('SecurityAuditRunner', () => {
         if (i === 1) throw new Error('boom');
         return { content: '[]', usage: { inputTokens: 1, outputTokens: 1 } };
       }),
+      query: vi.fn(),
+      countTokens: vi.fn().mockReturnValue(0),
     };
     const runner = new SecurityAuditRunner();
     const result = await runner.run({
