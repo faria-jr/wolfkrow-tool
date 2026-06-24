@@ -8,9 +8,9 @@ import { getDb, runMigrations } from '@wolfkrow/infra';
 import { getScheduledTasksRepository } from '@wolfkrow/infra/repos';
 
 import { createAgentExecutor } from './agent-executor';
+import { clearAllPendingPermissions } from './chat/permission-store';
 import { config } from './config';
 import { getRepos } from './container';
-import { clearAllPendingPermissions } from './chat/permission-store';
 import { installGlobalErrorHandlers } from './error-handlers';
 import { createLogger } from './logger';
 import { loadBuiltInMcpCatalog } from './mcp/catalog';

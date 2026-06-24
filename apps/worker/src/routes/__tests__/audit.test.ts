@@ -1,5 +1,5 @@
-import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
+import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 vi.mock('../../container', () => {
   const existingScan = { id: 'scan-1', userId: 'u1', projectPath: '/p', status: 'completed', summary: {}, startedAt: new Date(), completedAt: new Date(), error: null };
@@ -7,6 +7,7 @@ vi.mock('../../container', () => {
     getAdapters: vi.fn().mockReturnValue({
       aiFactory: { createFromConfig: vi.fn() },
       secrets: { get: vi.fn().mockResolvedValue(null) },
+      securityAuditRunner: { run: vi.fn().mockResolvedValue({ scanId: 'scan-1', findings: [], summary: { total: 0, bySeverity: { info: 0, warning: 0, major: 0, critical: 0, blocker: 0 }, byDimension: { secrets: 0, auth: 0, isolation: 0, duplication: 0, logic: 0, standards: 0, owasp: 0, general: 0 } } }) },
     }),
     getRepos: vi.fn().mockReturnValue({
       securityScan: {
@@ -24,7 +25,7 @@ vi.mock('../../container', () => {
 });
 
 vi.mock('@wolfkrow/infra', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@wolfkrow/infra')>();
+  const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,
     SecurityAuditRunner: class {

@@ -1,7 +1,6 @@
-import { summarizeFindings, type SecurityFinding, type SecurityScanSummary } from '@wolfkrow/domain';
+import { summarizeFindings, type SecurityFinding } from '@wolfkrow/domain';
 import { BUILT_IN_PROVIDERS, getProviderById } from '@wolfkrow/domain';
-import { SecurityAuditRunner, type AIProvider } from '@wolfkrow/infra';
-import type { DrizzleSecurityFindingRepo, DrizzleSecurityScanRepo } from '@wolfkrow/infra';
+import { ListFindingsUseCase, ListScansUseCase, RunAuditUseCase } from '@wolfkrow/use-cases';
 
 import { getAdapters, getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
@@ -19,11 +18,7 @@ interface AuditReply {
   send: (b: unknown) => unknown;
 }
 
-function defaultFilesByRole(): Record<string, string[]> {
-  return {};
-}
-
-async function resolveProvider(providerId: string | undefined): Promise<AIProvider> {
+async function resolveProvider(providerId: string | undefined): Promise<unknown> {
   const { aiFactory } = getAdapters();
   const { getProviderApiKey } = await import('../lib/keychain');
   const id = providerId ?? 'anthropic';
@@ -33,55 +28,39 @@ async function resolveProvider(providerId: string | undefined): Promise<AIProvid
   return aiFactory.createFromConfig(cfg, apiKey);
 }
 
+function getAuditRepos() {
+  const repos = getRepos();
+  return {
+    scanRepo: repos.securityScan,
+    findingRepo: repos.securityFinding,
+  };
+}
+
 async function runAuditHandler(
   request: AuditRequest,
   reply: AuditReply,
 ): Promise<unknown> {
   const userId = request.user?.userId ?? 'anonymous';
-  const { projectPath, model = 'claude-haiku-4-5-20251001', filesByRole, provider } = request.body ?? {};
+  const { projectPath, model, filesByRole, provider } = request.body ?? {};
   if (!projectPath || typeof projectPath !== 'string') {
     return reply.status(400).send({ error: 'projectPath is required' });
   }
 
   const { scanRepo, findingRepo } = getAuditRepos();
-  const scan = scanRepo.create({ userId, projectPath });
-  scanRepo.update(scan.id, { status: 'running' });
-  try {
-    const aiProvider = await resolveProvider(provider);
-    const runner = new SecurityAuditRunner();
-    const result = await runner.run({
-      scanId: scan.id,
-      projectPath,
-      filesByRole: filesByRole ?? defaultFilesByRole(),
-      model,
-      provider: aiProvider,
-    });
-    findingRepo.insertMany(result.findings);
-    const summary: SecurityScanSummary = result.summary;
-    scanRepo.update(scan.id, {
-      status: 'completed',
-      completedAt: new Date(),
-      summary: { ...summary },
-    });
-    return reply.send({
-      scanId: scan.id,
-      status: 'completed',
-      findingCount: result.findings.length,
-      summary,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    scanRepo.update(scan.id, { status: 'failed', completedAt: new Date(), error: message });
-    return reply.status(500).send({ error: message, scanId: scan.id });
-  }
-}
+  const useCase = new RunAuditUseCase(scanRepo, findingRepo);
+  const result = await useCase.execute({
+    userId,
+    projectPath,
+    provider: await resolveProvider(provider),
+    runner: getAdapters().securityAuditRunner,
+    ...(model !== undefined ? { model } : {}),
+    ...(filesByRole !== undefined ? { filesByRole } : {}),
+  });
 
-function getAuditRepos(): { scanRepo: DrizzleSecurityScanRepo; findingRepo: DrizzleSecurityFindingRepo } {
-  const repos = getRepos();
-  return {
-    scanRepo: repos.securityScan as DrizzleSecurityScanRepo,
-    findingRepo: repos.securityFinding as DrizzleSecurityFindingRepo,
-  };
+  if (result.status === 'failed') {
+    return reply.status(500).send({ error: result.error, scanId: result.scanId });
+  }
+  return reply.send(result);
 }
 
 async function getScanHandler(
@@ -99,9 +78,9 @@ async function getFindingsHandler(
   reply: AuditReply,
 ): Promise<unknown> {
   const { scanRepo, findingRepo } = getAuditRepos();
-  const scan = scanRepo.findById(request.params.scanId);
+  const useCase = new ListFindingsUseCase(scanRepo, findingRepo);
+  const { scan, findings } = await useCase.execute({ scanId: request.params.scanId, userId: request.user?.userId ?? 'anonymous' });
   if (!scan) return reply.status(404).send({ error: 'Scan not found' });
-  const findings = findingRepo.findByScan(request.params.scanId);
   return reply.send({
     scanId: scan.id,
     findings: findings.map((f: SecurityFinding) => f.toJSON()),
@@ -113,8 +92,9 @@ interface ListQuery { userId?: string }
 
 async function listScansHandler(request: { user?: { userId?: string }; query: ListQuery }): Promise<unknown> {
   const { scanRepo } = getAuditRepos();
+  const useCase = new ListScansUseCase(scanRepo);
   const userId = request.user?.userId ?? request.query.userId ?? 'anonymous';
-  return scanRepo.listByUser(userId);
+  return useCase.execute({ userId });
 }
 
 export async function auditRoutes(server: AuthFastifyInstance) {
