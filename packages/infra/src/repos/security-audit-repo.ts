@@ -1,6 +1,7 @@
+import { randomUUID } from 'node:crypto';
+
 import { SecurityFinding, type SecuritySeverity, type SecurityDimension } from '@wolfkrow/domain';
 import { eq } from 'drizzle-orm';
-import { randomUUID } from 'node:crypto';
 
 import { getDb } from '../db/client';
 import { securityFindings, securityScans } from '../db/schema/security-audit';

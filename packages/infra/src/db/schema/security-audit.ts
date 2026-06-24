@@ -7,8 +7,8 @@
 
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-import { id, timestamp, metadata } from './base';
 import { users } from './auth';
+import { id, timestamp, metadata } from './base';
 
 export const securityScans = sqliteTable(
   'security_scans',
