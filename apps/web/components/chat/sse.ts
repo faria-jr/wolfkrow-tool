@@ -7,7 +7,6 @@ export type SSEEvent =
   | { type: 'text'; content: string }
   | { type: 'done'; usage?: unknown }
   | { type: 'error'; message: string }
-  | { type: 'ask_question'; prompt: string }
   | { type: 'tool_call'; id: string; name: string; input: Record<string, unknown> }
   | { type: 'tool_result'; callId: string; output: string; isError: boolean }
   | { type: 'tool_permission'; id: string; name: string; input: Record<string, unknown>; prompt: string }
@@ -29,7 +28,6 @@ export interface PendingPermission {
 
 export interface SseCallbacks {
   onText: (t: string) => void;
-  onAskQuestion?: (q: string) => void;
   onToolCall?: (tc: ToolCall) => void;
   onToolResult?: (callId: string, output: string, isError: boolean) => void;
   onToolPermission?: (p: PendingPermission) => void;
@@ -45,7 +43,6 @@ function parseSseLine(line: string): SSEEvent | null {
 const EVENT_DISPATCHERS: Record<SSEEvent['type'], ((ev: SSEEvent, cb: SseCallbacks) => void) | undefined> = {
   ack: () => undefined,
   text: (ev, cb) => cb.onText((ev as Extract<SSEEvent, { type: 'text' }>).content),
-  ask_question: (ev, cb) => cb.onAskQuestion?.((ev as Extract<SSEEvent, { type: 'ask_question' }>).prompt),
   tool_call: (ev, cb) => cb.onToolCall?.({ id: (ev as Extract<SSEEvent, { type: 'tool_call' }>).id, name: (ev as Extract<SSEEvent, { type: 'tool_call' }>).name, input: (ev as Extract<SSEEvent, { type: 'tool_call' }>).input, status: 'running' }),
   tool_result: (ev, cb) => cb.onToolResult?.((ev as Extract<SSEEvent, { type: 'tool_result' }>).callId, (ev as Extract<SSEEvent, { type: 'tool_result' }>).output, (ev as Extract<SSEEvent, { type: 'tool_result' }>).isError),
   tool_permission: (ev, cb) => cb.onToolPermission?.({ callId: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).id, name: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).name, prompt: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).prompt }),

@@ -3,7 +3,6 @@
 import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
 import { useCallback, useEffect, useState } from 'react';
 
-import { AskQuestionDialog } from './ask-question-dialog';
 import type { AttachmentData } from './attachment-dropzone';
 import { AttachmentDropzone } from './attachment-dropzone';
 import { useChatSession } from './chat-hooks';
@@ -112,8 +111,8 @@ interface Props { model?: string; sessionId?: string; }
 export function ChatView({ model = DEFAULT_CHAT_MODEL, sessionId }: Props) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const {
-    messages, input, setInput, isStreaming, sessionTitle, pendingQuestion, dismissQuestion,
-    send, stop, clear, answerQuestion, appendMessage, bottomRef,
+    messages, input, setInput, isStreaming, sessionTitle,
+    send, stop, clear, appendMessage, bottomRef,
     pendingAttachments, setPendingAttachments, pendingPermission, resolvePermission,
   } = useChatSession(model, sessionId);
   const voice = useVoiceConversation({ onMessage: (msg) => appendMessage(voiceMessageToDisplay(msg)) });
@@ -133,9 +132,6 @@ export function ChatView({ model = DEFAULT_CHAT_MODEL, sessionId }: Props) {
         voice={voice} pendingAttachments={pendingAttachments} onAttach={handleAttach} onRemoveAttachment={handleRemoveAttachment}
       />
       <ConfirmDialog open={confirmOpen} title="Clear chat?" description="All messages will be removed." onConfirm={handleClearConfirm} onCancel={() => setConfirmOpen(false)} />
-      {pendingQuestion !== null && (
-        <AskQuestionDialog open={true} question={pendingQuestion} onAnswer={answerQuestion} onCancel={dismissQuestion} />
-      )}
       {pendingPermission && (
         <ConfirmDialog
           open={true}

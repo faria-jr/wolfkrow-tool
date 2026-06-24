@@ -189,22 +189,6 @@ describe('ChatView', () => {
     expect(screen.getByText('Start a conversation')).toBeTruthy();
   });
 
-  it('shows AskQuestionDialog when ask_question SSE event received (#11)', async () => {
-    const user = userEvent.setup();
-    vi.mocked(fetch).mockResolvedValue(
-      makeSSEResponse([
-        sseEvent({ type: 'text', content: 'Let me ask:' }),
-        sseEvent({ type: 'ask_question', prompt: 'What do you mean?' }),
-        sseEvent({ type: 'done' }),
-      ]),
-    );
-    render(<ChatView />);
-    await user.type(screen.getByLabelText('Chat input'), 'tell me something');
-    await user.click(screen.getByLabelText('Send'));
-    await waitFor(() => expect(screen.getByRole('dialog')).toBeTruthy());
-    expect(screen.getByText('What do you mean?')).toBeTruthy();
-  });
-
   it('shows Stop button during streaming and returns to Send after abort (T19)', async () => {
     const user = userEvent.setup();
     vi.mocked(fetch).mockImplementation((_, opts) => {

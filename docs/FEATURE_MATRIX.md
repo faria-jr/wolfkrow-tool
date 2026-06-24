@@ -141,6 +141,7 @@
 | 37 | Pipeline report | Pipeline core ✅; relatório final UX extra |
 | 38 | Audit log — filtros avançados | Tabela + export ✅ em v1.0; filtros são UX extra |
 | 40 | Pricing calculator multi-fonte | Estimativa custo dentro do Usage page suficiente |
+| 11 | Interactive agent clarification (ask-the-user dialog) | Worker não emite o evento de pergunta clarificadora em v1.0; UI frontend removida para não enviar código morto (mascarado apenas por teste SSE mockado). Planejado para v1.1 com emitter real no worker + canal de resposta round-trip. (P0-3) |
 
 ---
 

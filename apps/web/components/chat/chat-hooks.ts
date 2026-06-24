@@ -85,10 +85,9 @@ interface ChatStreamOptions {
   sessionId: string | undefined;
   state: ReturnType<typeof useMessageState>;
   onPermission: (p: PendingPermission) => void;
-  onAskQuestion: (q: string) => void;
 }
 
-export function useChatStream({ model, sessionId, state, onPermission, onAskQuestion }: ChatStreamOptions) {
+export function useChatStream({ model, sessionId, state, onPermission }: ChatStreamOptions) {
   const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -105,7 +104,6 @@ export function useChatStream({ model, sessionId, state, onPermission, onAskQues
       abortRef.current = ac;
       const callbacks: SseCallbacks = {
         onText: state.appendText,
-        onAskQuestion,
         onToolCall: state.appendToolCall,
         onToolResult: state.updateToolCall,
         onToolPermission: onPermission,
@@ -123,7 +121,7 @@ export function useChatStream({ model, sessionId, state, onPermission, onAskQues
         bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
       }
     },
-    [isStreaming, model, sessionId, state, onPermission, onAskQuestion],
+    [isStreaming, model, sessionId, state, onPermission],
   );
 
   const stop = useCallback(() => { abortRef.current?.abort(); }, []);
@@ -136,10 +134,9 @@ export function useChatSession(model: string, sessionId?: string) {
   const permission = useToolPermission();
   const [input, setInput] = useState('');
   const [sessionTitle, setSessionTitle] = useState('New Chat');
-  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
   const hasSetTitle = useRef(false);
-  const stream = useChatStream({ model, sessionId, state, onPermission: permission.onPermission, onAskQuestion: setPendingQuestion });
+  const stream = useChatStream({ model, sessionId, state, onPermission: permission.onPermission });
 
   const markTitle = useCallback(() => {
     if (!hasSetTitle.current) {
@@ -157,8 +154,6 @@ export function useChatSession(model: string, sessionId?: string) {
     void stream.doSend(text, atts, markTitle);
   }, [stream, input, pendingAttachments, markTitle]);
 
-  const answerQuestion = useCallback((a: string) => { setPendingQuestion(null); void stream.doSend(a, [], markTitle); }, [stream, markTitle]);
-  const dismissQuestion = useCallback(() => setPendingQuestion(null), []);
   const clear = useCallback(() => { state.setMessages([]); setSessionTitle('New Chat'); hasSetTitle.current = false; }, [state]);
 
   return {
@@ -166,8 +161,7 @@ export function useChatSession(model: string, sessionId?: string) {
     input, setInput,
     isStreaming: stream.isStreaming,
     sessionTitle,
-    pendingQuestion, dismissQuestion,
-    send, stop: stream.stop, clear, answerQuestion,
+    send, stop: stream.stop, clear,
     appendMessage: state.appendMessage,
     bottomRef: stream.bottomRef,
     pendingAttachments, setPendingAttachments,
