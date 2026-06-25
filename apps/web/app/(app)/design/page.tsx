@@ -1,15 +1,16 @@
+import { Palette } from 'lucide-react';
+
+import { PageHeader } from '@/components/common/page-header';
+import { PageContent, PageShell } from '@/components/common/page-shell';
 import { DesignStudio } from '@/components/sidecar/design-studio';
 
 export default function DesignPage() {
   return (
-    <div className="flex flex-col gap-4 p-4 h-full">
-      <div>
-        <h1 className="text-xl font-semibold">Design Studio</h1>
-        <p className="text-sm text-muted-foreground">Open Design — visual editor</p>
-      </div>
-      <div className="flex-1 min-h-0">
+    <PageShell>
+      <PageHeader title="Design Studio" description="Open Design — visual editor" icon={<Palette className="h-6 w-6" />} />
+      <PageContent className="overflow-hidden">
         <DesignStudio />
-      </div>
-    </div>
+      </PageContent>
+    </PageShell>
   );
 }

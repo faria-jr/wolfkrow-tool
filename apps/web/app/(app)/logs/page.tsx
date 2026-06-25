@@ -1,15 +1,16 @@
+import { ScrollText } from 'lucide-react';
+
+import { PageHeader } from '@/components/common/page-header';
+import { PageContent, PageShell } from '@/components/common/page-shell';
 import { LogsPageClient } from '@/components/logs/logs-page-client';
 
 export default function LogsPage() {
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div>
-        <h1 className="text-xl font-semibold">Logs</h1>
-        <p className="text-sm text-muted-foreground">Worker logs and audit trail</p>
-      </div>
-      <div className="flex-1 overflow-hidden">
+    <PageShell>
+      <PageHeader title="Logs" description="Worker logs and audit trail" icon={<ScrollText className="h-6 w-6" />} />
+      <PageContent className="overflow-hidden">
         <LogsPageClient />
-      </div>
-    </div>
+      </PageContent>
+    </PageShell>
   );
 }

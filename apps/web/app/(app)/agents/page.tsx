@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 
 import { AgentsView } from '@/components/agents/agents-view';
 import { PageHeader } from '@/components/common/page-header';
+import { PageContent, PageShell } from '@/components/common/page-shell';
 
 export const metadata: Metadata = {
   title: 'Agents',
@@ -11,11 +12,11 @@ export const metadata: Metadata = {
 
 export default function AgentsPage() {
   return (
-    <div className="flex h-full flex-col">
+    <PageShell>
       <PageHeader title="Agents" description="Configure AI personas" icon={<Bot className="h-6 w-6" />} />
-      <main className="flex-1 overflow-auto p-6">
+      <PageContent>
         <AgentsView />
-      </main>
-    </div>
+      </PageContent>
+    </PageShell>
   );
 }

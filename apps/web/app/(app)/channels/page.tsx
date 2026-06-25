@@ -1,13 +1,16 @@
+import { MessageSquare } from 'lucide-react';
+
 import { TelegramSetup } from '@/components/channels/telegram-setup';
+import { PageHeader } from '@/components/common/page-header';
+import { PageContent, PageShell } from '@/components/common/page-shell';
 
 export default function ChannelsPage() {
   return (
-    <div className="flex flex-col gap-6 p-4">
-      <div>
-        <h1 className="text-xl font-semibold">Channels</h1>
-        <p className="text-sm text-muted-foreground">Connect external messaging channels</p>
-      </div>
-      <TelegramSetup />
-    </div>
+    <PageShell>
+      <PageHeader title="Channels" description="Connect external messaging channels" icon={<MessageSquare className="h-6 w-6" />} />
+      <PageContent>
+        <TelegramSetup />
+      </PageContent>
+    </PageShell>
   );
 }

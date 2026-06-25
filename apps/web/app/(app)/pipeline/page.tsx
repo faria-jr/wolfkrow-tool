@@ -1,15 +1,16 @@
 import { PageHeader } from '@/components/common/page-header';
+import { PageContent, PageShell } from '@/components/common/page-shell';
 import { PipelineView } from '@/components/pipeline/pipeline-view';
 
 export const metadata = { title: 'Pipeline — Wolfkrow' };
 
 export default function PipelinePage() {
   return (
-    <div className="flex h-full flex-col">
+    <PageShell>
       <PageHeader title="Pipeline" description="Plan, execute and approve multi-stage AI pipelines." />
-      <div className="flex-1 overflow-hidden">
+      <PageContent className="overflow-hidden">
         <PipelineView />
-      </div>
-    </div>
+      </PageContent>
+    </PageShell>
   );
 }

@@ -1,9 +1,12 @@
 'use client';
 
+import { ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { AuditRunForm } from '@/components/audit/audit-run-form';
 import { FindingsTable, type Finding } from '@/components/audit/findings-table';
+import { PageHeader } from '@/components/common/page-header';
+import { PageContent, PageShell } from '@/components/common/page-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -111,20 +114,26 @@ export default function AuditPage() {
   const { loading, scans, selectedScan, findings, select, run } = useAudit();
 
   return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold">Security Audit</h1>
-      <Card>
-        <CardHeader>
-          <CardTitle>Run new audit</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AuditRunForm onRun={run} loading={loading} />
-        </CardContent>
-      </Card>
+    <PageShell>
+      <PageHeader
+        title="Security Audit"
+        description="Run scans and review findings across your project."
+        icon={<ShieldCheck className="h-6 w-6" />}
+      />
+      <PageContent className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Run new audit</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AuditRunForm onRun={run} loading={loading} />
+          </CardContent>
+        </Card>
 
-      <ScansCard scans={scans} onSelect={select} />
+        <ScansCard scans={scans} onSelect={select} />
 
-      {selectedScan && <FindingsCard scan={selectedScan} findings={findings} />}
-    </div>
+        {selectedScan && <FindingsCard scan={selectedScan} findings={findings} />}
+      </PageContent>
+    </PageShell>
   );
 }

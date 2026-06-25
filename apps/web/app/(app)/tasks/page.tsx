@@ -1,11 +1,14 @@
 import { PageHeader } from '@/components/common/page-header';
+import { PageContent, PageShell } from '@/components/common/page-shell';
 import { TasksPageTabs } from '@/components/tasks/tasks-page-tabs';
 
 export default function TasksPage() {
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <PageShell>
       <PageHeader title="Tasks" description="Personal task management" />
-      <TasksPageTabs />
-    </div>
+      <PageContent>
+        <TasksPageTabs />
+      </PageContent>
+    </PageShell>
   );
 }

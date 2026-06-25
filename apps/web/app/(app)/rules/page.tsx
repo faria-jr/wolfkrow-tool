@@ -1,13 +1,16 @@
+import { ScrollText } from 'lucide-react';
+
+import { PageHeader } from '@/components/common/page-header';
+import { PageContent, PageShell } from '@/components/common/page-shell';
 import { RulesEditor } from '@/components/rules/rules-editor';
 
 export default function RulesPage() {
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div>
-        <h1 className="text-xl font-semibold">Rules</h1>
-        <p className="text-sm text-muted-foreground">Global rules injected into every prompt</p>
-      </div>
-      <RulesEditor />
-    </div>
+    <PageShell>
+      <PageHeader title="Rules" description="Global rules injected into every prompt" icon={<ScrollText className="h-6 w-6" />} />
+      <PageContent>
+        <RulesEditor />
+      </PageContent>
+    </PageShell>
   );
 }
