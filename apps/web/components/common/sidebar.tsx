@@ -78,12 +78,25 @@ const SYSTEM_NAV: NavItem[] = [
   { title: 'Logs', url: '/logs', icon: FileText },
 ];
 
+/**
+ * A nav item is active when the current pathname matches its route.
+ * Top-level items use exact match; routes that own nested pages (e.g.
+ * `/pipeline` owns `/pipeline/projects/[id]/report`, `/settings` owns
+ * `/settings/voice`) stay highlighted while a descendant is shown.
+ */
+function isItemActive(pathname: string, url: string): boolean {
+  if (pathname === url) return true;
+  // Prefix match so nested routes highlight their parent nav item.
+  // Guard against sibling collisions (e.g. /usage vs /users).
+  return pathname.startsWith(`${url}/`);
+}
+
 function NavMenuItem({ item, pathname }: { item: NavItem; pathname: string }) {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
         asChild
-        isActive={pathname === item.url}
+        isActive={isItemActive(pathname, item.url)}
         tooltip={item.title}
       >
         <Link href={item.url}>

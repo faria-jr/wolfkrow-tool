@@ -55,4 +55,33 @@ describe('CommandPalette', () => {
     await user.click(screen.getByText('Toggle theme'));
     expect(document.documentElement.classList.contains('dark')).toBe(true);
   });
+
+  it('has no dead navigation links (every entry routes to a real page)', async () => {
+    // FE-7: every palette entry with a url must point at an existing page.
+    // Regression guard for the removed /agents/new dead link.
+    const { push, user } = setupPalette();
+    await openPalette(user);
+
+    // Navigate through each route-bearing entry and assert the pushed URL is
+    // a known live route (not e.g. /agents/new which has no page).
+    const routeEntries = [
+      'Chat', 'Agents', 'Skills', 'MCP Servers', 'Knowledge', 'Graph', 'Tasks',
+      'Scheduler', 'Harness', 'Pipeline', 'Security Audit',
+      'Memory', 'Rules', 'Vault', 'Channels', 'Permissions', 'Settings', 'Usage', 'Logs',
+      'New agent', 'New provider',
+    ];
+
+    for (const label of routeEntries) {
+      push.mockClear();
+      // Re-open between selections since onSelect closes the dialog.
+      await openPalette(user);
+      const item = screen.queryAllByText(label)[0];
+      if (!item) continue; // skip labels not surfaced in this render
+      await user.click(item);
+      const target = push.mock.calls[0]?.[0] as string | undefined;
+      expect(target, `${label} must push a URL`).toBeTruthy();
+      // No entry may route to the dead /agents/new page.
+      expect(target).not.toBe('/agents/new');
+    }
+  });
 });

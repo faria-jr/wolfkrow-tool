@@ -34,7 +34,7 @@ const ENTRIES: CommandEntry[] = [
   { label: 'Settings', url: '/settings', group: 'System', icon: Settings },
   { label: 'Usage', url: '/usage', group: 'System', icon: FileText },
   { label: 'Logs', url: '/logs', group: 'System', icon: FileText },
-  { label: 'New agent', url: '/agents/new', group: 'Actions', icon: Bot },
+  { label: 'New agent', url: '/agents', group: 'Actions', icon: Bot },
   { label: 'Run audit', url: '/audit', group: 'Actions', icon: ShieldAlert },
   { label: 'New provider', url: '/settings/providers', group: 'Actions', icon: Settings },
   { label: 'Toggle theme', group: 'Actions', icon: Sparkles, onSelect: () => { document.documentElement.classList.toggle('dark'); } },

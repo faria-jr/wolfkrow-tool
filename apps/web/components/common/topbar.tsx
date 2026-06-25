@@ -6,7 +6,18 @@ import type { ReactNode } from 'react';
 
 import { SidebarTrigger } from '@/components/ui/sidebar';
 
+/**
+ * Format a raw URL segment into a human breadcrumb label.
+ *
+ * - Dynamic id segments (UUIDs, long hex/alphanumeric slugs) collapse to
+ *   "Details" rather than rendering gibberish like "Abc 123 456".
+ * - Static segments are title-cased with dashes turned to spaces.
+ */
 function formatSegment(segment: string): string {
+  // UUID-like (8-4-4-4-12) or long opaque id (>12 chars, no spaces).
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment);
+  const isOpaqueId = segment.length > 12 && /^[0-9a-z_-]+$/i.test(segment) && /\d/.test(segment);
+  if (isUuid || isOpaqueId) return 'Details';
   return segment.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 

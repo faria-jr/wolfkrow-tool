@@ -3,8 +3,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { Sidebar } from '../sidebar';
 
+// Mutable pathname so individual tests can exercise active state for
+// different routes (including nested ones).
+let mockPathname = '/chat';
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/chat',
+  get usePathname() {
+    return () => mockPathname;
+  },
   useRouter: () => ({ push: vi.fn() }),
 }));
 
@@ -19,27 +24,32 @@ vi.mock('@/components/ui/sidebar', () => ({
   SidebarMenuButton: ({
     children,
     asChild: _a,
-    isActive: _i,
+    isActive,
     tooltip: _t,
     ...p
-  }: React.PropsWithChildren<Record<string, unknown>>) => <div {...p}>{children}</div>,
+  }: React.PropsWithChildren<Record<string, unknown> & { isActive?: boolean }>) => (
+    <div data-active={isActive ? 'true' : undefined} {...p}>{children}</div>
+  ),
   SidebarMenuItem: ({ children }: React.PropsWithChildren) => <li>{children}</li>,
   SidebarRail: () => <div />,
 }));
 
+function linkByLabel(text: string) {
+  const links = screen.getAllByRole('link');
+  return links.find((l) => l.textContent?.includes(text));
+}
+
 describe('Sidebar nav links', () => {
   it('MCP Servers links to /mcp-servers (not /mcp)', () => {
     render(<Sidebar />);
-    const links = screen.getAllByRole('link');
-    const mcpLink = links.find((l) => l.textContent?.includes('MCP Servers'));
+    const mcpLink = linkByLabel('MCP Servers');
     expect(mcpLink).toBeTruthy();
     expect(mcpLink?.getAttribute('href')).toBe('/mcp-servers');
   });
 
   it('Settings links to /settings', () => {
     render(<Sidebar />);
-    const links = screen.getAllByRole('link');
-    const settingsLink = links.find((l) => l.textContent?.includes('Settings'));
+    const settingsLink = linkByLabel('Settings');
     expect(settingsLink).toBeTruthy();
     expect(settingsLink?.getAttribute('href')).toBe('/settings');
   });
@@ -88,5 +98,45 @@ describe('Sidebar nav links', () => {
 
     const missing = topLevelRoutes.filter((url) => !hrefs.includes(url));
     expect(missing).toEqual([]);
+  });
+
+  it('marks only the current top-level route active on exact match', () => {
+    mockPathname = '/pipeline';
+    render(<Sidebar />);
+    const pipelineWrapper = linkByLabel('Pipeline')?.parentElement;
+    const chatWrapper = linkByLabel('Chat')?.parentElement;
+    expect(pipelineWrapper).toHaveAttribute('data-active', 'true');
+    expect(chatWrapper).not.toHaveAttribute('data-active');
+  });
+
+  it('keeps the parent highlighted on a nested route (pipeline report)', () => {
+    // /pipeline/projects/<id>/report must still highlight Pipeline, and must
+    // NOT highlight a sibling like Tasks.
+    mockPathname = '/pipeline/projects/abc123d4-1234-1234-1234-1234567890ab/report';
+    render(<Sidebar />);
+    const pipelineWrapper = linkByLabel('Pipeline')?.parentElement;
+    const tasksWrapper = linkByLabel('Tasks')?.parentElement;
+    expect(pipelineWrapper).toHaveAttribute('data-active', 'true');
+    expect(tasksWrapper).not.toHaveAttribute('data-active');
+  });
+
+  it('keeps Settings highlighted on a settings sub-route', () => {
+    mockPathname = '/settings/voice';
+    render(<Sidebar />);
+    const settingsWrapper = linkByLabel('Settings')?.parentElement;
+    expect(settingsWrapper).toHaveAttribute('data-active', 'true');
+  });
+
+  it('does not false-match a sibling prefix (/usage vs /users)', () => {
+    mockPathname = '/usage';
+    render(<Sidebar />);
+    // There is no /users nav item, but verify /usage is active and nothing
+    // else is accidentally active due to naive prefix logic.
+    const usageWrapper = linkByLabel('Usage')?.parentElement;
+    expect(usageWrapper).toHaveAttribute('data-active', 'true');
+    const activeCount = screen
+      .getAllByRole('link')
+      .filter((l) => l.parentElement?.getAttribute('data-active') === 'true').length;
+    expect(activeCount).toBe(1);
   });
 });
