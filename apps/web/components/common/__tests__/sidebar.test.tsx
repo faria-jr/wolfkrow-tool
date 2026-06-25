@@ -43,4 +43,50 @@ describe('Sidebar nav links', () => {
     expect(settingsLink).toBeTruthy();
     expect(settingsLink?.getAttribute('href')).toBe('/settings');
   });
+
+  it('previously URL-only pages are now in the sidebar', () => {
+    render(<Sidebar />);
+    const hrefs = screen.getAllByRole('link').map((l) => l.getAttribute('href'));
+    // These were reachable only by URL before P2-8.
+    for (const url of ['/design', '/terminal', '/enrich', '/usage']) {
+      expect(hrefs).toContain(url);
+    }
+  });
+
+  it('every top-level app page route has a discoverable sidebar entry', () => {
+    // Static list of all top-level page routes under apps/web/app/(app)/.
+    // Dynamic segments (e.g. /pipeline/projects/[id]/report) and Settings
+    // sub-routes (/settings/providers) are reachable via their parent page
+    // (Pipeline list / Settings hub) and are intentionally excluded here.
+    const topLevelRoutes = [
+      '/agents',
+      '/audit',
+      '/channels',
+      '/chat',
+      '/design',
+      '/enrich',
+      '/graph',
+      '/harness',
+      '/knowledge',
+      '/logs',
+      '/mcp-servers',
+      '/memory',
+      '/permissions',
+      '/pipeline',
+      '/rules',
+      '/scheduler',
+      '/settings',
+      '/skills',
+      '/tasks',
+      '/terminal',
+      '/usage',
+      '/vault',
+    ];
+
+    render(<Sidebar />);
+    const hrefs = screen.getAllByRole('link').map((l) => l.getAttribute('href'));
+
+    const missing = topLevelRoutes.filter((url) => !hrefs.includes(url));
+    expect(missing).toEqual([]);
+  });
 });

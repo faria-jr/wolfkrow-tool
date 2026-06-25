@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  BarChart3,
   Bot,
   BookOpen,
   Calendar,
@@ -11,10 +12,13 @@ import {
   ListTodo,
   MessageSquare,
   Network,
+  PencilRuler,
   Settings,
   ShieldAlert,
   ShieldCheck,
   Sparkles,
+  TerminalSquare,
+  Wand2,
   Workflow,
   Zap,
 } from 'lucide-react';
@@ -57,12 +61,19 @@ const AUTOMATION_NAV: NavItem[] = [
   { title: 'Security Audit', url: '/audit', icon: ShieldAlert },
 ];
 
+const TOOLS_NAV: NavItem[] = [
+  { title: 'Design Studio', url: '/design', icon: PencilRuler },
+  { title: 'Terminal', url: '/terminal', icon: TerminalSquare },
+  { title: 'Enrich', url: '/enrich', icon: Wand2 },
+];
+
 const SYSTEM_NAV: NavItem[] = [
   { title: 'Memory', url: '/memory', icon: Database },
   { title: 'Rules', url: '/rules', icon: FileText },
   { title: 'Vault', url: '/vault', icon: KeyRound },
   { title: 'Channels', url: '/channels', icon: Folder },
   { title: 'Permissions', url: '/permissions', icon: ShieldCheck },
+  { title: 'Usage', url: '/usage', icon: BarChart3 },
   { title: 'Settings', url: '/settings', icon: Settings },
   { title: 'Logs', url: '/logs', icon: FileText },
 ];
@@ -133,6 +144,7 @@ export function Sidebar() {
       <SidebarContent>
         <NavGroup label="Main" items={MAIN_NAV} pathname={pathname} />
         <NavGroup label="Automation" items={AUTOMATION_NAV} pathname={pathname} />
+        <NavGroup label="Tools" items={TOOLS_NAV} pathname={pathname} />
         <NavGroup label="System" items={SYSTEM_NAV} pathname={pathname} />
       </SidebarContent>
 
