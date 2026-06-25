@@ -27,8 +27,17 @@ const keySet = createRemoteJWKSet(new URL(config.JWKS_URL));
 
 async function verifyBearer(request: FastifyRequest): Promise<string | null> {
   const auth = request.headers.authorization;
-  if (!auth?.startsWith('Bearer ')) return null;
-  return auth.slice(7);
+  if (auth?.startsWith('Bearer ')) return auth.slice(7);
+
+  // Fallback: browser-direct calls (SSE streams) send the JWT as a cookie
+  // via `credentials: 'include'` instead of an Authorization header.
+  const cookie = request.headers.cookie;
+  if (cookie) {
+    const match = cookie.split(';').map(c => c.trim()).find(c => c.startsWith('session='));
+    if (match) return match.slice('session='.length);
+  }
+
+  return null;
 }
 
 export const authPlugin = fp(async function (fastify: FastifyInstance) {
