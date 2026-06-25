@@ -40,7 +40,7 @@ async function parsePassword(request: NextRequest): Promise<PlainPassword | Resp
   const parsed = validateBody(LoginInputSchema, body);
   if (parsed instanceof Response) return parsed; // 400 with validation details
   try {
-    return PlainPassword.create(parsed.password);
+    return PlainPassword.fromUnchecked(parsed.password);
   } catch {
     return Response.json({ error: 'Invalid password' }, { status: 401 });
   }

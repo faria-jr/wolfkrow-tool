@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
   let password: PlainPassword;
   try {
-    password = PlainPassword.create(body.password);
+    password = PlainPassword.fromUnchecked(body.password);
   } catch {
     return Response.json({ error: 'Invalid password' }, { status: 401 });
   }
