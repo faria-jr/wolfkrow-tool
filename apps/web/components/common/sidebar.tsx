@@ -8,6 +8,7 @@ import {
   Database,
   FileText,
   Folder,
+  FolderSearch,
   KeyRound,
   ListTodo,
   MessageSquare,
@@ -65,6 +66,7 @@ const TOOLS_NAV: NavItem[] = [
   { title: 'Design Studio', url: '/design', icon: PencilRuler },
   { title: 'Terminal', url: '/terminal', icon: TerminalSquare },
   { title: 'Enrich', url: '/enrich', icon: Wand2 },
+  { title: 'Profiler', url: '/profiler', icon: FolderSearch },
 ];
 
 const SYSTEM_NAV: NavItem[] = [
