@@ -26,11 +26,13 @@ describe('PipelineView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders header and create form', () => {
+  it('renders header and create form', async () => {
     render(<PipelineView />);
     expect(screen.getByText('Pipeline Projects')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Project name')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New Pipeline' })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('Proj')).toBeInTheDocument());
   });
 
   it('loads projects', async () => {
@@ -38,9 +40,10 @@ describe('PipelineView', () => {
     await waitFor(() => expect(screen.getByText('Proj')).toBeInTheDocument());
   });
 
-  it('shows right panel placeholder when no selection', () => {
+  it('shows right panel placeholder when no selection', async () => {
     render(<PipelineView />);
     expect(screen.getByText(/select a pipeline project/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Proj')).toBeInTheDocument());
   });
 
   it('selects a project to view phases', async () => {

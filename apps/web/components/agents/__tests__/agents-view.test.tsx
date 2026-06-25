@@ -22,10 +22,12 @@ describe('AgentsView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders action buttons', () => {
+  it('renders action buttons', async () => {
     render(<AgentsView />);
     expect(screen.getByRole('button', { name: /new agent/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sync to orchestrator/i })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
   });
 
   it('loads agents on mount', async () => {

@@ -24,10 +24,12 @@ describe('SchedulerView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders header and New Task button', () => {
+  it('renders header and New Task button', async () => {
     render(<SchedulerView />);
     expect(screen.getByRole('heading', { name: 'Scheduler' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'New Task' })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('Daily Briefing')).toBeInTheDocument());
   });
 
   it('loads tasks', async () => {

@@ -53,6 +53,8 @@ describe('AuditPage', () => {
     }) as unknown as typeof fetch);
     render(<AuditPage />, { wrapper: makeWrapper() });
     expect(screen.getByText('Security Audit')).toBeTruthy();
+    // settle the react-query scan list fetch inside this test's act() boundary
+    await screen.findByText(/no scans yet/i);
   });
 
   it('shows empty scans state when no scans returned', async () => {

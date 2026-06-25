@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { LogViewer } from '../log-viewer';
@@ -30,8 +31,11 @@ describe('LogViewer', () => {
   it('displays entries pushed via EventSource', async () => {
     render(<LogViewer />);
     const es = FakeEventSource.instances[0]!;
-    es.onmessage!({ data: JSON.stringify({ level: 'info', time: 1700000000000, msg: 'hello world' }) });
-    expect(await screen.findByText('hello world')).toBeInTheDocument();
+    // the EventSource callback fires a state update — wrap in act()
+    await act(async () => {
+      es.onmessage!({ data: JSON.stringify({ level: 'info', time: 1700000000000, msg: 'hello world' }) });
+    });
+    expect(screen.getByText('hello world')).toBeInTheDocument();
   });
 
   it('toggles pause/resume button', async () => {

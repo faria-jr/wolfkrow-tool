@@ -17,10 +17,12 @@ describe('VaultView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders info banner and Add Secret button', () => {
+  it('renders info banner and Add Secret button', async () => {
     render(<VaultView />);
     expect(screen.getByText(/OS Keychain/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add Secret' })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('Anthropic')).toBeInTheDocument());
   });
 
   it('loads secrets and shows them', async () => {

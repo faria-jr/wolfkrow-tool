@@ -37,11 +37,13 @@ describe('HarnessView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders header and create form', () => {
+  it('renders header and create form', async () => {
     render(<HarnessView />);
     expect(screen.getByText('Projects')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Project name')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Create Project' })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('Project Alpha')).toBeInTheDocument());
   });
 
   it('lists loaded projects', async () => {

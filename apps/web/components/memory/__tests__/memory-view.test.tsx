@@ -17,10 +17,12 @@ describe('MemoryView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders header and list tab by default', () => {
+  it('renders header and list tab by default', async () => {
     render(<MemoryView />);
     expect(screen.getByRole('heading', { name: 'Memory' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'list' })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('remembered this')).toBeInTheDocument());
   });
 
   it('loads and displays memories', async () => {
@@ -38,9 +40,11 @@ describe('MemoryView', () => {
     expect(await screen.findByText('found')).toBeInTheDocument();
   });
 
-  it('shows a summaries tab', () => {
+  it('shows a summaries tab', async () => {
     render(<MemoryView />);
     expect(screen.getByRole('button', { name: 'summaries' })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('remembered this')).toBeInTheDocument());
   });
 
   it('fetches daily summaries when the summaries tab is activated', async () => {

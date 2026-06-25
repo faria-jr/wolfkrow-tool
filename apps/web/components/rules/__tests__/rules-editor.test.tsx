@@ -17,11 +17,13 @@ describe('RulesEditor', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders rule groups headers', () => {
+  it('renders rule groups headers', async () => {
     render(<RulesEditor />);
     expect(screen.getByText('Behavior')).toBeInTheDocument();
     expect(screen.getByText('Soul')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Add Rule' })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('Always polite')).toBeInTheDocument());
   });
 
   it('loads existing rules', async () => {

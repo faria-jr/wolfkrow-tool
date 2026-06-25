@@ -24,9 +24,11 @@ describe('SkillsView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders New skill button', () => {
+  it('renders New skill button', async () => {
     render(<SkillsView />);
     expect(screen.getByRole('button', { name: /new skill/i })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('My Skill')).toBeInTheDocument());
   });
 
   it('loads skills and displays them', async () => {

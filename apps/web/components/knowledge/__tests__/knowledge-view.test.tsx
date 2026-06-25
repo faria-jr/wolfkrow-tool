@@ -16,10 +16,12 @@ describe('KnowledgeView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders title and upload zone', () => {
+  it('renders title and upload zone', async () => {
     render(<KnowledgeView />);
     expect(screen.getByText(/drag files here/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /documents/i })).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('spec.pdf')).toBeInTheDocument());
   });
 
   it('loads documents and shows count badge', async () => {

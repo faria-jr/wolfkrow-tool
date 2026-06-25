@@ -17,19 +17,23 @@ beforeEach(() => {
 });
 
 describe('EnrichView', () => {
-  it('renders heading', () => {
+  it('renders heading', async () => {
     render(<EnrichView />);
     expect(screen.getByRole('heading', { name: /enrich/i })).toBeDefined();
+    // settle the mount-time fetch inside this test's act() boundary
+    await screen.findAllByRole('listitem');
   });
 
-  it('shows create form with name input', () => {
+  it('shows create form with name input', async () => {
     render(<EnrichView />);
     expect(screen.getByPlaceholderText(/session name/i)).toBeDefined();
+    await screen.findAllByRole('listitem');
   });
 
-  it('shows create button', () => {
+  it('shows create button', async () => {
     render(<EnrichView />);
     expect(screen.getByRole('button', { name: /create/i })).toBeDefined();
+    await screen.findAllByRole('listitem');
   });
 
   it('loads sessions on mount', async () => {

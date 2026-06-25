@@ -41,9 +41,11 @@ describe('UsageCharts', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('shows loading state initially', () => {
+  it('shows loading state initially', async () => {
     render(<UsageCharts />);
     expect(screen.getByText(/loading usage data/i)).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('Total Cost')).toBeInTheDocument());
   });
 
   it('renders summary cards after load', async () => {

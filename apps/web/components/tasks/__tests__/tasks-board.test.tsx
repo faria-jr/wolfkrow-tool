@@ -21,13 +21,15 @@ describe('TasksBoard', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders column headers and New Task button', () => {
+  it('renders column headers and New Task button', async () => {
     render(<TasksBoard />);
     expect(screen.getByRole('button', { name: 'New Task' })).toBeInTheDocument();
     expect(screen.getByText('Todo')).toBeInTheDocument();
     expect(screen.getByText('In Progress')).toBeInTheDocument();
     expect(screen.getByText('Blocked')).toBeInTheDocument();
     expect(screen.getByText('Done')).toBeInTheDocument();
+    // settle the mount-time fetch inside this test's act() boundary
+    await waitFor(() => expect(screen.getByText('My Task')).toBeInTheDocument());
   });
 
   it('loads and displays tasks', async () => {
