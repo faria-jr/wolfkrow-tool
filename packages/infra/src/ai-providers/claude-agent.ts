@@ -84,6 +84,12 @@ export class ClaudeAgentProvider implements AIProvider {
  let totalOutput = 0;
 
  for (let turn = 0; turn < this.maxTurns; turn++) {
+ // P1-6: stop the tool-use loop early once the request is aborted so no new
+ // model turn or tool starts after a Stop.
+ if (options.signal?.aborted) {
+ yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+ return;
+ }
  let result: TurnResult;
  try {
  result = yield* this.streamOneTurn(messages, callOptions, toolDefs);
@@ -108,7 +114,15 @@ export class ClaudeAgentProvider implements AIProvider {
  for (const block of result.toolUseBlocks.values()) {
  const input = this.parseToolInput(block.partialJson);
  yield { delta: '', toolCall: { id: block.id, name: block.name, input } };
- const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input);
+ // P1-6: don't start a new tool after the user aborted.
+ if (options.signal?.aborted) {
+ yield {
+ delta: '',
+ toolResult: { callId: block.id, output: 'aborted by user', isError: true },
+ };
+ continue;
+ }
+ const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input, options.signal);
  if (permissionChunk) yield permissionChunk;
  yield { delta: '', toolResult: { callId: toolResult.callId, output: toolResult.output, isError: toolResult.isError } };
  toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: toolResult.output, is_error: toolResult.isError });
@@ -139,11 +153,19 @@ export class ClaudeAgentProvider implements AIProvider {
  }
  }
 
- private async executeTool(block: ToolUseBlock, input: Record<string, unknown>): Promise<ToolResult> {
+ private async executeTool(
+    block: ToolUseBlock,
+    input: Record<string, unknown>,
+    signal?: AbortSignal,
+  ): Promise<ToolResult> {
  const executor = this.registry?.get(block.name);
  if (!executor) return ToolResult.error(block.id, `Tool "${block.name}" not found in registry`);
  try {
- return await executor.execute(input, { userId: 'agent', ...(this.workDir !== undefined ? { workDir: this.workDir } : {}) });
+ return await executor.execute(input, {
+      userId: 'agent',
+      ...(this.workDir !== undefined ? { workDir: this.workDir } : {}),
+      ...(signal !== undefined ? { signal } : {}),
+    });
  } catch (err) {
  return ToolResult.error(block.id, err instanceof Error ? err.message : String(err));
  }
@@ -156,6 +178,7 @@ export class ClaudeAgentProvider implements AIProvider {
 private executeWithPermission(
   block: ToolUseBlock,
   input: Record<string, unknown>,
+  signal?: AbortSignal,
 ): Promise<{ result: ToolResult; permissionChunk?: StreamChunk }> {
   return executeWithPermissionGate(
     {
@@ -165,7 +188,7 @@ private executeWithPermission(
     },
     { id: block.id, name: block.name },
     input,
-    () => this.executeTool(block, input),
+    () => this.executeTool(block, input, signal),
   );
 }
 

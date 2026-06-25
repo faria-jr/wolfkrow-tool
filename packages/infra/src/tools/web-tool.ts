@@ -14,7 +14,7 @@ export class WebTool implements ToolExecutor {
     required: ['operation'],
   };
 
-  async execute(input: Record<string, unknown>, _ctx: ToolExecutionContext): Promise<ToolResult> {
+  async execute(input: Record<string, unknown>, ctx: ToolExecutionContext): Promise<ToolResult> {
     const callId = `web-${Date.now()}`;
     const op = String(input['operation'] ?? '');
 
@@ -22,7 +22,7 @@ export class WebTool implements ToolExecutor {
       if (op === 'fetch') {
         const url = String(input['url'] ?? '');
         if (!url) return ToolResult.error(callId, 'url is required for fetch operation');
-        const resp = await fetch(url, { headers: { 'User-Agent': 'Wolfkrow/1.0' } });
+        const resp = await fetch(url, { headers: { 'User-Agent': 'Wolfkrow/1.0' }, ...(ctx.signal ? { signal: ctx.signal } : {}) });
         const text = await resp.text();
         const truncated = text.slice(0, 50_000);
         return ToolResult.ok(callId, truncated);
@@ -32,7 +32,7 @@ export class WebTool implements ToolExecutor {
         const query = String(input['query'] ?? '');
         if (!query) return ToolResult.error(callId, 'query is required for search operation');
         const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-        const resp = await fetch(url, { headers: { 'User-Agent': 'Wolfkrow/1.0' } });
+        const resp = await fetch(url, { headers: { 'User-Agent': 'Wolfkrow/1.0' }, ...(ctx.signal ? { signal: ctx.signal } : {}) });
         const text = await resp.text();
         return ToolResult.ok(callId, text.slice(0, 50_000));
       }

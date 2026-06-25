@@ -104,6 +104,12 @@ export class ClaudeCompatProvider implements AIProvider {
     let totalOutput = 0;
 
     for (let turn = 0; turn < 80; turn++) {
+      // P1-6: if the request was aborted, stop the tool-use loop early so we
+      // don't launch another model turn or start new tools after a Stop.
+      if (options.signal?.aborted) {
+        yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+        return;
+      }
       const result = yield* this.streamOneTurn(messages, options, effectiveSystem, toolDefs);
       totalInput += result.inputTokens;
       totalOutput += result.outputTokens;
@@ -117,7 +123,19 @@ export class ClaudeCompatProvider implements AIProvider {
       for (const block of result.toolUseBlocks.values()) {
         const input = parseJson(block.partialJson);
         yield { delta: '', toolCall: { id: block.id, name: block.name, input } };
-        const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input);
+        // P1-6: don't start a new tool after the user aborted.
+        if (options.signal?.aborted) {
+          yield {
+            delta: '',
+            toolResult: {
+              callId: block.id,
+              output: 'aborted by user',
+              isError: true,
+            },
+          };
+          continue;
+        }
+        const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input, options.signal);
         if (permissionChunk) yield permissionChunk;
         yield { delta: '', toolResult: { callId: toolResult.callId, output: toolResult.output, isError: toolResult.isError } };
         toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: toolResult.output, is_error: toolResult.isError });
@@ -163,13 +181,18 @@ export class ClaudeCompatProvider implements AIProvider {
     }));
   }
 
-  private async executeTool(block: ToolUseBlock, input: Record<string, unknown>): Promise<ToolResult> {
+  private async executeTool(
+    block: ToolUseBlock,
+    input: Record<string, unknown>,
+    signal?: AbortSignal,
+  ): Promise<ToolResult> {
     const executor = this.toolRegistry?.get(block.name);
     if (!executor) return ToolResult.error(block.id, `Tool "${block.name}" not found`);
     try {
       return await executor.execute(input, {
         userId: 'agent',
         ...(this.workDir !== undefined ? { workDir: this.workDir } : {}),
+        ...(signal !== undefined ? { signal } : {}),
       });
     } catch (err) {
       return ToolResult.error(block.id, err instanceof Error ? err.message : String(err));
@@ -183,6 +206,7 @@ export class ClaudeCompatProvider implements AIProvider {
   private executeWithPermission(
     block: ToolUseBlock,
     input: Record<string, unknown>,
+    signal?: AbortSignal,
   ): Promise<{ result: ToolResult; permissionChunk?: StreamChunk }> {
     return executeWithPermissionGate(
       {
@@ -192,7 +216,7 @@ export class ClaudeCompatProvider implements AIProvider {
       },
       { id: block.id, name: block.name },
       input,
-      () => this.executeTool(block, input),
+      () => this.executeTool(block, input, signal),
     );
   }
 

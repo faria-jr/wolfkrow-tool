@@ -78,7 +78,7 @@ export class BashTool implements ToolExecutor {
     if (validation) return validation;
     const exec = this.resolveExecution(input, ctx);
     if ('error' in exec) return ToolResult.error(callId, exec.error);
-    return this.runProcess(callId, exec);
+    return this.runProcess(callId, exec, ctx.signal);
   }
 
   private validateCommand(input: Record<string, unknown>): ToolResult | null {
@@ -119,20 +119,39 @@ export class BashTool implements ToolExecutor {
     return { binary, args, cwd, timeoutMs: parseTimeoutMs(input['timeout']) };
   }
 
-  private runProcess(callId: string, exec: { binary: string; args: string[]; cwd: string; timeoutMs: number }): Promise<ToolResult> {
+  private runProcess(
+    callId: string,
+    exec: { binary: string; args: string[]; cwd: string; timeoutMs: number },
+    signal?: AbortSignal,
+  ): Promise<ToolResult> {
     return new Promise<ToolResult>((resolve) => {
       let stdout = '';
       let stderr = '';
       let timedOut = false;
+      let aborted = false;
       const child = spawn(exec.binary, exec.args, { cwd: exec.cwd, shell: false });
       const timer = setTimeout(() => {
         timedOut = true;
         child.kill('SIGTERM');
       }, exec.timeoutMs);
+      // P1-6: kill the subprocess when the request aborts (Stop button).
+      const onAbort = () => {
+        aborted = true;
+        child.kill('SIGTERM');
+      };
+      if (signal) {
+        if (signal.aborted) onAbort();
+        else signal.addEventListener('abort', onAbort, { once: true });
+      }
       child.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
       child.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
       child.on('close', (code: number | null) => {
         clearTimeout(timer);
+        if (signal) signal.removeEventListener('abort', onAbort);
+        if (aborted) {
+          resolve(ToolResult.error(callId, 'Command aborted'));
+          return;
+        }
         if (timedOut) {
           resolve(ToolResult.error(callId, `Command timed out`));
           return;

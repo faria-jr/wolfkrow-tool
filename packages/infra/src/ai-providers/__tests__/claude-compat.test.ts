@@ -147,6 +147,72 @@ describe('ClaudeCompatProvider — tool-calling (RM3.1)', () => {
   });
 });
 
+describe('ClaudeCompatProvider — abort propagation (P1-6 / Bug #4)', () => {
+  beforeEach(() => {
+    // First call returns tool_use stream; second would return final text.
+    let callCount = 0;
+    streamImpl = () => {
+      callCount++;
+      return callCount === 1
+        ? makeToolStream('slow', 'tid-1', { msg: 'hi' }, { input_tokens: 10, output_tokens: 5 })
+        : makeFakeStream(['Done'], { input_tokens: 3, output_tokens: 1 });
+    };
+  });
+
+  afterEach(() => {
+    streamImpl = () => makeFakeStream(['Hel', 'lo'], { input_tokens: 5, output_tokens: 2 });
+  });
+
+  it('does NOT execute a tool when signal is already aborted before the tool runs', async () => {
+    const executeSpy = vi.fn().mockResolvedValue(ToolResult.ok('tid-1', 'ran'));
+    const registry = makeRegistryWith('slow', executeSpy);
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
+
+    // Abort BEFORE the stream starts — the tool must never run.
+    const ac = new AbortController();
+    ac.abort();
+    const chunks = await collect(provider.query(opts('use slow', { signal: ac.signal })));
+
+    expect(executeSpy).not.toHaveBeenCalled();
+    // Stream ends cleanly (done chunk present), no tool_result emitted.
+    expect(chunks.some((c) => c.toolResult !== undefined)).toBe(false);
+    expect(chunks.some((c) => c.done === true)).toBe(true);
+  });
+
+  it('forwards the abort signal into the tool context (cancel-in-flight wiring)', async () => {
+    // The tool runs (not aborted) and observes ctx.signal === the request signal.
+    // This proves the signal threads from CompletionOptions -> ToolExecutionContext,
+    // enabling tools with long I/O (fetch, subprocess) to cancel on abort.
+    let observedSignal: AbortSignal | undefined;
+    const executeSpy = vi.fn(async (_input: Record<string, unknown>, ctx: ToolExecutionContext) => {
+      observedSignal = ctx.signal;
+      return ToolResult.ok('tid-1', 'ran');
+    });
+
+    const ac = new AbortController();
+    const registry = makeRegistryWith('slow', executeSpy);
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
+
+    const chunks = await collect(provider.query(opts('use slow', { signal: ac.signal })));
+
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+    expect(observedSignal).toBe(ac.signal);
+    expect(chunks.some((c) => c.done === true)).toBe(true);
+  });
+
+  it('happy path (no abort): tool runs to completion and result is emitted', async () => {
+    const executeSpy = vi.fn().mockResolvedValue(ToolResult.ok('tid-1', 'ran'));
+    const registry = makeRegistryWith('slow', executeSpy);
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
+
+    const chunks = await collect(provider.query(opts('use echo')));
+
+    expect(executeSpy).toHaveBeenCalledTimes(1);
+    expect(chunks.some((c) => c.toolResult?.output === 'ran')).toBe(true);
+    expect(chunks.some((c) => c.done === true)).toBe(true);
+  });
+});
+
 // --- helpers ---
 
 function makeEchoRegistry(): ToolRegistry {
@@ -159,6 +225,17 @@ function makeEchoRegistry(): ToolRegistry {
     },
   };
   return new ToolRegistry([echo]);
+}
+
+/** Build a registry with a single tool whose execute is a spy. */
+function makeRegistryWith(name: string, execute: ToolExecutor['execute']): ToolRegistry {
+  const tool: ToolExecutor = {
+    name,
+    description: `test ${name}`,
+    inputSchema: { type: 'object', properties: { msg: { type: 'string' } } },
+    execute,
+  };
+  return new ToolRegistry([tool]);
 }
 
 function makeFakeStream(

@@ -119,4 +119,32 @@ describe('BashTool', () => {
     const spawnMock = vi.mocked(spawn);
     expect(spawnMock).toHaveBeenCalled();
   });
+
+  it('kills the subprocess and returns an aborted error when the abort signal fires (P1-6)', async () => {
+    // Spawn mock that simulates a long-running process: only resolves on close.
+    const listeners: Record<string, ((...args: unknown[]) => void) | undefined> = {};
+    const kill = vi.fn((sig: string) => {
+      // when killed, emit close with a non-zero code
+      listeners['close']?.(143);
+    });
+    const mock = {
+      stdout: { on: vi.fn() },
+      stderr: { on: vi.fn() },
+      on: vi.fn((ev: string, cb: (...args: unknown[]) => void) => { listeners[ev] = cb; }),
+      kill,
+    };
+    (spawn as ReturnType<typeof vi.fn>).mockReturnValue(mock);
+
+    const ac = new AbortController();
+    const tool = new BashTool();
+    const promise = tool.execute({ command: 'echo test' }, { ...ctx, signal: ac.signal });
+
+    // Abort after execution started.
+    ac.abort();
+    const result = await promise;
+
+    expect(kill).toHaveBeenCalledWith('SIGTERM');
+    expect(result.isError).toBe(true);
+    expect(result.output).toMatch(/abort/i);
+  });
 });
