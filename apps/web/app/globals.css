@@ -148,6 +148,10 @@
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+
+  /* Content max-width token (from packages/design-tokens/src/tokens.css) —
+     exposes the `max-w-content` utility for narrow page shells. */
+  --container-content: var(--wolfkrow-content-max-width);
 }
 
 /* ============================================================================
