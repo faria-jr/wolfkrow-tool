@@ -29,4 +29,22 @@ export interface DailySummaryData {
   createdAt: string;
 }
 
-export type MemoryTabKey = 'list' | 'search' | 'summaries';
+export type MemoryTabKey = 'list' | 'search' | 'summaries' | 'dreaming';
+
+export interface DreamingStatus {
+  active: boolean;
+  lastActivityAt: string | null;
+  idleThresholdMs: number;
+}
+
+export interface CompactionLogData {
+  id: string;
+  userId: string;
+  sessionId: string | null;
+  trigger: 'manual' | 'token_threshold' | 'time_based' | 'idle';
+  beforeTokens: number;
+  afterTokens: number;
+  tokensSaved: number;
+  summary: string | null;
+  createdAt: string;
+}

@@ -1,6 +1,8 @@
 'use client';
 
+import { MemoryDreamingTab } from './memory-dreaming-tab';
 import type { DailySummaryData, MemoryData, MemorySearchResult, MemoryTabKey } from './memory-types';
+
 
 import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
@@ -34,7 +36,7 @@ interface TabNavProps { tab: MemoryTabKey; setTab: (t: MemoryTabKey) => void; co
 export function MemoryTabNav({ tab, setTab, count }: TabNavProps) {
   return (
     <div className="flex gap-1 border-b">
-      {(['list', 'search', 'summaries'] as const).map((t) => (
+      {(['list', 'search', 'summaries', 'dreaming'] as const).map((t) => (
         <button
           key={t}
           onClick={() => setTab(t)}
@@ -68,7 +70,7 @@ export function MemoryListTab({ memories, onDelete, onCompact, compacting }: Lis
           onClick={onCompact}
           disabled={compacting}
           data-testid="compact-now"
-          className="rounded-md bg-amber-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-700 disabled:opacity-50"
+          className="rounded-md bg-warning px-3 py-1.5 text-sm font-medium text-warning-foreground hover:bg-warning/90 disabled:opacity-50"
           title="Create a daily summary of recent memories"
         >
           {compacting ? 'Compacting…' : 'Compact now'}
@@ -115,7 +117,7 @@ export function MemorySearchTab({ results, query, onQueryChange, onSearch, searc
           <div key={r.memory.id} className="bg-card rounded-lg border p-4">
             <div className="mb-1 flex items-center justify-between">
               <span className="text-muted-foreground text-xs">#{i + 1} — distance: {r.distance.toFixed(4)}</span>
-              <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${SOURCE_COLOR[r.memory.source] ?? 'bg-gray-100 text-gray-700'}`}>{r.memory.source}</span>
+              <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${SOURCE_COLOR[r.memory.source] ?? 'bg-muted text-muted-foreground'}`}>{r.memory.source}</span>
             </div>
             <p className="text-sm">{r.memory.content}</p>
           </div>
@@ -202,6 +204,7 @@ export function MemoryViewBody({ state }: MemoryViewBodyProps) {
           onReload={() => { void state.loadSummaries(); }}
         />
       )}
+      {state.tab === 'dreaming' && <MemoryDreamingTab />}
     </div>
   );
 }
