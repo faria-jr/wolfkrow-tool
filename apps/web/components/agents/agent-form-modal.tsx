@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { AgentFormBody } from './agent-form-body';
@@ -61,6 +62,13 @@ function buildDefaultValues(agent?: AgentData): AgentFormValues {
 
 export function AgentFormModal({ open, onClose, onSubmit, agent, loading }: Props) {
   const form = useForm<AgentFormValues>({ resolver: zodResolver(agentSchema), defaultValues: buildDefaultValues(agent) });
+
+  // Reset form values when the agent prop changes (switching between
+  // new/edit or between different agents). Without this, useForm keeps the
+  // stale defaultValues from the first mount, showing an empty form on edit.
+  useEffect(() => {
+    form.reset(buildDefaultValues(agent));
+  }, [agent, form]);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>

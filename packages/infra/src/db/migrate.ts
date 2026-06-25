@@ -50,11 +50,10 @@ export function runMigrations(options: MigrationOptions = {}): void {
   } catch (error) {
     logger.error({ err: error }, 'Migration failed');
     throw error;
-  } finally {
-    closeDb();
   }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   runMigrations();
+  closeDb();
 }
