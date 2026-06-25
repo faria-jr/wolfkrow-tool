@@ -1,11 +1,19 @@
+'use client';
+
 import { Workflow } from 'lucide-react';
+import dynamic from 'next/dynamic';
 
 import { PageHeader } from '@/components/common/page-header';
 import { PageContent, PageShell } from '@/components/common/page-shell';
-import { GraphView } from '@/components/graph/graph-view';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// GraphView is a client component; D3 is lazy-loaded inside GraphCanvas
-// via dynamic import, so it stays out of the initial bundle (SPEC-022 §4).
+// D3 is client-only (lazy inside GraphCanvas too) — keep the wrapper out of
+// the initial bundle for non-/graph routes.
+const GraphView = dynamic(
+  () => import('@/components/graph/graph-view').then((m) => m.GraphView),
+  { ssr: false, loading: () => <Skeleton className="h-full w-full" /> },
+);
+
 export default function GraphPage() {
   return (
     <PageShell>
