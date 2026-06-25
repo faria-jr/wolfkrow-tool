@@ -52,16 +52,41 @@ export class ComputeUsageUseCase {
 
   execute(input: ComputeUsageInput): UsageSummary {
     const records = this.repo.findMany(input);
+    const agg = this.aggregate(records);
+    return {
+      totalInputTokens: agg.totalInputTokens,
+      totalOutputTokens: agg.totalOutputTokens,
+      totalCostUSD: agg.totalCostCents / 100,
+      byModel: toUsdEntries(agg.byModel),
+      bySource: toUsdEntries(agg.bySource),
+      byDay: Object.entries(agg.byDayMap)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([day, d]) => ({
+          day,
+          inputTokens: d.inputTokens,
+          outputTokens: d.outputTokens,
+          costUSD: d.costCents / 100,
+        })),
+    };
+  }
 
-    // Aggregate cost in integer cents per bucket and convert to USD once at the
-    // end. Summing floats (convert-then-sum) accumulates rounding error across
-    // many records; sum-integers-convert-last keeps the monetary value exact.
+  // Aggregate cost in integer cents per bucket. Convert to USD only at the call
+  // site (sum-integers-convert-last): summing floats per-record accumulates
+  // rounding error, so we keep cents integer here and divide once per bucket.
+  private aggregate(records: ReturnType<UsageRepo['findMany']>): {
+    totalInputTokens: number;
+    totalOutputTokens: number;
+    totalCostCents: number;
+    byModel: CentBuckets;
+    bySource: CentBuckets;
+    byDayMap: CentBuckets;
+  } {
     let totalInputTokens = 0;
     let totalOutputTokens = 0;
     let totalCostCents = 0;
-    const byModel: Record<string, { inputTokens: number; outputTokens: number; costCents: number }> = {};
-    const bySource: Record<string, { inputTokens: number; outputTokens: number; costCents: number }> = {};
-    const byDayMap: Record<string, { inputTokens: number; outputTokens: number; costCents: number }> = {};
+    const byModel: CentBuckets = {};
+    const bySource: CentBuckets = {};
+    const byDayMap: CentBuckets = {};
 
     for (const r of records) {
       totalInputTokens += r.inputTokens;
@@ -85,32 +110,20 @@ export class ComputeUsageUseCase {
       d.costCents += r.cost;
     }
 
-    const totalCostUSD = totalCostCents / 100;
-    const byModelUSD = Object.fromEntries(
-      Object.entries(byModel).map(([k, v]) => [k, {
-        inputTokens: v.inputTokens,
-        outputTokens: v.outputTokens,
-        costUSD: v.costCents / 100,
-      }]),
-    );
-    const bySourceUSD = Object.fromEntries(
-      Object.entries(bySource).map(([k, v]) => [k, {
-        inputTokens: v.inputTokens,
-        outputTokens: v.outputTokens,
-        costUSD: v.costCents / 100,
-      }]),
-    );
-    const byDay = Object.entries(byDayMap)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([day, d]) => ({
-        day,
-        inputTokens: d.inputTokens,
-        outputTokens: d.outputTokens,
-        costUSD: d.costCents / 100,
-      }));
-
-    return { totalInputTokens, totalOutputTokens, totalCostUSD, byModel: byModelUSD, bySource: bySourceUSD, byDay };
+    return { totalInputTokens, totalOutputTokens, totalCostCents, byModel, bySource, byDayMap };
   }
+}
+
+type CentBucket = { inputTokens: number; outputTokens: number; costCents: number };
+type CentBuckets = Record<string, CentBucket>;
+
+function toUsdEntries(buckets: CentBuckets): Record<string, { inputTokens: number; outputTokens: number; costUSD: number }> {
+  return Object.fromEntries(
+    Object.entries(buckets).map(([k, v]) => [
+      k,
+      { inputTokens: v.inputTokens, outputTokens: v.outputTokens, costUSD: v.costCents / 100 },
+    ]),
+  );
 }
 
 // --- Check Budget ---
