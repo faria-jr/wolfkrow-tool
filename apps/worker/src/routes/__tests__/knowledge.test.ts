@@ -122,10 +122,10 @@ describe('knowledge POST /knowledge/search', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  it('accepts optional documentIds filter', async () => {
+  it('accepts optional documentIds filter (canonical UUIDs per shared SearchQuerySchema)', async () => {
     const res = await app.inject({
       method: 'POST', url: '/knowledge/search', headers: BEARER,
-      payload: { query: 'x', documentIds: ['doc-1'] },
+      payload: { query: 'x', documentIds: ['550e8400-e29b-41d4-a716-446655440000'] },
     });
     expect(res.statusCode).toBe(200);
   });

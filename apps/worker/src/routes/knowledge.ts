@@ -10,6 +10,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
+import { SearchQuerySchema } from '@wolfkrow/shared-types';
 import {
   DeleteDocumentUseCase,
   IngestDocumentUseCase,
@@ -17,19 +18,12 @@ import {
   SearchKnowledgeUseCase,
 } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
 
 import { getAdapters, getRepos } from '../container';
 import { semanticChunk, rawChunk } from '../knowledge/chunker';
 import { parseByMimeType } from '../knowledge/parsers/index';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
-
-const searchBody = z.object({
-  query: z.string().min(1).max(512),
-  limit: z.number().int().min(1).max(100).optional(),
-  documentIds: z.array(z.string().max(128)).max(50).optional(),
-});
 
 function makeEmbedder() {
   return getAdapters().embedder;
@@ -103,7 +97,7 @@ export async function knowledgeRoutes(app: AuthFastifyInstance) {
   app.post<{ Body: unknown }>('/knowledge/search', {
     onRequest: [app.authenticate],
   }, async (req, reply) => {
-    const { query, limit, documentIds } = validate(searchBody, req.body);
+    const { query, limit, documentIds } = validate(SearchQuerySchema, req.body);
 
     const { chunkRepo } = makeRepos();
     const uc = new SearchKnowledgeUseCase(chunkRepo, makeEmbedder());
