@@ -136,7 +136,7 @@
 | 20 | Spec build/validate/enrich seed agents | Depende de harness automático |
 | 22 | Knowledge benchmark (retrieval eval) | Removido intencionalmente (FIX-031; ADR-0032) |
 | 29 | Memory page — search UI | Prioridade menor; summaries + compact ✅ em v1.0 |
-| 34 | Excalidraw inline no chat | MCP Excalidraw entregue; embed inline é UX extra |
+| 34 | Excalidraw inline no chat | Intencionalmente descoped para v1.1. Em v1.0 o artifact-card abre o diagrama como **link externo** (`https://excalidraw.com/#json=<base64>`, `target="_blank"`) em vez de embed inline — ver `apps/web/components/chat/artifact-card.tsx:71-99`. O MCP Excalidraw (binário real, M3.3) está entregue; apenas a renderização inline no chat é UX extra adiada. Inline embed planejado para v1.1. (P2-7) |
 | 36 | Artifact detection (tool results) | UX enhancement; backend pronto |
 | 37 | Pipeline report | Pipeline core ✅; relatório final UX extra |
 | 38 | Audit log — filtros avançados | Tabela + export ✅ em v1.0; filtros são UX extra |
