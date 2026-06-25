@@ -30,7 +30,7 @@ describe('createRepoRegistry (FIX-007)', () => {
         'knowledgeChunk', 'knowledgeDoc', 'message', 'mcpServer', 'mcpToolRegistry',
         'pipelineMessage', 'pipelinePhase', 'pipelineProject', 'providerConfig', 'scheduledTask',
         'secret', 'securityFinding', 'securityScan', 'semanticMemory', 'skill', 'task', 'taskRun',
-        'tokenUsage', 'user', 'workflowRun',
+        'tokenUsage', 'toolPermission', 'user', 'workflowRun',
       ].sort(),
     );
   });

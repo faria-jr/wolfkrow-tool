@@ -43,6 +43,7 @@ import { DrizzleSkillRepo } from './skill-repo';
 import { DrizzleTaskRepo } from './task-repo';
 import { DrizzleTaskRunRepo } from './task-run-repo';
 import { DrizzleTokenUsageRepo } from './token-usage-repo';
+import { DrizzleToolPermissionRepo } from './tool-permission-repo';
 import { DrizzleUserRepo } from './user-repo';
 import { DrizzleWorkflowRunRepo } from './workflow-run-repo';
 
@@ -78,6 +79,7 @@ export interface RepoRegistry {
  providerConfig: DrizzleProviderConfigRepo;
  securityScan: DrizzleSecurityScanRepo;
  securityFinding: DrizzleSecurityFindingRepo;
+ toolPermission: DrizzleToolPermissionRepo;
 }
 
 let _registry: RepoRegistry | null = null;
@@ -119,6 +121,7 @@ export function createRepoRegistry(force = false): RepoRegistry {
  providerConfig: new DrizzleProviderConfigRepo(db),
  securityScan: new DrizzleSecurityScanRepo(db),
  securityFinding: new DrizzleSecurityFindingRepo(db),
+ toolPermission: new DrizzleToolPermissionRepo(db),
  };
  return _registry;
 }

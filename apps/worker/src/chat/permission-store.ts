@@ -174,6 +174,23 @@ export function loadDecisionsFromDb(): void {
 }
 
 /**
+ * Remove a durable decision from the cache AND the DB. Used by the management
+ * UI to reset a tool back to "ask" (no stored decision → runtime defaults to
+ * asking the user). Returns the number of DB rows deleted.
+ */
+export function clearDecision(userId: string, agentId: string, tool: string): number {
+  decisionCache.delete(decisionKey(userId, agentId, tool));
+  const r = repo();
+  if (!r) return 0;
+  try {
+    return r.delete(userId, agentId, tool);
+  } catch (err) {
+    logger.error({ err, userId, agentId, tool }, 'permission decision DB delete failed');
+    return 0;
+  }
+}
+
+/**
  * Test-only escape hatch: reset both the pending map and the decision cache
  * to a clean state, and drop the repo handle so the next access re-resolves
  * against the current DB singleton.

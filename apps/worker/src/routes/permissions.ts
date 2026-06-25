@@ -10,6 +10,7 @@ import {
 } from '@wolfkrow/use-cases';
 import { z } from 'zod';
 
+import { clearDecision, recordDecision } from '../chat/permission-store';
 import { getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
@@ -34,8 +35,58 @@ const auditQuery = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(50),
 });
 
+/** Decision-management request schemas (P2-1, backed by P1-7 persistence). */
+const decisionsQuery = z.object({
+  agentId: z.string().max(128).optional(),
+});
+
+const decisionBody = z.object({
+  agentId: z.string().min(1).max(128),
+  tool: z.string().min(1).max(128),
+  decision: z.enum(['allow', 'deny']),
+});
+
+const decisionDeleteBody = z.object({
+  agentId: z.string().min(1).max(128),
+  tool: z.string().min(1).max(128),
+});
+
 function getUserId(req: { user?: { userId?: string } }): string {
   return req.user?.userId ?? 'default';
+}
+
+/**
+ * Management endpoints (P2-1) — expose the durable tool-permission decisions
+ * (P1-7) so the web UI can list/set/reset them. Writes go through the
+ * permission-store so the in-memory cache stays coherent with the DB.
+ */
+function registerDecisionRoutes(server: AuthFastifyInstance): void {
+  // GET /permissions/decisions — list durable decisions for the authenticated
+  // user (optionally scoped to one agent). Tools with no row are "ask".
+  server.get<{ Querystring: unknown }>('/decisions', async (req, reply) => {
+    const userId = getUserId(req as { user?: { userId?: string } });
+    const { agentId } = validate(decisionsQuery, req.query);
+    const decisions = getRepos().toolPermission.listForUser(userId, agentId);
+    return reply.send({ decisions });
+  });
+
+  // PUT /permissions/decisions — upsert an allow/deny decision. Warms the
+  // in-memory cache so the next tool call is answered without re-asking.
+  server.put<{ Body: unknown }>('/decisions', async (req, reply) => {
+    const userId = getUserId(req as { user?: { userId?: string } });
+    const { agentId, tool, decision } = validate(decisionBody, req.body);
+    recordDecision(userId, agentId, tool, decision);
+    return reply.send({ ok: true });
+  });
+
+  // DELETE /permissions/decisions — remove a stored decision, resetting the
+  // tool to "ask" (no stored decision → runtime asks the user again).
+  server.delete<{ Body: unknown }>('/decisions', async (req, reply) => {
+    const userId = getUserId(req as { user?: { userId?: string } });
+    const { agentId, tool } = validate(decisionDeleteBody, req.body);
+    clearDecision(userId, agentId, tool);
+    return reply.send({ ok: true });
+  });
 }
 
 export async function permissionsRoutes(server: AuthFastifyInstance) {
@@ -53,6 +104,8 @@ export async function permissionsRoutes(server: AuthFastifyInstance) {
     });
     return reply.send(result);
   });
+
+  registerDecisionRoutes(server);
 
   // POST /permissions/audit — record audit entry
   server.post<{ Body: unknown }>('/audit', async (req, reply) => {

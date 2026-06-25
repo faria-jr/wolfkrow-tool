@@ -1,15 +1,25 @@
+import { ShieldCheck } from 'lucide-react';
+import type { Metadata } from 'next';
+
+import { PageHeader } from '@/components/common/page-header';
+import { PermissionsView } from '@/components/permissions/permissions-view';
+
+export const metadata: Metadata = {
+  title: 'Permissions',
+  description: 'Manage per-agent tool permissions',
+};
+
 export default function PermissionsPage() {
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div>
-        <h1 className="text-xl font-semibold">Permissions</h1>
-        <p className="text-sm text-muted-foreground">
-          Tool permissions are configured per-agent. Open an agent to manage its allowed tools.
-        </p>
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Audit log is available via the Logs page.
-      </p>
+    <div className="flex h-full flex-col">
+      <PageHeader
+        title="Permissions"
+        description="Manage allow/deny/ask per agent and tool"
+        icon={<ShieldCheck className="h-6 w-6" />}
+      />
+      <main className="flex-1 overflow-auto p-6">
+        <PermissionsView />
+      </main>
     </div>
   );
 }

@@ -107,6 +107,56 @@ export class DrizzleToolPermissionRepo {
     }
     return out;
   }
+
+  /**
+   * List all stored decisions for a user (optionally filtered to one agent),
+   * returning the row shape the management UI needs. Pure read — does not
+   * touch the in-memory cache (the worker route keeps cache + DB in sync via
+   * `recordDecision`).
+   */
+  listForUser(userId: string, agentId?: string): ToolPermissionRow[] {
+    const rows = this.db
+      .select({
+        userId: toolPermissions.userId,
+        agentId: toolPermissions.agentId,
+        tool: toolPermissions.tool,
+        decision: toolPermissions.decision,
+        updatedAt: toolPermissions.updatedAt,
+      })
+      .from(toolPermissions)
+      .where(
+        agentId !== undefined
+          ? and(eq(toolPermissions.userId, userId), eq(toolPermissions.agentId, agentId))
+          : eq(toolPermissions.userId, userId),
+      )
+      .all();
+    return rows.map((r) => ({
+      userId: r.userId,
+      agentId: r.agentId,
+      tool: r.tool,
+      decision: r.decision,
+      updatedAt: r.updatedAt,
+    }));
+  }
+
+  /**
+   * Delete a stored decision for a (userId, agentId, tool) triple. Used by the
+   * management UI to reset a tool back to "ask" (no stored decision). Returns
+   * the number of rows deleted.
+   */
+  delete(userId: string, agentId: string, tool: string): number {
+    const result = this.db
+      .delete(toolPermissions)
+      .where(
+        and(
+          eq(toolPermissions.userId, userId),
+          eq(toolPermissions.agentId, agentId),
+          eq(toolPermissions.tool, tool),
+        ),
+      )
+      .run();
+    return result.changes;
+  }
 }
 
 /** Stable cache key for a (userId, agentId, tool) triple. */
