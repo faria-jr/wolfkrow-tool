@@ -22,6 +22,9 @@ import {
   decisionKey,
   type ToolPermissionDecision,
 } from '@wolfkrow/infra/repos';
+import { createLogger } from '../logger';
+
+const logger = createLogger('permission-store');
 
 const TTL_MS = 5 * 60 * 1_000;
 
@@ -147,8 +150,9 @@ export function recordDecision(
   if (!r) return;
   try {
     r.upsert({ userId, agentId, tool, decision });
-  } catch {
+  } catch (err) {
     // Cache is the runtime source of truth; a failed write is non-fatal.
+    logger.error({ err, userId, agentId, tool }, 'permission decision DB write failed');
   }
 }
 
@@ -162,8 +166,9 @@ export function loadDecisionsFromDb(): void {
   if (!r) return;
   try {
     decisionCache = r.loadAll();
-  } catch {
+  } catch (err) {
     // Leave the existing (empty) cache — non-fatal at startup.
+    logger.error({ err }, 'permission decisions DB load failed — cache left empty');
   }
 }
 
