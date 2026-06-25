@@ -3,6 +3,8 @@
 import { ShieldCheck } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
+import { ErrorState } from '@/components/common/error-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -182,9 +184,10 @@ function AgentToolsCard({ agent, decisions, mutating, onChange }: AgentToolsCard
       </CardHeader>
       <CardContent>
         {tools.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            This agent declares no tools, so there are no per-tool permissions to manage.
-          </p>
+          <EmptyState
+            title="This agent declares no tools"
+            description="There are no per-tool permissions to manage."
+          />
         ) : (
           <ul className="divide-y divide-border">
             {tools.map((tool) => (
@@ -237,20 +240,11 @@ function LoadingView() {
 }
 
 function ErrorView({ error, onRetry }: { error: string; onRetry: () => void }) {
-  return (
-    <div className="space-y-2 p-4">
-      <p className="text-sm text-destructive">{error}</p>
-      <Button variant="outline" size="sm" onClick={onRetry}>Retry</Button>
-    </div>
-  );
+  return <ErrorState title="Failed to load permissions" description={error} retryLabel="Retry" onRetry={onRetry} className="m-4" />;
 }
 
 function EmptyAgentsView() {
-  return (
-    <p className="text-sm text-muted-foreground p-4">
-      No agents configured. Create an agent first to manage its tool permissions.
-    </p>
-  );
+  return <EmptyState title="No agents configured" description="Create an agent first to manage its tool permissions." className="m-4" />;
 }
 
 export function PermissionsView() {

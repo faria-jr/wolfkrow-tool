@@ -2,6 +2,9 @@
 
 import type { DailySummaryData, MemoryData, MemorySearchResult, MemoryTabKey } from './memory-types';
 
+import { EmptyState } from '@/components/common/empty-state';
+import { ErrorState } from '@/components/common/error-state';
+
 const SOURCE_COLOR: Record<string, string> = {
   user: 'bg-blue-100 text-blue-800',
   agent: 'bg-purple-100 text-purple-800',
@@ -50,7 +53,13 @@ export function MemoryTabNav({ tab, setTab, count }: TabNavProps) {
 
 interface ListTabProps { memories: MemoryData[]; onDelete: (id: string) => void; onCompact: () => void; compacting: boolean; }
 export function MemoryListTab({ memories, onDelete, onCompact, compacting }: ListTabProps) {
-  if (memories.length === 0) return <p className="text-muted-foreground py-8 text-center text-sm">No memories yet.</p>;
+  if (memories.length === 0)
+    return (
+      <EmptyState
+        title="No memories yet"
+        description="Memories are extracted from conversations and stored for recall."
+      />
+    );
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
@@ -120,17 +129,24 @@ interface SummariesTabProps { summaries: DailySummaryData[] | null; error: strin
 export function MemorySummariesTab({ summaries, error, onReload }: SummariesTabProps) {
   if (error) {
     return (
-      <div className="space-y-3">
-        <p className="text-sm text-red-600">{error}</p>
-        <button onClick={onReload} className="rounded border px-2 py-1 text-sm hover:bg-muted">Retry</button>
-      </div>
+      <ErrorState
+        title="Failed to load summaries"
+        description={error}
+        retryLabel="Retry"
+        onRetry={onReload}
+      />
     );
   }
   if (summaries === null) {
     return <p className="text-muted-foreground py-8 text-center text-sm">Loading summaries…</p>;
   }
   if (summaries.length === 0) {
-    return <p className="text-muted-foreground py-8 text-center text-sm">No daily summaries yet. Click &quot;Compact now&quot; on the List tab to create one.</p>;
+    return (
+      <EmptyState
+        title="No daily summaries yet"
+        description='Click "Compact now" on the List tab to create one.'
+      />
+    );
   }
   return (
     <div className="space-y-3" data-testid="daily-summaries">

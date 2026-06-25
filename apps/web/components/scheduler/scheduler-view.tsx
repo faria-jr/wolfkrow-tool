@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -200,7 +201,7 @@ export function SchedulerView() {
       {showForm && <TaskCreateForm form={form} setForm={setForm} creating={creating} error={error} onSubmit={handleCreate} />}
       <PendingReviewSection runs={pendingRuns} onReview={(id, v) => void handleReview(id, v)} />
       {tasks.length === 0 ? (
-        <p className="text-muted-foreground py-12 text-center text-sm">No scheduled tasks yet.</p>
+        <EmptyState title="No scheduled tasks yet" description="Automate tasks with cron expressions — create your first one." />
       ) : (
         <div className="space-y-3">
           {tasks.map((task) => <SchedulerTaskItem key={task.id} task={task} onToggle={() => void handleToggle(task)} onDelete={() => void handleDelete(task.id)} onRun={() => void handleRun(task.id)} />)}

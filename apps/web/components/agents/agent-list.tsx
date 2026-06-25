@@ -1,11 +1,12 @@
 'use client';
 
-import { Copy, Pencil, Trash2 } from 'lucide-react';
+import { Bot, Copy, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import type { AgentData } from './agent-form-modal';
 import { DeleteAgentDialog } from './delete-agent-dialog';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -58,7 +59,7 @@ export function AgentList({ agents, onEdit, onDuplicate, onDelete }: Props) {
   };
 
   if (agents.length === 0) {
-    return <p className="py-8 text-center text-sm text-muted-foreground">No agents yet. Create one to get started.</p>;
+    return <EmptyState title="No agents yet" description="Create one to get started." icon={<Bot className="h-6 w-6" />} />;
   }
 
   return (

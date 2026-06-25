@@ -1,8 +1,9 @@
 'use client';
 
 import type { McpServerRecord, McpServerSource, McpServerVisibility } from '@wolfkrow/domain';
-import { TrashIcon, RotateCw, RefreshCw } from 'lucide-react';
+import { Network, RotateCw, RefreshCw, TrashIcon } from 'lucide-react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -233,7 +234,13 @@ export function McpServerList({
   onVisibilityChange,
 }: Props) {
   if (servers.length === 0)
-    return <p className="py-8 text-center text-muted-foreground">No MCP servers configured.</p>;
+    return (
+      <EmptyState
+        title="No MCP servers configured"
+        description="Add a server to expose its tools to your agents."
+        icon={<Network className="h-6 w-6" />}
+      />
+    );
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {servers.map((s) => (

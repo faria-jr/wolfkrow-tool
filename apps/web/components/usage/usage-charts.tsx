@@ -17,6 +17,9 @@ import {
   Legend,
 } from 'recharts';
 
+
+import { EmptyState } from '@/components/common/empty-state';
+import { ErrorState } from '@/components/common/error-state';
 import { getUsageSummary } from '@/lib/api-client';
 
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'];
@@ -115,7 +118,7 @@ export function UsageCharts() {
       .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load usage data'));
   }, []);
 
-  if (error) return <div className="text-sm text-destructive">{error}</div>;
+  if (error) return <ErrorState title="Failed to load usage data" description={error} />;
   if (!summary) return <div className="text-sm text-muted-foreground">Loading usage data…</div>;
 
   const dayData = buildDayData(summary);
@@ -150,7 +153,7 @@ export function UsageCharts() {
       )}
 
       {dayData.length === 0 && sourceData.length === 0 && (
-        <p className="text-sm text-muted-foreground">No usage data yet.</p>
+        <EmptyState title="No usage data yet" description="Usage analytics appear here once your agents start running." />
       )}
     </div>
   );
