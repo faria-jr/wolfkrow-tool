@@ -1,6 +1,15 @@
 'use client';
 
+import type { ComponentPropsWithoutRef } from 'react';
 import { useEffect, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+const markdownComponents = {
+  pre: ({ children }: ComponentPropsWithoutRef<'pre'>) => (
+    <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 text-xs font-mono">{children}</pre>
+  ),
+};
 
 interface PipelineReport {
   report: string;
@@ -55,9 +64,9 @@ export function PipelineReportView({ projectId }: { projectId: string }) {
 
   return (
     <article className="prose prose-sm dark:prose-invert max-w-none">
-      <pre className="overflow-x-auto rounded-md border bg-muted/40 p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap">
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
         {state.report}
-      </pre>
+      </ReactMarkdown>
     </article>
   );
 }

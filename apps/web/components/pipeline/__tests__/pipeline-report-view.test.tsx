@@ -13,17 +13,40 @@ describe('PipelineReportView (M5.6)', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('fetches the report and renders it as a Markdown block', async () => {
+  it('fetches the report and renders it as structured Markdown (heading/list/code), not a <pre> blob', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => ({ report: '# Project Phoenix\n\nDiscovery: complete' }),
+      json: async () => ({
+        report: '# Project Phoenix\n\nDiscovery: complete\n\n- Item one\n- Item two\n\n```ts\nconst x = 1;\n```',
+      }),
     });
-    render(<PipelineReportView projectId="proj-1" />);
-    await waitFor(() => expect(screen.getByText(/Project Phoenix/)).toBeInTheDocument());
+    const { container } = render(<PipelineReportView projectId="proj-1" />);
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Project Phoenix/ })).toBeInTheDocument());
+    // Heading rendered as <h1>, not escaped inside a single <pre>
+    expect(container.querySelector('h1')).not.toBeNull();
+    // List rendered as <ul>
+    expect(container.querySelector('ul')).not.toBeNull();
+    expect(screen.getByText('Item one')).toBeInTheDocument();
+    // Code block rendered as <pre><code>
+    expect(container.querySelector('pre > code')).not.toBeNull();
     expect(fetchMock).toHaveBeenCalledWith('/api/pipeline/projects/proj-1/report', expect.objectContaining({
       credentials: 'include',
     }));
+  });
+
+  it('sanitizes raw HTML in the report (no script/img element rendered)', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        report: '# Report\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(2)>',
+      }),
+    });
+    const { container } = render(<PipelineReportView projectId="proj-sec" />);
+    await waitFor(() => expect(screen.getByRole('heading', { name: /Report/ })).toBeInTheDocument());
+    expect(container.querySelector('script')).toBeNull();
+    expect(container.querySelector('img')).toBeNull();
   });
 
   it('shows an error block when the API returns non-ok', async () => {
