@@ -2,6 +2,7 @@
 
 import type { McpServerRecord, McpServerSource, McpServerVisibility } from '@wolfkrow/domain';
 import { Network, RotateCw, RefreshCw, TrashIcon } from 'lucide-react';
+import { memo } from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -163,7 +164,7 @@ function ServerVisibilitySelect({ server, onVisibilityChange }: ServerVisibility
         value={server.visibility}
         onValueChange={(v) => onVisibilityChange(server.id, v as McpServerVisibility)}
       >
-        <SelectTrigger id={`visibility-${server.id}`} className="h-7 w-48 text-xs">
+        <SelectTrigger id={`visibility-${server.id}`} className="h-7 w-full sm:w-48 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -176,7 +177,7 @@ function ServerVisibilitySelect({ server, onVisibilityChange }: ServerVisibility
   );
 }
 
-function McpServerRow({
+const McpServerRow = memo(function McpServerRow({
   server,
   onToggle,
   onDelete,
@@ -214,7 +215,7 @@ function McpServerRow({
       </CardContent>
     </Card>
   );
-}
+});
 
 interface Props {
   servers: McpServerData[];

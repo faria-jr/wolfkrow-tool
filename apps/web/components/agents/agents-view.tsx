@@ -3,6 +3,7 @@
 import { Plus, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+
 import type { AgentData } from './agent-form-modal';
 import { AgentFormModal } from './agent-form-modal';
 import { AgentList } from './agent-list';
@@ -10,6 +11,7 @@ import type { AgentFormValues } from './schema';
 import { SyncAgentsModal } from './sync-agents-modal';
 
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const API = '/api/agents';
 
@@ -37,18 +39,35 @@ function ViewActions({ onNew, onSync }: ViewActionsProps) {
   );
 }
 
-export function AgentsView() {
+function AgentListSkeleton() {
+  return (
+    <div className="space-y-2">
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-10 w-full" />
+    </div>
+  );
+}
+
+function useAgents() {
   const [agents, setAgents] = useState<AgentData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadAgents = useCallback(async () => {
+    try { setAgents(await fetchAgents()); } catch { /* graceful */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void loadAgents(); }, [loadAgents]);
+  return { agents, loading, loadAgents };
+}
+
+export function AgentsView() {
+  const { agents, loading, loadAgents } = useAgents();
   const [modalOpen, setModalOpen] = useState(false);
   const [syncOpen, setSyncOpen] = useState(false);
   const [editing, setEditing] = useState<AgentData | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const loadAgents = useCallback(async () => {
-    try { setAgents(await fetchAgents()); } catch { /* graceful */ }
-  }, []);
-
-  useEffect(() => { void loadAgents(); }, [loadAgents]);
 
   const handleSubmit = useCallback(async (values: AgentFormValues) => {
     setSaving(true);
@@ -76,13 +95,15 @@ export function AgentsView() {
     await loadAgents();
   }, [loadAgents]);
 
-  const openNew = () => { setEditing(null); setModalOpen(true); };
-  const openEdit = (a: AgentData) => { setEditing(a); setModalOpen(true); };
+  const openNew = useCallback(() => { setEditing(null); setModalOpen(true); }, []);
+  const openEdit = useCallback((a: AgentData) => { setEditing(a); setModalOpen(true); }, []);
 
   return (
     <div className="space-y-4">
       <ViewActions onNew={openNew} onSync={() => setSyncOpen(true)} />
-      <AgentList agents={agents} onEdit={openEdit} onDuplicate={handleDuplicate} onDelete={handleDelete} />
+      {loading ? <AgentListSkeleton /> : (
+        <AgentList agents={agents} onEdit={openEdit} onDuplicate={handleDuplicate} onDelete={handleDelete} />
+      )}
       <AgentFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}

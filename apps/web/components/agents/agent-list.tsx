@@ -1,7 +1,7 @@
 'use client';
 
 import { Bot, Copy, Pencil, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 
 import type { AgentData } from './agent-form-modal';
 import { DeleteAgentDialog } from './delete-agent-dialog';
@@ -13,12 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 interface RowProps {
   agent: AgentData;
-  onEdit: () => void;
-  onDuplicate: () => void;
-  onDelete: () => void;
+  onEdit: (agent: AgentData) => void;
+  onDuplicate: (agent: AgentData) => void;
+  onDelete: (agent: AgentData) => void;
 }
 
-function AgentRow({ agent, onEdit, onDuplicate, onDelete }: RowProps) {
+const AgentRow = memo(function AgentRow({ agent, onEdit, onDuplicate, onDelete }: RowProps) {
   return (
     <TableRow>
       <TableCell className="font-medium">{agent.name}</TableCell>
@@ -31,14 +31,14 @@ function AgentRow({ agent, onEdit, onDuplicate, onDelete }: RowProps) {
       </TableCell>
       <TableCell>
         <div className="flex gap-1">
-          <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Edit agent"><Pencil className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={onDuplicate} aria-label="Duplicate agent"><Copy className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Delete agent"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => onEdit(agent)} aria-label="Edit agent"><Pencil className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => onDuplicate(agent)} aria-label="Duplicate agent"><Copy className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => onDelete(agent)} aria-label="Delete agent"><Trash2 className="h-4 w-4 text-destructive" /></Button>
         </div>
       </TableCell>
     </TableRow>
   );
-}
+});
 
 interface Props {
   agents: AgentData[];
@@ -64,28 +64,30 @@ export function AgentList({ agents, onEdit, onDuplicate, onDelete }: Props) {
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Model</TableHead>
-            <TableHead>Runtime</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="w-24" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {agents.map((agent) => (
-            <AgentRow
-              key={agent.id}
-              agent={agent}
-              onEdit={() => onEdit(agent)}
-              onDuplicate={() => onDuplicate(agent)}
-              onDelete={() => setToDelete(agent)}
-            />
-          ))}
-        </TableBody>
-      </Table>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Model</TableHead>
+              <TableHead>Runtime</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-24" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {agents.map((agent) => (
+              <AgentRow
+                key={agent.id}
+                agent={agent}
+                onEdit={onEdit}
+                onDuplicate={onDuplicate}
+                onDelete={setToDelete}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
       {toDelete && (
         <DeleteAgentDialog
           open

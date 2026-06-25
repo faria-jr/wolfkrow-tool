@@ -30,7 +30,8 @@ function ModelBreakdownTable({ byModel }: { byModel: UsageSummary['byModel'] }) 
   return (
     <div className="rounded border p-4">
       <h3 className="mb-4 text-sm font-semibold">Usage by Model</h3>
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left text-xs text-muted-foreground">
             <th className="pb-2 pr-4">Model</th>
@@ -53,7 +54,8 @@ function ModelBreakdownTable({ byModel }: { byModel: UsageSummary['byModel'] }) 
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
     </div>
   );
 }

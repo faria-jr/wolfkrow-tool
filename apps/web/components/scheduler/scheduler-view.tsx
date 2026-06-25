@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { Input } from '@/components/ui/input';
@@ -65,8 +65,8 @@ function TaskCreateForm({ form, setForm, creating, error, onSubmit }: CreateForm
   );
 }
 
-interface TaskItemProps { task: TaskData; onToggle: () => void; onDelete: () => void; onRun: () => void; }
-function SchedulerTaskItem({ task, onToggle, onDelete, onRun }: TaskItemProps) {
+interface TaskItemProps { task: TaskData; onToggle: (task: TaskData) => void; onDelete: (id: string) => void; onRun: (id: string) => void; }
+const SchedulerTaskItem = memo(function SchedulerTaskItem({ task, onToggle, onDelete, onRun }: TaskItemProps) {
   return (
     <div className="bg-card rounded-lg border p-4">
       <div className="flex items-start justify-between gap-4">
@@ -85,14 +85,14 @@ function SchedulerTaskItem({ task, onToggle, onDelete, onRun }: TaskItemProps) {
           </div>
         </div>
         <div className="flex shrink-0 gap-2">
-          <button onClick={onRun} className="text-muted-foreground hover:text-foreground text-xs transition-colors">run</button>
-          <button onClick={onToggle} className="text-muted-foreground hover:text-foreground text-xs transition-colors">{task.enabled ? 'pause' : 'enable'}</button>
-          <button onClick={onDelete} className="text-muted-foreground hover:text-destructive text-xs transition-colors">delete</button>
+          <button onClick={() => onRun(task.id)} className="text-muted-foreground hover:text-foreground text-xs transition-colors">run</button>
+          <button onClick={() => onToggle(task)} className="text-muted-foreground hover:text-foreground text-xs transition-colors">{task.enabled ? 'pause' : 'enable'}</button>
+          <button onClick={() => onDelete(task.id)} className="text-muted-foreground hover:text-destructive text-xs transition-colors">delete</button>
         </div>
       </div>
     </div>
   );
-}
+});
 
 interface PendingReviewProps { runs: PendingRun[]; onReview: (id: string, verdict: 'validated' | 'rejected') => void; }
 function PendingReviewSection({ runs, onReview }: PendingReviewProps) {
@@ -182,9 +182,9 @@ export function SchedulerView() {
   const [error, setError] = useState<string | null>(null);
 
   const handleCreate = () => void doCreateTask({ form, setError, setCreating, setForm, setShowForm, load: () => void reload() });
-  const handleToggle = (task: TaskData) => void patchTask(task.id, { enabled: !task.enabled }).then(() => void reload());
-  const handleDelete = (id: string) => void fetch(`/api/scheduler/tasks/${id}`, { method: 'DELETE', credentials: 'include' }).then(() => void reload());
-  const handleRun = (id: string) => void fetch(`/api/scheduler/tasks/${id}/run`, { method: 'POST', credentials: 'include' }).then(() => void reload());
+  const handleToggle = useCallback((task: TaskData) => { void patchTask(task.id, { enabled: !task.enabled }).then(() => void reload()); }, [reload]);
+  const handleDelete = useCallback((id: string) => { void fetch(`/api/scheduler/tasks/${id}`, { method: 'DELETE', credentials: 'include' }).then(() => void reload()); }, [reload]);
+  const handleRun = useCallback((id: string) => { void fetch(`/api/scheduler/tasks/${id}/run`, { method: 'POST', credentials: 'include' }).then(() => void reload()); }, [reload]);
   const handleReview = (runId: string, verdict: 'validated' | 'rejected') => void reviewRun(runId, verdict).then(() => void reload());
 
   return (
@@ -204,7 +204,7 @@ export function SchedulerView() {
         <EmptyState title="No scheduled tasks yet" description="Automate tasks with cron expressions — create your first one." />
       ) : (
         <div className="space-y-3">
-          {tasks.map((task) => <SchedulerTaskItem key={task.id} task={task} onToggle={() => void handleToggle(task)} onDelete={() => void handleDelete(task.id)} onRun={() => void handleRun(task.id)} />)}
+          {tasks.map((task) => <SchedulerTaskItem key={task.id} task={task} onToggle={handleToggle} onDelete={handleDelete} onRun={handleRun} />)}
         </div>
       )}
     </div>

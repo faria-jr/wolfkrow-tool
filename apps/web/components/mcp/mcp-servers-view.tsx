@@ -9,6 +9,8 @@ import { GoogleOAuthPanel } from './google-oauth-panel';
 import type { McpHealthSnapshot, McpServerData } from './mcp-server-list';
 import { McpServerList } from './mcp-server-list';
 
+import { Skeleton } from '@/components/ui/skeleton';
+
 const API = '/api/mcp-servers';
 const CATALOG_API = '/api/mcp-servers/catalog';
 
@@ -115,6 +117,7 @@ function useServerActions(
 export function McpServersView() {
   const [servers, setServers] = useState<McpServerData[]>([]);
   const [catalog, setCatalog] = useState<CatalogIndex>({ builtIn: [], planned: [] });
+  const [loading, setLoading] = useState(true);
 
   const reload = useCallback(async () => {
     try {
@@ -127,7 +130,7 @@ export function McpServersView() {
       setServers(data.servers.map((s) => ({ ...s, source: deriveSource(s.name, idx) })));
     } catch {
       /* graceful */
-    }
+    } finally { setLoading(false); }
   }, [catalog]);
 
   useEffect(() => {
@@ -144,14 +147,21 @@ export function McpServersView() {
         <AddMcpServerModal onDone={() => void reload()} />
       </div>
       <GoogleOAuthPanel configuredServers={serverNames} />
-      <McpServerList
-        servers={servers}
-        onToggle={actions.toggle}
-        onDelete={actions.remove}
-        onRestart={actions.restart}
-        onHealthCheck={actions.checkHealth}
-        onVisibilityChange={actions.setVisibility}
-      />
+      {loading ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          <Skeleton className="h-32 w-full rounded-lg" />
+          <Skeleton className="h-32 w-full rounded-lg" />
+        </div>
+      ) : (
+        <McpServerList
+          servers={servers}
+          onToggle={actions.toggle}
+          onDelete={actions.remove}
+          onRestart={actions.restart}
+          onHealthCheck={actions.checkHealth}
+          onVisibilityChange={actions.setVisibility}
+        />
+      )}
     </div>
   );
 }
