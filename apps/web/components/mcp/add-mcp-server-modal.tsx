@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 
 interface Props {
   onDone: () => void;
+  /** Fired on successful creation (e.g. toast feedback). */
+  onCreate?: () => void;
 }
 
 interface McpServerFormFieldsProps {
@@ -47,7 +49,7 @@ function McpServerFormFields({ name, command, args, error, onNameChange, onComma
   );
 }
 
-export function AddMcpServerModal({ onDone }: Props) {
+export function AddMcpServerModal({ onDone, onCreate }: Props) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [command, setCommand] = useState('');
@@ -74,6 +76,7 @@ export function AddMcpServerModal({ onDone }: Props) {
       }
       reset();
       setOpen(false);
+      onCreate?.();
       onDone();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error');

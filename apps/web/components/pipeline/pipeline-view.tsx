@@ -4,6 +4,7 @@ import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
 interface ProjectData {
@@ -115,8 +116,14 @@ function PipelineLeftPanel({ name, setName, description, setDescription, creatin
     <div className="w-72 flex-shrink-0 space-y-4">
       <h2 className="text-lg font-semibold">Pipeline Projects</h2>
       <form onSubmit={onSubmit} className="space-y-2 rounded border p-3">
-        <Input placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <Textarea placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+        <div>
+          <Label htmlFor="pipeline-name" className="mb-1 block text-xs text-muted-foreground">Project name</Label>
+          <Input id="pipeline-name" placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} required />
+        </div>
+        <div>
+          <Label htmlFor="pipeline-desc" className="mb-1 block text-xs text-muted-foreground">Description</Label>
+          <Textarea id="pipeline-desc" placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
         <button type="submit" disabled={creating} className="w-full rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50">{creating ? 'Creating…' : 'New Pipeline'}</button>
       </form>
       {error && <p className="text-sm text-destructive">{error}</p>}

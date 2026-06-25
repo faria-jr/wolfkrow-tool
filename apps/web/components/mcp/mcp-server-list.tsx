@@ -2,8 +2,9 @@
 
 import type { McpServerRecord, McpServerSource, McpServerVisibility } from '@wolfkrow/domain';
 import { Network, RotateCw, RefreshCw, TrashIcon } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 
+import { ConfirmDialog } from '@/components/chat/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,7 +41,7 @@ export interface McpHealthSnapshot {
 interface RowProps {
   server: McpServerData;
   onToggle: (id: string, active: boolean) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => void | Promise<void>;
   onRestart: (id: string) => void;
   onHealthCheck: (id: string) => void;
   onVisibilityChange: (id: string, visibility: McpServerVisibility) => void;
@@ -49,7 +50,7 @@ interface RowProps {
 interface ServerActionsProps {
   server: McpServerData;
   onToggle: (id: string, active: boolean) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => void | Promise<void>;
   onRestart: (id: string) => void;
   onHealthCheck: (id: string) => void;
 }
@@ -86,6 +87,43 @@ function healthLabel(snapshot: McpHealthSnapshot | undefined): string {
   if (snapshot.healthy) return `health: ok (${snapshot.tools} tools)`;
   if (snapshot.status === 'crashed') return `health: crashed (${snapshot.restarts} restarts)`;
   return 'health: stopped';
+}
+
+function DeleteServerButton({ server, onDelete }: { server: McpServerData; onDelete: (id: string) => void | Promise<void> }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function confirmDeletion() {
+    setDeleting(true);
+    try {
+      await onDelete(server.id);
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  }
+
+  return (
+    <>
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={() => setConfirmDelete(true)}
+        disabled={deleting}
+        aria-label="Delete server"
+      >
+        <TrashIcon className="h-4 w-4" />
+      </Button>
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete server"
+        description={`Remove "${server.name}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={() => void confirmDeletion()}
+        onCancel={() => setConfirmDelete(false)}
+      />
+    </>
+  );
 }
 
 function ServerActions({
@@ -125,16 +163,7 @@ function ServerActions({
           <RotateCw className="h-4 w-4" />
         </Button>
       )}
-      {!server.isBuiltIn && (
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => onDelete(server.id)}
-          aria-label="Delete server"
-        >
-          <TrashIcon className="h-4 w-4" />
-        </Button>
-      )}
+      {!server.isBuiltIn && <DeleteServerButton server={server} onDelete={onDelete} />}
     </div>
   );
 }
@@ -220,7 +249,7 @@ const McpServerRow = memo(function McpServerRow({
 interface Props {
   servers: McpServerData[];
   onToggle: (id: string, active: boolean) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string) => void | Promise<void>;
   onRestart: (id: string) => void;
   onHealthCheck: (id: string) => void;
   onVisibilityChange: (id: string, visibility: McpServerVisibility) => void;

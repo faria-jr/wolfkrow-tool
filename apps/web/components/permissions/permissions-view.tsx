@@ -1,7 +1,9 @@
 'use client';
 
+
 import { ShieldCheck } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
@@ -270,8 +272,10 @@ export function PermissionsView() {
           body: JSON.stringify(next === 'ask' ? { agentId, tool } : { agentId, tool, decision: next }),
         });
         if (!res.ok) throw new Error(next === 'ask' ? 'Failed to reset decision' : 'Failed to save decision');
+        toast.success(next === 'ask' ? 'Permission reset to Ask' : `Permission set to ${next}`);
       } catch {
         setState((cur) => ({ ...cur, decisions: applyDecision(cur.decisions, key, prev) }));
+        toast.error('Failed to save permission');
       } finally {
         setMutating(null);
       }

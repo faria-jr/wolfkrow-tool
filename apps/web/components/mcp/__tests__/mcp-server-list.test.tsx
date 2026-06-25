@@ -160,6 +160,8 @@ describe('McpServerList', () => {
       />,
     );
     await userEvent.click(screen.getByLabelText('Delete server'));
+    // FE-6: deletion is gated by a confirm dialog.
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(del).toHaveBeenCalledWith('s2');
   });
 

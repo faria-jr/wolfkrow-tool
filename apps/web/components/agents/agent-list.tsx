@@ -16,9 +16,10 @@ interface RowProps {
   onEdit: (agent: AgentData) => void;
   onDuplicate: (agent: AgentData) => void;
   onDelete: (agent: AgentData) => void;
+  disableDelete?: boolean;
 }
 
-const AgentRow = memo(function AgentRow({ agent, onEdit, onDuplicate, onDelete }: RowProps) {
+const AgentRow = memo(function AgentRow({ agent, onEdit, onDuplicate, onDelete, disableDelete }: RowProps) {
   return (
     <TableRow>
       <TableCell className="font-medium">{agent.name}</TableCell>
@@ -33,7 +34,7 @@ const AgentRow = memo(function AgentRow({ agent, onEdit, onDuplicate, onDelete }
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" onClick={() => onEdit(agent)} aria-label="Edit agent"><Pencil className="h-4 w-4" /></Button>
           <Button variant="ghost" size="icon" onClick={() => onDuplicate(agent)} aria-label="Duplicate agent"><Copy className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" onClick={() => onDelete(agent)} aria-label="Delete agent"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => onDelete(agent)} disabled={disableDelete} aria-label="Delete agent"><Trash2 className="h-4 w-4 text-destructive" /></Button>
         </div>
       </TableCell>
     </TableRow>
@@ -47,16 +48,20 @@ interface Props {
   onDelete: (agentId: string) => Promise<void>;
 }
 
-export function AgentList({ agents, onEdit, onDuplicate, onDelete }: Props) {
+function useDeleteConfirm(onDelete: (id: string) => Promise<void>) {
   const [toDelete, setToDelete] = useState<AgentData | null>(null);
   const [deleting, setDeleting] = useState(false);
-
   const confirmDelete = async () => {
     if (!toDelete?.id) return;
     setDeleting(true);
     try { await onDelete(toDelete.id); }
     finally { setDeleting(false); setToDelete(null); }
   };
+  return { toDelete, setToDelete, deleting, confirmDelete };
+}
+
+export function AgentList({ agents, onEdit, onDuplicate, onDelete }: Props) {
+  const { toDelete, setToDelete, deleting, confirmDelete } = useDeleteConfirm(onDelete);
 
   if (agents.length === 0) {
     return <EmptyState title="No agents yet" description="Create one to get started." icon={<Bot className="h-6 w-6" />} />;
@@ -83,6 +88,7 @@ export function AgentList({ agents, onEdit, onDuplicate, onDelete }: Props) {
                 onEdit={onEdit}
                 onDuplicate={onDuplicate}
                 onDelete={setToDelete}
+                disableDelete={deleting}
               />
             ))}
           </TableBody>

@@ -2,7 +2,7 @@
 
 import { Plus, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-
+import { toast } from 'sonner';
 
 import type { AgentData } from './agent-form-modal';
 import { AgentFormModal } from './agent-form-modal';
@@ -62,52 +62,74 @@ function useAgents() {
   return { agents, loading, loadAgents };
 }
 
-export function AgentsView() {
-  const { agents, loading, loadAgents } = useAgents();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [syncOpen, setSyncOpen] = useState(false);
-  const [editing, setEditing] = useState<AgentData | null>(null);
+function useAgentMutations(loadAgents: () => Promise<void>) {
   const [saving, setSaving] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editing, setEditing] = useState<AgentData | null>(null);
 
-  const handleSubmit = useCallback(async (values: AgentFormValues) => {
+  const submit = useCallback(async (values: AgentFormValues) => {
     setSaving(true);
     try {
       const method = editing?.id ? 'PUT' : 'POST';
       const path = editing?.id ? `${API}/${editing.id}` : API;
-      await apiFetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) });
+      const res = await apiFetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      toast.success(editing?.id ? 'Agent updated' : 'Agent created');
       setModalOpen(false);
       await loadAgents();
+    } catch {
+      toast.error('Failed to save agent');
     } finally { setSaving(false); }
   }, [editing, loadAgents]);
 
-  const handleDuplicate = useCallback(async (agent: AgentData) => {
+  const duplicate = useCallback(async (agent: AgentData) => {
     if (!agent.id) return;
-    await apiFetch(`${API}/${agent.id}/duplicate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ newName: `${agent.name} (copy)` }),
-    });
-    await loadAgents();
+    try {
+      const res = await apiFetch(`${API}/${agent.id}/duplicate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newName: `${agent.name} (copy)` }),
+      });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      toast.success('Agent duplicated');
+      await loadAgents();
+    } catch {
+      toast.error('Failed to duplicate agent');
+    }
   }, [loadAgents]);
 
-  const handleDelete = useCallback(async (id: string) => {
-    await apiFetch(`${API}/${id}`, { method: 'DELETE' });
-    await loadAgents();
+  const remove = useCallback(async (id: string) => {
+    try {
+      const res = await apiFetch(`${API}/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      toast.success('Agent deleted');
+      await loadAgents();
+    } catch {
+      toast.error('Failed to delete agent');
+    }
   }, [loadAgents]);
 
-  const openNew = useCallback(() => { setEditing(null); setModalOpen(true); }, []);
-  const openEdit = useCallback((a: AgentData) => { setEditing(a); setModalOpen(true); }, []);
+  return { saving, modalOpen, setModalOpen, editing, setEditing, submit, duplicate, remove };
+}
+
+export function AgentsView() {
+  const { agents, loading, loadAgents } = useAgents();
+  const { saving, modalOpen, setModalOpen, editing, setEditing, submit, duplicate, remove } = useAgentMutations(loadAgents);
+  const [syncOpen, setSyncOpen] = useState(false);
+
+  const openNew = useCallback(() => { setEditing(null); setModalOpen(true); }, [setEditing, setModalOpen]);
+  const openEdit = useCallback((a: AgentData) => { setEditing(a); setModalOpen(true); }, [setEditing, setModalOpen]);
 
   return (
     <div className="space-y-4">
       <ViewActions onNew={openNew} onSync={() => setSyncOpen(true)} />
       {loading ? <AgentListSkeleton /> : (
-        <AgentList agents={agents} onEdit={openEdit} onDuplicate={handleDuplicate} onDelete={handleDelete} />
+        <AgentList agents={agents} onEdit={openEdit} onDuplicate={duplicate} onDelete={remove} />
       )}
       <AgentFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSubmit={handleSubmit}
+        onSubmit={submit}
         {...(editing !== null ? { agent: editing } : {})}
         loading={saving}
       />

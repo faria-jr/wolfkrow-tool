@@ -2,7 +2,7 @@
 
 import type { McpServerSource, McpServerVisibility } from '@wolfkrow/domain';
 import { useCallback, useEffect, useState } from 'react';
-
+import { toast } from 'sonner';
 
 import { AddMcpServerModal } from './add-mcp-server-modal';
 import { GoogleOAuthPanel } from './google-oauth-panel';
@@ -55,15 +55,39 @@ interface ServerActions {
   checkHealth: (id: string) => Promise<void>;
 }
 
-function patchThenReload(id: string, body: unknown, reload: () => Promise<void>) {
-  return async (): Promise<void> => {
-    await apiFetch(`${API}/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    await reload();
-  };
+async function patchThenReload(
+  id: string,
+  body: unknown,
+  reload: () => Promise<void>,
+): Promise<Response> {
+  const res = await apiFetch(`${API}/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  await reload();
+  return res;
+}
+
+async function runWithToast(op: () => Promise<unknown>, ok: string, fail: string) {
+  try {
+    await op();
+    toast.success(ok);
+  } catch {
+    toast.error(fail);
+  }
+}
+
+async function removeServer(id: string, reload: () => Promise<void>) {
+  const res = await apiFetch(`${API}/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('delete failed');
+  await reload();
+}
+
+async function restartServer(id: string, reload: () => Promise<void>) {
+  const res = await apiFetch(`${API}/${id}/restart`, { method: 'POST' });
+  if (!res.ok) throw new Error('restart failed');
+  await reload();
 }
 
 function useServerActions(
@@ -71,32 +95,32 @@ function useServerActions(
   setServers: (updater: (prev: McpServerData[]) => McpServerData[]) => void,
 ): ServerActions {
   const toggle = useCallback(
-    async (id: string, isActive: boolean) => {
-      await patchThenReload(id, { isActive }, reload)();
-    },
+    (id: string, isActive: boolean) =>
+      runWithToast(
+        async () => patchThenReload(id, { isActive }, reload),
+        `Server ${isActive ? 'enabled' : 'toggled'}`,
+        'Failed to toggle server',
+      ),
     [reload],
   );
 
   const remove = useCallback(
-    async (id: string) => {
-      await apiFetch(`${API}/${id}`, { method: 'DELETE' });
-      await reload();
-    },
+    (id: string) => runWithToast(async () => removeServer(id, reload), 'Server removed', 'Failed to remove server'),
     [reload],
   );
 
   const setVisibility = useCallback(
-    async (id: string, visibility: McpServerVisibility) => {
-      await patchThenReload(id, { visibility }, reload)();
-    },
+    (id: string, visibility: McpServerVisibility) =>
+      runWithToast(
+        async () => patchThenReload(id, { visibility }, reload),
+        'Server visibility updated',
+        'Failed to update visibility',
+      ),
     [reload],
   );
 
   const restart = useCallback(
-    async (id: string) => {
-      await apiFetch(`${API}/${id}/restart`, { method: 'POST' });
-      await reload();
-    },
+    (id: string) => runWithToast(async () => restartServer(id, reload), 'Server restarted', 'Failed to restart server'),
     [reload],
   );
 
@@ -144,7 +168,10 @@ export function McpServersView() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <AddMcpServerModal onDone={() => void reload()} />
+        <AddMcpServerModal
+          onDone={() => void reload()}
+          onCreate={() => toast.success('Server created')}
+        />
       </div>
       <GoogleOAuthPanel configuredServers={serverNames} />
       {loading ? (

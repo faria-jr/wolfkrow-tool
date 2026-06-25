@@ -1,30 +1,43 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useCallback, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 
-export interface SkillEditorValues {
-  name: string;
-  description: string;
-  content: string;
+export const skillSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  description: z.string().min(1, 'Description is required'),
+  content: z.string().min(1, 'Content is required'),
+  tags: z.array(z.string()),
+});
+
+export type SkillEditorValues = z.infer<typeof skillSchema>;
+
+function buildDefaults(v: Partial<SkillEditorValues> | undefined): SkillEditorValues {
+  return {
+    name: v?.name ?? '',
+    description: v?.description ?? '',
+    content: v?.content ?? '',
+    tags: v?.tags ?? ([] as string[]),
+  };
+}
+
+interface TagFieldProps {
   tags: string[];
+  onChange: (t: string[]) => void;
+  disabled: boolean | undefined;
 }
 
-interface Props {
-  initialValues?: Partial<SkillEditorValues>;
-  onSave: (values: SkillEditorValues) => Promise<void>;
-  onCancel: () => void;
-  loading?: boolean;
-  readOnly?: boolean;
-}
-
-function TagEditor({ tags, onChange }: { tags: string[]; onChange: (t: string[]) => void }) {
+function TagField({ tags, onChange, disabled }: TagFieldProps) {
   const remove = useCallback((tag: string) => onChange(tags.filter((t) => t !== tag)), [tags, onChange]);
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== 'Enter') return;
@@ -38,7 +51,7 @@ function TagEditor({ tags, onChange }: { tags: string[]; onChange: (t: string[])
       <div className="flex flex-wrap gap-1">
         {tags.map((t) => <Badge key={t} variant="secondary" className="cursor-pointer gap-1" onClick={() => remove(t)}>{t} ×</Badge>)}
       </div>
-      <Input placeholder="Type tag + Enter" onKeyDown={handleKeyDown} />
+      <Input placeholder="Type tag + Enter" onKeyDown={handleKeyDown} disabled={disabled} />
     </div>
   );
 }
@@ -75,42 +88,65 @@ function SkillFormActions({ onSave, onCancel, loading }: ActionsProps) {
   );
 }
 
-function buildInitialState(v: Partial<SkillEditorValues> | undefined) {
-  return {
-    name: v?.name ?? '',
-    description: v?.description ?? '',
-    content: v?.content ?? '',
-    tags: v?.tags ?? ([] as string[]),
-  };
+interface Props {
+  initialValues?: Partial<SkillEditorValues>;
+  onSave: (values: SkillEditorValues) => Promise<void>;
+  onCancel: () => void;
+  loading?: boolean;
+  readOnly?: boolean;
 }
 
 export function SkillEditor({ initialValues, onSave, onCancel, loading, readOnly }: Props) {
-  const init = buildInitialState(initialValues);
-  const [name, setName] = useState(init.name);
-  const [description, setDescription] = useState(init.description);
-  const [content, setContent] = useState(init.content);
-  const [tags, setTags] = useState<string[]>(init.tags);
+  const form = useForm<SkillEditorValues>({
+    resolver: zodResolver(skillSchema),
+    defaultValues: buildDefaults(initialValues),
+    mode: 'onSubmit',
+  });
 
-  const handleSave = useCallback(() => { void onSave({ name, description, content, tags }); }, [name, description, content, tags, onSave]);
+  // Reset form values when initialValues change (switching between
+  // new/edit). Without this, useForm keeps stale defaultValues on edit.
+  useEffect(() => {
+    form.reset(buildDefaults(initialValues));
+  }, [initialValues, form]);
+
+  const { control, handleSubmit, watch, setValue } = form;
+  const tags = watch('tags');
+  const content = watch('content');
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor="skill-name">Name</Label>
-          <Input id="skill-name" value={name} onChange={(e) => setName(e.target.value)} disabled={readOnly} placeholder="e.g. pdf-processing" />
+    <Form {...form}>
+      <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <FormField
+            control={control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl><Input placeholder="e.g. pdf-processing" disabled={readOnly} {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl><Input placeholder="Brief description" disabled={readOnly} {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="skill-desc">Description</Label>
-          <Input id="skill-desc" value={description} onChange={(e) => setDescription(e.target.value)} disabled={readOnly} placeholder="Brief description" />
+          <Label>Tags</Label>
+          <TagField tags={tags} onChange={readOnly ? () => undefined : (t) => setValue('tags', t)} disabled={readOnly} />
         </div>
+        <SkillContentTabs content={content} onChange={(v) => setValue('content', v)} disabled={readOnly} />
+        {!readOnly && <SkillFormActions onSave={handleSubmit((v) => { void onSave(v); })} onCancel={onCancel} loading={loading} />}
       </div>
-      <div className="space-y-1">
-        <Label>Tags</Label>
-        <TagEditor tags={tags} onChange={readOnly ? () => undefined : setTags} />
-      </div>
-      <SkillContentTabs content={content} onChange={setContent} disabled={readOnly} />
-      {!readOnly && <SkillFormActions onSave={handleSave} onCancel={onCancel} loading={loading} />}
-    </div>
+    </Form>
   );
 }

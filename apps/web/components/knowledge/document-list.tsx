@@ -2,7 +2,9 @@
 
 import { FileText, Trash2, RefreshCw } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
+import { toast } from 'sonner';
 
+import { ConfirmDialog } from '@/components/chat/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -38,10 +40,10 @@ function formatBytes(bytes: number): string {
 interface DocumentItemProps {
   doc: DocumentProps;
   deleting: boolean;
-  onDelete: (id: string) => void;
+  onRequestDelete: (doc: DocumentProps) => void;
 }
 
-const DocumentItem = memo(function DocumentItem({ doc, deleting, onDelete }: DocumentItemProps) {
+const DocumentItem = memo(function DocumentItem({ doc, deleting, onRequestDelete }: DocumentItemProps) {
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
@@ -59,7 +61,8 @@ const DocumentItem = memo(function DocumentItem({ doc, deleting, onDelete }: Doc
         variant="ghost"
         size="sm"
         disabled={deleting}
-        onClick={() => onDelete(doc.id)}
+        aria-label={`Delete ${doc.filename}`}
+        onClick={() => onRequestDelete(doc)}
       >
         {deleting ? (
           <RefreshCw className="h-4 w-4 animate-spin" />
@@ -71,15 +74,70 @@ const DocumentItem = memo(function DocumentItem({ doc, deleting, onDelete }: Doc
   );
 });
 
-export function DocumentList({ documents, onDeleted }: Props) {
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+interface DocumentListBodyProps {
+  documents: DocumentProps[];
+  deletingId: string | null;
+  onRequestDelete: (doc: DocumentProps) => void;
+}
+function DocumentListBody({ documents, deletingId, onRequestDelete }: DocumentListBodyProps) {
+  return (
+    <div className="divide-y rounded-lg border">
+      {documents.map((doc) => (
+        <DocumentItem
+          key={doc.id}
+          doc={doc}
+          deleting={deletingId === doc.id}
+          onRequestDelete={onRequestDelete}
+        />
+      ))}
+    </div>
+  );
+}
 
-  const handleDelete = useCallback(async (id: string) => {
-    setDeletingId(id);
-    await fetch(`/api/knowledge/documents/${id}`, { method: 'DELETE', credentials: 'include' });
-    setDeletingId(null);
-    onDeleted();
+interface DeleteState {
+  deletingId: string | null;
+  pendingDoc: DocumentProps | null;
+  requestDelete: (doc: DocumentProps) => void;
+  confirmDelete: (doc: DocumentProps) => Promise<void>;
+  cancelDelete: () => void;
+}
+function useDocumentDelete(onDeleted: () => void): DeleteState {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDoc, setPendingDoc] = useState<DocumentProps | null>(null);
+
+  const confirmDelete = useCallback(async (doc: DocumentProps) => {
+    setDeletingId(doc.id);
+    setPendingDoc(null);
+    try {
+      const res = await fetch(`/api/knowledge/documents/${doc.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: string } | null;
+        toast.error(data?.error ?? 'Failed to delete document');
+        return;
+      }
+      toast.success('Document deleted');
+      onDeleted();
+    } catch {
+      toast.error('Failed to delete document');
+    } finally {
+      setDeletingId(null);
+    }
   }, [onDeleted]);
+
+  return {
+    deletingId,
+    pendingDoc,
+    requestDelete: setPendingDoc,
+    confirmDelete,
+    cancelDelete: () => setPendingDoc(null),
+  };
+}
+
+export function DocumentList({ documents, onDeleted }: Props) {
+  const del = useDocumentDelete(onDeleted);
 
   if (documents.length === 0) {
     return (
@@ -91,15 +149,24 @@ export function DocumentList({ documents, onDeleted }: Props) {
   }
 
   return (
-    <div className="divide-y rounded-lg border">
-      {documents.map((doc) => (
-        <DocumentItem
-          key={doc.id}
-          doc={doc}
-          deleting={deletingId === doc.id}
-          onDelete={handleDelete}
-        />
-      ))}
-    </div>
+    <>
+      <DocumentListBody
+        documents={documents}
+        deletingId={del.deletingId}
+        onRequestDelete={del.requestDelete}
+      />
+      <ConfirmDialog
+        open={del.pendingDoc !== null}
+        title="Delete document"
+        description={
+          del.pendingDoc
+            ? `Delete "${del.pendingDoc.filename}"? This cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        onConfirm={() => del.pendingDoc && void del.confirmDelete(del.pendingDoc)}
+        onCancel={del.cancelDelete}
+      />
+    </>
   );
 }

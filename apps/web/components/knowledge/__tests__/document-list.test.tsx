@@ -36,10 +36,12 @@ describe('DocumentList', () => {
     expect(screen.getByText('ready')).toBeInTheDocument();
   });
 
-  it('deletes document on click', async () => {
+  it('deletes document after confirming', async () => {
     const onDeleted = vi.fn();
     render(<DocumentList documents={[doc]} onDeleted={onDeleted} />);
-    await userEvent.click(screen.getByRole('button'));
+    // Open the confirm dialog, then confirm deletion.
+    await userEvent.click(screen.getByRole('button', { name: /delete spec\.pdf/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Delete' }));
     await vi.waitFor(() => expect(onDeleted).toHaveBeenCalled());
   });
 });

@@ -1,10 +1,15 @@
 'use client';
 
 import type { SecretMetadata } from '@wolfkrow/shared-types';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
+import { ExportForm, ImportForm } from './vault-helpers';
+
+import { ConfirmDialog } from '@/components/chat/confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { listVaultSecrets } from '@/lib/api-client';
 
 type Category = 'ai' | 'integration' | 'oauth' | 'other';
@@ -60,112 +65,27 @@ function useVault() {
     });
     if (!res.ok) {
       const d = (await res.json()) as { error: string };
+      toast.error('Failed to add secret');
       throw new Error(d.error);
     }
+    toast.success('Secret added');
     await load();
   }, [load]);
 
   const deleteSecret = useCallback(async (secretKey: string) => {
-    await fetch(`/api/vault/${secretKey}`, { method: 'DELETE' });
+    const res = await fetch(`/api/vault/${secretKey}`, { method: 'DELETE' });
+    if (!res.ok) {
+      toast.error('Failed to delete secret');
+      throw new Error('delete failed');
+    }
+    toast.success('Secret deleted');
     await load();
   }, [load]);
 
   return { secrets, createSecret, deleteSecret, load };
 }
 
-function ExportForm({ onDone }: { onDone: () => void }) {
-  const [passphrase, setPassphrase] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleExport() {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/vault/export', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passphrase }),
-      });
-      if (!res.ok) throw new Error(((await res.json()) as { error: string }).error);
-      const data = (await res.json()) as { payload: unknown };
-      const blob = new Blob([JSON.stringify(data.payload, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `wolfkrow-vault-backup-${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      onDone();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Export failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-3 rounded border p-4">
-      <h3 className="font-semibold">Export encrypted backup</h3>
-      <p className="text-xs text-muted-foreground">All secrets will be encrypted with AES-256-GCM using the passphrase you choose.</p>
-      <Input type="password" placeholder="Passphrase" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} />
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex gap-2">
-        <Button size="sm" disabled={busy || !passphrase} onClick={() => void handleExport()}>{busy ? 'Exporting…' : 'Download backup'}</Button>
-        <Button size="sm" variant="outline" onClick={onDone}>Cancel</Button>
-      </div>
-    </div>
-  );
-}
-
-function ImportForm({ onDone }: { onDone: () => void }) {
-  const [passphrase, setPassphrase] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  async function handleImport() {
-    if (!file || !passphrase) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const text = await file.text();
-      const payload = JSON.parse(text) as unknown;
-      const res = await fetch('/api/vault/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passphrase, payload }),
-      });
-      if (!res.ok) throw new Error(((await res.json()) as { error: string }).error);
-      const data = (await res.json()) as { imported: number };
-      alert(`Imported ${data.imported} secret(s) successfully.`);
-      onDone();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Import failed');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <div className="flex flex-col gap-3 rounded border p-4">
-      <h3 className="font-semibold">Import from backup</h3>
-      <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-      <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
-        {file ? file.name : 'Choose backup file…'}
-      </Button>
-      <Input type="password" placeholder="Passphrase" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} />
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex gap-2">
-        <Button size="sm" disabled={busy || !file || !passphrase} onClick={() => void handleImport()}>{busy ? 'Importing…' : 'Import'}</Button>
-        <Button size="sm" variant="outline" onClick={onDone}>Cancel</Button>
-      </div>
-    </div>
-  );
-}
-
-function SecretTable({ secrets, onDelete }: { secrets: SecretMetadata[]; onDelete: (key: string) => void }) {
+function SecretTable({ secrets, onDelete }: { secrets: SecretMetadata[]; onDelete: (key: string) => void | Promise<void> }) {
   return (
     <div className="rounded border">
       <table className="w-full text-sm">
@@ -180,17 +100,7 @@ function SecretTable({ secrets, onDelete }: { secrets: SecretMetadata[]; onDelet
         </thead>
         <tbody className="px-4">
           {secrets.map((s) => (
-            <tr key={s.key} className="border-b px-4 last:border-0">
-              <td className="px-4 py-2 font-medium">{s.displayName}</td>
-              <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{s.key}</td>
-              <td className="px-4 py-2"><span className="rounded bg-secondary px-2 py-0.5 text-xs">{s.category}</span></td>
-              <td className="px-4 py-2"><SecretValueCell secretKey={s.key} /></td>
-              <td className="px-4 py-2">
-                <Button size="sm" variant="destructive" onClick={() => {
-                  if (confirm(`Delete secret "${s.key}"?`)) void onDelete(s.key);
-                }}>Delete</Button>
-              </td>
-            </tr>
+            <SecretRow key={s.key} secret={s} onDelete={onDelete} />
           ))}
           {secrets.length === 0 && (
             <tr><td colSpan={5} className="px-4 py-6 text-center text-muted-foreground">No secrets stored</td></tr>
@@ -198,6 +108,41 @@ function SecretTable({ secrets, onDelete }: { secrets: SecretMetadata[]; onDelet
         </tbody>
       </table>
     </div>
+  );
+}
+
+function SecretRow({ secret, onDelete }: { secret: SecretMetadata; onDelete: (key: string) => void | Promise<void> }) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function confirmDeletion() {
+    setDeleting(true);
+    try {
+      await onDelete(secret.key);
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  }
+
+  return (
+    <tr className="border-b px-4 last:border-0">
+      <td className="px-4 py-2 font-medium">{secret.displayName}</td>
+      <td className="px-4 py-2 font-mono text-xs text-muted-foreground">{secret.key}</td>
+      <td className="px-4 py-2"><span className="rounded bg-secondary px-2 py-0.5 text-xs">{secret.category}</span></td>
+      <td className="px-4 py-2"><SecretValueCell secretKey={secret.key} /></td>
+      <td className="px-4 py-2">
+        <Button size="sm" variant="destructive" disabled={deleting} onClick={() => setConfirmDelete(true)}>Delete</Button>
+        <ConfirmDialog
+          open={confirmDelete}
+          title="Delete secret"
+          description={`Delete secret "${secret.key}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={() => void confirmDeletion()}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      </td>
+    </tr>
   );
 }
 
@@ -233,16 +178,43 @@ function AddSecretForm({
   return (
     <div className="flex flex-col gap-3 rounded border p-4">
       <h3 className="font-semibold">Add Secret</h3>
-      <div className="grid grid-cols-2 gap-3">
-        <Input placeholder="Key (e.g. anthropic-api-key)" value={key} onChange={(e) => setKey(e.target.value)} />
-        <Input type="password" placeholder="Value" value={value} onChange={(e) => setValue(e.target.value)} />
-        <Input placeholder="Display Name" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-        <CategorySelect value={category} onChange={setCategory} />
-      </div>
+      <SecretFields
+        key={key} value={value} displayName={displayName}
+        onKey={setKey} onValue={setValue} onDisplayName={setDisplayName}
+      />
+      <CategorySelect value={category} onChange={setCategory} />
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button onClick={() => void submit()} disabled={saving || !key || !value || !displayName}>{saving ? 'Saving…' : 'Save'}</Button>
         <Button variant="outline" onClick={onCancel}>Cancel</Button>
+      </div>
+    </div>
+  );
+}
+
+interface SecretFieldsProps {
+  key: string;
+  value: string;
+  displayName: string;
+  onKey: (v: string) => void;
+  onValue: (v: string) => void;
+  onDisplayName: (v: string) => void;
+}
+
+function SecretFields({ key: k, value, displayName, onKey, onValue, onDisplayName }: SecretFieldsProps) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="vault-key">Key</Label>
+        <Input id="vault-key" placeholder="e.g. anthropic-api-key" value={k} onChange={(e) => onKey(e.target.value)} />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="vault-value">Value</Label>
+        <Input id="vault-value" type="password" placeholder="Secret value" value={value} onChange={(e) => onValue(e.target.value)} />
+      </div>
+      <div className="flex flex-col gap-1">
+        <Label htmlFor="vault-display">Display name</Label>
+        <Input id="vault-display" placeholder="Display Name" value={displayName} onChange={(e) => onDisplayName(e.target.value)} />
       </div>
     </div>
   );
