@@ -7,6 +7,8 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+import type { createLogger as CreateLogger } from '../logger';
+
 const ORIG_NODE_ENV = process.env['NODE_ENV'];
 const ORIG_LOG_LEVEL = process.env['LOG_LEVEL'];
 
@@ -21,8 +23,8 @@ afterEach(() => {
   else process.env['LOG_LEVEL'] = ORIG_LOG_LEVEL;
 });
 
-async function importLogger() {
-  const mod = (await import('../logger')) as typeof import('../logger');
+async function importLogger(): Promise<typeof CreateLogger> {
+  const mod = await import('../logger');
   return mod.createLogger;
 }
 

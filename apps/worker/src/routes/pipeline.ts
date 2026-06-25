@@ -157,6 +157,18 @@ async function approvePhaseHandler(req: FastifyRequest<{ Params: RunParams }>, r
 export async function pipelineRoutes(server: AuthFastifyInstance) {
   const { projectRepo, phaseRepo } = _repos;
 
+  registerPipelineProjectRoutes(server, projectRepo);
+  registerPipelinePhaseRoutes(server, projectRepo, phaseRepo);
+
+  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/run', runPhaseHandler);
+  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/approve', approvePhaseHandler);
+}
+
+/** Project CRUD: create, list, get, delete. */
+function registerPipelineProjectRoutes(
+  server: AuthFastifyInstance,
+  projectRepo: ReturnType<typeof makeRepos>['projectRepo'],
+): void {
   server.post('/projects', async (req) => {
     const body = validate(createProjectBody, req.body);
     const { project } = await new CreatePipelineProjectUseCase(projectRepo).execute({
@@ -189,7 +201,14 @@ export async function pipelineRoutes(server: AuthFastifyInstance) {
       return reply.status(404).send({ error: 'Not found' });
     }
   });
+}
 
+/** Phase routes: start, list, report. */
+function registerPipelinePhaseRoutes(
+  server: AuthFastifyInstance,
+  projectRepo: ReturnType<typeof makeRepos>['projectRepo'],
+  phaseRepo: ReturnType<typeof makeRepos>['phaseRepo'],
+): void {
   server.post<{ Params: { id: string } }>('/projects/:id/phases', async (req, reply) => {
     const body = validate(startPhaseBody, req.body);
     try {
@@ -210,9 +229,6 @@ export async function pipelineRoutes(server: AuthFastifyInstance) {
 
   // consolidated Markdown report of a project's phases + outputs.
   server.get<{ Params: { id: string } }>('/projects/:id/report', reportHandler);
-
-  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/run', runPhaseHandler);
-  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/approve', approvePhaseHandler);
 }
 
 async function reportHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {

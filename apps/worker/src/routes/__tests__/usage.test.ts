@@ -1,8 +1,9 @@
+import type { UsageRecord } from '@wolfkrow/domain';
+import { UsageSummarySchema } from '@wolfkrow/shared-types';
+import type { UsageSummary } from '@wolfkrow/shared-types';
 import Fastify from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import type { UsageRecord } from '@wolfkrow/domain';
-import type { UsageSummary } from '@wolfkrow/shared-types';
 
 // In-memory token usage repo so the route exercises the real use-case +
 // boundary parse without a database.
@@ -24,7 +25,6 @@ vi.mock('../../container', () => ({
 
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { usageRoutes } from '../usage';
-import { UsageSummarySchema } from '@wolfkrow/shared-types';
 
 // Recent timestamps so the budget use-case's 30-day window includes them.
 const today = new Date();

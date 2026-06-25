@@ -7,10 +7,10 @@
  * against in-memory repos.
  */
 
+import type { AIStreamChunk } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import type { AIStreamChunk } from '@wolfkrow/domain';
 
 const fakeStream = vi.hoisted(() => vi.fn());
 
@@ -49,8 +49,9 @@ vi.mock('../../container', () => ({
 
 vi.mock('../../memory/lifecycle', () => ({ recordChatTurn: vi.fn() }));
 
-import { chatRoutes } from '../chat';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { chatRoutes } from '../chat';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };
@@ -106,9 +107,11 @@ describe('chat POST /send — SSE stream', () => {
   }, 10000);
 
   it('emits an error SSE event when the orchestrator stream throws', async () => {
-    fakeStream.mockImplementation(async function* () {
-      throw new Error('upstream failure');
-    });
+    fakeStream.mockImplementation(() => ({
+      [Symbol.asyncIterator]() {
+        return { next: () => Promise.reject(new Error('upstream failure')) };
+      },
+    }));
 
     const res = await app.inject({
       method: 'POST', url: '/send', headers: BEARER, payload: { message: 'boom' },

@@ -8,6 +8,7 @@
  */
 
 import Fastify, { type FastifyInstance } from 'fastify';
+import { jwtVerify } from 'jose';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 vi.mock('jose', () => ({
@@ -18,7 +19,6 @@ vi.mock('jose', () => ({
 
 vi.mock('../../config', () => ({ config: { JWKS_URL: 'https://example/.well-known/jwks.json' } }));
 
-import { jwtVerify } from 'jose';
 import { authPlugin } from '../auth';
 
 let app: FastifyInstance;

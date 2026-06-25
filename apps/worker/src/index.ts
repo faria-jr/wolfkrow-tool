@@ -39,9 +39,9 @@ import { createLogger } from './logger';
 import { loadBuiltInMcpCatalog } from './mcp/catalog';
 import { stopMemoryLifecycle } from './memory/lifecycle';
 import { mcpManager } from './routes/mcp';
-import { ensureSeedAgents } from './seed-agents/seeder';
-import { resolveSeedAgentsDir } from './seed-agents/paths';
 import { Scheduler } from './scheduler';
+import { resolveSeedAgentsDir } from './seed-agents/paths';
+import { ensureSeedAgents } from './seed-agents/seeder';
 import { createServer } from './server';
 
 const logger = createLogger('worker');

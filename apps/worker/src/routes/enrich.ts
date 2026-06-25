@@ -14,6 +14,7 @@ import {
   RunValidatorUseCase,
 } from '@wolfkrow/use-cases';
 import type { ValidatorAgent, EnricherAgent } from '@wolfkrow/use-cases';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getAdapters, getRepos } from '../container';
 import { getAnthropicApiKey } from '../lib/keychain';
@@ -101,27 +102,15 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
     }
   });
 
-  server.post<{ Params: { id: string } }>('/sessions/:id/validate', async (req, reply) => {
-    const body = validate(runValidatorBody, req.body ?? {});
-    const session = await makeRepo().findById(req.params.id);
-    if (!session) return reply.status(404).send({ error: 'Not found' });
-    const specContent = await loadSpec(body.specContent, session.specPath);
-    const { session: updated, output } = await new RunValidatorUseCase(makeRepo(), createValidator()).execute({
-      sessionId: session.id, specContent,
-    });
-    return { session: updated.toProps(), output };
-  });
+  server.post<{ Params: { id: string } }>(
+    '/sessions/:id/validate',
+    (req, reply) => runValidatorRoute(req, reply, makeRepo()),
+  );
 
-  server.post<{ Params: { id: string } }>('/sessions/:id/enrich', async (req, reply) => {
-    const body = validate(runEnricherBody, req.body);
-    const session = await makeRepo().findById(req.params.id);
-    if (!session) return reply.status(404).send({ error: 'Not found' });
-    const specContent = await loadSpec(body.specContent, session.specPath);
-    const { session: updated, output } = await new RunEnricherUseCase(makeRepo(), createEnricher()).execute({
-      sessionId: session.id, specContent, validatorOutput: body.validatorOutput,
-    });
-    return { session: updated.toProps(), output };
-  });
+  server.post<{ Params: { id: string } }>(
+    '/sessions/:id/enrich',
+    (req, reply) => runEnricherRoute(req, reply, makeRepo()),
+  );
 
   server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/sessions/:id', async (req, reply) => {
     try {
@@ -131,4 +120,36 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
       return reply.status(404).send({ error: 'Not found' });
     }
   });
+}
+
+/** POST /sessions/:id/validate — run the validator agent on the session's spec. */
+async function runValidatorRoute(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+  repo: ReturnType<typeof getRepos>['enrichSession'],
+): Promise<unknown> {
+  const body = validate(runValidatorBody, req.body ?? {});
+  const session = await repo.findById(req.params.id);
+  if (!session) return reply.status(404).send({ error: 'Not found' });
+  const specContent = await loadSpec(body.specContent, session.specPath);
+  const { session: updated, output } = await new RunValidatorUseCase(repo, createValidator()).execute({
+    sessionId: session.id, specContent,
+  });
+  return { session: updated.toProps(), output };
+}
+
+/** POST /sessions/:id/enrich — run the enricher agent using validator output. */
+async function runEnricherRoute(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+  repo: ReturnType<typeof getRepos>['enrichSession'],
+): Promise<unknown> {
+  const body = validate(runEnricherBody, req.body);
+  const session = await repo.findById(req.params.id);
+  if (!session) return reply.status(404).send({ error: 'Not found' });
+  const specContent = await loadSpec(body.specContent, session.specPath);
+  const { session: updated, output } = await new RunEnricherUseCase(repo, createEnricher()).execute({
+    sessionId: session.id, specContent, validatorOutput: body.validatorOutput,
+  });
+  return { session: updated.toProps(), output };
 }

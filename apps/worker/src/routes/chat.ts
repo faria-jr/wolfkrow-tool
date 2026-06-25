@@ -211,62 +211,78 @@ async function handleSendRequest(
 }
 
 export async function chatRoutes(server: AuthFastifyInstance) {
- const orchestrator = new OrchestratorService({ logger: server.log as unknown as Logger });
+  const orchestrator = new OrchestratorService({ logger: server.log as unknown as Logger });
 
- server.post<{ Body: ChatBody }>(
- '/send',
- { preHandler: [server.authenticate] },
- async (request, reply) => {
- // Validate input BEFORE opening the SSE stream so a bad body yields 400.
- const body = validate(chatSendBody, request.body);
- reply.raw.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
- const ac = new AbortController();
- request.raw.on('close', () => ac.abort());
- const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
- try {
- await handleSendRequest(body, request.user?.userId, {
- orchestrator, log: server.log as unknown as Logger, signal: ac.signal, sse,
- });
- } catch (err) {
- const msg = err instanceof Error ? err.message : 'Unknown error';
- reply.raw.write(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`);
- server.log.error({ err }, 'Chat stream error');
- } finally {
- reply.raw.end();
- }
- },
- );
+  server.post<{ Body: ChatBody }>(
+    '/send',
+    { preHandler: [server.authenticate] },
+    (request, reply) => handleSendRoute(request, reply, server, orchestrator),
+  );
 
- server.post<{ Params: { id: string } }>(
- '/sessions/:id/compact',
- { preHandler: [server.authenticate] },
- async (request, reply) => {
- const userId = request.user?.userId ?? 'anonymous';
- const body = validate(compactBody, request.body ?? {});
- const model = body.model ?? DEFAULT_MODEL;
- const ai = makeAIAdapter(orchestrator, adapterOptions(undefined, undefined, userId));
- try {
- const result = await new CompactSessionUseCase(getRepos().message, ai).execute({
- sessionId: request.params.id, userId, model,
- ...(body.tokenThreshold !== undefined ? { tokenThreshold: body.tokenThreshold } : {}),
- });
- return result;
- } catch (err) {
- server.log.error({ err }, 'Compact session error');
- return reply.status(500).send({ error: 'Compaction failed' });
- }
- },
- );
+  server.post<{ Params: { id: string } }>(
+    '/sessions/:id/compact',
+    { preHandler: [server.authenticate] },
+    (request, reply) => handleCompactRoute(request, reply, server, orchestrator),
+  );
 
- // resolve a pending tool-permission request (UI approves/denies a
- // destructive tool call surfaced via the tool_permission SSE event).
- server.post(
- '/permission',
- { preHandler: [server.authenticate] },
- permissionHandler,
- );
+  // resolve a pending tool-permission request (UI approves/denies a
+  // destructive tool call surfaced via the tool_permission SSE event).
+  server.post(
+    '/permission',
+    { preHandler: [server.authenticate] },
+    permissionHandler,
+  );
 
- await chatSessionRoutes(server);
+  await chatSessionRoutes(server);
+}
+
+/** POST /send — validate, open the SSE stream, and forward to the use-case. */
+async function handleSendRoute(
+  request: FastifyRequest<{ Body: ChatBody }>,
+  reply: FastifyReply,
+  server: AuthFastifyInstance,
+  orchestrator: OrchestratorService,
+): Promise<void> {
+  // Validate input BEFORE opening the SSE stream so a bad body yields 400.
+  const body = validate(chatSendBody, request.body);
+  reply.raw.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  const ac = new AbortController();
+  request.raw.on('close', () => ac.abort());
+  const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+  try {
+    await handleSendRequest(body, request.user?.userId, {
+      orchestrator, log: server.log as unknown as Logger, signal: ac.signal, sse,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    reply.raw.write(`data: ${JSON.stringify({ type: 'error', message: msg })}\n\n`);
+    server.log.error({ err }, 'Chat stream error');
+  } finally {
+    reply.raw.end();
+  }
+}
+
+/** POST /sessions/:id/compact — run the compaction use-case for a session. */
+async function handleCompactRoute(
+  request: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply,
+  server: AuthFastifyInstance,
+  orchestrator: OrchestratorService,
+): Promise<unknown> {
+  const userId = request.user?.userId ?? 'anonymous';
+  const body = validate(compactBody, request.body ?? {});
+  const model = body.model ?? DEFAULT_MODEL;
+  const ai = makeAIAdapter(orchestrator, adapterOptions(undefined, undefined, userId));
+  try {
+    const result = await new CompactSessionUseCase(getRepos().message, ai).execute({
+      sessionId: request.params.id, userId, model,
+      ...(body.tokenThreshold !== undefined ? { tokenThreshold: body.tokenThreshold } : {}),
+    });
+    return result;
+  } catch (err) {
+    server.log.error({ err }, 'Compact session error');
+    return reply.status(500).send({ error: 'Compaction failed' });
+  }
 }
 
 async function permissionHandler(

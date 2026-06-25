@@ -11,6 +11,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { ValidationError } from '../../validation';
+import { memoryRoutes } from '../memory';
+import { mgraphRoutes } from '../mgraph';
+import { vaultRoutes } from '../vault';
 
 // --- Shared harness -------------------------------------------------------
 
@@ -67,10 +70,6 @@ vi.mock('../../container', () => ({
   getRepos: () => emptyRepos,
   getAdapters: () => ({ secrets: { get: vi.fn(), set: vi.fn() } }),
 }));
-
-import { vaultRoutes } from '../vault';
-import { memoryRoutes } from '../memory';
-import { mgraphRoutes } from '../mgraph';
 
 describe('vault POST / — 400 on invalid body', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
