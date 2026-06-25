@@ -7,6 +7,8 @@ const _require = createRequire(import.meta.url);
 const reactHooks = _require('eslint-plugin-react-hooks');
 import globals from 'globals';
 
+import noArbitraryTailwind from './eslint-rules/no-arbitrary-tailwind.mjs';
+
 /**
  * Wolfkrow Tool — ESLint flat config (canônico, monorepo-wide).
  *
@@ -64,7 +66,7 @@ export default tseslint.config(
 
   {
     files: ['**/*.{ts,tsx}'],
-    plugins: { sonarjs, import: importX, 'react-hooks': reactHooks },
+    plugins: { sonarjs, import: importX, 'react-hooks': reactHooks, wolfkrow: { rules: { 'no-arbitrary-tailwind': noArbitraryTailwind } } },
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -118,6 +120,25 @@ export default tseslint.config(
     },
   },
 
+  // FE-2: barra valores Tailwind arbitrários (text-[10px], bg-[#fff]) em
+  // código nosso — usa tokens da escala. Permite refs CSS-var (w-[--sidebar-width]).
+  // Vendor ui/ (gerado por CLI) desliga abaixo; testes/stories já estão em ignores.
+  {
+    files: ['apps/web/{app,components}/**/*.{ts,tsx}'],
+    rules: {
+      'wolfkrow/no-arbitrary-tailwind': 'error',
+    },
+  },
+
+  // FE-2 tech-debt exceptions: graph (D3 canvas colors/sizes) and terminal
+  // (xterm theme + bg-[#1a1a1a] console) use domain-specific literals.
+  {
+    files: ['**/components/graph/**', '**/components/terminal/**'],
+    rules: {
+      'wolfkrow/no-arbitrary-tailwind': 'off',
+    },
+  },
+
   // DATA declarativa (schemas Drizzle, seeds, catalogs built-in): sem limite
   // de linhas. Continua sujeita a complexity/cognitive (medem lógica, não dados).
   {
@@ -155,6 +176,7 @@ export default tseslint.config(
       'max-lines-per-function': 'off',
       'complexity': 'off',
       'sonarjs/cognitive-complexity': 'off',
+      'wolfkrow/no-arbitrary-tailwind': 'off',
     },
   },
 

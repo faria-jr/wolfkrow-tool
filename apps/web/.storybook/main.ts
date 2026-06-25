@@ -5,9 +5,11 @@ const config: StorybookConfig = {
     '../components/**/*.stories.@(ts|tsx)',
     '../src/**/*.stories.@(ts|tsx)',
   ],
+  // NOTE: @storybook/addon-a11y removed — it's v10 but the project pins
+  // storybook core to 8.6.x, causing "Could not resolve storybook/manager-api"
+  // at build. Re-add once versions are aligned to 10.x (FE-2 follow-up).
   addons: [
     '@storybook/addon-essentials',
-    '@storybook/addon-a11y',
   ],
   framework: {
     name: '@storybook/nextjs',
