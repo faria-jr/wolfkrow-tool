@@ -1,4 +1,4 @@
-import { MockProvider, type AIProviderFactory, type StreamChunk } from '@wolfkrow/infra';
+import { MockProvider, ToolRegistry, type AIProviderFactory, type StreamChunk } from '@wolfkrow/infra';
 import keytar from 'keytar';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -18,7 +18,12 @@ const fakeRepos = {
   skill: { findByUserId: async (_u: string) => [] as unknown[] },
   globalRule: { findAll: async (_u: string) => [] as unknown[] },
 };
-vi.mock('../container', () => ({ getRepos: () => fakeRepos }));
+// P1-8: orchestrator builds its default factory from getToolRegistry(); expose
+// a real (empty) registry so the default-factory tests don't import infra tools.
+vi.mock('../container', () => ({
+  getRepos: () => fakeRepos,
+  getToolRegistry: () => new ToolRegistry([]),
+}));
 
 async function collect(stream: AsyncIterable<StreamChunk>): Promise<StreamChunk[]> {
   const out: StreamChunk[] = [];

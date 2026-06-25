@@ -9,6 +9,7 @@
  */
 
 import Fastify, { type FastifyInstance } from 'fastify';
+import { ToolRegistry } from '@wolfkrow/infra';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 const { fakeMessageRepo, fakeChatSessionRepo } = vi.hoisted(() => {
@@ -34,6 +35,8 @@ vi.mock('../../container', () => ({
     tokenUsage: { insert: async () => undefined },
   }),
   getChatWorkDir: () => '/tmp/wolfkrow-chat-test',
+  // P1-8: OrchestratorService default factory reads the tool registry.
+  getToolRegistry: () => new ToolRegistry([]),
   resolveAgentStreamPort: vi.fn(),
 }));
 

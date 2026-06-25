@@ -64,7 +64,14 @@ export class ProviderAIProviderFactory implements AIProviderFactory {
 
     if (isClaudeCompatPrefixed(normalized)) {
       const presetId = extractClaudeCompatPreset(normalized);
-      return new ClaudeCompatProvider(apiKey, presetId);
+      // P1-8: thread the registry/permission resolver so the non-agentic path
+      // (OrchestratorService.resolveProvider → factory.create) does NOT silently
+      // drop tool calls for claude-compat providers. When no registry is
+      // configured the provider stays text-only (unchanged behaviour).
+      return new ClaudeCompatProvider(apiKey, presetId, {
+        ...(this.toolRegistry ? { supportsTools: true, toolRegistry: this.toolRegistry } : {}),
+        ...(this.permissionResolver ? { permissionResolver: this.permissionResolver } : {}),
+      });
     }
 
     const simple = createSimpleProvider(normalized, apiKey, this.toolRegistry, this.permissionResolver);

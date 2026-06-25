@@ -7,12 +7,12 @@
  */
 
 import type { Runtime } from '@wolfkrow/domain';
-import { getProviderForModel } from '@wolfkrow/domain';
-import { aiProviderFactory } from '@wolfkrow/infra';
+import { defaultPermissionResolver, getProviderForModel } from '@wolfkrow/domain';
+import { ProviderAIProviderFactory } from '@wolfkrow/infra';
 import type { AIProvider, AIProviderFactory, CompletionOptions, StreamChunk } from '@wolfkrow/infra';
 
 import { buildAgentSystemPrompt } from './agent-prompt';
-import { getRepos } from './container';
+import { getRepos, getToolRegistry } from './container';
 import { getProviderApiKey, KEYTAR_SERVICE } from './lib/keychain';
 import type { Logger } from './logger';
 
@@ -130,7 +130,11 @@ export class OrchestratorService {
 
  constructor(options: OrchestratorOptions = {}) {
  this.logger = options.logger;
- this.factory = options.factory ?? aiProviderFactory;
+ // P1-8: build the factory with the singleton tool registry + permission
+ // resolver so the NON-agentic path (resolveProvider → factory.create) wires
+ // tools into claude-compat providers instead of silently dropping them.
+ // Tests inject a bare factory via options.factory.
+ this.factory = options.factory ?? new ProviderAIProviderFactory(getToolRegistry(), defaultPermissionResolver);
  this.keytarService = options.keytarService ?? KEYTAR_SERVICE;
  }
 
