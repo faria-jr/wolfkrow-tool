@@ -123,3 +123,25 @@ describe('PlainPassword', () => {
     expect(() => PlainPassword.create('NoDigitsHere')).toThrow(ValidationError);
   });
 });
+
+describe('PlainPassword.fromUnchecked', () => {
+  it('accepts any non-empty password (no strength validation)', () => {
+    expect(PlainPassword.fromUnchecked('abc').value).toBe('abc');
+  });
+  it('accepts password without digits or letters', () => {
+    expect(PlainPassword.fromUnchecked('!!!').value).toBe('!!!');
+  });
+  it('accepts short passwords (less than 8 chars)', () => {
+    expect(PlainPassword.fromUnchecked('hi').value).toBe('hi');
+  });
+  it('rejects empty string', () => {
+    expect(() => PlainPassword.fromUnchecked('')).toThrow(ValidationError);
+  });
+  it('rejects string longer than 128 chars', () => {
+    expect(() => PlainPassword.fromUnchecked('x'.repeat(129))).toThrow(ValidationError);
+  });
+  it('accepts string exactly 128 chars', () => {
+    const pw = 'x'.repeat(128);
+    expect(PlainPassword.fromUnchecked(pw).value).toBe(pw);
+  });
+});

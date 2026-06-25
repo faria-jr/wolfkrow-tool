@@ -20,6 +20,7 @@ import { DrizzleAgentRepo } from './agent-repo';
 import { DrizzleAuditLogRepo } from './audit-log-repo';
 import { DrizzleAuthAuditRepo } from './auth-audit-repo';
 import { DrizzleChatSessionRepo, DrizzleMessageRepo } from './chat-repos';
+import { DrizzleCompactionLogRepo } from './compaction-log-repo';
 import { DrizzleDailySummaryRepo } from './daily-summary-repo';
 import { DrizzleEnrichSessionRepo } from './enrich-session-repo';
 import { DrizzleGlobalRuleRepo } from './global-rule-repo';
@@ -64,6 +65,7 @@ export interface RepoRegistry {
  knowledgeChunk: DrizzleKnowledgeChunkRepo;
  semanticMemory: DrizzleSemanticMemoryRepo;
  dailySummary: DrizzleDailySummaryRepo;
+ compactionLog: DrizzleCompactionLogRepo;
  scheduledTask: DrizzleScheduledTaskRepo;
  taskRun: DrizzleTaskRunRepo;
  task: DrizzleTaskRepo;
@@ -106,6 +108,7 @@ export function createRepoRegistry(force = false): RepoRegistry {
  knowledgeChunk: new DrizzleKnowledgeChunkRepo(db),
  semanticMemory: new DrizzleSemanticMemoryRepo(db),
  dailySummary: new DrizzleDailySummaryRepo(db),
+ compactionLog: new DrizzleCompactionLogRepo(db),
  scheduledTask: new DrizzleScheduledTaskRepo(db),
  taskRun: new DrizzleTaskRunRepo(db),
  task: new DrizzleTaskRepo(db),

@@ -16,7 +16,7 @@ export type { ChatSessionRepo, MessageRepo } from './chat-repos';
 export type { AgentRepo } from './agent-repo';
 export type { SkillRepo } from './skill-repo';
 export type { KnowledgeDocRepo, KnowledgeChunkRepo, ChunkSearchResult, KeywordSearchResult, HybridChunkSearchResult } from './knowledge-repos';
-export type { SemanticMemoryRepo, DailySummaryRepo, MemorySearchResult, HybridMemorySearchResult } from './memory-repos';
+export type { SemanticMemoryRepo, DailySummaryRepo, CompactionLogRepo, MemorySearchResult, HybridMemorySearchResult } from './memory-repos';
 export type { ScheduledTaskRepo, TaskRunRepo } from './scheduler-repos';
 export type { HarnessProjectRepo, HarnessSprintRepo, HarnessRoundRepo } from './harness-repos';
 export type { PipelineProjectRepo, PipelinePhaseRepo, PipelineMessageRepo, ArtifactWriter } from './pipeline-repos';

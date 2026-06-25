@@ -1,6 +1,6 @@
 import type { Logger } from '../../logger';
 
-import type { DreamingGate } from './gate';
+import type { DreamingGate, DreamingStatus } from './gate';
 
 /**
  * One DreamingGate per user, created lazily on first activity and kept alive
@@ -29,6 +29,24 @@ export class DreamingGateRegistry {
       this.logger?.info({ userId }, 'Dreaming gate started for user');
     }
     gate.recordActivity();
+  }
+
+  /** Dreaming status for the UI, or null if no gate has been created yet. */
+  getStatus(userId: string): DreamingStatus | null {
+    const gate = this.gates.get(userId);
+    return gate ? gate.getStatus() : null;
+  }
+
+  /** Force a consolidation run for the user (creates the gate lazily). */
+  async triggerNow(userId: string): Promise<void> {
+    let gate = this.gates.get(userId);
+    if (!gate) {
+      gate = this.factory.create(userId);
+      gate.start();
+      this.gates.set(userId, gate);
+      this.logger?.info({ userId }, 'Dreaming gate started for user (trigger)');
+    }
+    await gate.triggerNow();
   }
 
   stopAll(): void {

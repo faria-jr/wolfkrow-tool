@@ -20,7 +20,7 @@ let registry: DreamingGateRegistry | null = null;
 
 function createFactory(logger: Logger): DreamingGateFactory {
  return {
- create: (userId) => new DreamingGate(getRepos().dailySummary, { userId }, logger),
+ create: (userId) => new DreamingGate(getRepos().dailySummary, getRepos().compactionLog, { userId }, logger),
  };
 }
 

@@ -1,3 +1,4 @@
+import type { CompactionLog } from '../entities/compaction-log';
 import type { DailySummary } from '../entities/daily-summary';
 import type { SemanticMemory } from '../entities/semantic-memory';
 
@@ -39,4 +40,9 @@ export interface DailySummaryRepo {
   findByUserIdAndDate(userId: string, date: string): Promise<DailySummary | null>;
   findByUserId(userId: string, limit?: number): Promise<DailySummary[]>;
   save(summary: DailySummary): Promise<DailySummary>;
+}
+
+export interface CompactionLogRepo {
+  findByUserId(userId: string, limit?: number): Promise<CompactionLog[]>;
+  save(log: CompactionLog): Promise<CompactionLog>;
 }

@@ -8,3 +8,7 @@ export { DeleteMemoryUseCase } from './delete-memory';
 export type { DeleteMemoryInput } from './delete-memory';
 export { GenerateDailySummaryUseCase } from './generate-daily-summary';
 export type { GenerateDailySummaryInput, GenerateDailySummaryOutput } from './generate-daily-summary';
+export { LogCompactionUseCase } from './log-compaction';
+export type { LogCompactionInput, LogCompactionOutput } from './log-compaction';
+export { ListCompactionLogUseCase } from './list-compaction-log';
+export type { ListCompactionLogInput, ListCompactionLogOutput } from './list-compaction-log';

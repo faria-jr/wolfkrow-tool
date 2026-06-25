@@ -18,6 +18,8 @@ export { SemanticMemory } from './semantic-memory';
 export type { SemanticMemoryProps, SemanticMemoryCreateInput, MemorySource } from './semantic-memory';
 export { DailySummary } from './daily-summary';
 export type { DailySummaryProps, DailySummaryCreateInput } from './daily-summary';
+export { CompactionLog } from './compaction-log';
+export type { CompactionLogProps, CompactionLogCreateInput, CompactionTrigger } from './compaction-log';
 export { HarnessProject } from './harness-project';
 export type { HarnessProjectProps, HarnessProjectCreateInput, HarnessProjectStatus, HarnessConfig, ProjectMetrics } from './harness-project';
 export { HarnessSprint } from './harness-sprint';

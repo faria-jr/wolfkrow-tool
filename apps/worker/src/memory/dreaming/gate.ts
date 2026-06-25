@@ -1,9 +1,9 @@
 /**
  * Dreaming gate: triggers memory consolidation after idle period (>5 min).
- * Calls GenerateDailySummaryUseCase and logs compaction events.
+ * Calls GenerateDailySummaryUseCase and logs each run to the compaction log.
  */
-import type { DailySummaryRepo } from '@wolfkrow/domain';
-import { GenerateDailySummaryUseCase } from '@wolfkrow/use-cases';
+import type { CompactionLogRepo, CompactionTrigger, DailySummaryRepo } from '@wolfkrow/domain';
+import { GenerateDailySummaryUseCase, LogCompactionUseCase } from '@wolfkrow/use-cases';
 
 import type { Logger } from '../../logger';
 
@@ -12,19 +12,28 @@ export interface DreamingGateOptions {
   userId: string;
 }
 
+export interface DreamingStatus {
+  active: boolean;
+  lastActivityAt: Date;
+  idleThresholdMs: number;
+}
+
 export class DreamingGate {
   private lastActivityAt = new Date();
   private timer: NodeJS.Timeout | null = null;
   private readonly idleThresholdMs: number;
   private readonly generateSummary: GenerateDailySummaryUseCase;
+  private readonly logCompaction: LogCompactionUseCase;
 
   constructor(
     summaryRepo: DailySummaryRepo,
+    compactionLogRepo: CompactionLogRepo,
     private readonly options: DreamingGateOptions,
     private readonly logger?: Logger,
   ) {
     this.idleThresholdMs = options.idleThresholdMs ?? 5 * 60 * 1000;
     this.generateSummary = new GenerateDailySummaryUseCase(summaryRepo);
+    this.logCompaction = new LogCompactionUseCase(compactionLogRepo);
   }
 
   recordActivity(): void {
@@ -43,6 +52,19 @@ export class DreamingGate {
     }
   }
 
+  getStatus(): DreamingStatus {
+    return {
+      active: this.timer !== null,
+      lastActivityAt: this.lastActivityAt,
+      idleThresholdMs: this.idleThresholdMs,
+    };
+  }
+
+  /** Force a consolidation run immediately (manual "Dream now"). */
+  async triggerNow(): Promise<void> {
+    await this.consolidate('manual');
+  }
+
   private reschedule(): void {
     if (this.timer) clearTimeout(this.timer);
     this.timer = setTimeout(() => void this.onIdle(), this.idleThresholdMs);
@@ -56,7 +78,10 @@ export class DreamingGate {
     }
 
     this.logger?.info({ userId: this.options.userId }, 'Dreaming gate: idle threshold reached, consolidating');
+    await this.consolidate('idle');
+  }
 
+  private async consolidate(trigger: CompactionTrigger): Promise<void> {
     const today = new Date().toISOString().slice(0, 10);
 
     try {
@@ -69,9 +94,17 @@ export class DreamingGate {
         tokensUsed: 0,
         cost: 0,
       });
-      this.logger?.info({ userId: this.options.userId, date: today }, 'Dreaming gate: daily summary created');
+      await this.logCompaction.execute({
+        userId: this.options.userId,
+        trigger,
+        beforeTokens: 0,
+        afterTokens: 0,
+        tokensSaved: 0,
+        summary: `Daily summary for ${today}`,
+      });
+      this.logger?.info({ userId: this.options.userId, trigger, date: today }, 'Dreaming gate: consolidation complete');
     } catch (err) {
-      this.logger?.info({ err }, 'Dreaming gate: summary creation failed (non-critical)');
+      this.logger?.info({ err }, 'Dreaming gate: consolidation failed (non-critical)');
     }
   }
 }

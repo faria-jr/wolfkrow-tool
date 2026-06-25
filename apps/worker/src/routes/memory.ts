@@ -8,12 +8,15 @@ import {
   AddMemoryUseCase,
   DeleteMemoryUseCase,
   GenerateDailySummaryUseCase,
+  ListCompactionLogUseCase,
   ListMemoriesUseCase,
   SearchMemoryUseCase,
 } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getAdapters, getRepos } from '../container';
+import type { Logger } from '../logger';
+import { getDreamingRegistry } from '../memory/lifecycle';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, z } from '../validation';
 
@@ -122,4 +125,27 @@ export async function memoryRoutes(app: AuthFastifyInstance) {
   app.delete<{ Params: { id: string } }>('/memory/:id', auth, handleDeleteMemory);
   app.get('/memory/summaries', auth, handleGetSummaries);
   app.post('/memory/summaries', auth, handleCreateSummary);
+  app.get('/memory/dreaming/status', auth, handleDreamingStatus);
+  app.post('/memory/dreaming/trigger', auth, handleDreamingTrigger);
+  app.get('/memory/dreaming/history', auth, handleDreamingHistory);
+}
+
+async function handleDreamingStatus(req: FastifyRequest, reply: FastifyReply) {
+  const userId = (req as unknown as { user: { userId: string } }).user.userId;
+  const status = getDreamingRegistry(req.log as unknown as Logger).getStatus(userId);
+  return reply.send({
+    status: status ?? { active: false, lastActivityAt: null, idleThresholdMs: 5 * 60 * 1000 },
+  });
+}
+
+async function handleDreamingTrigger(req: FastifyRequest, reply: FastifyReply) {
+  const userId = (req as unknown as { user: { userId: string } }).user.userId;
+  await getDreamingRegistry(req.log as unknown as Logger).triggerNow(userId);
+  return reply.send({ triggered: true });
+}
+
+async function handleDreamingHistory(req: FastifyRequest, reply: FastifyReply) {
+  const userId = (req as unknown as { user: { userId: string } }).user.userId;
+  const result = await new ListCompactionLogUseCase(getRepos().compactionLog).execute({ userId });
+  return reply.send({ log: result.log.map((l) => l.toProps()) });
 }
