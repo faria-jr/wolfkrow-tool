@@ -6,10 +6,11 @@
  * in-memory fakes (backed by real entities) exercises the real route logic.
  */
 
+import type { PipelinePhase } from '@wolfkrow/domain';
+import { PipelineProject } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { PipelineProject, PipelinePhase } from '@wolfkrow/domain';
 
 const { projects, phases, fakeProjectRepo, fakePhaseRepo, fakePipelineMessageRepo } = vi.hoisted(() => {
   const projects = new Map<string, PipelineProject>();
@@ -57,8 +58,9 @@ vi.mock('../../container', () => ({
 
 vi.mock('../../lib/keychain', () => ({ getAnthropicApiKey: vi.fn(async () => 'sk-test') }));
 
-import { pipelineRoutes } from '../pipeline';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { pipelineRoutes } from '../pipeline';
+
 import { setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;

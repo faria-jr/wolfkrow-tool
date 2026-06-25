@@ -7,10 +7,11 @@
  * real-behaving decorator (preHandler) so 401-without-session is genuine.
  */
 
+import type { HarnessSprint, HarnessRound } from '@wolfkrow/domain';
+import { HarnessProject } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { HarnessProject, HarnessSprint, HarnessRound } from '@wolfkrow/domain';
 
 const { projects, sprints, rounds, fakeProjectRepo, fakeSprintRepo, fakeRoundRepo } = vi.hoisted(() => {
   const projects = new Map<string, HarnessProject>();
@@ -61,8 +62,9 @@ vi.mock('../../container', () => ({
   makeCoderWithTools: vi.fn(),
 }));
 
-import { harnessRoutes } from '../harness';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { harnessRoutes } from '../harness';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };

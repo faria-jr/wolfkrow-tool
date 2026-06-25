@@ -10,6 +10,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, it, expect, vi } from 'vitest';
 
 import { mcpRoutes } from '../mcp';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };

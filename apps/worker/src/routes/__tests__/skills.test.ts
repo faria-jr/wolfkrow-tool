@@ -7,10 +7,10 @@
  * 401-without-session is a genuine rejection.
  */
 
+import { Skill } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { Skill } from '@wolfkrow/domain';
 
 const { skills, fakeSkillRepo } = vi.hoisted(() => {
   const skills = new Map<string, Skill>();
@@ -32,8 +32,9 @@ const { skills, fakeSkillRepo } = vi.hoisted(() => {
 
 vi.mock('../../container', () => ({ getRepos: () => ({ skill: fakeSkillRepo }) }));
 
-import { skillsRoutes } from '../skills';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { skillsRoutes } from '../skills';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };

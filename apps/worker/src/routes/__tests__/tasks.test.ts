@@ -67,8 +67,9 @@ const fakeTaskRepo = {
 
 vi.mock('../../container', () => ({ getRepos: () => ({ task: fakeTaskRepo }) }));
 
-import { tasksRoutes } from '../tasks';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { tasksRoutes } from '../tasks';
+
 import { setErrorHandler } from './helpers/app';
 
 /** Stamp req.user on every request (mirrors app-scope auth plugin). */

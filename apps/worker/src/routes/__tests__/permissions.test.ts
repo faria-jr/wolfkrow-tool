@@ -31,8 +31,9 @@ const { entries, fakeAuditRepo } = vi.hoisted(() => {
 
 vi.mock('../../container', () => ({ getRepos: () => ({ auditLog: fakeAuditRepo }) }));
 
-import { permissionsRoutes } from '../permissions';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { permissionsRoutes } from '../permissions';
+
 import { setErrorHandler } from './helpers/app';
 
 function stampUser(): (req: FastifyRequest, _reply: FastifyReply) => Promise<void> {

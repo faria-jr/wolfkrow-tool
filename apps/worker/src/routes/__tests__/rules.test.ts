@@ -8,10 +8,10 @@
  * genuine rejection (rules routes use preHandler auth).
  */
 
+import { GlobalRule } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { GlobalRule } from '@wolfkrow/domain';
 
 // rules.ts reads getRepos().globalRule at MODULE TOP-LEVEL, so the fake must be
 // initialized before the mock factory runs. vi.hoisted lifts the store + repo
@@ -35,8 +35,9 @@ const { rules, fakeRuleRepo } = vi.hoisted(() => {
 
 vi.mock('../../container', () => ({ getRepos: () => ({ globalRule: fakeRuleRepo }) }));
 
-import { rulesRoutes } from '../rules';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { rulesRoutes } from '../rules';
+
 import { setErrorHandler } from './helpers/app';
 
 /** Stamp req.user on every request (mirrors app-scope auth plugin). */

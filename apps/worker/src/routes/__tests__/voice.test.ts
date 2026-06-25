@@ -25,8 +25,9 @@ vi.mock('../../voice/factory', () => ({
   createTtsProvider: vi.fn(() => fakeTts),
 }));
 
-import { voiceRoutes } from '../voice';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { voiceRoutes } from '../voice';
+
 import { setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;

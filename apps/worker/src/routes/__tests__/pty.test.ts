@@ -23,6 +23,7 @@ const fakePtyServer = vi.hoisted(() => ({
 vi.mock('../../pty/server', () => ({ ptyServer: fakePtyServer }));
 
 import { ptyRoutes } from '../pty';
+
 import { setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;

@@ -7,10 +7,10 @@
  * (mirrors the worker registering the auth plugin at app scope).
  */
 
+import { Secret } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { Secret } from '@wolfkrow/domain';
 
 // In-memory secret store + secrets adapter fakes.
 const store = new Map<string, Secret>();
@@ -38,8 +38,8 @@ vi.mock('../../container', () => ({
   getAdapters: () => ({ secrets: fakeSecretsAdapter }),
 }));
 
-import { vaultRoutes } from '../vault';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { vaultRoutes } from '../vault';
 
 /** Stamp req.user on every request (mirrors app-scope auth plugin in worker). */
 function stampUser(): (req: FastifyRequest, _reply: FastifyReply) => Promise<void> {

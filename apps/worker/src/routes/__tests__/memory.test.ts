@@ -7,10 +7,11 @@
  * real route logic. Auth uses the real-behaving decorator (onRequest).
  */
 
+import type { SemanticMemory } from '@wolfkrow/domain';
+import { DailySummary } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { DailySummary, SemanticMemory } from '@wolfkrow/domain';
 
 const { memories, summaries, fakeMemoryRepo, fakeSummaryRepo, fakeEmbedder } = vi.hoisted(() => {
   const memories = new Map<string, SemanticMemory>();
@@ -51,8 +52,9 @@ vi.mock('../../container', () => ({
   getAdapters: () => ({ embedder: fakeEmbedder }),
 }));
 
-import { memoryRoutes } from '../memory';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { memoryRoutes } from '../memory';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };

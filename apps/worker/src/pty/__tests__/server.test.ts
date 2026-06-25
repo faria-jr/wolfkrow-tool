@@ -8,6 +8,7 @@
  */
 
 import { EventEmitter } from 'node:events';
+
 import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 
 const { fakePty, spawnMock } = vi.hoisted(() => {

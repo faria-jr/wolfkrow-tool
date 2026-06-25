@@ -17,8 +17,9 @@ const fakeManager = vi.hoisted(() => ({
 
 vi.mock('../../sidecar/manager', () => ({ sidecarManager: fakeManager }));
 
-import { sidecarRoutes } from '../sidecar';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { sidecarRoutes } from '../sidecar';
+
 import { setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;

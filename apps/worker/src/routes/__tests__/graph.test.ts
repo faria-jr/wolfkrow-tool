@@ -43,6 +43,7 @@ const { nodes, edges, fakeGraphRepo } = vi.hoisted(() => {
 vi.mock('../../container', () => ({ getRepos: () => ({ graph: fakeGraphRepo }) }));
 
 import { graphRoutes } from '../graph';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };

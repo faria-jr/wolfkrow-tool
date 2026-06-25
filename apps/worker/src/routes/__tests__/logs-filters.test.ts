@@ -10,8 +10,9 @@ import Fastify from 'fastify';
 import { describe, beforeAll, afterAll, it, expect } from 'vitest';
 
 import { logBus } from '../../log/bus';
-import { logsRoutes } from '../logs';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { logsRoutes } from '../logs';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };

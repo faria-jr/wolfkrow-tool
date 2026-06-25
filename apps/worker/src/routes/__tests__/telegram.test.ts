@@ -24,8 +24,9 @@ const { fakeKeychain, fakeBridge } = vi.hoisted(() => {
 vi.mock('../../lib/keychain', () => fakeKeychain);
 vi.mock('../../telegram/bridge', () => ({ telegramBridge: fakeBridge }));
 
-import { telegramRoutes } from '../telegram';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { telegramRoutes } from '../telegram';
+
 import { setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;

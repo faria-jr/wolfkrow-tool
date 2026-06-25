@@ -8,10 +8,10 @@
  * preHandler (real-behaving decorator) so 401-without-session is genuine.
  */
 
+import { ScheduledTask, TaskRun } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { ScheduledTask, TaskRun } from '@wolfkrow/domain';
 
 const { tasks, runs, fakeScheduledTaskRepo, fakeTaskRunRepo } = vi.hoisted(() => {
   const tasks = new Map<string, ScheduledTask>();
@@ -55,8 +55,9 @@ vi.mock('../../agent-executor', () => ({
   }),
 }));
 
-import { schedulerRoutes } from '../scheduler';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { schedulerRoutes } from '../scheduler';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };

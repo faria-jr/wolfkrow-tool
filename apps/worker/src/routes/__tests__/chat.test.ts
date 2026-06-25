@@ -8,8 +8,8 @@
  * short-history session (returns compacted:false without invoking AI).
  */
 
-import Fastify, { type FastifyInstance } from 'fastify';
 import { ToolRegistry } from '@wolfkrow/infra';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 const { fakeMessageRepo, fakeChatSessionRepo } = vi.hoisted(() => {
@@ -43,9 +43,10 @@ vi.mock('../../container', () => ({
 // recordChatTurn is a side-effect best suppressed.
 vi.mock('../../memory/lifecycle', () => ({ recordChatTurn: vi.fn() }));
 
-import { chatRoutes } from '../chat';
 import { requestToolPermission } from '../../chat/permission-store';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { chatRoutes } from '../chat';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };

@@ -1,10 +1,10 @@
 import Fastify from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect } from 'vitest';
 
-import type { AuthFastifyInstance } from '../../types/fastify';
-import type { FastifyRequest, FastifyReply } from 'fastify';
-import { logsRoutes } from '../logs';
 import { logBus } from '../../log/bus';
+import type { AuthFastifyInstance } from '../../types/fastify';
+import { logsRoutes } from '../logs';
 
 /**
  * Real-behaving authenticate decorator: mirrors production (plugins/auth.ts)

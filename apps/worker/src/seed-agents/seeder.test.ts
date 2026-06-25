@@ -1,9 +1,9 @@
+import { Agent, type AgentRepo } from '@wolfkrow/domain';
 import { describe, expect, it } from 'vitest';
 
-import { Agent, type AgentRepo } from '@wolfkrow/domain';
 
-import { seedAgentId, seedAgents } from './seeder';
 import { loadSeedAgents } from './loader';
+import { seedAgentId, seedAgents } from './seeder';
 
 /**
  * Minimal in-memory AgentRepo for seeder tests.

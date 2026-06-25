@@ -7,10 +7,10 @@
  * keychain/adapter factories so importing enrich.ts does not pull real AI.
  */
 
+import { EnrichSession } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { EnrichSession } from '@wolfkrow/domain';
 
 const { sessions, fakeEnrichRepo } = vi.hoisted(() => {
   const sessions = new Map<string, EnrichSession>();
@@ -36,8 +36,9 @@ vi.mock('../../container', async (importOriginal) => {
   return { ...actual, getRepos: () => ({ enrichSession: fakeEnrichRepo }) };
 });
 
-import { enrichRoutes } from '../enrich';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { enrichRoutes } from '../enrich';
+
 import { setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;

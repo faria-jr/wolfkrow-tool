@@ -8,10 +8,10 @@
  * decorator (onRequest) so 401-without-session is genuine.
  */
 
+import { KnowledgeDocument } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { KnowledgeDocument } from '@wolfkrow/domain';
 
 const { docs, fakeDocRepo, fakeChunkRepo, fakeEmbedder } = vi.hoisted(() => {
   const docs = new Map<string, KnowledgeDocument>();
@@ -45,8 +45,9 @@ vi.mock('../../container', () => ({
   getAdapters: () => ({ embedder: fakeEmbedder }),
 }));
 
-import { knowledgeRoutes } from '../knowledge';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { knowledgeRoutes } from '../knowledge';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };

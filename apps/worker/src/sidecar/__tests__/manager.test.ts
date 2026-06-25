@@ -7,6 +7,7 @@
  */
 
 import { EventEmitter } from 'node:events';
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const { spawnMock, currentProc } = vi.hoisted(() => {
