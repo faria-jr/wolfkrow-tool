@@ -22,13 +22,14 @@ export default defineConfig({
         '**/*.test.ts',
         '**/__tests__/**',
       ],
-      // M0 baseline — §1.3 target 85: sobe quando rotas/plugins ganham testes
-      // de integração nas fases A.3 (chat) e N.3 (mcp bridge).
+      // P1-2 — tdd-mandatory backend target. Routes/plugins/repos now have
+      // meaningful integration tests (happy/error/auth paths); see
+      // src/routes/__tests__/, src/plugins/__tests__/, src/*/__tests__/.
       thresholds: {
-        lines: 25,
-        functions: 25,
-        branches: 20,
-        statements: 25,
+        lines: 85,
+        functions: 85,
+        branches: 80,
+        statements: 85,
       },
     },
   },
