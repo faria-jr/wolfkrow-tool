@@ -87,7 +87,7 @@ export class ClaudeAgentProvider implements AIProvider {
  // P1-6: stop the tool-use loop early once the request is aborted so no new
  // model turn or tool starts after a Stop.
  if (options.signal?.aborted) {
- yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+ yield terminalChunk(totalInput, totalOutput);
  return;
  }
  let result: TurnResult;
@@ -97,7 +97,7 @@ export class ClaudeAgentProvider implements AIProvider {
  // Abort (Stop button) mid-turn: close the stream cleanly instead of
  // propagating and leaving the caller without a terminal chunk.
  if (isAbortError(err)) {
- yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+ yield terminalChunk(totalInput, totalOutput);
  return;
  }
  throw err;
@@ -106,33 +106,45 @@ export class ClaudeAgentProvider implements AIProvider {
  totalOutput += result.outputTokens;
 
  if (result.done) {
- yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+ yield terminalChunk(totalInput, totalOutput);
  return;
  }
 
  const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
- for (const block of result.toolUseBlocks.values()) {
- const input = this.parseToolInput(block.partialJson);
- yield { delta: '', toolCall: { id: block.id, name: block.name, input } };
- // P1-6: don't start a new tool after the user aborted.
- if (options.signal?.aborted) {
- yield {
- delta: '',
- toolResult: { callId: block.id, output: 'aborted by user', isError: true },
- };
- continue;
- }
- const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input, options.signal);
- if (permissionChunk) yield permissionChunk;
- yield { delta: '', toolResult: { callId: toolResult.callId, output: toolResult.output, isError: toolResult.isError } };
- toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: toolResult.output, is_error: toolResult.isError });
- }
+ yield* this.processToolUseBlocks(result.toolUseBlocks, options.signal, toolResults);
 
  messages.push({ role: 'assistant', content: result.assistantContent });
  messages.push({ role: 'user', content: toolResults });
  }
 
- yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+ yield terminalChunk(totalInput, totalOutput);
+ }
+
+ /**
+ * Run the tool-use blocks for one turn, honoring the abort signal.
+ * Yields toolCall/toolResult chunks and appends results for the next turn.
+ *
+ * P1-6: a tool is never started when the signal is already aborted; instead
+ * an `aborted by user` result chunk is emitted.
+ */
+ private async *processToolUseBlocks(
+ toolUseBlocks: Map<string, ToolUseBlock>,
+ signal: AbortSignal | undefined,
+ toolResults: Anthropic.Messages.ToolResultBlockParam[],
+ ): AsyncGenerator<StreamChunk> {
+ for (const block of toolUseBlocks.values()) {
+ const input = this.parseToolInput(block.partialJson);
+ yield { delta: '', toolCall: { id: block.id, name: block.name, input } };
+ // P1-6: don't start a new tool after the user aborted.
+ if (signal?.aborted) {
+ yield { delta: '', toolResult: { callId: block.id, output: 'aborted by user', isError: true } };
+ continue;
+ }
+ const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input, signal);
+ if (permissionChunk) yield permissionChunk;
+ yield { delta: '', toolResult: { callId: toolResult.callId, output: toolResult.output, isError: toolResult.isError } };
+ toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: toolResult.output, is_error: toolResult.isError });
+ }
  }
 
  private buildToolDefs(): Anthropic.Messages.Tool[] {
@@ -264,6 +276,10 @@ private executeWithPermission(
  async countTokens(messages: ChatMessage[], _model: string): Promise<number> {
  return estimateTokens(messages.map((m) => m.content).join(''));
  }
+}
+
+function terminalChunk(inputTokens: number, outputTokens: number): StreamChunk {
+ return { delta: '', done: true, inputTokens, outputTokens };
 }
 
 function toAnthropicMessage(m: ChatMessage): Anthropic.Messages.MessageParam {

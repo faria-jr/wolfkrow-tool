@@ -19,27 +19,42 @@ export class WebTool implements ToolExecutor {
     const op = String(input['operation'] ?? '');
 
     try {
-      if (op === 'fetch') {
-        const url = String(input['url'] ?? '');
-        if (!url) return ToolResult.error(callId, 'url is required for fetch operation');
-        const resp = await fetch(url, { headers: { 'User-Agent': 'Wolfkrow/1.0' }, ...(ctx.signal ? { signal: ctx.signal } : {}) });
-        const text = await resp.text();
-        const truncated = text.slice(0, 50_000);
-        return ToolResult.ok(callId, truncated);
-      }
-
-      if (op === 'search') {
-        const query = String(input['query'] ?? '');
-        if (!query) return ToolResult.error(callId, 'query is required for search operation');
-        const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-        const resp = await fetch(url, { headers: { 'User-Agent': 'Wolfkrow/1.0' }, ...(ctx.signal ? { signal: ctx.signal } : {}) });
-        const text = await resp.text();
-        return ToolResult.ok(callId, text.slice(0, 50_000));
-      }
-
+      if (op === 'fetch') return await this.runFetch(input, ctx, callId);
+      if (op === 'search') return await this.runSearch(input, ctx, callId);
       return ToolResult.error(callId, `Unknown operation: ${op}`);
     } catch (err) {
       return ToolResult.error(callId, err instanceof Error ? err.message : String(err));
     }
+  }
+
+  /** Fetch a URL and return up to 50K chars of its body. */
+  private async runFetch(
+    input: Record<string, unknown>,
+    ctx: ToolExecutionContext,
+    callId: string,
+  ): Promise<ToolResult> {
+    const url = String(input['url'] ?? '');
+    if (!url) return ToolResult.error(callId, 'url is required for fetch operation');
+    const text = await this.fetchText(url, ctx);
+    return ToolResult.ok(callId, text.slice(0, 50_000));
+  }
+
+  /** Search DuckDuckGo and return up to 50K chars of its HTML body. */
+  private async runSearch(
+    input: Record<string, unknown>,
+    ctx: ToolExecutionContext,
+    callId: string,
+  ): Promise<ToolResult> {
+    const query = String(input['query'] ?? '');
+    if (!query) return ToolResult.error(callId, 'query is required for search operation');
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+    const text = await this.fetchText(url, ctx);
+    return ToolResult.ok(callId, text.slice(0, 50_000));
+  }
+
+  /** Shared fetch with the Wolfkrow user-agent and abort-signal forwarding (P1-6). */
+  private async fetchText(url: string, ctx: ToolExecutionContext): Promise<string> {
+    const resp = await fetch(url, { headers: { 'User-Agent': 'Wolfkrow/1.0' }, ...(ctx.signal ? { signal: ctx.signal } : {}) });
+    return resp.text();
   }
 }

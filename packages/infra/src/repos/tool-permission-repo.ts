@@ -10,9 +10,9 @@ import { randomUUID } from 'crypto';
 
 import { and, eq } from 'drizzle-orm';
 
+import { getDb } from '../db/client';
 import { toolPermissions } from '../db/schema';
 import type { ToolPermissionDecision } from '../db/schema';
-import { getDb } from '../db/client';
 
 export type { ToolPermissionDecision };
 

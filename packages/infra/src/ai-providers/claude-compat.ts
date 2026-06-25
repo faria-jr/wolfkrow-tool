@@ -92,22 +92,13 @@ export class ClaudeCompatProvider implements AIProvider {
       return;
     }
 
-    const toolDefs = this.buildToolDefs();
-    const systemFromMessages = options.messages
-      .filter((m) => m.role === 'system')
-      .map((m) => m.content)
-      .join('\n');
-    const effectiveSystem = options.system ?? (systemFromMessages || undefined);
-
-    const messages: Anthropic.Messages.MessageParam[] = toMessageParams(options);
+    const { messages, effectiveSystem, toolDefs } = this.prepareTurnInputs(options);
     let totalInput = 0;
     let totalOutput = 0;
 
     for (let turn = 0; turn < 80; turn++) {
-      // P1-6: if the request was aborted, stop the tool-use loop early so we
-      // don't launch another model turn or start new tools after a Stop.
       if (options.signal?.aborted) {
-        yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+        yield terminalChunk(totalInput, totalOutput);
         return;
       }
       const result = yield* this.streamOneTurn(messages, options, effectiveSystem, toolDefs);
@@ -115,37 +106,62 @@ export class ClaudeCompatProvider implements AIProvider {
       totalOutput += result.outputTokens;
 
       if (result.done) {
-        yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+        yield terminalChunk(totalInput, totalOutput);
         return;
       }
 
       const toolResults: Anthropic.Messages.ToolResultBlockParam[] = [];
-      for (const block of result.toolUseBlocks.values()) {
-        const input = parseJson(block.partialJson);
-        yield { delta: '', toolCall: { id: block.id, name: block.name, input } };
-        // P1-6: don't start a new tool after the user aborted.
-        if (options.signal?.aborted) {
-          yield {
-            delta: '',
-            toolResult: {
-              callId: block.id,
-              output: 'aborted by user',
-              isError: true,
-            },
-          };
-          continue;
-        }
-        const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input, options.signal);
-        if (permissionChunk) yield permissionChunk;
-        yield { delta: '', toolResult: { callId: toolResult.callId, output: toolResult.output, isError: toolResult.isError } };
-        toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: toolResult.output, is_error: toolResult.isError });
-      }
+      yield* this.processToolUseBlocks(result.toolUseBlocks, options.signal, toolResults);
 
       messages.push({ role: 'assistant', content: result.assistantContent });
       messages.push({ role: 'user', content: toolResults });
     }
 
-    yield { delta: '', done: true, inputTokens: totalInput, outputTokens: totalOutput };
+    yield terminalChunk(totalInput, totalOutput);
+  }
+
+  /** Resolve the tool definitions, effective system prompt, and message params for the loop. */
+  private prepareTurnInputs(options: CompletionOptions): {
+    messages: Anthropic.Messages.MessageParam[];
+    effectiveSystem: string | undefined;
+    toolDefs: Anthropic.Messages.Tool[];
+  } {
+    const toolDefs = this.buildToolDefs();
+    const systemFromMessages = options.messages
+      .filter((m) => m.role === 'system')
+      .map((m) => m.content)
+      .join('\n');
+    return {
+      messages: toMessageParams(options),
+      effectiveSystem: options.system ?? (systemFromMessages || undefined),
+      toolDefs,
+    };
+  }
+
+  /**
+   * Run the tool-use blocks for one turn, honoring the abort signal.
+   *
+   * P1-6: a tool is never started when the signal is already aborted; instead
+   * an `aborted by user` result chunk is emitted and the block is skipped.
+   */
+  private async *processToolUseBlocks(
+    toolUseBlocks: Map<string, ToolUseBlock>,
+    signal: AbortSignal | undefined,
+    toolResults: Anthropic.Messages.ToolResultBlockParam[],
+  ): AsyncGenerator<StreamChunk> {
+    for (const block of toolUseBlocks.values()) {
+      const input = parseJson(block.partialJson);
+      yield { delta: '', toolCall: { id: block.id, name: block.name, input } };
+      // P1-6: don't start a new tool after the user aborted.
+      if (signal?.aborted) {
+        yield { delta: '', toolResult: { callId: block.id, output: 'aborted by user', isError: true } };
+        continue;
+      }
+      const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input, signal);
+      if (permissionChunk) yield permissionChunk;
+      yield { delta: '', toolResult: { callId: toolResult.callId, output: toolResult.output, isError: toolResult.isError } };
+      toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: toolResult.output, is_error: toolResult.isError });
+    }
   }
 
   private buildStream(
@@ -244,5 +260,9 @@ export class ClaudeCompatProvider implements AIProvider {
   async countTokens(messages: ChatMessage[], _model: string): Promise<number> {
     return estimateTokens(messages.map((m) => m.content).join(''));
   }
+}
+
+function terminalChunk(inputTokens: number, outputTokens: number): StreamChunk {
+  return { delta: '', done: true, inputTokens, outputTokens };
 }
 
