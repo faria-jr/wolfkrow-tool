@@ -5,7 +5,7 @@
 
 import { LockoutPolicy, PlainPassword, UnauthorizedError, ValidationError } from '@wolfkrow/domain';
 import { LoginInputSchema, LoginResponseSchema } from '@wolfkrow/shared-types';
-import { LoginUseCase } from '@wolfkrow/use-cases';
+import { LoginUseCase, type LoginOutput } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
@@ -70,24 +70,44 @@ export async function POST(request: NextRequest) {
     throw error;
   }
 
+  return buildLoginResponse(result, { ip, ua });
+}
+
+/**
+ * Map the LoginUseCase result onto its 3 response branches (locked /
+ * requires_totp / success). Each branch runs the response payload through
+ * LoginResponseSchema.parse (ADR-0005 contract guard) before serialization;
+ * a contract drift surfaces as a 400. Keeps POST under the cyclomatic limit
+ * by centralizing the per-branch construction + parse guard here.
+ */
+async function buildLoginResponse(
+  result: LoginOutput,
+  client: { ip: string; ua: string | undefined },
+): Promise<Response> {
   if (result.status === 'locked') {
-    audit.log({ userId: undefined, action: 'login.fail', ip, userAgent: ua });
-    const payload = { status: 'locked' as const, lockedUntil: result.lockedUntil };
-    const validated = validateBody(LoginResponseSchema, payload);
+    audit.log({ userId: undefined, action: 'login.fail', ip: client.ip, userAgent: client.ua });
+    const validated = validateBody(LoginResponseSchema, {
+      status: 'locked' as const,
+      lockedUntil: result.lockedUntil,
+    });
     if (validated instanceof Response) return validated; // 400 on contract drift
     return Response.json(validated, { status: 423 });
   }
   if (result.status === 'requires_totp') {
-    const payload = { status: 'requires_totp' as const, userId: result.userId };
-    const validated = validateBody(LoginResponseSchema, payload);
+    const validated = validateBody(LoginResponseSchema, {
+      status: 'requires_totp' as const,
+      userId: result.userId,
+    });
     if (validated instanceof Response) return validated;
     return Response.json(validated);
   }
 
   await setSessionCookie(result.userId);
-  audit.log({ userId: result.userId, action: 'login.success', ip, userAgent: ua });
-  const payload = { status: 'success' as const, userId: result.userId };
-  const validated = validateBody(LoginResponseSchema, payload);
+  audit.log({ userId: result.userId, action: 'login.success', ip: client.ip, userAgent: client.ua });
+  const validated = validateBody(LoginResponseSchema, {
+    status: 'success' as const,
+    userId: result.userId,
+  });
   if (validated instanceof Response) return validated;
   return Response.json(validated);
 }

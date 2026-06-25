@@ -12,8 +12,6 @@
  * only; their auth logic is intentionally not exercised here.
  */
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
-
 import {
   AgentSyncRequestBodySchema,
   CreateAgentRequestBodySchema,
@@ -34,7 +32,10 @@ import {
   UpdateSkillRequestBodySchema,
   VerifyTotpRequestBodySchema,
 } from '@wolfkrow/shared-types';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ZodType } from 'zod';
 
+import { POST as setupPost } from '../../app/api/auth/setup/route';
 import { validateBody } from '../validation';
 
 /**
@@ -42,7 +43,7 @@ import { validateBody } from '../validation';
  * value for `good`.
  */
 function expectRejectsAndAccepts<T>(
-  schema: import('zod').ZodType<T>,
+  schema: ZodType<T>,
   bad: unknown,
   good: unknown,
 ): void {
@@ -151,8 +152,6 @@ vi.mock('@/lib/container', () => ({
   getRepos: () => ({ user: {} }),
   getAdapters: () => ({ hasher: {} }),
 }));
-
-import { POST as setupPost } from '../../app/api/auth/setup/route';
 
 function jsonRequest(body: unknown): Request {
   return new Request('http://localhost/api/auth/setup', {
