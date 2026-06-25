@@ -86,7 +86,7 @@ describe('pipeline POST /projects — create', () => {
   it('creates a project and returns its props', async () => {
     const res = await app.inject({
       method: 'POST', url: '/projects',
-      payload: { userId: 'u1', name: 'New pipeline', description: 'd' },
+      payload: { name: 'New pipeline', description: 'd' },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { name: string; userId: string };
@@ -95,14 +95,29 @@ describe('pipeline POST /projects — create', () => {
   });
 
   it('rejects a body missing name → 400', async () => {
-    const res = await app.inject({ method: 'POST', url: '/projects', payload: { userId: 'u1' } });
+    const res = await app.inject({ method: 'POST', url: '/projects', payload: {} });
     expect(res.statusCode).toBe(400);
   });
 });
 
+describe('pipeline POST /projects — userId derived from session (IDOR)', () => {
+  it('ignores a spoofed userId in the body and operates as the session user', async () => {
+    // Authenticated user (u1) sends userId: 'victim' in the body to try to
+    // create a project owned by 'victim'. The project MUST be owned by u1.
+    const res = await app.inject({
+      method: 'POST', url: '/projects',
+      payload: { userId: 'victim', name: 'Spoof attempt' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { userId: string; name: string };
+    expect(body.userId).toBe('u1');
+    expect(body.userId).not.toBe('victim');
+  });
+});
+
 describe('pipeline GET /projects — list', () => {
-  it('returns projects for a user', async () => {
-    const res = await app.inject({ method: 'GET', url: '/projects?userId=u1' });
+  it('returns projects for the authenticated user', async () => {
+    const res = await app.inject({ method: 'GET', url: '/projects' });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { name: string }[];
     expect(body.some((p) => p.name === 'Acme build')).toBe(true);
@@ -126,12 +141,12 @@ describe('pipeline GET /projects/:id', () => {
 describe('pipeline DELETE /projects/:id', () => {
   it('deletes an owned project and returns 204', async () => {
     const existing = [...projects.values()].find((p) => p.name === 'New pipeline')!;
-    const res = await app.inject({ method: 'DELETE', url: `/projects/${existing.id}?userId=u1` });
+    const res = await app.inject({ method: 'DELETE', url: `/projects/${existing.id}` });
     expect(res.statusCode).toBe(204);
   });
 
   it('returns 404 when the project is not found', async () => {
-    const res = await app.inject({ method: 'DELETE', url: '/projects/unknown?userId=u1' });
+    const res = await app.inject({ method: 'DELETE', url: '/projects/unknown' });
     expect(res.statusCode).toBe(404);
   });
 });
@@ -225,7 +240,7 @@ describe('pipeline routes — authentication required', () => {
     await a.ready();
     const res = await a.inject({
       method: 'POST', url: '/projects',
-      payload: { userId: 'u1', name: 'p' },
+      payload: { name: 'p' },
     });
     expect(res.statusCode).toBe(401);
     await a.close();
@@ -237,7 +252,7 @@ describe('pipeline routes — authentication required', () => {
     setErrorHandler(a);
     await pipelineRoutes(a as unknown as AuthFastifyInstance);
     await a.ready();
-    const res = await a.inject({ method: 'GET', url: '/projects?userId=u1' });
+    const res = await a.inject({ method: 'GET', url: '/projects' });
     expect(res.statusCode).toBe(401);
     await a.close();
   });

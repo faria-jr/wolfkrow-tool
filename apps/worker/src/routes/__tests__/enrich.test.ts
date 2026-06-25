@@ -60,7 +60,7 @@ describe('enrich POST /sessions — create', () => {
   it('creates an enrich session and returns its props', async () => {
     const res = await app.inject({
       method: 'POST', url: '/sessions',
-      payload: { userId: 'u1', specPath: '/tmp/spec.md' },
+      payload: { specPath: '/tmp/spec.md' },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { userId: string; specPath: string };
@@ -69,22 +69,37 @@ describe('enrich POST /sessions — create', () => {
   });
 
   it('rejects a body missing specPath → 400', async () => {
-    const res = await app.inject({ method: 'POST', url: '/sessions', payload: { userId: 'u1' } });
+    const res = await app.inject({ method: 'POST', url: '/sessions', payload: {} });
     expect(res.statusCode).toBe(400);
   });
 
   it('accepts optional validatorAgentId + enricherAgentId', async () => {
     const res = await app.inject({
       method: 'POST', url: '/sessions',
-      payload: { userId: 'u1', specPath: '/tmp/x.md', validatorAgentId: 'v1', enricherAgentId: 'e1' },
+      payload: { specPath: '/tmp/x.md', validatorAgentId: 'v1', enricherAgentId: 'e1' },
     });
     expect(res.statusCode).toBe(200);
   });
 });
 
+describe('enrich POST /sessions — userId derived from session (IDOR)', () => {
+  it('ignores a spoofed userId in the body and operates as the session user', async () => {
+    // Authenticated user (u1) sends userId: 'victim' in the body to try to
+    // create a session owned by 'victim'. The session MUST be owned by u1.
+    const res = await app.inject({
+      method: 'POST', url: '/sessions',
+      payload: { userId: 'victim', specPath: '/tmp/spoof.md' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { userId: string; specPath: string };
+    expect(body.userId).toBe('u1');
+    expect(body.userId).not.toBe('victim');
+  });
+});
+
 describe('enrich GET /sessions — list', () => {
-  it('returns sessions for a user', async () => {
-    const res = await app.inject({ method: 'GET', url: '/sessions?userId=u1' });
+  it('returns sessions for the authenticated user', async () => {
+    const res = await app.inject({ method: 'GET', url: '/sessions' });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { userId: string }[];
     expect(body.some((s) => s.userId === 'u1')).toBe(true);
@@ -109,14 +124,16 @@ describe('enrich GET /sessions/:id', () => {
 describe('enrich DELETE /sessions/:id — cancel', () => {
   it('cancels an owned session and returns 204', async () => {
     const existing = [...sessions.values()][0]!;
-    const res = await app.inject({ method: 'DELETE', url: `/sessions/${existing.id}?userId=u1` });
+    const res = await app.inject({ method: 'DELETE', url: `/sessions/${existing.id}` });
     expect(res.statusCode).toBe(204);
   });
 
   it('returns 404 when cancelling a session owned by another user', async () => {
     const other = EnrichSession.create({ userId: 'someone-else', specPath: '/x' });
     sessions.set(other.id, other);
-    const res = await app.inject({ method: 'DELETE', url: `/sessions/${other.id}?userId=u1` });
+    // Authenticated user is u1; the session belongs to someone-else → 404, and
+    // a spoofed ?userId=someone-else query is ignored (userId from session).
+    const res = await app.inject({ method: 'DELETE', url: `/sessions/${other.id}?userId=someone-else` });
     expect(res.statusCode).toBe(404);
   });
 });
@@ -153,7 +170,7 @@ describe('enrich routes — authentication required', () => {
     await a.ready();
     const res = await a.inject({
       method: 'POST', url: '/sessions',
-      payload: { userId: 'u1', specPath: '/tmp/s.md' },
+      payload: { specPath: '/tmp/s.md' },
     });
     expect(res.statusCode).toBe(401);
     await a.close();
@@ -165,7 +182,7 @@ describe('enrich routes — authentication required', () => {
     setErrorHandler(a);
     await enrichRoutes(a as unknown as AuthFastifyInstance);
     await a.ready();
-    const res = await a.inject({ method: 'GET', url: '/sessions?userId=u1' });
+    const res = await a.inject({ method: 'GET', url: '/sessions' });
     expect(res.statusCode).toBe(401);
     await a.close();
   });

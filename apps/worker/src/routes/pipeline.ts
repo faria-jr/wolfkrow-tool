@@ -34,7 +34,6 @@ function makeRepos() {
 }
 
 const createProjectBody = z.object({
-  userId: z.string().min(1).max(128),
   name: z.string().min(1).max(256),
   description: z.string().max(8192).optional(),
 });
@@ -52,6 +51,9 @@ const approveBody = z.object({
 const _repos = makeRepos();
 
 type RunParams = { id: string; phaseId: string };
+
+/** Derive the authenticated user's id from the session — never from the body. */
+const uid = (req: FastifyRequest) => (req as unknown as { user: { userId: string } }).user.userId;
 
 async function runImplementationViaHarness(
   req: FastifyRequest<{ Params: RunParams }>,
@@ -178,16 +180,15 @@ function registerPipelineProjectRoutes(
 ): void {
   server.post('/projects', auth, async (req) => {
     const body = validate(createProjectBody, req.body);
-    const { project } = await new CreatePipelineProjectUseCase(projectRepo).execute({
-      userId: body.userId,
+    const { project } = await new CreatePipelineProjectUseCase(projectRepo).execute(uid(req), {
       name: body.name,
       ...(body.description !== undefined ? { description: body.description } : {}),
     });
     return project.toProps();
   });
 
-  server.get<{ Querystring: { userId: string } }>('/projects', auth, async (req) => {
-    const { projects } = await new ListPipelineProjectsUseCase(projectRepo).execute({ userId: req.query.userId });
+  server.get('/projects', auth, async (req) => {
+    const { projects } = await new ListPipelineProjectsUseCase(projectRepo).execute({ userId: uid(req) });
     return projects.map((p) => p.toProps());
   });
 
@@ -200,9 +201,9 @@ function registerPipelineProjectRoutes(
     }
   });
 
-  server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/projects/:id', auth, async (req, reply) => {
+  server.delete<{ Params: { id: string } }>('/projects/:id', auth, async (req, reply) => {
     try {
-      await new DeletePipelineProjectUseCase(projectRepo).execute({ projectId: req.params.id, userId: req.query.userId });
+      await new DeletePipelineProjectUseCase(projectRepo).execute({ projectId: req.params.id, userId: uid(req) });
       return reply.status(204).send();
     } catch {
       return reply.status(404).send({ error: 'Not found' });

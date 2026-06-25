@@ -32,7 +32,6 @@ interface PhaseData {
   metrics: { tokens: number; durationMs: number };
 }
 
-const USER_ID = 'user-1';
 const STAGE_ORDER = ['discovery', 'spec_build', 'spec_validate', 'approval', 'implementation', 'completed'];
 const STAGE_LABEL: Record<string, string> = {
   discovery: 'Discovery',
@@ -62,7 +61,7 @@ async function doCreatePipeline(e: React.FormEvent, name: string, description: s
   p.setCreating(true);
   p.setError(null);
   try {
-    const res = await fetch('/api/pipeline/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: USER_ID, name, description }) });
+    const res = await fetch('/api/pipeline/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description }) });
     if (!res.ok) throw new Error('Failed to create');
     p.setName('');
     p.setDescription('');
@@ -208,7 +207,7 @@ export function PipelineView() {
   const [error, setError] = useState<string | null>(null);
 
   const loadProjects = useCallback(async () => {
-    const res = await fetch(`/api/pipeline/projects?userId=${USER_ID}`);
+    const res = await fetch(`/api/pipeline/projects`);
     if (res.ok) setProjects(await res.json() as ProjectData[]);
   }, []);
 
@@ -230,7 +229,7 @@ export function PipelineView() {
   };
 
   const handleDelete = async (projectId: string) => {
-    await fetch(`/api/pipeline/projects/${projectId}?userId=${USER_ID}`, { method: 'DELETE' });
+    await fetch(`/api/pipeline/projects/${projectId}`, { method: 'DELETE' });
     if (selected?.id === projectId) { setSelected(null); setPhases([]); }
     await loadProjects();
   };

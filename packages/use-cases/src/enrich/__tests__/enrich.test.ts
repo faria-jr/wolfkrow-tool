@@ -22,9 +22,10 @@ class InMemoryEnrichRepo implements EnrichSessionRepo {
 describe('CreateEnrichSessionUseCase', () => {
   it('creates session in pending state', async () => {
     const repo = new InMemoryEnrichRepo();
-    const { session } = await new CreateEnrichSessionUseCase(repo).execute({ userId: 'u1', specPath: '/spec.md' });
+    const { session } = await new CreateEnrichSessionUseCase(repo).execute('u1', { specPath: '/spec.md' });
     expect(session.status).toBe('pending');
     expect(session.specPath).toBe('/spec.md');
+    expect(session.userId).toBe('u1');
   });
 });
 

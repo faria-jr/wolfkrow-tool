@@ -63,7 +63,6 @@ async function loadSpec(specContent: string | undefined, specPath: string | null
 }
 
 const createEnrichBody = z.object({
-  userId: z.string().min(1).max(128),
   specPath: z.string().min(1).max(4096),
   validatorAgentId: z.string().max(128).optional(),
   enricherAgentId: z.string().max(128).optional(),
@@ -79,13 +78,16 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
 
   // Enrich sessions are user-scoped. Require an authenticated session on every
   // route so anonymous callers cannot create/list/cancel another user's spec
-  // sessions (the default-user leak class of P0-7/P2-1).
+  // sessions (the default-user leak class of P0-7/P2-1). The user identity is
+  // ALWAYS derived from the authenticated session (req.user.userId) — never from
+  // the request body/query — so an authenticated user cannot spoof another
+  // user's identity (IDOR).
   const auth = { onRequest: [server.authenticate] };
+  const uid = (req: FastifyRequest) => (req as unknown as { user: { userId: string } }).user.userId;
 
   server.post('/sessions', auth, async (req) => {
     const body = validate(createEnrichBody, req.body);
-    const { session } = await new CreateEnrichSessionUseCase(makeRepo()).execute({
-      userId: body.userId,
+    const { session } = await new CreateEnrichSessionUseCase(makeRepo()).execute(uid(req), {
       specPath: body.specPath,
       ...(body.validatorAgentId !== undefined ? { validatorAgentId: body.validatorAgentId } : {}),
       ...(body.enricherAgentId !== undefined ? { enricherAgentId: body.enricherAgentId } : {}),
@@ -93,8 +95,8 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
     return session.toProps();
   });
 
-  server.get<{ Querystring: { userId: string } }>('/sessions', auth, async (req) => {
-    const { sessions } = await new ListEnrichSessionsUseCase(makeRepo()).execute({ userId: req.query.userId });
+  server.get('/sessions', auth, async (req) => {
+    const { sessions } = await new ListEnrichSessionsUseCase(makeRepo()).execute({ userId: uid(req) });
     return sessions.map((s) => s.toProps());
   });
 
@@ -119,9 +121,9 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
     (req, reply) => runEnricherRoute(req, reply, makeRepo()),
   );
 
-  server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/sessions/:id', auth, async (req, reply) => {
+  server.delete<{ Params: { id: string } }>('/sessions/:id', auth, async (req, reply) => {
     try {
-      await new CancelEnrichSessionUseCase(makeRepo()).execute({ sessionId: req.params.id, userId: req.query.userId });
+      await new CancelEnrichSessionUseCase(makeRepo()).execute({ sessionId: req.params.id, userId: uid(req) });
       return reply.status(204).send();
     } catch {
       return reply.status(404).send({ error: 'Not found' });

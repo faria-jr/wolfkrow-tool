@@ -87,19 +87,24 @@ describe('telegram GET /status', () => {
 });
 
 describe('telegram POST /pair', () => {
-  it('generates a pairing code for the user', async () => {
+  it('generates a pairing code for the authenticated user', async () => {
     fakeBridge.generatePairingCode.mockReturnValueOnce('PAIR-XYZ');
-    const res = await app.inject({
-      method: 'POST', url: '/pair', payload: { userId: 'user-1' },
-    });
+    const res = await app.inject({ method: 'POST', url: '/pair', payload: {} });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ code: 'PAIR-XYZ' });
-    expect(fakeBridge.generatePairingCode).toHaveBeenCalledWith('user-1');
+    // userId is derived from the session (authedDecorator stamps 'u1').
+    expect(fakeBridge.generatePairingCode).toHaveBeenCalledWith('u1');
   });
 
-  it('rejects a body missing userId → 400', async () => {
-    const res = await app.inject({ method: 'POST', url: '/pair', payload: {} });
-    expect(res.statusCode).toBe(400);
+  it('ignores a spoofed userId in the body and pairs as the session user (IDOR)', async () => {
+    fakeBridge.generatePairingCode.mockReturnValueOnce('PAIR-SPOOF');
+    const res = await app.inject({
+      method: 'POST', url: '/pair', payload: { userId: 'victim' },
+    });
+    expect(res.statusCode).toBe(200);
+    // The pairing code is minted for the authenticated user (u1), NOT 'victim'.
+    expect(fakeBridge.generatePairingCode).toHaveBeenCalledWith('u1');
+    expect(fakeBridge.generatePairingCode).not.toHaveBeenCalledWith('victim');
   });
 });
 

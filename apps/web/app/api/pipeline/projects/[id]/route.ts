@@ -26,7 +26,7 @@ export async function DELETE(_req: Request, { params }: Params) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const res = await fetch(`${WORKER}/pipeline/projects/${id}?userId=${session.userId}`, {
+  const res = await fetch(`${WORKER}/pipeline/projects/${id}`, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${sessionToken}` },
   });

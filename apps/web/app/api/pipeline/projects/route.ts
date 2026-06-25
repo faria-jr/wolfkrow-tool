@@ -10,7 +10,7 @@ export async function GET(_req: Request) {
   const session = await getSession(sessionToken);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const res = await fetch(`${WORKER}/pipeline/projects?userId=${session.userId}`, {
+  const res = await fetch(`${WORKER}/pipeline/projects`, {
     headers: { Authorization: `Bearer ${sessionToken}` },
   });
   return Response.json(await res.json(), { status: res.status });
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   const res = await fetch(`${WORKER}/pipeline/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionToken}` },
-    body: JSON.stringify({ ...body, userId: session.userId }),
+    body: JSON.stringify(body),
   });
   return Response.json(await res.json(), { status: res.status });
 }

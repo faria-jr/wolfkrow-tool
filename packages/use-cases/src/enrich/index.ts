@@ -13,13 +13,19 @@ export interface EnricherAgent {
 
 // ── CreateEnrichSession ───────────────────────────────────────────────────────
 
-export interface CreateEnrichSessionInput { userId: string; specPath: string; validatorAgentId?: string; enricherAgentId?: string; }
+/**
+ * Client-supplied input for creating an enrich session. `userId` is NOT part of
+ * this object — it is server-derived from the authenticated session and passed
+ * as a separate parameter to `execute`, so a client cannot spoof another user's
+ * identity by sending `userId` in the request body.
+ */
+export interface CreateEnrichSessionInput { specPath: string; validatorAgentId?: string; enricherAgentId?: string; }
 export interface CreateEnrichSessionOutput { session: EnrichSession; }
 
 export class CreateEnrichSessionUseCase {
   constructor(private readonly repo: EnrichSessionRepo) {}
-  async execute(input: CreateEnrichSessionInput): Promise<CreateEnrichSessionOutput> {
-    const session = await this.repo.save(EnrichSessionEntity.create(input));
+  async execute(userId: string, input: CreateEnrichSessionInput): Promise<CreateEnrichSessionOutput> {
+    const session = await this.repo.save(EnrichSessionEntity.create({ userId, ...input }));
     return { session };
   }
 }

@@ -2,16 +2,13 @@
  * Telegram management routes — B.5.
  */
 
-import { z } from 'zod';
-
 import { getSecret } from '../lib/keychain';
 import { telegramBridge } from '../telegram/bridge';
 import type { AuthFastifyInstance } from '../types/fastify';
-import { validate } from '../validation';
 
-const pairBody = z.object({
-  userId: z.string().min(1).max(128),
-});
+/** Derive the authenticated user's id from the session — never from the body. */
+const uid = (req: { user?: { userId?: string } }): string =>
+  (req as unknown as { user: { userId: string } }).user.userId;
 
 export async function telegramRoutes(server: AuthFastifyInstance) {
   // The bridge controls (start/stop) and pairing are privileged operations; the
@@ -40,10 +37,12 @@ export async function telegramRoutes(server: AuthFastifyInstance) {
     return reply.send({ running: telegramBridge.isStarted() });
   });
 
-  // POST /telegram/pair — generate pairing code for current user
-  server.post<{ Body: unknown }>('/pair', auth, async (req, reply) => {
-    const { userId } = validate(pairBody, req.body);
-    const code = telegramBridge.generatePairingCode(userId);
+  // POST /telegram/pair — generate pairing code for the authenticated user.
+  // The userId is derived from the session (req.user.userId), never from the
+  // request body, so an authenticated user cannot mint a pairing code for
+  // another user (IDOR).
+  server.post('/pair', auth, async (req, reply) => {
+    const code = telegramBridge.generatePairingCode(uid(req));
     return reply.send({ code });
   });
 }
