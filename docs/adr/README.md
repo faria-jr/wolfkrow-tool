@@ -35,6 +35,7 @@ We use ADRs to document significant architectural decisions. See [README.md](./R
 - [ADR-0030](./0030-claude-compat-providers.md) — Claude-compat providers (Z.ai, Moonshot, Qwen, MiniMax)
 - [ADR-0031](./0031-defer-higgsfield-blotato.md) — Defer Higgsfield + Blotato MCPs to v2
 - [ADR-0032](./0032-remove-knowledge-benchmark.md) — Remove knowledge benchmark from v1.0
+- [ADR-0033](./0033-mgraph-structured-vault-out-of-scope-v1.md) — Structured mgraph vault (ROAM-like) out of scope for v1.0
 
 ## Process
 

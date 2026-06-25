@@ -142,6 +142,7 @@
 | 38 | Audit log — filtros avançados | Tabela + export ✅ em v1.0; filtros são UX extra |
 | 40 | Pricing calculator multi-fonte | Estimativa custo dentro do Usage page suficiente |
 | 11 | Interactive agent clarification (ask-the-user dialog) | Worker não emite o evento de pergunta clarificadora em v1.0; UI frontend removida para não enviar código morto (mascarado apenas por teste SSE mockado). Planejado para v1.1 com emitter real no worker + canal de resposta round-trip. (P0-3) |
+| — | mgraph structured vault (ROAM-like: entities/meetings/decisions/projects/references as first-class nodes) | Intencionalmente fora do escopo de v1.0. O LionClaw tinha um vault estruturado ROAM-like (`electron/main/mgraph-engine.ts`); o Wolfkrow **não** portou os tipos de nó estruturados. Em v1.0 a visualização de relações é coberta pela **graph view** (D3 + entity extraction) + MCP Graph search (binário real, row 55), que atendem ao caso de uso de visualização de relações sem a complexidade de um schema estruturado. Decisão registrada em ADR-0033. Reverte para implementação (Decision A) se ≥ 3 usuários pedirem os tipos estruturados. (P2-9) |
 
 ---
 
