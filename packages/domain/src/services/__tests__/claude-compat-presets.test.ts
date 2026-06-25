@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { BUILT_IN_PROVIDERS, getProviderById } from '../provider-registry';
 import {
   CLAUDE_COMPAT_PRESETS,
   CLAUDE_COMPAT_PROVIDER_IDS,
@@ -10,6 +11,20 @@ import {
 describe('claude-compat-presets', () => {
   it('contains four providers', () => {
     expect(CLAUDE_COMPAT_PROVIDER_IDS).toEqual(['zai', 'minimax', 'moonshot', 'qwen']);
+  });
+
+  it('presets are derived from the canonical provider-registry (DRY: single source)', () => {
+    // Every claude-compat preset must match the corresponding built-in provider
+    // config — no divergent copies of baseUrl/apiKeyAccount/displayName/models.
+    for (const id of CLAUDE_COMPAT_PROVIDER_IDS) {
+      const provider = getProviderById(BUILT_IN_PROVIDERS, id);
+      expect(provider, `provider ${id} should exist in registry`).toBeDefined();
+      const preset = CLAUDE_COMPAT_PRESETS[id];
+      expect(preset.displayName).toBe(provider!.displayName);
+      expect(preset.baseUrl).toBe(provider!.baseUrl);
+      expect(preset.apiKeyAccount).toBe(provider!.apiKeyAccount);
+      expect(preset.models).toEqual(provider!.models);
+    }
   });
 
   it('zai preset has expected baseUrl, account and models', () => {

@@ -1,4 +1,5 @@
-export { BUILT_IN_PROVIDERS, BUILT_IN_PROVIDER_IDS, ANTHROPIC_BUILTIN_ID, mergeProviders, getProviderById } from './provider-registry';
+export { BUILT_IN_PROVIDERS, BUILT_IN_PROVIDER_IDS, ANTHROPIC_BUILTIN_ID, mergeProviders, getProviderById, MODEL_CATALOG, UNKNOWN_PRICING, lookupModel, lookupModelPricing, getProviderForModel, getModelsByProvider } from './provider-registry';
+export type { ModelPricing, ModelCatalogEntry } from './provider-registry';
 export { LockoutPolicy } from './lockout-policy';
 export type { PasswordHasher } from './password-hasher';
 export type { TotpSecret, TotpVerifier } from './totp-verifier';

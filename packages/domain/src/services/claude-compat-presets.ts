@@ -1,64 +1,52 @@
 /**
- * @deprecated Use `provider-registry.ts` — it is the canonical source.
- * This file kept for backwards-compat of existing callers until RM1 migration is complete.
+ * Claude-compat presets — DERIVED from the canonical {@link BUILT_IN_PROVIDERS}
+ * registry (P1-5). There is no longer a second copy of baseUrl/apiKeyAccount/
+ * models here; presets are a filtered view of the registry's anthropic-compat
+ * providers.
  */
+
+import { BUILT_IN_PROVIDERS, getProviderById } from './provider-registry';
 
 export const CLAUDE_COMPAT_PROVIDER_IDS = ['zai', 'minimax', 'moonshot', 'qwen'] as const;
 
 export type ClaudeCompatProviderId = (typeof CLAUDE_COMPAT_PROVIDER_IDS)[number];
 
 export interface ClaudeCompatPreset {
- readonly id: ClaudeCompatProviderId;
- readonly displayName: string;
- readonly baseUrl: string;
- readonly apiKeyAccount: string;
- readonly models: readonly string[];
+  readonly id: ClaudeCompatProviderId;
+  readonly displayName: string;
+  readonly baseUrl: string;
+  readonly apiKeyAccount: string;
+  readonly models: readonly string[];
+}
+
+function presetFromRegistry(id: ClaudeCompatProviderId): ClaudeCompatPreset {
+  const provider = getProviderById(BUILT_IN_PROVIDERS, id);
+  if (!provider) {
+    throw new Error(`Claude-compat preset "${id}" missing from provider-registry`);
+  }
+  return {
+    id,
+    displayName: provider.displayName,
+    baseUrl: provider.baseUrl,
+    apiKeyAccount: provider.apiKeyAccount,
+    models: provider.models,
+  };
 }
 
 export const CLAUDE_COMPAT_PRESETS: Record<ClaudeCompatProviderId, ClaudeCompatPreset> = {
- zai: {
- id: 'zai',
- displayName: 'Z.ai (GLM)',
- baseUrl: 'https://api.z.ai/api/anthropic',
- apiKeyAccount: 'zai-api-key',
- models: ['glm-4.7', 'glm-4.5-air', 'glm-5.1', 'glm-5-turbo'],
- },
- minimax: {
- id: 'minimax',
- displayName: 'MiniMax TokenPlan',
- baseUrl: 'https://api.minimax.io/anthropic',
- apiKeyAccount: 'minimax-api-key',
-    models: [
-      'MiniMax-M2.7',
-      'MiniMax-M2.7-highspeed',
-      'MiniMax-M2.5',
-      'MiniMax-M2.5-highspeed',
-      'MiniMax-M3',
-    ],
- },
- moonshot: {
- id: 'moonshot',
- displayName: 'Moonshot (Kimi)',
- baseUrl: 'https://api.moonshot.cn/anthropic',
- apiKeyAccount: 'moonshot-api-key',
- models: ['kimi-k2', 'kimi-k2-0711', 'kimi-k1.5'],
- },
- qwen: {
- id: 'qwen',
- displayName: 'Qwen (DashScope)',
- baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/anthropic',
- apiKeyAccount: 'qwen-api-key',
- models: ['qwen-max', 'qwen-plus', 'qwen-turbo', 'qwen-coder-plus'],
- },
+  zai: presetFromRegistry('zai'),
+  minimax: presetFromRegistry('minimax'),
+  moonshot: presetFromRegistry('moonshot'),
+  qwen: presetFromRegistry('qwen'),
 };
 
 export function isClaudeCompatProviderId(value: string): value is ClaudeCompatProviderId {
- return CLAUDE_COMPAT_PROVIDER_IDS.includes(value as ClaudeCompatProviderId);
+  return CLAUDE_COMPAT_PROVIDER_IDS.includes(value as ClaudeCompatProviderId);
 }
 
 export function getClaudeCompatPreset(id: string): ClaudeCompatPreset {
- if (!isClaudeCompatProviderId(id)) {
- throw new Error(`Unknown Claude-compat provider: ${id}`);
- }
- return CLAUDE_COMPAT_PRESETS[id];
+  if (!isClaudeCompatProviderId(id)) {
+    throw new Error(`Unknown Claude-compat provider: ${id}`);
+  }
+  return CLAUDE_COMPAT_PRESETS[id];
 }

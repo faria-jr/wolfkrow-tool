@@ -34,9 +34,20 @@ describe('PricingCalculator', () => {
     expect(cost.toUSD()).toBe(0.18);
   });
 
-  it('returns zero for unknown model', () => {
+  it('returns zero for unknown model (no silent fake price)', () => {
     const calc = new PricingCalculator();
+    // Unknown models must not produce a fabricated cost — they return $0 AND
+    // are flagged as unknown via hasKnownPricing, so callers can log/alert.
     expect(calc.cost('unknown', { inputTokens: 1000, outputTokens: 1000 }).toUSD()).toBe(0);
+    expect(hasKnownPricing('unknown')).toBe(false);
+  });
+
+  it('cost derives from the registry price (tokens x registry rate, not a local copy)', () => {
+    // claude-sonnet-4-6 registry price: $3/M input, $15/M output.
+    // 10k input + 10k output => (10_000/1e6)*3 + (10_000/1e6)*15 = 0.03 + 0.15 = 0.18.
+    const calc = new PricingCalculator();
+    const cost = calc.cost('claude-sonnet-4-6', { inputTokens: 10_000, outputTokens: 10_000 });
+    expect(cost.toUSD()).toBe(0.18);
   });
 
   it('includes cache read and write tokens', () => {
@@ -72,11 +83,21 @@ describe('multi-preset pricing (RM6)', () => {
     expect(hasKnownPricing('totally-unknown-model-xyz')).toBe(false);
   });
 
-  it('kimi-k2-instruct via moonshot preset differs from base (unknown) pricing', () => {
+  it('kimi-k2-instruct resolves via the catalog (consolidated: no longer needs a preset hint)', () => {
+    // P1-5: kimi-k2-instruct is now catalogued under the moonshot provider, so
+    // the base (provider-agnostic) lookup finds it — the old divergence (base
+    // unknown vs preset known) is gone. Cost is positive from either call.
     const kimiCost = defaultPricingCalculator.cost('kimi-k2-instruct', { inputTokens: 1_000_000, outputTokens: 500_000 }, 'moonshot');
     const base = defaultPricingCalculator.cost('kimi-k2-instruct', { inputTokens: 1_000_000, outputTokens: 500_000 });
     expect(kimiCost.toUSD()).toBeGreaterThan(0);
-    expect(kimiCost.toUSD()).not.toBe(base.toUSD());
+    expect(base.toUSD()).toBeGreaterThan(0);
+    expect(kimiCost.toUSD()).toBe(base.toUSD());
+  });
+
+  it('provider-scoped lookup returns unknown when model exists only under a different provider', () => {
+    // glm-4.7 is a zai model; asking for it under the moonshot scope is unknown.
+    expect(hasKnownPricing('glm-4.7', 'moonshot')).toBe(false);
+    expect(hasKnownPricing('glm-4.7', 'zai')).toBe(true);
   });
 
   it('claude model matched by keyword fallback (opus)', () => {
