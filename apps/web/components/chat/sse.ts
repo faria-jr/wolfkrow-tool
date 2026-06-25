@@ -37,7 +37,13 @@ export interface SseCallbacks {
 function parseSseLine(line: string): SSEEvent | null {
   if (!line.startsWith('data: ')) return null;
   const raw = line.slice(6).trim();
-  return raw ? (JSON.parse(raw) as SSEEvent) : null;
+  if (!raw) return null;
+  // FE-4: resilient parse — a single malformed frame must NOT kill the stream.
+  try {
+    return JSON.parse(raw) as SSEEvent;
+  } catch {
+    return null;
+  }
 }
 
 const EVENT_DISPATCHERS: Record<SSEEvent['type'], ((ev: SSEEvent, cb: SseCallbacks) => void) | undefined> = {
@@ -70,7 +76,15 @@ async function readSseStream(stream: ReadableStream<Uint8Array>, cb: SseCallback
     buf += decoder.decode(value, { stream: true });
     const lines = buf.split('\n');
     buf = lines.pop() ?? '';
-    for (const line of lines) processLine(line, cb);
+    // FE-4: isolate each line so one malformed/unparseable frame can't abort
+    // the entire stream — valid frames before and after still dispatch.
+    for (const line of lines) {
+      try {
+        processLine(line, cb);
+      } catch {
+        // malformed frame — skip, keep draining the stream
+      }
+    }
   }
 }
 

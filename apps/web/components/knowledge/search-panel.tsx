@@ -5,22 +5,16 @@ import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { searchKnowledge, type KnowledgeSearchItem } from '@/lib/api-client';
 
-interface SearchResultItem {
-  chunkId: string;
-  documentId: string;
-  content: string;
-  score: number;
-  metadata: { sourceType?: string; heading?: string };
-}
-
-function SearchResultCard({ r, i }: { r: SearchResultItem; i: number }) {
+function SearchResultCard({ r, i }: { r: KnowledgeSearchItem; i: number }) {
+  const meta = r.metadata as { sourceType?: string; heading?: string };
   return (
     <div className="rounded-lg border p-4 space-y-1">
       <div className="flex items-start justify-between gap-2">
         <p className="text-xs text-muted-foreground">
-          [{i + 1}] {r.metadata.sourceType ?? 'text'}
-          {r.metadata.heading ? ` — ${r.metadata.heading}` : ''}
+          [{i + 1}] {meta.sourceType ?? 'text'}
+          {meta.heading ? ` — ${meta.heading}` : ''}
         </p>
         <span className="shrink-0 text-xs text-muted-foreground">score: {r.score.toFixed(3)}</span>
       </div>
@@ -33,21 +27,17 @@ function SearchResultCard({ r, i }: { r: SearchResultItem; i: number }) {
 export function SearchPanel() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<SearchResultItem[]>([]);
+  const [results, setResults] = useState<KnowledgeSearchItem[]>([]);
   const [searched, setSearched] = useState(false);
 
   const handleSearch = async () => {
     if (!query.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/knowledge/search', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: query.trim(), limit: 10 }),
-      });
-      const data = (await res.json()) as { results: SearchResultItem[] };
-      setResults(data.results ?? []);
+      setResults(await searchKnowledge({ query: query.trim(), limit: 10 }));
+      setSearched(true);
+    } catch {
+      setResults([]);
       setSearched(true);
     } finally {
       setLoading(false);

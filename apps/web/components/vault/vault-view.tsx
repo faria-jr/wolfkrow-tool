@@ -1,18 +1,11 @@
 'use client';
 
+import type { SecretMetadata } from '@wolfkrow/shared-types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-
-interface SecretMeta {
-  id: string;
-  key: string;
-  displayName: string;
-  category: string;
-  lastRotated?: string;
-  lastAccessed?: string;
-}
+import { listVaultSecrets } from '@/lib/api-client';
 
 type Category = 'ai' | 'integration' | 'oauth' | 'other';
 
@@ -47,11 +40,14 @@ export function VaultView() {
 }
 
 function useVault() {
-  const [secrets, setSecrets] = useState<SecretMeta[]>([]);
+  const [secrets, setSecrets] = useState<SecretMetadata[]>([]);
 
   const load = useCallback(async () => {
-    const res = await fetch('/api/vault');
-    if (res.ok) setSecrets(((await res.json()) as { secrets: SecretMeta[] }).secrets);
+    try {
+      setSecrets(await listVaultSecrets());
+    } catch {
+      setSecrets([]);
+    }
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -169,7 +165,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-function SecretTable({ secrets, onDelete }: { secrets: SecretMeta[]; onDelete: (key: string) => void }) {
+function SecretTable({ secrets, onDelete }: { secrets: SecretMetadata[]; onDelete: (key: string) => void }) {
   return (
     <div className="rounded border">
       <table className="w-full text-sm">

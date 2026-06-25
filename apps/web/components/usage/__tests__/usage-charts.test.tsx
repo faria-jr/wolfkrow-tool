@@ -32,9 +32,11 @@ describe('UsageCharts', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    // FE-4: api-client uses .text() + JSON.parse, not .json()
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => summary,
+      status: 200,
+      text: async () => JSON.stringify(summary),
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -81,7 +83,8 @@ describe('UsageCharts — model breakdown table (RM6.2)', () => {
   it('shows Cost (USD) column header when models present', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => summaryWithModels,
+      status: 200,
+      text: async () => JSON.stringify(summaryWithModels),
     } as Response));
 
     render(<UsageCharts />);
@@ -91,7 +94,8 @@ describe('UsageCharts — model breakdown table (RM6.2)', () => {
   it('shows formatted cost for known model', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => summaryWithModels,
+      status: 200,
+      text: async () => JSON.stringify(summaryWithModels),
     } as Response));
 
     render(<UsageCharts />);
@@ -103,7 +107,8 @@ describe('UsageCharts — model breakdown table (RM6.2)', () => {
   it('shows "unknown" badge for model without known pricing', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => summaryWithModels,
+      status: 200,
+      text: async () => JSON.stringify(summaryWithModels),
     } as Response));
 
     render(<UsageCharts />);

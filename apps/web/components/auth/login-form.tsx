@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { ApiClientError, login } from '@/lib/api-client';
 
 const passwordSchema = z.object({
   password: z.string().min(1, 'Password is required'),
@@ -45,17 +46,25 @@ export function LoginForm() {
   async function onPasswordSubmit({ password }: PasswordForm) {
     setSubmitError(null);
     setLockedUntil(null);
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
-    });
-    const data = (await res.json()) as Record<string, string>;
-    if (res.status === 423) { setLockedUntil(data.lockedUntil ?? null); return; }
-    if (!res.ok) { setSubmitError(data.error ?? 'Authentication failed'); return; }
-    if (data.status === 'requires_totp') { setPendingUserId(data.userId ?? ''); setStep('totp'); return; }
-    router.push(redirectTo);
-    router.refresh();
+    try {
+      const data = await login({ password });
+      if (data.status === 'locked') {
+        // lockedUntil is a Date (coerced by shared TimestampSchema); display needs a string.
+        setLockedUntil(data.lockedUntil.toISOString());
+        return;
+      }
+      if (data.status === 'requires_totp') { setPendingUserId(data.userId); setStep('totp'); return; }
+      router.push(redirectTo);
+      router.refresh();
+    } catch (err) {
+      if (err instanceof ApiClientError && err.status === 423) {
+        // locked body failed contract parse — treat as locked with unknown time
+        setLockedUntil(null);
+        setSubmitError('Account locked. Try again later.');
+        return;
+      }
+      setSubmitError(err instanceof ApiClientError ? err.message : 'Authentication failed');
+    }
   }
 
   async function onTotpSubmit({ code }: TotpForm) {

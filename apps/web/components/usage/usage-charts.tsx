@@ -17,6 +17,8 @@ import {
   Legend,
 } from 'recharts';
 
+import { getUsageSummary } from '@/lib/api-client';
+
 const COLORS = ['#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6'];
 
 function ModelBreakdownTable({ byModel }: { byModel: UsageSummary['byModel'] }) {
@@ -91,18 +93,8 @@ function DayChart({ data }: { data: DayDataItem[] }) {
   );
 }
 
-export function UsageCharts() {
-  const [summary, setSummary] = useState<UsageSummary | null>(null);
-
-  useEffect(() => {
-    void fetch('/api/usage/summary')
-      .then((r) => r.json() as Promise<UsageSummary>)
-      .then(setSummary);
-  }, []);
-
-  if (!summary) return <div className="text-sm text-muted-foreground">Loading usage data…</div>;
-
-  const dayData = summary.byDay
+function buildDayData(summary: UsageSummary) {
+  return summary.byDay
     .slice()
     .sort((a, b) => a.day.localeCompare(b.day))
     .map((d) => ({
@@ -111,6 +103,22 @@ export function UsageCharts() {
       inputTokens: d.inputTokens,
       outputTokens: d.outputTokens,
     }));
+}
+
+export function UsageCharts() {
+  const [summary, setSummary] = useState<UsageSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getUsageSummary()
+      .then(setSummary)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load usage data'));
+  }, []);
+
+  if (error) return <div className="text-sm text-destructive">{error}</div>;
+  if (!summary) return <div className="text-sm text-muted-foreground">Loading usage data…</div>;
+
+  const dayData = buildDayData(summary);
 
   const sourceData = Object.entries(summary.bySource).map(([name, d]) => ({
     name,

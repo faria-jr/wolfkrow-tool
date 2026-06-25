@@ -27,7 +27,14 @@ async function readSseLines(body: ReadableStream<Uint8Array>, onLine: (line: str
     buf += decoder.decode(value, { stream: true });
     const lines = buf.split('\n');
     buf = lines.pop() ?? '';
-    lines.forEach(onLine);
+    // FE-4: isolate each line so one bad frame can't abort the whole read loop.
+    for (const line of lines) {
+      try {
+        onLine(line);
+      } catch {
+        // malformed frame — skip, keep draining the stream
+      }
+    }
   }
 }
 
@@ -35,7 +42,13 @@ function accumulateText(line: string, sink: { content: string }): void {
   if (!line.startsWith('data: ')) return;
   const raw = line.slice(6).trim();
   if (!raw) return;
-  const ev = JSON.parse(raw) as ChatSseEvent;
+  // FE-4: resilient parse — a malformed frame must NOT break the consolidating stream.
+  let ev: ChatSseEvent;
+  try {
+    ev = JSON.parse(raw) as ChatSseEvent;
+  } catch {
+    return;
+  }
   if (ev.type === 'text' && ev.content) sink.content += ev.content;
 }
 

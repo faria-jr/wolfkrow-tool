@@ -7,6 +7,17 @@ import { LoginForm } from '../login-form';
 const mockPush = vi.fn();
 const mockRefresh = vi.fn();
 
+const VALID_UUID = '12345678-1234-4123-8123-123456789012';
+
+/** Build a mock Response the typed api-client can consume (uses .text()). */
+function mockResponse(status: number, body: unknown): Response {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: async () => JSON.stringify(body),
+  } as Response;
+}
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush, refresh: mockRefresh }),
   useSearchParams: () => new URLSearchParams(),
@@ -40,11 +51,7 @@ describe('LoginForm', () => {
   });
 
   it('redirects to /chat on successful login', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ status: 'success', userId: 'u1' }),
-    } as Response);
+    mockFetch.mockResolvedValueOnce(mockResponse(200, { status: 'success', userId: VALID_UUID }));
 
     render(<LoginForm />);
     await userEvent.type(screen.getByLabelText(/password/i), 'Password1');
@@ -54,11 +61,7 @@ describe('LoginForm', () => {
   });
 
   it('shows TOTP step when requires_totp', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ status: 'requires_totp', userId: 'u1' }),
-    } as Response);
+    mockFetch.mockResolvedValueOnce(mockResponse(200, { status: 'requires_totp', userId: VALID_UUID }));
 
     render(<LoginForm />);
     await userEvent.type(screen.getByLabelText(/password/i), 'Password1');
@@ -69,11 +72,7 @@ describe('LoginForm', () => {
   });
 
   it('shows locked message on 423 response', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 423,
-      json: async () => ({ status: 'locked', lockedUntil: '2099-01-01T12:05:00Z' }),
-    } as Response);
+    mockFetch.mockResolvedValueOnce(mockResponse(423, { status: 'locked', lockedUntil: '2099-01-01T12:05:00Z' }));
 
     render(<LoginForm />);
     await userEvent.type(screen.getByLabelText(/password/i), 'Password1');
@@ -83,11 +82,7 @@ describe('LoginForm', () => {
   });
 
   it('shows error message on failed credentials', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: false,
-      status: 401,
-      json: async () => ({ error: 'Invalid credentials' }),
-    } as Response);
+    mockFetch.mockResolvedValueOnce(mockResponse(401, { error: 'Invalid credentials' }));
 
     render(<LoginForm />);
     await userEvent.type(screen.getByLabelText(/password/i), 'Password1');
@@ -104,15 +99,13 @@ describe('LoginForm', () => {
 
   it('submits TOTP code and redirects on success', async () => {
     mockFetch
+      .mockResolvedValueOnce(mockResponse(200, { status: 'requires_totp', userId: VALID_UUID }))
+      // TOTP step still uses raw fetch with .json() — provide both methods.
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
-        json: async () => ({ status: 'requires_totp', userId: 'u1' }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({ status: 'success', userId: 'u1' }),
+        text: async () => JSON.stringify({ ok: true }),
+        json: async () => ({ ok: true }),
       } as Response);
 
     render(<LoginForm />);
@@ -127,11 +120,7 @@ describe('LoginForm', () => {
   });
 
   it('back button returns to password step from TOTP', async () => {
-    mockFetch.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: async () => ({ status: 'requires_totp', userId: 'u1' }),
-    } as Response);
+    mockFetch.mockResolvedValueOnce(mockResponse(200, { status: 'requires_totp', userId: VALID_UUID }));
 
     render(<LoginForm />);
     await userEvent.type(screen.getByLabelText(/password/i), 'Password1');

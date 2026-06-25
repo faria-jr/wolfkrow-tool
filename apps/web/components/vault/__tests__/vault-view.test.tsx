@@ -4,13 +4,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { VaultView } from '../vault-view';
 
+const VALID_UUID = '12345678-1234-4123-8123-123456789012';
+
 describe('VaultView', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    // FE-4: api-client uses .text() + JSON.parse + SecretMetadataSchema.parse.
+    // Secret shape must satisfy the shared schema (userId, metadata, timestamps).
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ secrets: [{ id: 's1', key: 'anthropic-api-key', displayName: 'Anthropic', category: 'ai', lastRotated: undefined, lastAccessed: undefined }] }),
+      status: 200,
+      text: async () => JSON.stringify({
+        secrets: [{
+          id: VALID_UUID,
+          userId: VALID_UUID,
+          key: 'anthropic-api-key',
+          displayName: 'Anthropic',
+          category: 'ai',
+          metadata: {},
+          createdAt: '2026-06-01T00:00:00Z',
+          updatedAt: '2026-06-01T00:00:00Z',
+        }],
+      }),
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
   });
