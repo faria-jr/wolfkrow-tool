@@ -1,4 +1,4 @@
-import type { EmbeddingPort, KnowledgeChunk, KnowledgeChunkRepo } from '@wolfkrow/domain';
+import type { HydePort, KnowledgeChunk, KnowledgeChunkRepo, RerankerPort, EmbeddingPort } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
@@ -7,8 +7,6 @@ export interface SearchKnowledgeInput {
   query: string;
   limit?: number;
   documentIds?: string[];
-  vectorWeight?: number;
-  keywordWeight?: number;
 }
 
 export interface SearchResult {
@@ -22,10 +20,21 @@ export interface SearchKnowledgeOutput {
   query: string;
 }
 
+/**
+ * P3-6 — canonical hybrid search (BM25 via FTS5 + vector via vec0, fused with
+ * Reciprocal Rank Fusion k=60) from KnowledgeChunkRepo, with two optional
+ * feature-flagged stages:
+ *  - HyDE: generate a hypothetical answer, embed it, use it for vector recall
+ *    (improves queries with no keyword overlap).
+ *  - Reranker: second-stage rerank of the top candidate pool (e.g. Cohere).
+ * Both default to disabled (undefined) so callers without keys get plain RRF.
+ */
 export class SearchKnowledgeUseCase implements UseCase<SearchKnowledgeInput, SearchKnowledgeOutput> {
   constructor(
     private readonly chunkRepo: KnowledgeChunkRepo,
     private readonly embedder: EmbeddingPort,
+    private readonly reranker?: RerankerPort,
+    private readonly hyde?: HydePort,
   ) {}
 
   async execute(input: SearchKnowledgeInput): Promise<SearchKnowledgeOutput> {
@@ -33,44 +42,36 @@ export class SearchKnowledgeUseCase implements UseCase<SearchKnowledgeInput, Sea
     if (!query) return { results: [], query };
 
     const limit = input.limit ?? 10;
-    const vectorWeight = input.vectorWeight ?? 0.7;
-    const keywordWeight = input.keywordWeight ?? 0.3;
-    const fetchLimit = limit * 2;
+    const fetchLimit = limit * 3; // candidate pool for rerank
 
-    const [queryEmbedding, keywordResults] = await Promise.all([
-      this.embedder.embed(query),
-      this.chunkRepo.keywordSearch(query, fetchLimit, input.documentIds),
-    ]);
+    const embedding = await this.embedder.embed(query);
 
-    const vectorResults = await this.chunkRepo.vectorSearch(
-      queryEmbedding,
-      fetchLimit,
-      input.documentIds,
-    );
+    // HyDE: optionally swap the vector-embedding for a hypothetical answer's.
+    let effectiveEmbedding = embedding;
+    if (this.hyde?.enabled) {
+      const hypothetical = await this.hyde.generate(query);
+      if (hypothetical) effectiveEmbedding = await this.embedder.embed(hypothetical);
+    }
 
-    const scores = new Map<string, number>();
-    const chunkMap = new Map<string, KnowledgeChunk>();
+    const fused = await this.chunkRepo.hybridSearch(query, effectiveEmbedding, fetchLimit, input.documentIds);
 
-    vectorResults.forEach((r, i) => {
-      const s = (1 / (i + 1)) * vectorWeight;
-      scores.set(r.chunk.id, (scores.get(r.chunk.id) ?? 0) + s);
-      chunkMap.set(r.chunk.id, r.chunk);
-    });
+    // Reranker: optionally reorder the candidate pool by cross-encoder score.
+    if (this.reranker?.enabled && fused.length > 0) {
+      const documents = fused.map((f) => f.chunk.content);
+      const hits = await this.reranker.rerank(query, documents, limit);
+      const results: SearchResult[] = [];
+      for (const { index, score } of hits) {
+        const chunk = fused[index]?.chunk;
+        if (chunk) results.push({ chunk, score, documentId: chunk.documentId });
+      }
+      if (results.length > 0) return { results, query };
+    }
 
-    keywordResults.forEach((r, i) => {
-      const s = (1 / (i + 1)) * keywordWeight;
-      scores.set(r.chunk.id, (scores.get(r.chunk.id) ?? 0) + s);
-      chunkMap.set(r.chunk.id, r.chunk);
-    });
-
-    const results = [...scores.entries()]
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, limit)
-      .map(([id, score]) => {
-        const chunk = chunkMap.get(id)!;
-        return { chunk, score, documentId: chunk.documentId };
-      });
-
+    const results = fused.slice(0, limit).map((h) => ({
+      chunk: h.chunk,
+      score: h.score,
+      documentId: h.chunk.documentId,
+    }));
     return { results, query };
   }
 }

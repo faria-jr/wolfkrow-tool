@@ -1,10 +1,12 @@
 import type {
   ChunkSearchResult,
   EmbeddingPort,
+  HydePort,
   HybridChunkSearchResult,
   KeywordSearchResult,
   KnowledgeChunkRepo,
   KnowledgeDocRepo,
+  RerankerPort,
 } from '@wolfkrow/domain';
 import {
   KnowledgeChunk,
@@ -12,7 +14,7 @@ import {
   NotFoundError,
   ValidationError,
 } from '@wolfkrow/domain';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   DeleteDocumentUseCase,
@@ -204,6 +206,34 @@ describe('SearchKnowledgeUseCase', () => {
     const uc = new SearchKnowledgeUseCase(chunkRepo, embedder);
     const result = await uc.execute({ userId: 'u1', query: '', limit: 5 });
     expect(result.results).toHaveLength(0);
+  });
+
+  it('reorders candidates via the reranker when enabled', async () => {
+    const reranker: RerankerPort = {
+      enabled: true,
+      rerank: async (_q, docs, topN) =>
+        docs
+          .map((_, i) => ({ index: docs.length - 1 - i, score: 1 - i * 0.1 }))
+          .slice(0, topN),
+    };
+    const uc = new SearchKnowledgeUseCase(chunkRepo, embedder, reranker);
+    const result = await uc.execute({ userId: 'u1', query: 'hello', limit: 5 });
+    expect(result.results.length).toBeGreaterThan(0);
+    // reranker inverts order — verify the fused list was actually reordered.
+    const plain = await new SearchKnowledgeUseCase(chunkRepo, embedder).execute({ userId: 'u1', query: 'hello', limit: 5 });
+    if (plain.results.length > 1) {
+      expect(result.results[0]?.chunk.id).not.toBe(plain.results[0]?.chunk.id);
+    }
+  });
+
+  it('uses HyDE hypothetical embedding when enabled', async () => {
+    const generate = vi.fn(async () => 'hypothetical answer');
+    const hyde: HydePort = { enabled: true, generate };
+    const embedSpy = vi.spyOn(embedder, 'embed');
+    const uc = new SearchKnowledgeUseCase(chunkRepo, embedder, undefined, hyde);
+    await uc.execute({ userId: 'u1', query: 'hello', limit: 5 });
+    expect(generate).toHaveBeenCalledWith('hello');
+    expect(embedSpy).toHaveBeenCalledTimes(2); // query embedding + HyDE embedding
   });
 });
 

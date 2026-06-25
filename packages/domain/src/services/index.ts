@@ -7,6 +7,8 @@ export { TokenEstimator } from './token-estimator';
 export type { AIStreamPort, AIStreamChunk, AICompletionOptions, AICompletionResult, AIChatMessage, AIChatRole } from './ai-stream-port';
 export type { EmbeddingPort } from './embedding-port';
 export type { SecretsAdapter } from './secrets-port';
+export type { RerankerPort, RerankHit } from './reranker-port';
+export type { HydePort } from './hyde-port';
 export {
   CLAUDE_COMPAT_PRESETS,
   CLAUDE_COMPAT_PROVIDER_IDS,

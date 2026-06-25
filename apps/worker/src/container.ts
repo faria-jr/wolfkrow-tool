@@ -17,18 +17,24 @@ import type {
   AIStreamChunk,
   AIStreamPort,
   EmbeddingPort,
+  HydePort,
   ProviderConfig,
+  RerankerPort,
   SecretsAdapter,
   SecurityAuditRunner as SecurityAuditRunnerPort,
 } from '@wolfkrow/domain';
 import { ANTHROPIC_BUILTIN_ID, defaultPermissionResolver } from '@wolfkrow/domain';
 import {
   aiProviderFactory,
+  AnthropicHyde,
   BashTool,
   ClaudeAgentProvider,
   ClaudeCompatProvider,
+  CohereReranker,
   FilesystemTool,
   FsArtifactWriter,
+  NoOpHyde,
+  NoOpReranker,
   SecurityAuditRunner,
   ToolRegistry,
   VoyageEmbedder,
@@ -54,6 +60,10 @@ export interface AdapterBundle {
   secrets: SecretsAdapter;
   aiFactory: AIProviderFactory;
   securityAuditRunner: SecurityAuditRunnerPort;
+  /** P3-6 — Cohere rerank when COHERE_API_KEY set, else NoOp (plain RRF). */
+  reranker: RerankerPort;
+  /** P3-6 — HyDE when WOLFKROW_HYDE_ENABLED + ANTHROPIC_API_KEY, else NoOp. */
+  hyde: HydePort;
 }
 
 let _adapters: AdapterBundle | null = null;
@@ -62,14 +72,20 @@ let _adapters: AdapterBundle | null = null;
  * Singleton adapter bundle. The embedder is built from `VOYAGE_API_KEY` (env)
  * and the secrets adapter is keyless, so both are safe to construct eagerly.
  * `aiFactory` re-exposes the infra singleton so routes don't import infra.
+ * Reranker/HyDE are feature-flagged via env (off by default).
  */
 export function getAdapters(): AdapterBundle {
   if (_adapters) return _adapters;
+  const cohereKey = process.env['COHERE_API_KEY'];
+  const anthropicKey = process.env['ANTHROPIC_API_KEY'];
+  const hydeEnabled = process.env['WOLFKROW_HYDE_ENABLED'] === 'true';
   _adapters = {
     embedder: new VoyageEmbedder(process.env['VOYAGE_API_KEY'] ?? ''),
     secrets: new KeytarSecretsAdapter(),
     aiFactory: aiProviderFactory,
     securityAuditRunner: new SecurityAuditRunner(),
+    reranker: cohereKey ? new CohereReranker(cohereKey) : new NoOpReranker(),
+    hyde: hydeEnabled && anthropicKey ? new AnthropicHyde(anthropicKey) : new NoOpHyde(),
   };
   return _adapters;
 }

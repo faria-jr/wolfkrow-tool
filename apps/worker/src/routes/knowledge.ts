@@ -100,7 +100,8 @@ export async function knowledgeRoutes(app: AuthFastifyInstance) {
     const { query, limit, documentIds } = validate(SearchQuerySchema, req.body);
 
     const { chunkRepo } = makeRepos();
-    const uc = new SearchKnowledgeUseCase(chunkRepo, makeEmbedder());
+    const adapters = getAdapters();
+    const uc = new SearchKnowledgeUseCase(chunkRepo, makeEmbedder(), adapters.reranker, adapters.hyde);
     const result = await uc.execute({
       userId: (req as unknown as { user: { userId: string } }).user.userId,
       query,

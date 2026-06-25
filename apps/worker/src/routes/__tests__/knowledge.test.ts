@@ -8,7 +8,7 @@
  * decorator (onRequest) so 401-without-session is genuine.
  */
 
-import { KnowledgeDocument } from '@wolfkrow/domain';
+import { KnowledgeChunk, KnowledgeDocument } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
@@ -32,6 +32,19 @@ const { docs, fakeDocRepo, fakeChunkRepo, fakeEmbedder } = vi.hoisted(() => {
     deleteByDocumentId: async () => undefined,
     vectorSearch: async () => [],
     keywordSearch: async () => [],
+    hybridSearch: async () => [
+      {
+        chunk: KnowledgeChunk.create({
+          documentId: 'd1',
+          content: 'hello world',
+          embedding: [],
+          metadata: {},
+          position: 0,
+        }),
+        score: 0.5,
+        vectorDistance: 0.5,
+      },
+    ],
   };
   const fakeEmbedder = {
     embed: async () => ({ vector: new Array(8).fill(0), tokens: 1 }),
