@@ -191,7 +191,7 @@ function PasswordSetupForm({ form, error, onSubmit }: SetupFormProps) {
 function CompletionStep({ onContinue }: { onContinue: () => void }) {
   return (
     <div className="space-y-6 text-center">
-      <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
+      <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">You&apos;re all set!</h2>
         <p className="text-sm text-muted-foreground">Your account has been created. Welcome to Wolfkrow.</p>

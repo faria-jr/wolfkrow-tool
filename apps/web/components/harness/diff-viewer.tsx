@@ -33,11 +33,11 @@ export function DiffViewer({ before, after, title, maxLines = 1000 }: DiffViewer
 
  return (
  <div className="overflow-hidden rounded-md border bg-muted/40 font-mono text-xs">
- <div className="flex items-center justify-between border-b bg-muted px-3 py-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+ <div className="flex items-center justify-between border-b bg-muted px-3 py-1.5 text-xs uppercase tracking-wide text-muted-foreground">
  <span>{title ?? 'Diff'}</span>
  <span className="flex items-center gap-3">
- <span className="text-emerald-700 dark:text-emerald-400">+{summary.added}</span>
- <span className="text-rose-700 dark:text-rose-400">-{summary.removed}</span>
+ <span className="text-success">+{summary.added}</span>
+ <span className="text-destructive">-{summary.removed}</span>
  <span className="text-muted-foreground">={summary.unchanged}</span>
  </span>
  </div>
@@ -46,13 +46,13 @@ export function DiffViewer({ before, after, title, maxLines = 1000 }: DiffViewer
  <tbody>
  {visible.map((op, idx) => (
  <tr key={idx} className={rowClass(op.type)}>
- <td className="select-none border-r px-2 py-0.5 text-right text-[10px] text-muted-foreground w-10">
+ <td className="select-none border-r px-2 py-0.5 text-right text-xs text-muted-foreground w-10">
  {op.oldLine ?? ''}
  </td>
- <td className="select-none border-r px-2 py-0.5 text-right text-[10px] text-muted-foreground w-10">
+ <td className="select-none border-r px-2 py-0.5 text-right text-xs text-muted-foreground w-10">
  {op.newLine ?? ''}
  </td>
- <td className="select-none px-2 py-0.5 text-[10px] text-muted-foreground w-3">
+ <td className="select-none px-2 py-0.5 text-xs text-muted-foreground w-3">
  {PREFIX[op.type]}
  </td>
  <td className="whitespace-pre px-2 py-0.5">
@@ -63,7 +63,7 @@ export function DiffViewer({ before, after, title, maxLines = 1000 }: DiffViewer
  </tbody>
  </table>
  {truncated && (
- <div className="border-t bg-muted px-3 py-1 text-[11px] text-muted-foreground">
+ <div className="border-t bg-muted px-3 py-1 text-xs text-muted-foreground">
  Truncated at {maxLines} of {ops.length} lines. Use the API for the full diff.
  </div>
  )}
@@ -73,7 +73,7 @@ export function DiffViewer({ before, after, title, maxLines = 1000 }: DiffViewer
 }
 
 function rowClass(type: DiffLine['type']): string {
- if (type === 'add') return 'bg-emerald-50 dark:bg-emerald-950/30';
- if (type === 'remove') return 'bg-rose-50 dark:bg-rose-950/30';
+ if (type === 'add') return 'bg-success/10';
+ if (type === 'remove') return 'bg-destructive/10';
  return '';
 }

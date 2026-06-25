@@ -56,7 +56,7 @@ function SkillContentTabs({ content, onChange, disabled }: ContentTabsProps) {
         <Textarea value={content} onChange={(e) => onChange(e.target.value)} disabled={disabled} rows={16} placeholder="# Skill Title&#10;&#10;Describe the skill capabilities and instructions here..." className="font-mono text-sm" />
       </TabsContent>
       <TabsContent value="preview">
-        <div className="prose prose-sm dark:prose-invert min-h-[200px] rounded-md border p-4">
+        <div className="prose prose-sm dark:prose-invert min-h-48 rounded-md border p-4">
           {content || <span className="text-muted-foreground">No content yet.</span>}
         </div>
       </TabsContent>

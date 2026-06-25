@@ -62,7 +62,7 @@ export function BudgetBanner() {
  return (
  <div
  role="alert"
- className="rounded border border-red-500 bg-red-500/10 p-3 text-sm text-red-600 dark:text-red-400"
+ className="rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive"
  >
  <strong>Budget exceeded</strong> — {usd(status.spentUSD)} spent of{' '}
  {usd(status.budgetUSD)} budget ({status.percentUsed.toFixed(0)}%).
@@ -73,7 +73,7 @@ export function BudgetBanner() {
  return (
  <div
  role="alert"
- className="rounded border border-amber-500 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400"
+ className="rounded border border-warning bg-warning/10 p-3 text-sm text-warning"
  >
  <strong>Approaching budget limit</strong> — {usd(status.spentUSD)} spent of{' '}
  {usd(status.budgetUSD)} ({status.percentUsed.toFixed(0)}%).

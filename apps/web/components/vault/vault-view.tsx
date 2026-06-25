@@ -17,7 +17,7 @@ export function VaultView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="rounded border bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-950 dark:text-amber-200">
+      <div className="rounded border bg-warning/15 px-4 py-3 text-sm text-warning">
         Secrets stored in OS Keychain (macOS Keychain / Windows Credential Vault / Linux Secret Service). Values never reach the browser.
       </div>
 
@@ -272,7 +272,7 @@ function SecretValueCell({ secretKey }: { secretKey: string }) {
 
   if (masked) return <span className="font-mono text-xs">{masked}</span>;
   return (
-    <button onClick={() => void load()} className="text-xs text-blue-500 hover:underline">
+    <button onClick={() => void load()} className="text-xs text-info hover:underline">
       Show
     </button>
   );

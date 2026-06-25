@@ -42,7 +42,7 @@ function ChatInput({ value, onChange, onSend, onStop, disabled }: ChatInputProps
   };
   return (
     <div className="flex gap-2">
-      <Textarea value={value} onChange={(e) => onChange(e.target.value)} onKeyDown={handleKeyDown} placeholder="Message (Enter to send, Shift+Enter for newline)" className="min-h-[44px] max-h-32 resize-none" disabled={disabled} aria-label="Chat input" />
+      <Textarea value={value} onChange={(e) => onChange(e.target.value)} onKeyDown={handleKeyDown} placeholder="Message (Enter to send, Shift+Enter for newline)" className="min-h-11 max-h-32 resize-none" disabled={disabled} aria-label="Chat input" />
       {disabled
         ? <Button onClick={onStop} aria-label="Stop" variant="destructive">Stop</Button>
         : <Button onClick={onSend} disabled={!value.trim()} aria-label="Send">Send</Button>}

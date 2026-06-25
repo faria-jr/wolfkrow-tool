@@ -72,10 +72,10 @@ function SchedulerTaskItem({ task, onToggle, onDelete, onRun }: TaskItemProps) {
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className={`inline-block h-2 w-2 rounded-full ${task.enabled ? 'bg-green-500' : 'bg-gray-400'}`} />
+            <span className={`inline-block h-2 w-2 rounded-full ${task.enabled ? 'bg-success' : 'bg-muted-foreground/50'}`} />
             <h3 className="truncate font-medium">{task.name}</h3>
             <code className="bg-muted rounded px-1.5 py-0.5 text-xs font-mono">{task.cronExpression}</code>
-            {task.tags.includes('requires-review') && <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-xs text-amber-600">review required</span>}
+            {task.tags.includes('requires-review') && <span className="rounded bg-warning/15 px-1.5 py-0.5 text-xs text-warning">review required</span>}
           </div>
           {task.description && <p className="text-muted-foreground mt-1 text-sm">{task.description}</p>}
           <p className="text-muted-foreground mt-1 line-clamp-1 text-xs">{task.prompt}</p>
@@ -99,12 +99,12 @@ function PendingReviewSection({ runs, onReview }: PendingReviewProps) {
   if (runs.length === 0) return null;
   return (
     <div className="space-y-3">
-      <h2 className="flex items-center gap-2 font-semibold text-amber-600">
-        <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+      <h2 className="flex items-center gap-2 font-semibold text-warning">
+        <span className="inline-block h-2 w-2 rounded-full bg-warning" />
         Pending Review ({runs.length})
       </h2>
       {runs.map((run) => (
-        <div key={run.id} className="bg-card rounded-lg border border-amber-500/30 p-4">
+        <div key={run.id} className="bg-card rounded-lg border border-warning/30 p-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-muted-foreground text-xs">Run {run.id.slice(0, 8)} · {run.startedAt ? new Date(run.startedAt).toLocaleString() : '—'}</p>
@@ -113,8 +113,8 @@ function PendingReviewSection({ runs, onReview }: PendingReviewProps) {
               )}
             </div>
             <div className="flex shrink-0 gap-2">
-              <button onClick={() => onReview(run.id, 'validated')} className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700">Approve</button>
-              <button onClick={() => onReview(run.id, 'rejected')} className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700">Reject</button>
+              <button onClick={() => onReview(run.id, 'validated')} className="rounded bg-success px-3 py-1 text-xs text-success-foreground hover:bg-success/90">Approve</button>
+              <button onClick={() => onReview(run.id, 'rejected')} className="rounded bg-destructive px-3 py-1 text-xs text-destructive-foreground hover:bg-destructive/90">Reject</button>
             </div>
           </div>
         </div>

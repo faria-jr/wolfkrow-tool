@@ -46,13 +46,13 @@ const STAGES = STAGE_ORDER.filter((s) => s !== 'completed');
 function stageIndex(s: string) { return STAGE_ORDER.indexOf(s); }
 function statusBadge(status: string): string {
   const m: Record<string, string> = {
-    running: 'bg-blue-100 text-blue-800', paused: 'bg-yellow-100 text-yellow-800',
-    awaiting_approval: 'bg-orange-100 text-orange-800', completed: 'bg-green-100 text-green-800',
-    failed: 'bg-red-100 text-red-800', cancelled: 'bg-gray-100 text-gray-800',
-    in_progress: 'bg-purple-100 text-purple-800', pending: 'bg-gray-100 text-gray-600',
-    awaiting_user: 'bg-orange-100 text-orange-700', skipped: 'bg-gray-100 text-gray-400',
+    running: 'bg-info/15 text-info', paused: 'bg-warning/15 text-warning',
+    awaiting_approval: 'bg-warning/15 text-warning', completed: 'bg-success/15 text-success',
+    failed: 'bg-destructive/15 text-destructive', cancelled: 'bg-muted text-muted-foreground',
+    in_progress: 'bg-primary/15 text-primary', pending: 'bg-muted text-muted-foreground',
+    awaiting_user: 'bg-warning/15 text-warning', skipped: 'bg-muted text-muted-foreground',
   };
-  return m[status] ?? 'bg-gray-100 text-gray-600';
+  return m[status] ?? 'bg-muted text-muted-foreground';
 }
 
 interface CreatePipelineParams { setCreating: (b: boolean) => void; setError: (e: string | null) => void; setName: (s: string) => void; setDescription: (s: string) => void; loadProjects: () => Promise<void>; }
@@ -117,18 +117,18 @@ function PipelineLeftPanel({ name, setName, description, setDescription, creatin
       <form onSubmit={onSubmit} className="space-y-2 rounded border p-3">
         <Input placeholder="Project name" value={name} onChange={(e) => setName(e.target.value)} required />
         <Textarea placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
-        <button type="submit" disabled={creating} className="w-full rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:opacity-50">{creating ? 'Creating…' : 'New Pipeline'}</button>
+        <button type="submit" disabled={creating} className="w-full rounded bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90 disabled:opacity-50">{creating ? 'Creating…' : 'New Pipeline'}</button>
       </form>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
       <ul className="space-y-2">
         {projects.map((p) => (
-          <li key={p.id} className={`cursor-pointer rounded border p-3 text-sm ${selected?.id === p.id ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'}`} onClick={() => onSelect(p)}>
+          <li key={p.id} className={`cursor-pointer rounded border p-3 text-sm ${selected?.id === p.id ? 'border-info bg-info/10' : 'hover:bg-muted'}`} onClick={() => onSelect(p)}>
             <div className="flex items-start justify-between">
               <span className="font-medium">{p.name}</span>
               <span className={`rounded px-1.5 py-0.5 text-xs ${statusBadge(p.status)}`}>{p.status}</span>
             </div>
-            <p className="mt-0.5 text-xs text-gray-500">{STAGE_LABEL[p.currentStage] ?? p.currentStage}</p>
-            <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} className="mt-1 text-xs text-red-500 hover:text-red-700">Delete</button>
+            <p className="mt-0.5 text-xs text-muted-foreground">{STAGE_LABEL[p.currentStage] ?? p.currentStage}</p>
+            <button onClick={(e) => { e.stopPropagation(); onDelete(p.id); }} className="mt-1 text-xs text-destructive hover:text-destructive/80">Delete</button>
           </li>
         ))}
       </ul>
@@ -139,34 +139,34 @@ function PipelineLeftPanel({ name, setName, description, setDescription, creatin
 interface PhaseCardProps { stage: string; phase: PhaseData | undefined; isActive: boolean; canRun: boolean; canApprove: boolean; runningPhase: string | null; output: string | undefined; onRun: () => void; onApprove: (approved: boolean) => void; }
 function PhaseCard({ stage, phase, isActive, canRun, canApprove, runningPhase, output, onRun, onApprove }: PhaseCardProps) {
   return (
-    <div className={`rounded border p-4 ${isActive ? 'border-blue-300' : ''}`}>
+    <div className={`rounded border p-4 ${isActive ? 'border-info' : ''}`}>
       <div className="flex items-center justify-between">
         <h3 className="font-medium text-sm">{STAGE_LABEL[stage]}</h3>
         <div className="flex items-center gap-2">
           {phase && <span className={`rounded px-2 py-0.5 text-xs ${statusBadge(phase.status)}`}>{phase.status}</span>}
-          {canRun && <button onClick={onRun} disabled={runningPhase === stage} className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50">{runningPhase === stage ? 'Running AI…' : 'Run'}</button>}
-          {canApprove && <div className="flex gap-1"><button onClick={() => onApprove(true)} className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700">Approve</button><button onClick={() => onApprove(false)} className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700">Reject</button></div>}
+          {canRun && <button onClick={onRun} disabled={runningPhase === stage} className="rounded bg-primary px-2 py-1 text-xs text-primary-foreground hover:bg-primary/90 disabled:opacity-50">{runningPhase === stage ? 'Running AI…' : 'Run'}</button>}
+          {canApprove && <div className="flex gap-1"><button onClick={() => onApprove(true)} className="rounded bg-success px-2 py-1 text-xs text-success-foreground hover:bg-success/90">Approve</button><button onClick={() => onApprove(false)} className="rounded bg-destructive px-2 py-1 text-xs text-destructive-foreground hover:bg-destructive/90">Reject</button></div>}
         </div>
       </div>
-      {output && <pre className="mt-2 overflow-auto rounded bg-gray-50 p-2 text-xs max-h-48 whitespace-pre-wrap">{output}</pre>}
+      {output && <pre className="mt-2 overflow-auto rounded bg-muted p-2 text-xs max-h-48 whitespace-pre-wrap">{output}</pre>}
     </div>
   );
 }
 
 interface RightPanelProps { selected: ProjectData | null; phases: PhaseData[]; runningPhase: string | null; phaseOutput: Record<string, string>; currentStageIdx: number; onRunPhase: (id: string, stage: string) => void; onApprove: (id: string, phaseId: string, approved: boolean) => void; }
 function PipelineRightPanel({ selected, phases, runningPhase, phaseOutput, currentStageIdx, onRunPhase, onApprove }: RightPanelProps) {
-  if (!selected) return <div className="flex flex-1 h-full items-center justify-center text-gray-400">Select a pipeline project to view phases</div>;
+  if (!selected) return <div className="flex flex-1 h-full items-center justify-center text-muted-foreground">Select a pipeline project to view phases</div>;
   return (
     <div className="flex-1 overflow-auto">
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-semibold">{selected.name}</h2>
-          {selected.description && <p className="text-sm text-gray-500">{selected.description}</p>}
-          <p className="text-sm text-gray-500 mt-1">Tokens used: {selected.metrics.totalTokens} · Phases: {selected.metrics.phasesCompleted}</p>
+          {selected.description && <p className="text-sm text-muted-foreground">{selected.description}</p>}
+          <p className="text-sm text-muted-foreground mt-1">Tokens used: {selected.metrics.totalTokens} · Phases: {selected.metrics.phasesCompleted}</p>
         </div>
         <div className="flex gap-1">
           {STAGES.map((stage, i) => (
-            <div key={stage} className={`flex-1 rounded px-2 py-1.5 text-center text-xs font-medium ${i < currentStageIdx ? 'bg-green-100 text-green-800' : i === currentStageIdx ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-400' : 'bg-gray-100 text-gray-400'}`}>
+            <div key={stage} className={`flex-1 rounded px-2 py-1.5 text-center text-xs font-medium ${i < currentStageIdx ? 'bg-success/15 text-success' : i === currentStageIdx ? 'bg-info/15 text-info ring-1 ring-info' : 'bg-muted text-muted-foreground'}`}>
               {STAGE_LABEL[stage]}
             </div>
           ))}

@@ -161,7 +161,7 @@ export function AuditLogTable() {
   }, [actionFilter, resourceTypeFilter, since]);
 
   if (loading) return <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Loading audit log entries…</div>;
-  if (error) return <div className="rounded border border-red-300 bg-red-50 p-4 text-sm text-red-700">Error: {error}</div>;
+  if (error) return <div className="rounded border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">Error: {error}</div>;
 
   return (
     <div className="flex flex-col gap-4">

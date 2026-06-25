@@ -68,7 +68,7 @@ export function TelegramSetup() {
         <div>
           <h3 className="font-semibold">Telegram Bot</h3>
           <p className="text-sm text-muted-foreground">
-            Status: <span className={running ? 'text-green-500' : 'text-gray-400'}>{running ? 'Running' : 'Stopped'}</span>
+            Status: <span className={running ? 'text-success' : 'text-muted-foreground'}>{running ? 'Running' : 'Stopped'}</span>
           </p>
         </div>
         <Button onClick={handleToggle} disabled={status === 'loading'} variant={running ? 'destructive' : 'default'} size="sm">

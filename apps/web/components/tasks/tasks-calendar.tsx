@@ -10,10 +10,10 @@ import {
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const PRIORITY_DOT: Record<string, string> = {
-  urgent: 'bg-red-500',
-  high: 'bg-orange-400',
-  medium: 'bg-blue-400',
-  low: 'bg-gray-400',
+  urgent: 'bg-destructive',
+  high: 'bg-warning',
+  medium: 'bg-info',
+  low: 'bg-muted-foreground',
 };
 
 interface Task {
@@ -45,19 +45,19 @@ export function TasksCalendar({ tasks, year, month }: Props) {
       </div>
       <div className="grid grid-cols-7 gap-px rounded-lg border bg-border">
         {Array.from({ length: firstDow }).map((_, i) => (
-          <div key={`pad-${i}`} className="bg-background min-h-[80px] rounded-tl-lg" />
+          <div key={`pad-${i}`} className="bg-background min-h-20 rounded-tl-lg" />
         ))}
         {days.map((day, i) => {
           const dayTasks = tasksWithDate.filter((t) => isSameDay(new Date(t.dueDate!), day));
           const isLast = i === days.length - 1;
           const roundedClass = i === 0 ? (firstDow === 0 ? 'rounded-tl-lg' : '') : isLast ? 'rounded-br-lg' : '';
           return (
-            <div key={day.toISOString()} className={`bg-background min-h-[80px] p-1 ${roundedClass}`}>
+            <div key={day.toISOString()} className={`bg-background min-h-20 p-1 ${roundedClass}`}>
               <p className="text-right text-xs text-muted-foreground">{format(day, 'd')}</p>
               <div className="mt-1 space-y-0.5">
                 {dayTasks.map((t) => (
                   <div key={t.id} className="flex items-center gap-1 rounded px-1 py-0.5 text-xs bg-accent">
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PRIORITY_DOT[t.priority] ?? 'bg-gray-400'}`} />
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PRIORITY_DOT[t.priority] ?? 'bg-muted-foreground'}`} />
                     <span className="truncate">{t.title}</span>
                   </div>
                 ))}

@@ -14,12 +14,12 @@ interface LogEntry {
 }
 
 const LEVEL_COLORS: Record<string, string> = {
-  trace: 'text-gray-400',
-  debug: 'text-blue-400',
-  info: 'text-green-400',
-  warn: 'text-yellow-400',
-  error: 'text-red-400',
-  fatal: 'text-red-600 font-bold',
+  trace: 'text-muted-foreground',
+  debug: 'text-info',
+  info: 'text-success',
+  warn: 'text-warning',
+  error: 'text-destructive',
+  fatal: 'text-destructive font-bold',
 };
 
 function fmtTime(ts: number) {
@@ -89,10 +89,10 @@ export function LogViewer() {
 
       <div className="flex-1 overflow-y-auto rounded border bg-black p-2 font-mono text-xs">
         {entries.map((e, i) => (
-          <div key={i} className={`whitespace-pre-wrap py-0.5 ${LEVEL_COLORS[e.level] ?? 'text-gray-300'}`}>
-            <span className="text-gray-500">{fmtTime(e.time)} </span>
+          <div key={i} className={`whitespace-pre-wrap py-0.5 ${LEVEL_COLORS[e.level] ?? 'text-muted-foreground'}`}>
+            <span className="text-muted-foreground">{fmtTime(e.time)} </span>
             <span className="font-semibold uppercase">[{e.level}] </span>
-            {e.module && <span className="text-purple-400">[{e.module}] </span>}
+            {e.module && <span className="text-info">[{e.module}] </span>}
             <span>{e.msg}</span>
           </div>
         ))}

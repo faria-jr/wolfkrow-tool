@@ -72,7 +72,7 @@ export function SyncAgentsModal({ open, onClose, onSynced, agentCount }: Props) 
           </p>
           <RuntimeSelector value={runtime} onChange={setRuntime} />
           {result !== null && (
-            <p className="text-sm font-medium text-green-600">{result} agent(s) updated.</p>
+            <p className="text-sm font-medium text-success">{result} agent(s) updated.</p>
           )}
         </div>
         <DialogFooter>

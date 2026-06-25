@@ -134,8 +134,8 @@ function NavGroup({
 function SidebarBrand() {
   return (
     <div className="flex items-center gap-2 px-2 py-1.5">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-md">
-        <span className="text-lg font-bold text-white">W</span>
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent shadow-md">
+        <span className="text-lg font-bold text-primary-foreground">W</span>
       </div>
       <div className="flex flex-col">
         <span className="text-sm font-semibold">Wolfkrow</span>

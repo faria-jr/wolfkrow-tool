@@ -217,7 +217,7 @@ function TaskCardBody({ task, onDelete }: { task: Task; onDelete?: (id: string) 
         <div className="mt-2 flex flex-wrap gap-1">
           <button
             onClick={() => onDelete(task.id)}
-            className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive hover:bg-destructive/20"
+            className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive hover:bg-destructive/20"
           >
             Delete
           </button>

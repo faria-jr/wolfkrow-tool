@@ -163,7 +163,7 @@ function ServerVisibilitySelect({ server, onVisibilityChange }: ServerVisibility
         value={server.visibility}
         onValueChange={(v) => onVisibilityChange(server.id, v as McpServerVisibility)}
       >
-        <SelectTrigger id={`visibility-${server.id}`} className="h-7 w-[180px] text-xs">
+        <SelectTrigger id={`visibility-${server.id}`} className="h-7 w-48 text-xs">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

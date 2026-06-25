@@ -48,13 +48,13 @@ export function RoundsList({ sprintId }: RoundsListProps) {
  }, [sprintId]);
 
  if (state.rounds === null) {
- return <p className="text-xs text-gray-500">Loading rounds...</p>;
+ return <p className="text-xs text-muted-foreground">Loading rounds...</p>;
  }
  if (state.error) {
- return <p className="text-xs text-red-600">{state.error}</p>;
+ return <p className="text-xs text-destructive">{state.error}</p>;
  }
  if (state.rounds.length === 0) {
- return <p className="text-xs text-gray-500">No rounds yet. Run the harness to start the Coder-&gt;Evaluator loop.</p>;
+ return <p className="text-xs text-muted-foreground">No rounds yet. Run the harness to start the Coder-&gt;Evaluator loop.</p>;
  }
  return <RoundsBody rounds={state.rounds} />;
 }
@@ -77,7 +77,7 @@ async function loadRounds(sprintId: string): Promise<FetchState> {
 function RoundsBody({ rounds }: { rounds: RoundData[] }) {
  return (
  <div className="mt-4 space-y-3 border-t pt-3">
- <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Rounds</h4>
+ <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rounds</h4>
  {rounds.map((round, idx) => (
  <RoundCard
  key={round.id}
@@ -92,24 +92,24 @@ function RoundsBody({ rounds }: { rounds: RoundData[] }) {
 function RoundCard({ round, prev }: { round: RoundData; prev: RoundData | undefined }) {
  const showDiff = canShowDiff(prev, round);
  return (
- <div className="rounded border bg-white p-3">
+ <div className="rounded border bg-card p-3">
  <div className="flex items-center justify-between text-xs">
  <RoundHeader round={round} />
  {round.completedAt && (
- <span className="text-gray-400">
+ <span className="text-muted-foreground">
  {new Date(round.completedAt).toLocaleString()}
  </span>
  )}
  </div>
  {round.evaluatorFeedback && (
- <p className="mt-2 rounded bg-gray-50 px-2 py-1 text-xs text-gray-700">
+ <p className="mt-2 rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
  <strong>Evaluator:</strong> {round.evaluatorFeedback}
  </p>
  )}
  {round.coderOutput && <CoderOutputBlock output={round.coderOutput} />}
  {showDiff && prev && (
  <details className="mt-2" data-testid="round-diff">
- <summary className="cursor-pointer text-xs text-blue-600 hover:underline">
+ <summary className="cursor-pointer text-xs text-info hover:underline">
  Show diff vs round {prev.roundNumber}
  </summary>
  <div className="mt-2">
@@ -139,20 +139,20 @@ function RoundHeader({ round }: { round: RoundData }) {
  <span
  className={`rounded px-1.5 py-0.5 ${
  round.passed
- ? 'bg-green-100 text-green-800'
- : 'bg-yellow-100 text-yellow-800'
+ ? 'bg-success/15 text-success'
+ : 'bg-warning/15 text-warning'
  }`}
  >
  {round.passed ? 'passed' : 'failed'}
  </span>
- <span className="text-gray-500">{round.tokens} tokens</span>
+ <span className="text-muted-foreground">{round.tokens} tokens</span>
  </div>
  );
 }
 
 function CoderOutputBlock({ output }: { output: string }) {
  return (
- <pre className="mt-2 max-h-48 overflow-auto rounded bg-gray-900 px-2 py-1 font-mono text-[11px] text-gray-100">
+ <pre className="mt-2 max-h-48 overflow-auto rounded bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
  {output}
  </pre>
  );

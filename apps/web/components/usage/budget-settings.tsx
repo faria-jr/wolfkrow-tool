@@ -42,7 +42,7 @@ function BudgetForm({ inputValue, isValid, saved, onInput, onSave }: BudgetFormP
  className="rounded bg-primary px-3 py-1 text-sm text-primary-foreground disabled:opacity-50">
  Save
  </button>
- {saved && <span className="text-xs text-green-600 dark:text-green-400">Saved!</span>}
+ {saved && <span className="text-xs text-success">Saved!</span>}
  </div>
  );
 }

@@ -6,10 +6,10 @@ import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
 
 const SOURCE_COLOR: Record<string, string> = {
-  user: 'bg-blue-100 text-blue-800',
-  agent: 'bg-purple-100 text-purple-800',
-  conversation: 'bg-green-100 text-green-800',
-  compaction: 'bg-amber-100 text-amber-800',
+  user: 'bg-info/15 text-info',
+  agent: 'bg-primary/15 text-primary',
+  conversation: 'bg-success/15 text-success',
+  compaction: 'bg-warning/15 text-warning',
 };
 
 export interface MemoryViewState {
@@ -79,7 +79,7 @@ export function MemoryListTab({ memories, onDelete, onCompact, compacting }: Lis
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm">{m.content}</p>
             <div className="flex items-center gap-2 text-xs">
-              <span className={`rounded px-1.5 py-0.5 font-medium ${SOURCE_COLOR[m.source] ?? 'bg-gray-100 text-gray-700'}`}>{m.source}</span>
+              <span className={`rounded px-1.5 py-0.5 font-medium ${SOURCE_COLOR[m.source] ?? 'bg-muted text-muted-foreground'}`}>{m.source}</span>
               <span className="text-muted-foreground">importance: {m.importance}</span>
               <span className="text-muted-foreground">accessed: {m.accessCount}×</span>
               <span className="text-muted-foreground">{new Date(m.createdAt).toLocaleDateString()}</span>

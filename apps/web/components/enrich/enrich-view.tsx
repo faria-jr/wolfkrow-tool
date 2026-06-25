@@ -19,12 +19,12 @@ interface SessionOutputs {
 
 function statusBadge(status: string): string {
   const map: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    validated: 'bg-blue-100 text-blue-800',
-    enriched: 'bg-green-100 text-green-800',
-    failed: 'bg-red-100 text-red-800',
+    pending: 'bg-warning/15 text-warning',
+    validated: 'bg-info/15 text-info',
+    enriched: 'bg-success/15 text-success',
+    failed: 'bg-destructive/15 text-destructive',
   };
-  return map[status] ?? 'bg-gray-100 text-gray-600';
+  return map[status] ?? 'bg-muted text-muted-foreground';
 }
 
 interface CreateSessionFormProps {

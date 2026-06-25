@@ -23,10 +23,10 @@ interface Props {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  ready: 'bg-green-100 text-green-800',
-  processing: 'bg-yellow-100 text-yellow-800',
-  pending: 'bg-gray-100 text-gray-800',
-  failed: 'bg-red-100 text-red-800',
+  ready: 'bg-success/15 text-success',
+  processing: 'bg-warning/15 text-warning',
+  pending: 'bg-muted text-muted-foreground',
+  failed: 'bg-destructive/15 text-destructive',
 };
 
 function formatBytes(bytes: number): string {
