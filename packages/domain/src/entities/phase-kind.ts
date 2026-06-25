@@ -1,5 +1,5 @@
 /**
- * €” Pipeline phase execution kinds.
+ * - Pipeline phase execution kinds.
  *
  * Each pipeline stage (discovery, spec_build, etc.) has an associated
  * `PhaseKind` that drives how the orchestrator behaves at runtime:
@@ -12,7 +12,7 @@
  * pipeline.
  * - `loop`: Iterate the stage until a completion criterion is met
  * (e.g. Evaluator passes). Used when the implementation stage is wired
- * into the Harness Coderâ†’Evaluator loop.
+ * into the Harness Coder->Evaluator loop.
  */
 export type PhaseKind = 'auto' | 'conversation' | 'loop';
 

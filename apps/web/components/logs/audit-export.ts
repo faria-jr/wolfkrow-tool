@@ -1,5 +1,5 @@
 /**
- * €” Audit log export helpers.
+ * - Audit log export helpers.
  *
  * Pure-function formatters that turn the rendered audit entries into CSV or
  * JSON for download. Used by `<AuditLogTable>` export buttons.
@@ -84,7 +84,7 @@ export function downloadAuditFile(content: string, filename: string, mime: strin
  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Suggested filename for an export â€” embeds the timestamp + entry count. */
+/** Suggested filename for an export - embeds the timestamp + entry count. */
 export function buildAuditFilename(extension: 'csv' | 'json', count: number): string {
  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
  return `wolfkrow-audit-${ts}-${count}entries.${extension}`;

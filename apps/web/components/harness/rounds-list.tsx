@@ -29,7 +29,7 @@ type FetchState = {
 const INITIAL: FetchState = { rounds: null, error: null };
 
 /**
- * �� Renders the round-by-round Coder→Evaluator history for a sprint
+ * - Renders the round-by-round Coder->Evaluator history for a sprint
  * with a unified diff between consecutive rounds. Fetches `/api/harness/
  * sprints/:sprintId/rounds` on mount, shows the latest coder output
  * per round, and a `<DiffViewer>` comparing each round to the previous.
@@ -48,13 +48,13 @@ export function RoundsList({ sprintId }: RoundsListProps) {
  }, [sprintId]);
 
  if (state.rounds === null) {
- return <p className="text-xs text-gray-500">Loading rounds…</p>;
+ return <p className="text-xs text-gray-500">Loading rounds...</p>;
  }
  if (state.error) {
  return <p className="text-xs text-red-600">{state.error}</p>;
  }
  if (state.rounds.length === 0) {
- return <p className="text-xs text-gray-500">No rounds yet. Run the harness to start the Coder→Evaluator loop.</p>;
+ return <p className="text-xs text-gray-500">No rounds yet. Run the harness to start the Coder-&gt;Evaluator loop.</p>;
  }
  return <RoundsBody rounds={state.rounds} />;
 }
@@ -116,7 +116,7 @@ function RoundCard({ round, prev }: { round: RoundData; prev: RoundData | undefi
  <DiffViewer
  before={prev.coderOutput ?? ''}
  after={round.coderOutput ?? ''}
- title={`Round ${prev.roundNumber} → ${round.roundNumber}`}
+ title={`Round ${prev.roundNumber} -> ${round.roundNumber}`}
  maxLines={200}
  />
  </div>

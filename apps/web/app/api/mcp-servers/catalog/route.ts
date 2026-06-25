@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { getSession } from '@/lib/auth';
 
 /**
- * GET /api/mcp-servers/catalog â€” exposes the static MCP catalog metadata so
+ * GET /api/mcp-servers/catalog - exposes the static MCP catalog metadata so
  * the UI can label entries as `built-in` vs `planned` vs `custom` without
  * shipping the full infra package to the client.
  *
@@ -14,7 +14,7 @@ import { getSession } from '@/lib/auth';
  * matching `isBuiltIn` row in the DB is `built-in`; otherwise, if the name
  * matches a `PLANNED_MCP_SERVERS` entry, it's `planned`; otherwise `custom`.
  *
- * ( €” back-end for the `source` field in `McpServerData`.)
+ * (back-end for the `source` field in `McpServerData`.)
  */
 export async function GET() {
  const cookieStore = await cookies();

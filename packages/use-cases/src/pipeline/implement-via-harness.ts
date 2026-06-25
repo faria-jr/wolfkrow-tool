@@ -17,11 +17,11 @@ import {
 import { PlanSprintsUseCase, type HarnessPlanner } from '../harness/plan-sprints';
 
 /**
- * �� Bridge the Pipeline's `implementation` phase into the Harness.
+ * - Bridge the Pipeline's `implementation` phase into the Harness.
  *
  * The flow:
  * 1. Look up the pipeline project + the latest `implementation` phase.
- * 2. Resolve the spec to run the harness against — prefer the user's
+ * 2. Resolve the spec to run the harness against - prefer the user's
  * `specEdits` () when present, otherwise fall back to the
  * `specPath` on disk, otherwise inline the discovery notes + name +
  * description (better than nothing).
@@ -35,7 +35,7 @@ import { PlanSprintsUseCase, type HarnessPlanner } from '../harness/plan-sprints
  *
  * The artifact text becomes the `implementation` phase's `artifactPath`
  * equivalent: it lives in the message repo so {@link GeneratePipelineReportUseCase}
- * picks it up. We don't run the harness loop synchronously — that would
+ * picks it up. We don't run the harness loop synchronously - that would
  * block the request for minutes. Instead, the artifact records the
  * harness plan and the run is triggered separately via the harness routes.
  */
@@ -193,7 +193,7 @@ export class ImplementViaHarnessUseCase {
  * Resolve a real on-disk path the harness can read from. Reuses the
  * pipeline project's `specPath` when it exists; otherwise writes the
  * spec to a stable location via `artifactWriter` (falls back to an
- * inline placeholder if no writer is wired — the planner still receives
+ * inline placeholder if no writer is wired - the planner still receives
  * `specContent` directly, so the plan artifact is unaffected).
  */
  private async materializeSpecPath(
@@ -219,7 +219,7 @@ export class ImplementViaHarnessUseCase {
  sprints: Array<{ number: number; name: string; featureCount: number }>;
  }): string {
  const lines: string[] = [
- `# Implementation — ${input.pipelineName}`,
+ `# Implementation - ${input.pipelineName}`,
  '',
  `Harness project: \`${input.harnessProjectId}\``,
  `Spec size: ${input.specLength} characters`,

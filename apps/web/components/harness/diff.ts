@@ -1,13 +1,13 @@
 /**
- * €” Hand-rolled line diff viewer.
+ * - Hand-rolled line diff viewer.
  *
  * Pure-function `computeLineDiff(before, after)` returns a sequence of
  * `{ type: 'equal' | 'add' | 'remove', text, oldLine?, newLine? }` entries
  * using the classic Longest-Common-Subsequence DP. O(before.length *
- * after.length) time and memory â€” fine for the round sizes we deal with
+ * after.length) time and memory - fine for the round sizes we deal with
  * (a few thousand lines per round tops).
  *
- * No external `diff` library â€” keeps the bundle small and avoids the
+ * No external `diff` library - keeps the bundle small and avoids the
  * BSD-3 licensing / maintenance dance.
  */
 
@@ -117,7 +117,7 @@ function splitLines(text: string): string[] {
  return text.split('\n');
 }
 
-/** Summary stats over a diff â€” used for the header strip. */
+/** Summary stats over a diff - used for the header strip. */
 export interface DiffSummary {
  added: number;
  removed: number;

@@ -20,7 +20,7 @@ const PREFIX: Record<DiffLine['type'], string> = {
 };
 
 /**
- * €” Renders a unified line diff between two strings. Used to surface
+ * - Renders a unified line diff between two strings. Used to surface
  * per-round coder output deltas in the Harness UI ("what changed between
  * round 3 and round 4?"). Pairs well with the harness runner which
  * already retains prior round outputs.

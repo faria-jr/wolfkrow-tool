@@ -11,7 +11,7 @@
  * catalog/UI can surface them as "not yet available" instead of spawning a
  * process that is guaranteed to ENOENT.
  *
- * (/ �� every entry in BUILT_IN_MCP_SERVERS now resolves to a real
+ * (/ - every entry in BUILT_IN_MCP_SERVERS now resolves to a real
  * binary. Previously all 18 pointed at non-existent dist files.)
  */
 
@@ -63,7 +63,7 @@ export const BUILT_IN_MCP_SERVERS: readonly BuiltInMcpEntry[] = [
  },
  {
  name: 'local-llm',
- description: 'Ollama local LLM — list/show/chat (requires OLLAMA_HOST, default localhost:11434)',
+ description: 'Ollama local LLM - list/show/chat (requires OLLAMA_HOST, default localhost:11434)',
  command: 'node',
  args: DIST('local-llm'),
  visibility: 'on-demand',
@@ -77,28 +77,28 @@ export const BUILT_IN_MCP_SERVERS: readonly BuiltInMcpEntry[] = [
  },
  {
  name: 'google-calendar',
- description: 'Google Calendar — list and create events (requires GOOGLE_CALENDAR_TOKEN)',
+ description: 'Google Calendar - list and create events (requires GOOGLE_CALENDAR_TOKEN)',
  command: 'node',
  args: DIST('google-calendar'),
  visibility: 'on-demand',
  },
  {
  name: 'google-gmail',
- description: 'Gmail — search and read messages (requires GOOGLE_GMAIL_TOKEN)',
+ description: 'Gmail - search and read messages (requires GOOGLE_GMAIL_TOKEN)',
  command: 'node',
  args: DIST('google-gmail'),
  visibility: 'on-demand',
  },
  {
  name: 'google-drive',
- description: 'Google Drive — list/get/share files (requires GOOGLE_DRIVE_TOKEN)',
+ description: 'Google Drive - list/get/share files (requires GOOGLE_DRIVE_TOKEN)',
  command: 'node',
  args: DIST('google-drive'),
  visibility: 'on-demand',
  },
  {
  name: 'google-sheets',
- description: 'Google Sheets — list/read/append (requires GOOGLE_SHEETS_TOKEN)',
+ description: 'Google Sheets - list/read/append (requires GOOGLE_SHEETS_TOKEN)',
  command: 'node',
  args: DIST('google-sheets'),
  visibility: 'on-demand',
@@ -119,7 +119,7 @@ export const BUILT_IN_MCP_SERVERS: readonly BuiltInMcpEntry[] = [
  },
  {
  name: 'shopify',
- description: 'Shopify Admin API — list/get/count products (requires SHOPIFY_SHOP + SHOPIFY_ADMIN_TOKEN)',
+ description: 'Shopify Admin API - list/get/count products (requires SHOPIFY_SHOP + SHOPIFY_ADMIN_TOKEN)',
  command: 'node',
  args: DIST('shopify'),
  visibility: 'on-demand',
@@ -134,7 +134,7 @@ export const BUILT_IN_MCP_SERVERS: readonly BuiltInMcpEntry[] = [
 ] as const;
 
 /**
- * Roadmap of MCP servers not yet bundled. Listed for visibility only — never
+ * Roadmap of MCP servers not yet bundled. Listed for visibility only - never
  * seeded and never spawned (no binary exists). When one is implemented in
  * `packages/mcp-servers/<name>/`, move its entry into BUILT_IN_MCP_SERVERS.
  */

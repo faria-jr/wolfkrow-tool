@@ -8,7 +8,7 @@ import type {
 import { NotFoundError } from '@wolfkrow/domain';
 
 /**
- * €” Approve (or reject) a pipeline phase that's awaiting user input.
+ * - Approve (or reject) a pipeline phase that's awaiting user input.
  *
  * Supports three concerns:
  * 1. Simple approve/reject with notes (back-compat with the previous API).
