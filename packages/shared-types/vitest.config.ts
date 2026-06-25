@@ -10,14 +10,15 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov', 'json'],
       include: ['src/**/*.ts'],
       exclude: ['src/**/index.ts', 'src/__tests__/**', '**/*.config.ts'],
-      // M0 baseline — §1.3 target 95: sobe conforme cada schema ganha testes
-      // na fase que o consome (auth=A.1, chat=A.3, agents=N.1, mcp=N.3...).
-      // functions=0: schemas Zod são declarativos (sem funções a cobrir).
+      // P1-3: every schema now has valid + invalid parse tests covering
+      // refinements, discriminated unions, and enum branches. Actual measured
+      // coverage is 100/100/100/100; thresholds set just below to avoid CI
+      // flakiness from minor v8 instrumentation drift.
       thresholds: {
-        lines: 25,
-        functions: 0,
-        branches: 5,
-        statements: 25,
+        lines: 90,
+        functions: 90,
+        branches: 80,
+        statements: 90,
       },
     },
   },
