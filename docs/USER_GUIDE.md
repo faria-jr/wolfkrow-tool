@@ -210,6 +210,23 @@ Wolfkrow checks for updates automatically. When an update is available, a notifi
 
 ---
 
+## Deferred features (planned for v1.1)
+
+The following are intentionally out of scope for the current release and are **not yet available**:
+
+| Feature | Status | Notes |
+|---|---|---|
+| **Interactive clarification (ask-the-user dialog)** | Not in v1.0 | The worker does not emit a clarification-question event in v1.0, so the UI was removed to avoid dead code. Planned for v1.1 with a real worker emitter + round-trip answer channel. |
+| **Excalidraw inline embed in chat** | Not in v1.0 | Excalidraw diagrams render as an **external link** (`https://excalidraw.com/#json=…`, opens in a new tab) rather than inline. The Excalidraw MCP is available; only the inline chat embed is deferred. |
+| **Structured mgraph vault (ROAM-like)** | Not in v1.0 | Relation visualization is covered by the **Graph** page + Graph MCP search. The structured node types (entities/meetings/decisions/…) from LionClaw were not ported. Decision recorded in ADR-0033. |
+| **Harness automatic AI execution** | Not in v1.0 | The build harness foundation (planner→coder→evaluator, sprints/rounds, DiffViewer) is present, but end-to-end automated AI execution is deferred. |
+| **STT provider switching UI** | Not in v1.0 | Speech-to-text uses local Whisper (preferred) with OpenAI API fallback (see `WHISPER_BIN_PATH`). There is no in-app UI to switch the STT provider. |
+| **Knowledge retrieval benchmark** | Removed | Intentionally removed (ADR-0032). |
+
+See [FEATURE_MATRIX.md](./FEATURE_MATRIX.md) for the full feature/deferred tracking.
+
+---
+
 ## FAQ
 
 **Q: Is my data sent to Anthropic?**

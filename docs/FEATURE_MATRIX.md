@@ -1,6 +1,6 @@
 # Wolfkrow Tool — Feature Matrix (Rastreabilidade reconciliada)
 
-> Reconciliado em 2026-06-24 contra código real (Tasks 13–29 + M1–M8 concluídos).
+> Reconciliado em 2026-06-25 contra código real (Tasks 13–29 + M1–M8 + Sprint 3-7 P2-1..P2-9, FE-4/FE-7, security sweeps, P3-2/P3-4).
 > Legenda: ✅ feito · 🟡 parcial/placeholder · ⛔ não iniciado/descoped v1
 
 ---
@@ -47,18 +47,18 @@
 | 26 | Auth (bcrypt + TOTP + auto-lock + middleware) | SPEC-001 | ✅ middleware.ts + layout verify-assinatura | FIX-007 |
 | 27 | Vault (segredos via keytar) | SPEC-011 | ✅ CRUD via keytar | FIX-007 |
 | 28 | Rules page | SPEC-021 | ✅ CRUD backend + UI | FIX-004 |
-| 29 | Memory page | SPEC-015 | 🟡 schema ✅; Summaries tab ✅ (M6.1); Compact Now ✅ (M6.1); search UI ⛔ v1.1 | M6.1 |
+| 29 | Memory page | SPEC-015 | ✅ schema ✅; Summaries tab ✅ (M6.1); Compact Now ✅ (M6.1); search UI ✅ — `MemorySearchTab` (`components/memory/memory-body.tsx:87`) + `/api/memory/search` route | M6.1; P3-3 |
 | 30 | Usage page (token cost analytics) | SPEC-018 | ✅ charts + budget banner | FIX-032 |
 | 31 | Logs page (system logs filtráveis) | SPEC-019 | ✅ LogViewer + SSE stream | — |
 | 32 | Permissions page | SPEC-020 | 🟡 CRUD backend + UI básica | — |
 | 33 | Channels page (Telegram) | SPEC-010 | 🟡 pairing UI; gerenciamento parcial | — |
 | 34 | Excalidraw inline no chat | SPEC-002 | ⛔ | — |
 | 35 | CodeBurn (terminal PTY) | SPEC-017 | ✅ TerminalPage + pty/server.ts | — |
-| 36 | Artifact detection (tool results) | SPEC-002 | ⛔ | — |
-| 37 | Pipeline report (relatório final) | SPEC-006 | ⛔ | — |
+| 36 | Artifact detection (tool results) | SPEC-002 | ✅ `detectArtifact()` (`components/chat/artifact-detector.ts`) + `ArtifactCard` render; wired via SSE `onArtifact` (`chat-hooks.ts:110`) | P3-3 |
+| 37 | Pipeline report (relatório final) | SPEC-006 | ✅ `PipelineReportView` (markdown, `components/pipeline/pipeline-report-view.tsx`) + worker route `GET /projects/:id/report` (`GeneratePipelineReportUseCase`) | P3-3 |
 | 38 | Audit log (todas tool calls) | SPEC-020 | 🟡 schema+port ✅; tabela UI ✅; CSV/JSON export ✅ (M6.4); filtros avançados ⛔ v1.1 | FIX-027; M6.4 |
 | 39 | Auto-update (electron-updater) | SPEC-012 | ✅ | FIX-010 |
-| 40 | Pricing calculator (multi-fonte) | SPEC-018 | ⛔ | — |
+| 40 | Pricing calculator (multi-fonte) | SPEC-018 | ✅ `PricingCalculatorCard` (`components/usage/pricing-calculator-card.tsx`) montado no Usage page (`app/(app)/usage/page.tsx:15`) | P3-3 |
 
 ## MCPs — binários reais vs catalog planejado
 
@@ -135,26 +135,22 @@
 | 16 | Harness — execução AI automática | Complexidade de orquestração; fundação entregue em v1.0 |
 | 20 | Spec build/validate/enrich seed agents | Depende de harness automático |
 | 22 | Knowledge benchmark (retrieval eval) | Removido intencionalmente (FIX-031; ADR-0032) |
-| 29 | Memory page — search UI | Prioridade menor; summaries + compact ✅ em v1.0 |
 | 34 | Excalidraw inline no chat | Intencionalmente descoped para v1.1. Em v1.0 o artifact-card abre o diagrama como **link externo** (`https://excalidraw.com/#json=<base64>`, `target="_blank"`) em vez de embed inline — ver `apps/web/components/chat/artifact-card.tsx:71-99`. O MCP Excalidraw (binário real, M3.3) está entregue; apenas a renderização inline no chat é UX extra adiada. Inline embed planejado para v1.1. (P2-7) |
-| 36 | Artifact detection (tool results) | UX enhancement; backend pronto |
-| 37 | Pipeline report | Pipeline core ✅; relatório final UX extra |
 | 38 | Audit log — filtros avançados | Tabela + export ✅ em v1.0; filtros são UX extra |
-| 40 | Pricing calculator multi-fonte | Estimativa custo dentro do Usage page suficiente |
 | 11 | Interactive agent clarification (ask-the-user dialog) | Worker não emite o evento de pergunta clarificadora em v1.0; UI frontend removida para não enviar código morto (mascarado apenas por teste SSE mockado). Planejado para v1.1 com emitter real no worker + canal de resposta round-trip. (P0-3) |
 | — | mgraph structured vault (ROAM-like: entities/meetings/decisions/projects/references as first-class nodes) | Intencionalmente fora do escopo de v1.0. O LionClaw tinha um vault estruturado ROAM-like (`electron/main/mgraph-engine.ts`); o Wolfkrow **não** portou os tipos de nó estruturados. Em v1.0 a visualização de relações é coberta pela **graph view** (D3 + entity extraction) + MCP Graph search (binário real, row 55), que atendem ao caso de uso de visualização de relações sem a complexidade de um schema estruturado. Decisão registrada em ADR-0033. Reverte para implementação (Decision A) se ≥ 3 usuários pedirem os tipos estruturados. (P2-9) |
 
 ---
 
-## Resumo de cobertura (reconciliado 2026-06-24, Tasks 1–29 + M1–M8)
+## Resumo de cobertura (reconciliado 2026-06-25, Tasks 1–29 + M1–M8 + Sprint 3-7)
 
 | | Quantidade |
 |---|---|
 | Funcionalidades mapeadas | 55 + providers + infra |
-| ✅ Feito | ~44 |
-| 🟡 Parcial (core entregue, UI/automação em v1.1) | ~7 |
-| ⛔ Descoped para v1.1+ | 9 |
+| ✅ Feito | ~48 |
+| 🟡 Parcial (core entregue, UI/automação em v1.1) | ~4 |
+| ⛔ Descoped para v1.1+ | 5 |
 | MCPs com binário real | 15 |
 | MCPs deferidos para v2 | 3 (Higgsfield, Blotato, wolfkrow-user-question) |
 | Bugs de navegação corrigidos | 2/2 |
-| Gaps de segurança resolvidos | 8/9 |
+| Gaps de segurança resolvidos | 9/9 (autenticação em todas as rotas user-scoped + IDOR fix, Sprint 3-7) |

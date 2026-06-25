@@ -111,7 +111,21 @@ Sidecar (apps/sidecar): Open Design Studio (Next.js independente)
 
 ## 3. Estado Atual (auditoria — 2026-06-20)
 
-Progresso real ≈ **5%** (M0 quase completo, M1 parcial). 2 commits.
+> **ATUALIZAÇÃO 2026-06-25**: o snapshot abaixo (§3.1–§3.4) é a baseline de pré-remediação
+> registrada em 2026-06-20. **Está defasado como indicador de progresso.** Desde então foram
+> concluídos: toda a Fase F (Clean Arch, ports, DI, guard-rails), Fase A (auth real + chat
+> streaming), o núcleo M2 (agents/skills/MCP/knowledge/memory/dreaming/scheduler), M3–M4
+> (voice/PTY/telegram/enrich/pipeline/usage/logs/permissions/rules/tasks/graph/design),
+> o audit-remediation Sprint 1-2 (P0 gates + P1 quality) e o Sprint 3-7 (P2 frontend
+> P2-1..P2-9, FE-4/FE-7, security sweeps em todas as rotas user-scoped + IDOR fix, P3-2/P3-4).
+> O progresso **real atual** está em [FEATURE_MATRIX.md](./FEATURE_MATRIX.md) (~48/55 ✅).
+> Permanecem: refactors FE-1/FE-2/FE-3/FE-5/FE-6, P3-1 (e2e rewrite), P3-6 (RAG rerank parity),
+> sidecar auth hardening e server-side settings store.
+>
+> _Snapshot original preservado abaixo para rastreabilidade histórica — não o use como
+> indicador de progresso atual._
+
+Progresso real ≈ **5%** (M0 quase completo, M1 parcial). 2 commits. _(baseline 2026-06-20 — ver atualização acima)_
 
 ### 3.1 Implementado e aproveitável
 
