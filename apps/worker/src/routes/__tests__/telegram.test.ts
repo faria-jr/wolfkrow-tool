@@ -4,7 +4,7 @@
  * telegram.ts reads a token via getSecret and drives telegramBridge. Mocking
  * the keychain + bridge exercises the real route logic (503 when no token,
  * 200 on start/stop/status, pairing-code generation, validation 400). Routes
- * have no auth hook (getUserId is not used here) so no 401 case.
+ * require authentication (default-user leak class of P0-7/P2-1).
  */
 
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -27,12 +27,13 @@ vi.mock('../../telegram/bridge', () => ({ telegramBridge: fakeBridge }));
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { telegramRoutes } from '../telegram';
 
-import { setErrorHandler } from './helpers/app';
+import { authedDecorator, realAuthenticate, setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;
 
 beforeAll(async () => {
   app = Fastify();
+  app.decorate('authenticate', authedDecorator);
   setErrorHandler(app);
   await telegramRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
@@ -99,5 +100,30 @@ describe('telegram POST /pair', () => {
   it('rejects a body missing userId → 400', async () => {
     const res = await app.inject({ method: 'POST', url: '/pair', payload: {} });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+// ---- Authentication is enforced (default-user leak class of P0-7/P2-1). ----
+describe('telegram routes — authentication required', () => {
+  it('GET /status without credentials → 401', async () => {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await telegramRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    const res = await a.inject({ method: 'GET', url: '/status' });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('POST /start without credentials → 401', async () => {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await telegramRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    const res = await a.inject({ method: 'POST', url: '/start' });
+    expect(res.statusCode).toBe(401);
+    await a.close();
   });
 });

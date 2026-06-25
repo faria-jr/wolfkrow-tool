@@ -13,10 +13,10 @@ import { randomUUID } from 'crypto';
 
 import websocket from '@fastify/websocket';
 import type { WebSocket } from '@fastify/websocket';
-import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { ptyServer } from '../pty/server';
+import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
 type ClientMsg =
@@ -62,10 +62,16 @@ function handlePtyWs(socket: WebSocket, id: string): void {
   socket.on('close', () => { offData(); offExit(); ptyServer.kill(id); });
 }
 
-export async function ptyRoutes(server: FastifyInstance) {
+export async function ptyRoutes(server: AuthFastifyInstance) {
   await server.register(websocket);
 
-  server.post<{ Body: unknown }>('/pty', async (req, reply) => {
+  // PTY routes spawn interactive shells (remote code execution). Require an
+  // authenticated session on every route so an anonymous caller cannot open a
+  // shell on the host (the default-user leak class of P0-7/P2-1, but far more
+  // severe — RCE).
+  const auth = { onRequest: [server.authenticate] };
+
+  server.post<{ Body: unknown }>('/pty', auth, async (req, reply) => {
     const parsed = validate(createBody, req.body ?? {});
     const sessionId = parsed.id ?? randomUUID();
     ptyServer.create(sessionId, {
@@ -77,14 +83,14 @@ export async function ptyRoutes(server: FastifyInstance) {
     return reply.send({ sessionId });
   });
 
-  server.delete<{ Params: { id: string } }>('/pty/:id', async (req, reply) => {
+  server.delete<{ Params: { id: string } }>('/pty/:id', auth, async (req, reply) => {
     ptyServer.kill(req.params.id);
     return reply.send({ ok: true });
   });
 
   server.get<{ Params: { id: string } }>(
     '/pty/:id',
-    { websocket: true },
+    { websocket: true, ...auth },
     (socket, req) => handlePtyWs(socket, req.params.id),
   );
 }

@@ -33,8 +33,14 @@ export async function usageRoutes(server: AuthFastifyInstance) {
   const computeUC = new ComputeUsageUseCase(repo);
   const budgetUC = new CheckBudgetUseCase(repo);
 
+  // Every route reads/writes user-scoped token-usage data, so all require an
+  // authenticated session. Without this hook getUserId resolves every
+  // unauthenticated request to the shared 'default' user, co-mingling every
+  // browser user's usage analytics (the default-user leak class of P0-7/P2-1).
+  const auth = { onRequest: [server.authenticate] };
+
   // GET /usage/summary?from=&to=&source=&agentId=
-  server.get<{ Querystring: unknown }>('/summary', async (req, reply) => {
+  server.get<{ Querystring: unknown }>('/summary', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const { from, to, source, agentId } = validate(usageQuery, req.query);
     const summary = computeUC.execute({
@@ -50,7 +56,7 @@ export async function usageRoutes(server: AuthFastifyInstance) {
   });
 
   // GET /usage/budget?budgetUSD=&agentId=&periodDays=
-  server.get<{ Querystring: unknown }>('/budget', async (req, reply) => {
+  server.get<{ Querystring: unknown }>('/budget', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const { budgetUSD, agentId, periodDays } = validate(budgetQuery, req.query);
     const result = budgetUC.execute({
@@ -63,7 +69,7 @@ export async function usageRoutes(server: AuthFastifyInstance) {
   });
 
   // GET /usage/records?from=&to=&source=&agentId=
-  server.get<{ Querystring: unknown }>('/records', async (req, reply) => {
+  server.get<{ Querystring: unknown }>('/records', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const { from, to, source, agentId } = validate(usageQuery, req.query);
     const records = repo.findMany({

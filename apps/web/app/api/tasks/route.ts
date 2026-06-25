@@ -6,24 +6,28 @@ const WORKER = process.env['WORKER_URL'] ?? 'http://localhost:4000';
 
 export async function GET(req: Request) {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionToken = cookieStore.get('session')?.value;
+  const session = await getSession(sessionToken);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const url = new URL(req.url);
   const qs = url.searchParams.toString();
-  const res = await fetch(`${WORKER}/tasks${qs ? `?${qs}` : ''}`);
+  const res = await fetch(`${WORKER}/tasks${qs ? `?${qs}` : ''}`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   return Response.json(await res.json(), { status: res.status });
 }
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionToken = cookieStore.get('session')?.value;
+  const session = await getSession(sessionToken);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.text();
   const res = await fetch(`${WORKER}/tasks`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionToken}` },
     body,
   });
   return Response.json(await res.json(), { status: res.status });

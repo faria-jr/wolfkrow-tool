@@ -41,9 +41,16 @@ function mapTaskPatch(body: z.infer<typeof taskPatchBody>) {
 }
 
 export async function tasksRoutes(server: AuthFastifyInstance) {
+ // Tasks are user-scoped (getUserId resolves the owner from req.user). Without
+ // authentication every request maps to the shared 'default' user, so all
+ // browser users would share one task list (the default-user leak class of
+ // P0-7/P2-1). Authenticate every route in this plugin.
+ const auth = { onRequest: [server.authenticate] };
+
  // GET /tasks?status=&category=
  server.get<{ Querystring: { status?: string; category?: string } }>(
  '/',
+ auth,
  async (req, reply) => {
  const userId = getUserId(req as { user?: { userId?: string } });
  const { status, category } = validate(taskQuerySchema, req.query);
@@ -57,7 +64,7 @@ export async function tasksRoutes(server: AuthFastifyInstance) {
  );
 
  // POST /tasks — create
- server.post<{ Body: unknown }>('/', async (req, reply) => {
+ server.post<{ Body: unknown }>('/', auth, async (req, reply) => {
  const userId = getUserId(req as { user?: { userId?: string } });
  const body = validate(taskCreateBody, req.body);
  const task = getRepos().task.create({
@@ -76,6 +83,7 @@ export async function tasksRoutes(server: AuthFastifyInstance) {
  // PATCH /tasks/:id — update (completedAt derived from status in the repo)
  server.patch<{ Params: { id: string }; Body: unknown }>(
  '/:id',
+ auth,
  async (req, reply) => {
  const body = validate(taskPatchBody, req.body);
  const updated = getRepos().task.update(req.params.id, mapTaskPatch(body));
@@ -85,7 +93,7 @@ export async function tasksRoutes(server: AuthFastifyInstance) {
  );
 
  // DELETE /tasks/:id
- server.delete<{ Params: { id: string } }>('/:id', async (req, reply) => {
+ server.delete<{ Params: { id: string } }>('/:id', auth, async (req, reply) => {
  getRepos().task.delete(req.params.id);
  return reply.send({ ok: true });
  });

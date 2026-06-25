@@ -8,7 +8,7 @@
  */
 
 import { Secret } from '@wolfkrow/domain';
-import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 
@@ -41,19 +41,7 @@ vi.mock('../../container', () => ({
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { vaultRoutes } from '../vault';
 
-/** Stamp req.user on every request (mirrors app-scope auth plugin in worker). */
-function stampUser(): (req: FastifyRequest, _reply: FastifyReply) => Promise<void> {
-  return async (req) => {
-    req.user = { userId: 'u1' };
-  };
-}
-
-function setErrorHandler(app: FastifyInstance): void {
-  app.setErrorHandler((error: Error, _req, reply) => {
-    const err = error as Error & { statusCode?: number; code?: string };
-    reply.status(err.statusCode ?? 500).send({ error: err.message, code: err.code ?? 'INTERNAL_ERROR' });
-  });
-}
+import { authedDecorator, realAuthenticate, setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;
 
@@ -68,7 +56,7 @@ beforeAll(async () => {
   store.set(seeded.key, seeded);
 
   app = Fastify();
-  app.addHook('onRequest', stampUser());
+  app.decorate('authenticate', authedDecorator);
   setErrorHandler(app);
   await vaultRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
@@ -219,5 +207,54 @@ describe('vault export/import — AES-256-GCM round-trip', () => {
   it('rejects export with missing passphrase → 400', async () => {
     const res = await app.inject({ method: 'POST', url: '/export', payload: {} });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+// ---- Authentication is enforced: anonymous callers get 401, never the
+// 'default' user (default-user leak class of P0-7/P2-1). Vault secrets are the
+// most sensitive user-scoped data, so this is the highest-stakes fix. Uses the
+// real-behaving authenticate decorator so the rejection is genuine. ----
+describe('vault routes — authentication required (default-user leak fix)', () => {
+  async function buildRealAuthApp(): Promise<FastifyInstance> {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await vaultRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    return a;
+  }
+
+  it('GET / without credentials → 401', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({ method: 'GET', url: '/' });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('POST / without credentials → 401', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({
+      method: 'POST', url: '/',
+      payload: { key: 'k', value: 'v', displayName: 'd', category: 'ai' },
+    });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('POST /export without credentials → 401', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({ method: 'POST', url: '/export', payload: { passphrase: 'x' } });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('GET / WITH credentials → 200 (real user, not default)', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({
+      method: 'GET', url: '/',
+      headers: { authorization: 'Bearer test-token' },
+    });
+    expect(res.statusCode).toBe(200);
+    await a.close();
   });
 });

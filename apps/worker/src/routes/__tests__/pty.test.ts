@@ -22,16 +22,18 @@ const fakePtyServer = vi.hoisted(() => ({
 
 vi.mock('../../pty/server', () => ({ ptyServer: fakePtyServer }));
 
+import type { AuthFastifyInstance } from '../../types/fastify';
 import { ptyRoutes } from '../pty';
 
-import { setErrorHandler } from './helpers/app';
+import { authedDecorator, realAuthenticate, setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;
 
 beforeAll(async () => {
   app = Fastify();
+  app.decorate('authenticate', authedDecorator);
   setErrorHandler(app);
-  await ptyRoutes(app as never);
+  await ptyRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
 });
 
@@ -80,5 +82,35 @@ describe('pty DELETE /pty/:id', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true });
     expect(fakePtyServer.kill).toHaveBeenCalledWith('sess-1');
+  });
+});
+
+// ---- Authentication is enforced: PTY routes spawn interactive shells (RCE),
+// the most severe instance of the default-user leak class. An anonymous caller
+// must NEVER open a shell. Uses the real-behaving decorator (genuine 401). ----
+describe('pty routes — authentication required (RCE guard)', () => {
+  it('POST /pty without credentials → 401', async () => {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await ptyRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    fakePtyServer.create.mockClear();
+    const res = await a.inject({ method: 'POST', url: '/pty', payload: { id: 'x' } });
+    expect(res.statusCode).toBe(401);
+    // The ptyServer.create must never be reached for an anonymous caller.
+    expect(fakePtyServer.create).not.toHaveBeenCalled();
+    await a.close();
+  });
+
+  it('DELETE /pty/:id without credentials → 401', async () => {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await ptyRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    const res = await a.inject({ method: 'DELETE', url: '/pty/sess-1' });
+    expect(res.statusCode).toBe(401);
+    await a.close();
   });
 });

@@ -8,21 +8,28 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionToken = cookieStore.get('session')?.value;
+  const session = await getSession(sessionToken);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const res = await fetch(`${WORKER}/pipeline/projects/${id}`);
+  const res = await fetch(`${WORKER}/pipeline/projects/${id}`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   return Response.json(await res.json(), { status: res.status });
 }
 
 export async function DELETE(_req: Request, { params }: Params) {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionToken = cookieStore.get('session')?.value;
+  const session = await getSession(sessionToken);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const res = await fetch(`${WORKER}/pipeline/projects/${id}?userId=${session.userId}`, { method: 'DELETE' });
+  const res = await fetch(`${WORKER}/pipeline/projects/${id}?userId=${session.userId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   if (res.status === 204) return new Response(null, { status: 204 });
   return Response.json(await res.json(), { status: res.status });
 }

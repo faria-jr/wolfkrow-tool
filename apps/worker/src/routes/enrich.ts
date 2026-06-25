@@ -77,7 +77,12 @@ const runEnricherBody = z.object({
 export async function enrichRoutes(server: AuthFastifyInstance) {
   const makeRepo = () => getRepos().enrichSession;
 
-  server.post('/sessions', async (req) => {
+  // Enrich sessions are user-scoped. Require an authenticated session on every
+  // route so anonymous callers cannot create/list/cancel another user's spec
+  // sessions (the default-user leak class of P0-7/P2-1).
+  const auth = { onRequest: [server.authenticate] };
+
+  server.post('/sessions', auth, async (req) => {
     const body = validate(createEnrichBody, req.body);
     const { session } = await new CreateEnrichSessionUseCase(makeRepo()).execute({
       userId: body.userId,
@@ -88,12 +93,12 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
     return session.toProps();
   });
 
-  server.get<{ Querystring: { userId: string } }>('/sessions', async (req) => {
+  server.get<{ Querystring: { userId: string } }>('/sessions', auth, async (req) => {
     const { sessions } = await new ListEnrichSessionsUseCase(makeRepo()).execute({ userId: req.query.userId });
     return sessions.map((s) => s.toProps());
   });
 
-  server.get<{ Params: { id: string } }>('/sessions/:id', async (req, reply) => {
+  server.get<{ Params: { id: string } }>('/sessions/:id', auth, async (req, reply) => {
     try {
       const { session } = await new GetEnrichSessionUseCase(makeRepo()).execute({ sessionId: req.params.id });
       return session.toProps();
@@ -104,15 +109,17 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
 
   server.post<{ Params: { id: string } }>(
     '/sessions/:id/validate',
+    auth,
     (req, reply) => runValidatorRoute(req, reply, makeRepo()),
   );
 
   server.post<{ Params: { id: string } }>(
     '/sessions/:id/enrich',
+    auth,
     (req, reply) => runEnricherRoute(req, reply, makeRepo()),
   );
 
-  server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/sessions/:id', async (req, reply) => {
+  server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/sessions/:id', auth, async (req, reply) => {
     try {
       await new CancelEnrichSessionUseCase(makeRepo()).execute({ sessionId: req.params.id, userId: req.query.userId });
       return reply.status(204).send();

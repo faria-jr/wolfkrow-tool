@@ -157,19 +157,26 @@ async function approvePhaseHandler(req: FastifyRequest<{ Params: RunParams }>, r
 export async function pipelineRoutes(server: AuthFastifyInstance) {
   const { projectRepo, phaseRepo } = _repos;
 
-  registerPipelineProjectRoutes(server, projectRepo);
-  registerPipelinePhaseRoutes(server, projectRepo, phaseRepo);
+  // Pipeline projects + phases are user-scoped. Require an authenticated
+  // session on every route so anonymous callers cannot drive another user's
+  // discovery→spec→implementation pipeline (the default-user leak class of
+  // P0-7/P2-1).
+  const auth = { onRequest: [server.authenticate] };
 
-  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/run', runPhaseHandler);
-  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/approve', approvePhaseHandler);
+  registerPipelineProjectRoutes(server, projectRepo, auth);
+  registerPipelinePhaseRoutes(server, projectRepo, phaseRepo, auth);
+
+  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/run', auth, runPhaseHandler);
+  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/approve', auth, approvePhaseHandler);
 }
 
 /** Project CRUD: create, list, get, delete. */
 function registerPipelineProjectRoutes(
   server: AuthFastifyInstance,
   projectRepo: ReturnType<typeof makeRepos>['projectRepo'],
+  auth: { onRequest: Array<(request: FastifyRequest, reply: FastifyReply) => Promise<void>> },
 ): void {
-  server.post('/projects', async (req) => {
+  server.post('/projects', auth, async (req) => {
     const body = validate(createProjectBody, req.body);
     const { project } = await new CreatePipelineProjectUseCase(projectRepo).execute({
       userId: body.userId,
@@ -179,12 +186,12 @@ function registerPipelineProjectRoutes(
     return project.toProps();
   });
 
-  server.get<{ Querystring: { userId: string } }>('/projects', async (req) => {
+  server.get<{ Querystring: { userId: string } }>('/projects', auth, async (req) => {
     const { projects } = await new ListPipelineProjectsUseCase(projectRepo).execute({ userId: req.query.userId });
     return projects.map((p) => p.toProps());
   });
 
-  server.get<{ Params: { id: string } }>('/projects/:id', async (req, reply) => {
+  server.get<{ Params: { id: string } }>('/projects/:id', auth, async (req, reply) => {
     try {
       const { project } = await new GetPipelineProjectUseCase(projectRepo).execute({ projectId: req.params.id });
       return project.toProps();
@@ -193,7 +200,7 @@ function registerPipelineProjectRoutes(
     }
   });
 
-  server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/projects/:id', async (req, reply) => {
+  server.delete<{ Params: { id: string }; Querystring: { userId: string } }>('/projects/:id', auth, async (req, reply) => {
     try {
       await new DeletePipelineProjectUseCase(projectRepo).execute({ projectId: req.params.id, userId: req.query.userId });
       return reply.status(204).send();
@@ -208,8 +215,9 @@ function registerPipelinePhaseRoutes(
   server: AuthFastifyInstance,
   projectRepo: ReturnType<typeof makeRepos>['projectRepo'],
   phaseRepo: ReturnType<typeof makeRepos>['phaseRepo'],
+  auth: { onRequest: Array<(request: FastifyRequest, reply: FastifyReply) => Promise<void>> },
 ): void {
-  server.post<{ Params: { id: string } }>('/projects/:id/phases', async (req, reply) => {
+  server.post<{ Params: { id: string } }>('/projects/:id/phases', auth, async (req, reply) => {
     const body = validate(startPhaseBody, req.body);
     try {
       const { phase } = await new StartPhaseUseCase(projectRepo, phaseRepo).execute({
@@ -222,13 +230,13 @@ function registerPipelinePhaseRoutes(
     }
   });
 
-  server.get<{ Params: { id: string } }>('/projects/:id/phases', async (req) => {
+  server.get<{ Params: { id: string } }>('/projects/:id/phases', auth, async (req) => {
     const phases = await phaseRepo.findByProjectId(req.params.id);
     return phases.map((p) => p.toProps());
   });
 
   // consolidated Markdown report of a project's phases + outputs.
-  server.get<{ Params: { id: string } }>('/projects/:id/report', reportHandler);
+  server.get<{ Params: { id: string } }>('/projects/:id/report', auth, reportHandler);
 }
 
 async function reportHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {

@@ -7,7 +7,7 @@
  * decorator so the 401-without-session case is a genuine rejection.
  */
 
-import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 interface StoredTask {
@@ -70,14 +70,7 @@ vi.mock('../../container', () => ({ getRepos: () => ({ task: fakeTaskRepo }) }))
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { tasksRoutes } from '../tasks';
 
-import { setErrorHandler } from './helpers/app';
-
-/** Stamp req.user on every request (mirrors app-scope auth plugin). */
-function stampUser(): (req: FastifyRequest, _reply: FastifyReply) => Promise<void> {
-  return async (req) => {
-    req.user = { userId: 'u1' };
-  };
-}
+import { authedDecorator, realAuthenticate, setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;
 
@@ -85,7 +78,7 @@ beforeAll(async () => {
   tasks.clear();
   seq = 0;
   app = Fastify();
-  app.addHook('onRequest', stampUser());
+  app.decorate('authenticate', authedDecorator);
   setErrorHandler(app);
   await tasksRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
@@ -197,5 +190,43 @@ describe('tasks DELETE /:id', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true });
     expect(tasks.has(target.id)).toBe(false);
+  });
+});
+
+// ---- Authentication is enforced: anonymous callers get 401, never the
+// 'default' user (default-user leak class of P0-7/P2-1). Uses the real-behaving
+// authenticate decorator so the rejection is genuine. ----
+describe('tasks routes — authentication required (default-user leak fix)', () => {
+  async function buildRealAuthApp(): Promise<FastifyInstance> {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await tasksRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    return a;
+  }
+
+  it('GET / without credentials → 401', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({ method: 'GET', url: '/' });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('POST / without credentials → 401', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({ method: 'POST', url: '/', payload: { title: 'x' } });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('GET / WITH credentials → 200 (real user, not default)', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({
+      method: 'GET', url: '/',
+      headers: { authorization: 'Bearer test-token' },
+    });
+    expect(res.statusCode).toBe(200);
+    await a.close();
   });
 });

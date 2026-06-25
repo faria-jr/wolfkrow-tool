@@ -26,6 +26,8 @@ vi.mock('../../container', () => ({
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { usageRoutes } from '../usage';
 
+import { authedDecorator, realAuthenticate, setErrorHandler } from './helpers/app';
+
 // Recent timestamps so the budget use-case's 30-day window includes them.
 const today = new Date();
 const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
@@ -69,9 +71,8 @@ beforeAll(async () => {
   );
 
   app = Fastify();
-  app.decorate('authenticate', async (request: { user?: { userId?: string } }) => {
-    request.user = { userId: 'u1' };
-  });
+  app.decorate('authenticate', authedDecorator);
+  setErrorHandler(app);
   await usageRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
 });
@@ -183,21 +184,55 @@ describe('GET /usage/records', () => {
   });
 });
 
-// ---- getUserId falls back to 'default' when no user is present ----
-describe('GET /usage/summary — unauthenticated userId fallback', () => {
-  it('uses the default userId when request.user is absent', async () => {
-    const anonApp = Fastify();
-    anonApp.decorate('authenticate', async () => { /* no user stamped */ });
-    await usageRoutes(anonApp as unknown as AuthFastifyInstance);
-    await anonApp.ready();
-    const res = await anonApp.inject({ method: 'GET', url: '/summary' });
+// ---- Authentication is enforced: anonymous callers get 401, never the
+// 'default' user (default-user leak class of P0-7/P2-1). Uses the
+// real-behaving authenticate decorator so the rejection is genuine. ----
+describe('usage routes — authentication required (default-user leak fix)', () => {
+  it('GET /summary without credentials → 401', async () => {
+    const authedApp = Fastify();
+    authedApp.decorate('authenticate', realAuthenticate);
+    setErrorHandler(authedApp);
+    await usageRoutes(authedApp as unknown as AuthFastifyInstance);
+    await authedApp.ready();
+    const res = await authedApp.inject({ method: 'GET', url: '/summary' });
+    expect(res.statusCode).toBe(401);
+    await authedApp.close();
+  });
+
+  it('GET /budget without credentials → 401', async () => {
+    const authedApp = Fastify();
+    authedApp.decorate('authenticate', realAuthenticate);
+    setErrorHandler(authedApp);
+    await usageRoutes(authedApp as unknown as AuthFastifyInstance);
+    await authedApp.ready();
+    const res = await authedApp.inject({ method: 'GET', url: '/budget?budgetUSD=30' });
+    expect(res.statusCode).toBe(401);
+    await authedApp.close();
+  });
+
+  it('GET /records without credentials → 401', async () => {
+    const authedApp = Fastify();
+    authedApp.decorate('authenticate', realAuthenticate);
+    setErrorHandler(authedApp);
+    await usageRoutes(authedApp as unknown as AuthFastifyInstance);
+    await authedApp.ready();
+    const res = await authedApp.inject({ method: 'GET', url: '/records' });
+    expect(res.statusCode).toBe(401);
+    await authedApp.close();
+  });
+
+  it('GET /summary WITH credentials → 200 (real user, not default)', async () => {
+    const authedApp = Fastify();
+    authedApp.decorate('authenticate', realAuthenticate);
+    setErrorHandler(authedApp);
+    await usageRoutes(authedApp as unknown as AuthFastifyInstance);
+    await authedApp.ready();
+    const res = await authedApp.inject({
+      method: 'GET',
+      url: '/summary',
+      headers: { authorization: 'Bearer test-token' },
+    });
     expect(res.statusCode).toBe(200);
-    // The route did not throw: getUserId returned 'default' and the use-case
-    // ran. The mock repo filters by 'u1' (ignoring args), so totals reflect
-    // seeded records — what matters here is the fallback branch was taken
-    // without error, confirmed by the 200 status.
-    const body = res.json() as UsageSummary;
-    expect(body.totalInputTokens).toBeGreaterThanOrEqual(0);
-    await anonApp.close();
+    await authedApp.close();
   });
 });

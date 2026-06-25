@@ -39,13 +39,14 @@ vi.mock('../../container', async (importOriginal) => {
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { enrichRoutes } from '../enrich';
 
-import { setErrorHandler } from './helpers/app';
+import { authedDecorator, realAuthenticate, setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;
 
 beforeAll(async () => {
   sessions.clear();
   app = Fastify();
+  app.decorate('authenticate', authedDecorator);
   setErrorHandler(app);
   await enrichRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
@@ -139,5 +140,33 @@ describe('enrich validate/enrich — 404 on missing session', () => {
       method: 'POST', url: '/sessions/unknown/enrich', payload: { validatorOutput: 'feedback' },
     });
     expect(res.statusCode).toBe(404);
+  });
+});
+
+// ---- Authentication is enforced (default-user leak class of P0-7/P2-1). ----
+describe('enrich routes — authentication required', () => {
+  it('POST /sessions without credentials → 401', async () => {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await enrichRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    const res = await a.inject({
+      method: 'POST', url: '/sessions',
+      payload: { userId: 'u1', specPath: '/tmp/s.md' },
+    });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('GET /sessions without credentials → 401', async () => {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await enrichRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    const res = await a.inject({ method: 'GET', url: '/sessions?userId=u1' });
+    expect(res.statusCode).toBe(401);
+    await a.close();
   });
 });

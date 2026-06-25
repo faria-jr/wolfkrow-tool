@@ -61,7 +61,7 @@ vi.mock('../../lib/keychain', () => ({ getAnthropicApiKey: vi.fn(async () => 'sk
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { pipelineRoutes } from '../pipeline';
 
-import { setErrorHandler } from './helpers/app';
+import { authedDecorator, realAuthenticate, setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;
 
@@ -72,6 +72,7 @@ beforeAll(async () => {
   projects.set(seeded.id, seeded);
 
   app = Fastify();
+  app.decorate('authenticate', authedDecorator);
   setErrorHandler(app);
   await pipelineRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
@@ -211,5 +212,33 @@ describe('pipeline POST /projects/:id/phases/:phaseId/approve', () => {
       payload: { approved: true },
     });
     expect(res.statusCode).toBe(404);
+  });
+});
+
+// ---- Authentication is enforced (default-user leak class of P0-7/P2-1). ----
+describe('pipeline routes — authentication required', () => {
+  it('POST /projects without credentials → 401', async () => {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await pipelineRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    const res = await a.inject({
+      method: 'POST', url: '/projects',
+      payload: { userId: 'u1', name: 'p' },
+    });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('GET /projects without credentials → 401', async () => {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await pipelineRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    const res = await a.inject({ method: 'GET', url: '/projects?userId=u1' });
+    expect(res.statusCode).toBe(401);
+    await a.close();
   });
 });

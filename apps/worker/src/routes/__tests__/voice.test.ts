@@ -28,12 +28,13 @@ vi.mock('../../voice/factory', () => ({
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { voiceRoutes } from '../voice';
 
-import { setErrorHandler } from './helpers/app';
+import { authedDecorator, realAuthenticate, setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;
 
 beforeAll(async () => {
   app = Fastify();
+  app.decorate('authenticate', authedDecorator);
   setErrorHandler(app);
   await voiceRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
@@ -111,5 +112,20 @@ describe('voice POST /synthesize/stream', () => {
   it('returns 400 when text is missing', async () => {
     const res = await app.inject({ method: 'POST', url: '/synthesize/stream', payload: {} });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+// ---- Authentication is enforced (default-user leak class of P0-7/P2-1):
+// voice routes invoke paid external APIs, so anonymous abuse must be blocked. ----
+describe('voice routes — authentication required', () => {
+  it('POST /synthesize without credentials → 401', async () => {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await voiceRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    const res = await a.inject({ method: 'POST', url: '/synthesize', payload: { text: 'hi' } });
+    expect(res.statusCode).toBe(401);
+    await a.close();
   });
 });

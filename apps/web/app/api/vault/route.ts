@@ -6,22 +6,26 @@ const WORKER = process.env['WORKER_URL'] ?? 'http://localhost:4000';
 
 export async function GET() {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionToken = cookieStore.get('session')?.value;
+  const session = await getSession(sessionToken);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const res = await fetch(`${WORKER}/vault`, { credentials: 'include' });
+  const res = await fetch(`${WORKER}/vault`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+  });
   return Response.json(await res.json(), { status: res.status });
 }
 
 export async function POST(req: Request) {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionToken = cookieStore.get('session')?.value;
+  const session = await getSession(sessionToken);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.text();
   const res = await fetch(`${WORKER}/vault`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionToken}` },
     body,
   });
   return Response.json(await res.json(), { status: res.status });

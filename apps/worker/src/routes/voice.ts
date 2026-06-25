@@ -20,7 +20,12 @@ async function streamAudioToResponse(stream: AsyncIterable<Buffer>, reply: RawRe
 }
 
 export async function voiceRoutes(server: AuthFastifyInstance) {
-  server.post('/transcribe', async (req, reply) => {
+  // Transcribe/synthesize are not user-scoped data, but they invoke paid
+  // external APIs (Whisper/ElevenLabs) using server-held keys. Require an
+  // authenticated session so anonymous callers cannot burn the API budget.
+  const auth = { onRequest: [server.authenticate] };
+
+  server.post('/transcribe', auth, async (req, reply) => {
     const apiKey = await getKey('openai-api-key');
     if (!apiKey) return reply.status(503).send({ error: 'OpenAI API key not configured' });
 
@@ -35,6 +40,7 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
 
   server.post<{ Body: { text: string; voice?: string; provider?: string; model?: string } }>(
     '/synthesize',
+    auth,
     async (req, reply) => {
       const { text, voice, provider = 'elevenlabs', model } = req.body;
       if (!text) return reply.status(400).send({ error: 'text is required' });
@@ -57,6 +63,7 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
 
   server.post<{ Body: { text: string; voice?: string; provider?: string } }>(
     '/synthesize/stream',
+    auth,
     async (req, reply) => {
       const { text, voice, provider = 'elevenlabs' } = req.body;
       if (!text) return reply.status(400).send({ error: 'text is required' });

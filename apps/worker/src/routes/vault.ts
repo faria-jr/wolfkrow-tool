@@ -95,13 +95,19 @@ export async function vaultRoutes(server: AuthFastifyInstance) {
 
   type SecretBody = z.infer<typeof storeBody>;
 
-  server.get('/', async (req, reply) => {
+  // Secrets are inherently user-scoped: getUserId resolves the owner from
+  // req.user. Without authentication every request maps to the shared
+  // 'default' user, so every browser user would read/write the SAME vault
+  // (the default-user leak class). Authenticate every route in this plugin.
+  const auth = { onRequest: [server.authenticate] };
+
+  server.get('/', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const { secrets } = await listUC.execute({ userId });
     return reply.send({ secrets: secrets.map((s) => s.toProps()) });
   });
 
-  server.post<{ Body: SecretBody }>('/', async (req, reply) => {
+  server.post<{ Body: SecretBody }>('/', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const { key, value, displayName, category, description } = validate(storeBody, req.body);
     const { secret } = await storeUC.execute({
@@ -111,13 +117,13 @@ export async function vaultRoutes(server: AuthFastifyInstance) {
     return reply.status(201).send({ secret: secret.toProps() });
   });
 
-  server.get<{ Params: { key: string } }>('/:key/masked', async (req, reply) => {
+  server.get<{ Params: { key: string } }>('/:key/masked', auth, async (req, reply) => {
     const { value } = await getValueUC.execute({ key: req.params.key });
     if (value === null) return reply.status(404).send({ error: 'Secret not found' });
     return reply.send({ masked: mask(value) });
   });
 
-  server.delete<{ Params: { key: string } }>('/:key', async (req, reply) => {
+  server.delete<{ Params: { key: string } }>('/:key', auth, async (req, reply) => {
     await deleteUC.execute({ key: req.params.key });
     return reply.send({ ok: true });
   });
@@ -145,7 +151,8 @@ function registerBackupRoutes(
   storeUC: StoreSecretUseCase,
   getValueUC: GetSecretValueUseCase,
 ) {
-  server.post('/export', async (req, reply) => {
+  const auth = { onRequest: [server.authenticate] };
+  server.post('/export', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const { passphrase } = validate(exportBody, req.body);
     const { secrets } = await listUC.execute({ userId });
@@ -157,7 +164,7 @@ function registerBackupRoutes(
     return reply.send({ payload: encryptVault(exported, passphrase) });
   });
 
-  server.post('/import', async (req, reply) => {
+  server.post('/import', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const { passphrase, payload } = validate(importBody, req.body);
     let secrets: ExportedSecret[];

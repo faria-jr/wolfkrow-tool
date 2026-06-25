@@ -46,14 +46,20 @@ const buildUC = new BuildSystemPromptUseCase(_repo);
 
 export async function rulesRoutes(server: AuthFastifyInstance) {
 
+  // Rules are user-scoped (getUserId resolves the owner from req.user). Without
+  // authentication every request maps to the shared 'default' user, so all
+  // browser users would share one rules set (the default-user leak class of
+  // P0-7/P2-1). Authenticate every route in this plugin.
+  const auth = { onRequest: [server.authenticate] };
+
   // GET /rules — list all
-  server.get('/', async (req, reply) => {
+  server.get('/', auth, async (req, reply) => {
     const rules = await listUC.execute(getUserId(req as { user?: { userId?: string } }));
     return reply.send({ rules: rules.map((r) => r.toProps()) });
   });
 
   // POST /rules — create
-  server.post<{ Body: unknown }>('/', async (req, reply) => {
+  server.post<{ Body: unknown }>('/', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const parsed = validate(createBody, req.body);
     const rule = await createUC.execute({
@@ -68,7 +74,7 @@ export async function rulesRoutes(server: AuthFastifyInstance) {
   });
 
   // PATCH /rules/:id — update
-  server.patch<{ Params: { id: string }; Body: unknown }>('/:id', async (req, reply) => {
+  server.patch<{ Params: { id: string }; Body: unknown }>('/:id', auth, async (req, reply) => {
     const parsed = validate(updateBody, req.body);
     const rule = await updateUC.execute({
       id: req.params.id,
@@ -81,19 +87,19 @@ export async function rulesRoutes(server: AuthFastifyInstance) {
   });
 
   // POST /rules/:id/toggle — toggle enabled
-  server.post<{ Params: { id: string } }>('/:id/toggle', async (req, reply) => {
+  server.post<{ Params: { id: string } }>('/:id/toggle', auth, async (req, reply) => {
     const rule = await toggleUC.execute(req.params.id);
     return reply.send({ rule: rule.toProps() });
   });
 
   // DELETE /rules/:id — delete
-  server.delete<{ Params: { id: string } }>('/:id', async (req, reply) => {
+  server.delete<{ Params: { id: string } }>('/:id', auth, async (req, reply) => {
     await deleteUC.execute(req.params.id);
     return reply.send({ ok: true });
   });
 
   // POST /rules/build-prompt
-  server.post<{ Body: unknown }>('/build-prompt', async (req, reply) => {
+  server.post<{ Body: unknown }>('/build-prompt', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const parsed = validate(buildPromptBody, req.body ?? {});
     const prompt = await buildUC.execute({

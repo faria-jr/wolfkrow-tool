@@ -9,7 +9,7 @@
  */
 
 import { GlobalRule } from '@wolfkrow/domain';
-import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 
@@ -38,14 +38,7 @@ vi.mock('../../container', () => ({ getRepos: () => ({ globalRule: fakeRuleRepo 
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { rulesRoutes } from '../rules';
 
-import { setErrorHandler } from './helpers/app';
-
-/** Stamp req.user on every request (mirrors app-scope auth plugin). */
-function stampUser(): (req: FastifyRequest, _reply: FastifyReply) => Promise<void> {
-  return async (req) => {
-    req.user = { userId: 'u1' };
-  };
-}
+import { authedDecorator, realAuthenticate, setErrorHandler } from './helpers/app';
 
 let app: FastifyInstance;
 
@@ -56,7 +49,7 @@ beforeAll(async () => {
   });
   rules.set(seeded.id, seeded);
   app = Fastify();
-  app.addHook('onRequest', stampUser());
+  app.decorate('authenticate', authedDecorator);
   setErrorHandler(app);
   await rulesRoutes(app as unknown as AuthFastifyInstance);
   await app.ready();
@@ -177,5 +170,46 @@ describe('rules DELETE /:id', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true });
     expect(rules.has(target.id)).toBe(false);
+  });
+});
+
+// ---- Authentication is enforced: anonymous callers get 401, never the
+// 'default' user (default-user leak class of P0-7/P2-1). Uses the real-behaving
+// authenticate decorator so the rejection is genuine. ----
+describe('rules routes — authentication required (default-user leak fix)', () => {
+  async function buildRealAuthApp(): Promise<FastifyInstance> {
+    const a = Fastify();
+    a.decorate('authenticate', realAuthenticate);
+    setErrorHandler(a);
+    await rulesRoutes(a as unknown as AuthFastifyInstance);
+    await a.ready();
+    return a;
+  }
+
+  it('GET / without credentials → 401', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({ method: 'GET', url: '/' });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('POST / without credentials → 401', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({
+      method: 'POST', url: '/',
+      payload: { kind: 'soul', title: 't', body: 'b' },
+    });
+    expect(res.statusCode).toBe(401);
+    await a.close();
+  });
+
+  it('GET / WITH credentials → 200 (real user, not default)', async () => {
+    const a = await buildRealAuthApp();
+    const res = await a.inject({
+      method: 'GET', url: '/',
+      headers: { authorization: 'Bearer test-token' },
+    });
+    expect(res.statusCode).toBe(200);
+    await a.close();
   });
 });
