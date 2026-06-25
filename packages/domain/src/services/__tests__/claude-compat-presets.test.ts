@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { BUILT_IN_PROVIDERS, getProviderById } from '../provider-registry';
 import {
   CLAUDE_COMPAT_PRESETS,
   CLAUDE_COMPAT_PROVIDER_IDS,
   getClaudeCompatPreset,
   isClaudeCompatProviderId,
 } from '../claude-compat-presets';
+import { BUILT_IN_PROVIDERS, getProviderById } from '../provider-registry';
 
 describe('claude-compat-presets', () => {
   it('contains four providers', () => {
