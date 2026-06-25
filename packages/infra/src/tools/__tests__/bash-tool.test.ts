@@ -25,7 +25,8 @@ describe('BashTool', () => {
   it('has correct name and description', () => {
     const tool = new BashTool();
     expect(tool.name).toBe('bash');
-    expect(tool.description).toBeTruthy();
+    expect(tool.description).toEqual(expect.any(String));
+    expect(tool.description.length).toBeGreaterThan(0);
     expect(tool.inputSchema).toHaveProperty('properties.command');
   });
 

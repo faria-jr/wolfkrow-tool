@@ -76,7 +76,8 @@ describe('executeWithPermissionGate', () => {
     expect(execute).not.toHaveBeenCalled();
     expect(result.result.isError).toBe(true);
     expect(result.result.output).toContain('not approved');
-    expect(result.permissionChunk).toBeDefined();
+    expect(result.permissionChunk?.toolPermission?.callId).toBe('t1');
+    expect(result.permissionChunk?.toolPermission?.name).toBe('bash');
   });
 
   it('denies by default when ask has no requestPermission handler', async () => {

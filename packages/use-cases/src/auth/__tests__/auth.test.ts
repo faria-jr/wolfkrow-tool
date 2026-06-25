@@ -72,7 +72,9 @@ describe('RegisterUseCase', () => {
       email: undefined,
     });
     expect(out.userId).toMatch(/^[0-9a-f-]{36}$/);
-    expect(await repo.findOwner()).toBeTruthy();
+    const owner = await repo.findOwner();
+    expect(owner).not.toBeNull();
+    expect(owner?.id).toBe(out.userId);
   });
 
   it('refuses a second owner (ConflictError)', async () => {
@@ -152,7 +154,7 @@ describe('UnlockSessionUseCase', () => {
     const { repo, hasher, register } = setup();
     await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
     const out = await new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({ password: PW('Abcdef12') });
-    expect(out.userId).toBeTruthy();
+    expect(out.userId).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   it('throws on wrong password', async () => {
@@ -177,7 +179,8 @@ describe('SetupTotpUseCase', () => {
     await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
     const owner = await repo.findOwner();
     const out = await new SetupTotpUseCase(repo, new FakeTotp()).execute({ userId: owner!.id });
-    expect(out.secret).toBeTruthy();
+    expect(out.secret).toEqual(expect.any(String));
+    expect(out.secret.length).toBeGreaterThan(0);
     expect(out.otpauthUrl).toContain('otpauth://');
   });
 });

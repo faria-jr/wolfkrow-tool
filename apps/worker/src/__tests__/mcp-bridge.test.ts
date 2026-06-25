@@ -26,8 +26,9 @@ describe('MCP JSON-RPC bridge', () => {
   it('call returns result from server', async () => {
     manager = createMcpManager({ rpcTimeoutMs: 5000 });
     await manager.start({ name: 'srv', command: 'node', args: [MOCK_SERVER] });
-    const result = await manager.call('srv', 'tools/list', {}) as { tools: unknown[] };
-    expect(result.tools).toBeDefined();
+    const result = await manager.call('srv', 'tools/list', {}) as { tools: Array<{ name: string }> };
+    expect(result.tools).toHaveLength(1);
+    expect(result.tools[0]?.name).toBe('echo');
   });
 
   it('callTool invokes tools/call and returns content', async () => {
@@ -59,7 +60,9 @@ describe('MCP JSON-RPC bridge', () => {
       manager.callTool('srv', 'echo', { n: 1 }),
       manager.callTool('srv', 'echo', { n: 2 }),
     ]);
-    expect(r1).toBeDefined();
+    const toolsList = r1 as { tools: Array<{ name: string }> };
+    expect(toolsList.tools).toHaveLength(1);
+    expect(toolsList.tools[0]?.name).toBe('echo');
     expect((r2 as { content: Array<{ text: string }> }).content[0]?.text).toContain('"n":1');
     expect((r3 as { content: Array<{ text: string }> }).content[0]?.text).toContain('"n":2');
   });

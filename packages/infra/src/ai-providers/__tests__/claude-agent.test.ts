@@ -114,7 +114,8 @@ describe('ClaudeAgentProvider', () => {
 
     const resultChunks = chunks.filter((c) => c.toolResult);
     expect(resultChunks).toHaveLength(1);
-    expect(resultChunks[0]?.toolResult?.callId).toBeTruthy();
+    expect(resultChunks[0]?.toolResult?.callId).toEqual(expect.any(String));
+    expect(resultChunks[0]?.toolResult?.callId.length).toBeGreaterThan(0);
   });
 
   it('loops when stop_reason is tool_use and stops at end_turn', async () => {

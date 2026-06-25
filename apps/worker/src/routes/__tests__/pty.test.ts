@@ -55,7 +55,8 @@ describe('pty POST /pty — create', () => {
     const res = await app.inject({ method: 'POST', url: '/pty', payload: {} });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { sessionId: string };
-    expect(body.sessionId).toBeTruthy();
+    expect(body.sessionId).toEqual(expect.any(String));
+    expect(body.sessionId.length).toBeGreaterThan(0);
   });
 
   it('rejects out-of-range cols → 400', async () => {

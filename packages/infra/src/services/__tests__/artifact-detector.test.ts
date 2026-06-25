@@ -37,7 +37,10 @@ describe('ArtifactDetector — excalidraw', () => {
     expect(a).not.toBeNull();
     expect(a!.type).toBe('mcp_app');
     expect(a!.title).toBe('My Diagram');
-    expect(a!.data['excalidrawFile']).toBeDefined();
+    const file = a!.data['excalidrawFile'];
+    expect(file).toEqual(expect.any(String));
+    expect(file as string).toContain('rectangle');
+    expect(file as string).toContain('elements');
   });
 
   it('parses stringified elements JSON', () => {

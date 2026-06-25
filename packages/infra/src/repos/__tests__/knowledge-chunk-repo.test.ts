@@ -109,7 +109,7 @@ describe('DrizzleKnowledgeChunkRepo.hybridSearch (M4)', () => {
     // → hybrid still returns 'a' from the vector strategy only
     expect(results.length).toBe(1);
     expect(results[0]!.chunk.id).toBe('a');
-    expect(results[0]!.vectorDistance).toBeDefined();
+    expect(results[0]!.vectorDistance).toEqual(expect.any(Number));
     expect(results[0]!.keywordRank).toBeUndefined();
   });
 
@@ -128,14 +128,14 @@ describe('DrizzleKnowledgeChunkRepo.hybridSearch (M4)', () => {
     // per-strategy fields populated
     const a = results.find((r) => r.chunk.id === 'a');
     const c = results.find((r) => r.chunk.id === 'c');
-    expect(a?.vectorDistance).toBeDefined();
-    expect(a?.keywordRank).toBeDefined();
-    expect(c?.vectorDistance).toBeDefined();
-    expect(c?.keywordRank).toBeDefined();
+    expect(a?.vectorDistance).toEqual(expect.any(Number));
+    expect(a?.keywordRank).toEqual(expect.any(Number));
+    expect(c?.vectorDistance).toEqual(expect.any(Number));
+    expect(c?.keywordRank).toEqual(expect.any(Number));
     // 'b' matches the embedding but not the keyword
     const b = results.find((r) => r.chunk.id === 'b');
     expect(b).toBeDefined();
-    expect(b?.vectorDistance).toBeDefined();
+    expect(b?.vectorDistance).toEqual(expect.any(Number));
     expect(b?.keywordRank).toBeUndefined();
   });
 

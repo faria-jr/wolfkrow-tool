@@ -62,9 +62,14 @@ describe('loadSeedAgents', () => {
 
   it('each agent passes schema validation', async () => {
     const agents = await loadSeedAgents(AGENTS_DIR);
+    expect(agents.length).toBeGreaterThan(0);
     for (const agent of agents) {
-      expect(agent.name).toBeTruthy();
-      expect(agent.model).toBeTruthy();
+      // Validate the FULL schema (runtime, allowedTools, enums, defaults) — not just name/model presence.
+      const result = SeedAgentSchema.safeParse(agent);
+      expect(result.success).toBe(true);
+      if (!result.success) {
+        throw new Error(`Agent "${agent.name}" failed schema validation: ${JSON.stringify(result.error.issues)}`);
+      }
     }
   });
 

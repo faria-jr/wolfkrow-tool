@@ -60,8 +60,11 @@ describe('ClaudeAgentProvider', () => {
     expect(result.content).toBe('Agent reply');
   });
 
-  it('accepts empty registry (no tools)', () => {
-    expect(() => new ClaudeAgentProvider('key')).not.toThrow();
+  it('accepts empty registry (no tools) and still streams', async () => {
+    const provider = new ClaudeAgentProvider('key');
+    // Empty registry means the tool-augmented prompt path runs without tools — assert it still produces output.
+    const result = await provider.complete(opts('claude-3-5-sonnet-20241022'));
+    expect(result.content).toBe('Agent reply');
   });
 });
 
@@ -73,7 +76,9 @@ describe('ClaudeCompatProvider', () => {
     const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
     expect(text).toBe('Agent reply');
     const done = chunks.find((c) => c.done);
-    expect(done).toBeDefined();
+    expect(done?.done).toBe(true);
+    expect(done?.inputTokens).toBe(10);
+    expect(done?.outputTokens).toBe(5);
   });
 
   it('complete accumulates content', async () => {
@@ -91,8 +96,12 @@ describe('CodexProvider', () => {
     expect(text).toBe('Codex reply');
   });
 
-  it('accepts custom baseURL for Ollama', () => {
-    expect(() => new CodexProvider('ollama', 'http://localhost:11434/v1')).not.toThrow();
+  it('accepts custom baseURL for Ollama and routes through it', async () => {
+    // localhost is SSRF-allowed; assert the provider is usable end-to-end with the custom baseURL wired.
+    const provider = new CodexProvider('ollama', 'http://localhost:11434/v1');
+    expect(provider).toBeInstanceOf(CodexProvider);
+    const result = await provider.complete(opts('llama-3.2'));
+    expect(result.content).toBe('Codex reply');
   });
 
   it('complete accumulates and returns usage', async () => {
