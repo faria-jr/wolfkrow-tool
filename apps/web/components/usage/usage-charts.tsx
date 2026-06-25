@@ -1,6 +1,6 @@
 'use client';
 
-import { formatCost, formatTokens, hasKnownPricing } from '@wolfkrow/domain';
+import { formatCost, formatTokens, hasKnownPricing } from '@wolfkrow/domain/services';
 import type { UsageSummary } from '@wolfkrow/shared-types';
 import { useEffect, useState } from 'react';
 import {

@@ -2,7 +2,7 @@
 
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BUILT_IN_PROVIDERS } from '@wolfkrow/domain';
+import { BUILT_IN_PROVIDERS } from '@wolfkrow/domain/services';
 import { useState } from 'react';
 
 import { ProviderCard, type ProviderRow } from './provider-card';

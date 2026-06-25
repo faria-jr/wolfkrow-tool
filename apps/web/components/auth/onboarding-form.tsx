@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { BUILT_IN_PROVIDERS } from '@wolfkrow/domain';
+import { BUILT_IN_PROVIDERS } from '@wolfkrow/domain/services';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
