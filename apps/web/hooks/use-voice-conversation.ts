@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react';
 import { useStt } from './use-stt';
 import { useTts } from './use-tts';
 import { useVad } from './use-vad';
+import { useVoiceSettings } from './use-voice-settings';
 
 import { readChatStream } from '@/lib/chat-stream';
 
@@ -71,8 +72,17 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
   const [messages, setMessages] = useState<VoiceConversationMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // Read persisted voice preferences (TTS provider + voice id) so the chat
+  // voice orb reflects Settings → Voice selection. Explicit options.voice
+  // (per-call override) still wins over the persisted voiceId.
+  const { settings: voiceSettings } = useVoiceSettings();
+  const effectiveVoice = options.voice ?? voiceSettings.voiceId;
+
   const { startRecording, stopRecording, reset: resetStt } = useStt();
-  const { speak, stop: stopTts } = useTts(options.voice !== undefined ? { voice: options.voice } : {});
+  const ttsOptions = effectiveVoice
+    ? { voice: effectiveVoice, provider: voiceSettings.provider }
+    : { provider: voiceSettings.provider };
+  const { speak, stop: stopTts } = useTts(ttsOptions);
 
   const addMessage = useCallback((msg: VoiceConversationMessage) => {
     setMessages((prev) => [...prev, msg]);

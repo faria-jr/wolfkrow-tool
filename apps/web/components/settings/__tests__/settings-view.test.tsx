@@ -10,6 +10,7 @@ import { SettingsView } from '../settings-view';
  */
 const REAL_ROUTES = [
   '/settings/providers',
+  '/settings/voice',
   '/vault',
   '/agents',
   '/mcp-servers',
@@ -38,6 +39,7 @@ describe('SettingsView', () => {
       (href) =>
         href.startsWith('/settings/') &&
         href !== '/settings/providers' &&
+        href !== '/settings/voice' &&
         !REAL_ROUTES.includes(href as (typeof REAL_ROUTES)[number]),
     );
     expect(deadSettingsRoutes, 'no hub link may point at a non-existent /settings/* route').toEqual([]);

@@ -15,7 +15,10 @@ import { cn } from '@/lib/utils';
  * genuine sub-route. This shell therefore renders only real, reachable
  * destinations — never dead `/settings/*` tabs (P0-5).
  */
-const SETTINGS_TABS = [{ label: 'Providers', href: '/settings/providers' }] as const;
+const SETTINGS_TABS = [
+  { label: 'Providers', href: '/settings/providers' },
+  { label: 'Voice', href: '/settings/voice' },
+] as const;
 
 export function SettingsShell({ children }: { children: React.ReactNode }) {
   return (

@@ -8,6 +8,7 @@ import {
   Network,
   ShieldCheck,
   Cpu,
+  AudioLines,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -19,6 +20,7 @@ const SECTIONS = [
   { title: 'Scheduler', href: '/scheduler', icon: Calendar, description: 'Scheduled task automation' },
   { title: 'Rules', href: '/rules', icon: FileText, description: 'Behavioral rules and guidelines' },
   { title: 'Permissions', href: '/permissions', icon: ShieldCheck, description: 'Access control policies' },
+  { title: 'Voice', href: '/settings/voice', icon: AudioLines, description: 'STT/TTS engines and voice provider' },
   { title: 'Channels', href: '/channels', icon: Folder, description: 'Notification channels' },
   { title: 'Usage', href: '/usage', icon: BarChart3, description: 'Token analytics and costs' },
 ] as const;
