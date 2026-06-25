@@ -122,3 +122,38 @@ describe('chat POST /send — SSE stream', () => {
     expect(raw).toContain('upstream failure');
   }, 10000);
 });
+
+// ---- writeStreamAsSse chunk-type branches (toolCall/toolResult/toolPermission) ----
+describe('chat POST /send — SSE chunk-type branches', () => {
+  it('emits tool_call and tool_result events', async () => {
+    fakeStream.mockImplementation(async function* () {
+      yield { toolCall: { id: 'tc-1', name: 'Bash:ls', input: { cmd: 'ls' } } };
+      yield { toolResult: { callId: 'tc-1', output: 'file.txt', isError: false } };
+      yield { done: true };
+    });
+    const res = await app.inject({
+      method: 'POST', url: '/send', headers: BEARER, payload: { message: 'run ls' },
+    });
+    expect(res.statusCode).toBe(200);
+    const raw = await collectSse(res);
+    expect(raw).toContain('"type":"tool_call"');
+    expect(raw).toContain('"name":"Bash:ls"');
+    expect(raw).toContain('"type":"tool_result"');
+    expect(raw).toContain('file.txt');
+  }, 10000);
+
+  it('emits a tool_permission event for a destructive tool surface', async () => {
+    fakeStream.mockImplementation(async function* () {
+      yield { toolPermission: { callId: 'tp-1', name: 'Bash:rm', input: {}, prompt: 'Allow rm?' } };
+      yield { done: true };
+    });
+    const res = await app.inject({
+      method: 'POST', url: '/send', headers: BEARER, payload: { message: 'rm' },
+    });
+    expect(res.statusCode).toBe(200);
+    const raw = await collectSse(res);
+    expect(raw).toContain('"type":"tool_permission"');
+    expect(raw).toContain('"id":"tp-1"');
+    expect(raw).toContain('Allow rm?');
+  }, 10000);
+});

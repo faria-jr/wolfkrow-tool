@@ -11,11 +11,13 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect } from 'vitest';
 
-import { mgraphRoutes } from '../mgraph';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { mgraphRoutes } from '../mgraph';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };
@@ -123,5 +125,36 @@ describe('mgraph graph / search / stats', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json() as { noteCount: number };
     expect(typeof body.noteCount).toBe('number');
+  });
+
+  it('GET /mgraph/search forwards a kind filter when provided', async () => {
+    // Exercises the `kind !== undefined` spread branch in searchHandler.
+    const res = await app.inject({ method: 'GET', url: '/mgraph/search?q=acme&kind=entity', headers: BEARER });
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.json())).toBe(true);
+  });
+});
+
+// ---- create/update error branches (err instanceof Error ? ... : ...) ----
+describe('mgraph notes — error mapping', () => {
+  it('POST /mgraph/notes returns 400 when createNote fails', async () => {
+    // An empty path segment after joining produces an invalid vault path that
+    // the engine rejects, exercising the catch → 400 branch.
+    const res = await app.inject({
+      method: 'POST', url: '/mgraph/notes', headers: BEARER,
+      payload: { path: '../escape', kind: 'entity', title: 't', body: 'b' },
+    });
+    expect(res.statusCode).toBe(400);
+    const body = res.json() as { error: string };
+    expect(typeof body.error).toBe('string');
+  });
+
+  it('PATCH /mgraph/notes/:path returns 400 when updating a missing note path', async () => {
+    // updateNote on a never-created path triggers the error branch.
+    const res = await app.inject({
+      method: 'PATCH', url: '/mgraph/notes/never%2Fcreated', headers: BEARER,
+      payload: { body: 'x' },
+    });
+    expect([400, 404]).toContain(res.statusCode);
   });
 });

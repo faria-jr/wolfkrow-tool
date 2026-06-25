@@ -7,10 +7,10 @@
  * ownership 404). Auth uses the real-behaving decorator (preHandler).
  */
 
+import { ChatSession, Message } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-import { ChatSession, Message } from '@wolfkrow/domain';
 
 const { sessions, messages, fakeChatSessionRepo, fakeMessageRepo } = vi.hoisted(() => {
   const sessions = new Map<string, ChatSession>();
@@ -40,8 +40,9 @@ vi.mock('../../container', () => ({
   getRepos: () => ({ chatSession: fakeChatSessionRepo, message: fakeMessageRepo }),
 }));
 
-import { chatSessionRoutes } from '../chat-sessions';
 import type { AuthFastifyInstance } from '../../types/fastify';
+import { chatSessionRoutes } from '../chat-sessions';
+
 import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };
@@ -125,6 +126,19 @@ describe('chat-session PATCH /sessions/:id — update', () => {
       method: 'PATCH', url: '/sessions/missing', headers: BEARER, payload: { title: 'y' },
     });
     expect(res.statusCode).toBe(404);
+  });
+
+  it('updates ONLY the archived flag when title is omitted (title-undefined spread)', async () => {
+    const existing = [...sessions.values()].find((s) => s.title === 'Renamed')!;
+    const res = await app.inject({
+      method: 'PATCH', url: `/sessions/${existing.id}`, headers: BEARER,
+      payload: { archived: false },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { title: string; archived: boolean };
+    // title unchanged (was 'Renamed'); only archived toggled.
+    expect(body.title).toBe('Renamed');
+    expect(body.archived).toBe(false);
   });
 });
 

@@ -140,3 +140,36 @@ describe('audit routes', () => {
     expect(repos.securityScan.listByUser).toHaveBeenCalledWith('u1', undefined);
   });
 });
+
+// ---- P1-1: runAudit failed-status branch (500) + provider fallback ----
+describe('audit routes — error mapping', () => {
+  it('returns 500 when the scan runner throws (use-case yields status "failed")', async () => {
+    // The container mock exposes securityAuditRunner.run as a vi.fn; making it
+    // reject drives RunAuditUseCase into its catch branch, which returns
+    // status: "failed" — exercising the 500 path in runAuditHandler.
+    const { getAdapters } = await import('../../container');
+    const adapters = vi.mocked(getAdapters());
+    const runnerRun = adapters.securityAuditRunner.run as ReturnType<typeof vi.fn>;
+    runnerRun.mockRejectedValueOnce(new Error('scanner exploded'));
+
+    const res = await app.inject({
+      method: 'POST', url: '/audit/run', payload: { projectPath: '/tmp/p' },
+    });
+    expect(res.statusCode).toBe(500);
+    const body = res.json() as { error: string; scanId: string };
+    expect(body.error).toBe('scanner exploded');
+    expect(body.scanId).toBe('scan-1');
+  });
+
+  it('throws when no provider config is available (resolveProvider fallback)', async () => {
+    // listAllProviders returns [] → getProviderById returns null for both the
+    // requested id and the anthropic fallback → throws 'No provider config'.
+    const { listAllProviders } = await import('../../agent-factory');
+    vi.mocked(listAllProviders).mockResolvedValueOnce([]);
+
+    const res = await app.inject({
+      method: 'POST', url: '/audit/run', payload: { projectPath: '/tmp/p' },
+    });
+    expect(res.statusCode).toBe(500);
+  });
+});

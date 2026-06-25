@@ -184,4 +184,83 @@ describe('OrchestratorService', () => {
     );
     expect(createSpy).toHaveBeenCalledWith('claude-compat:moonshot', expect.any(String));
   });
+
+  // ---- P1-5: inferProvider catalog path (mapRegistryProviderToWire branches) ----
+
+  it('P1-5: a catalogued OpenAI model infers the codex wire provider', async () => {
+    const createSpy = vi.fn().mockReturnValue(new MockProvider(['oai']));
+    await collect(
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'gpt-4o',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('codex', expect.any(String));
+  });
+
+  it('P1-5: a catalogued Ollama model infers the ollama wire provider', async () => {
+    const createSpy = vi.fn().mockReturnValue(new MockProvider());
+    await collect(
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'llama-3.2',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('ollama', expect.any(String));
+  });
+
+  it('P1-5: an OpenRouter-prefixed model infers the openrouter wire provider', async () => {
+    const createSpy = vi.fn().mockReturnValue(new MockProvider(['or']));
+    await collect(
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'or:z-ai/glm-4.7',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('openrouter', expect.any(String));
+  });
+
+  // ---- applyAgent / resolveAgentRuntime null branch ----
+
+  it('falls back to the request unchanged when agentId resolves to no agent', async () => {
+    fakeRepos.agent.findById = async () => null;
+    const createSpy = vi.fn().mockReturnValue(new MockProvider(['no agent']));
+    const chunks = await collect(
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'claude-3-5-sonnet-20241022',
+        agentId: 'missing-agent',
+      }),
+    );
+    expect(chunks.length).toBeGreaterThan(0);
+    // No explicit userId in the request → falls back to the agent's userId
+    // when one exists; with a null agent the request is used as-is.
+    expect(createSpy).toHaveBeenCalledWith('anthropic', expect.any(String));
+  });
+
+  // ---- stream() option-spread branches ----
+
+  it('forwards maxTokens, temperature, signal, and imageParts through to the provider', async () => {
+    const provider = new MockProvider(['opts']);
+    const querySpy = vi.spyOn(provider, 'query');
+    const factory: AIProviderFactory = { create: () => provider, createFromConfig: () => provider };
+    const ac = new AbortController();
+    const imageParts = [{ mimeType: 'image/png', data: 'x' }];
+    await collect(
+      new OrchestratorService({ factory }).stream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'claude-3-5-sonnet-20241022',
+        maxTokens: 128,
+        temperature: 0.5,
+        signal: ac.signal,
+        imageParts,
+      }),
+    );
+    expect(querySpy).toHaveBeenCalledTimes(1);
+    const passed = querySpy.mock.calls[0]![0] as { maxTokens?: number; temperature?: number; signal?: AbortSignal; imageParts?: typeof imageParts };
+    expect(passed.maxTokens).toBe(128);
+    expect(passed.temperature).toBe(0.5);
+    expect(passed.signal).toBe(ac.signal);
+    expect(passed.imageParts).toEqual(imageParts);
+  });
 });
