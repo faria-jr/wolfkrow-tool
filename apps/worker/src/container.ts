@@ -107,18 +107,18 @@ export function getChatWorkDir(userId: string): string {
 /**
  * build an agentic streaming port backed by ClaudeAgentProvider with the
  * permission flow wired (destructive tools → ask → requestPermission → UI).
- * `requestPermission` receives the tool_call id; the route parks it in the
- * permission-store until POST /chat/permission resolves it.
+ * `requestPermission` receives the tool_call id and the tool name; the route
+ * parks it in the permission-store until POST /chat/permission resolves it.
  */
 export function getAgenticStreamPort(opts: {
   apiKey: string;
   allowedTools: readonly string[];
-  requestPermission: (callId: string) => Promise<boolean>;
+  requestPermission: (callId: string, tool: string) => Promise<boolean>;
   workDir?: string;
 }): AIStreamPort {
   const provider = new ClaudeAgentProvider(opts.apiKey, getToolRegistry(), defaultPermissionResolver, {
     agent: { allowedTools: [...opts.allowedTools] },
-    requestPermission: (e) => opts.requestPermission(e.callId),
+    requestPermission: (e) => opts.requestPermission(e.callId, e.name),
     ...(opts.workDir !== undefined ? { workDir: opts.workDir } : {}),
   });
   return {
@@ -133,7 +133,7 @@ export function getCompatAgenticStreamPort(opts: {
   cfg: ProviderConfig;
   apiKey: string;
   allowedTools: readonly string[];
-  requestPermission: (callId: string) => Promise<boolean>;
+  requestPermission: (callId: string, tool: string) => Promise<boolean>;
   workDir?: string;
 }): AIStreamPort {
   const filteredTools = getToolRegistry().forAgent([...opts.allowedTools]);
@@ -143,7 +143,7 @@ export function getCompatAgenticStreamPort(opts: {
     toolRegistry: registry,
     permissionResolver: defaultPermissionResolver,
     agent: { allowedTools: [...opts.allowedTools] },
-    requestPermission: (e) => opts.requestPermission(e.callId),
+    requestPermission: (e) => opts.requestPermission(e.callId, e.name),
     ...(opts.workDir !== undefined ? { workDir: opts.workDir } : {}),
   });
   return {
@@ -156,7 +156,7 @@ export interface ResolveAgentStreamPortOptions {
   agentProvider: string | undefined;
   allowedTools: readonly string[];
   workDir: string;
-  requestPermission: (callId: string) => Promise<boolean>;
+  requestPermission: (callId: string, tool: string) => Promise<boolean>;
   userId?: string;
 }
 

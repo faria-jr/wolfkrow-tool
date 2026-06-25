@@ -31,7 +31,7 @@ import { getDb, runMigrations } from '@wolfkrow/infra';
 import { getScheduledTasksRepository } from '@wolfkrow/infra/repos';
 
 import { createAgentExecutor } from './agent-executor';
-import { clearAllPendingPermissions } from './chat/permission-store';
+import { clearAllPendingPermissions, loadDecisionsFromDb } from './chat/permission-store';
 import { config } from './config';
 import { getRepos } from './container';
 import { installGlobalErrorHandlers } from './error-handlers';
@@ -77,6 +77,15 @@ async function main(): Promise<void> {
  getDb();
 
  await seedAgentsForExistingUsers();
+
+ // Warm the durable permission-decision cache from the DB so a restart does
+ // NOT re-ask tools the user already approved/denied (P1-7 / Bug #3).
+ // Best-effort: a failure logs and continues (cache stays empty → re-ask).
+ try {
+  loadDecisionsFromDb();
+ } catch (err) {
+  logger.error({ err }, 'Permission decision cache load failed (non-fatal)');
+ }
 
  const repository = getScheduledTasksRepository();
  const executor = createAgentExecutor({ logger });

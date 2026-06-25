@@ -34,6 +34,8 @@ export { DrizzleTokenUsageRepo } from './token-usage-repo';
 export { DrizzleGlobalRuleRepo } from './global-rule-repo';
 export { DrizzleAuditLogRepo } from './audit-log-repo';
 export { DrizzleProviderConfigRepo } from './provider-config-repo';
+export { DrizzleToolPermissionRepo, decisionKey } from './tool-permission-repo';
+export type { ToolPermissionRow, ToolPermissionDecision } from './tool-permission-repo';
 
 import type { ISchedulerRepository } from './scheduler-repo';
 import { DrizzleSchedulerRepository } from './scheduler-repo';

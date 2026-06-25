@@ -63,7 +63,7 @@ afterAll(async () => {
 describe('chat POST /permission — resolve a pending tool-permission request', () => {
   it('resolves a pending callId and returns resolved:true', async () => {
     // Park a pending permission so resolveToolPermission finds it.
-    const pending = requestToolPermission('call-1');
+    const pending = requestToolPermission('call-1', { userId: 'u', agentId: 'a', tool: 'Bash:rm' });
     const res = await app.inject({
       method: 'POST', url: '/permission', headers: BEARER,
       payload: { callId: 'call-1', approved: true },

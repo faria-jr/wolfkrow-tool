@@ -9,7 +9,7 @@ import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
 import { CompactSessionUseCase, SendMessageUseCase } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { requestToolPermission, resolveToolPermission } from '../chat/permission-store';
+import { getDecision, requestToolPermission, resolveToolPermission } from '../chat/permission-store';
 import { getChatWorkDir, getRepos, resolveAgentStreamPort } from '../container';
 import type { Logger } from '../logger';
 import { recordChatTurn } from '../memory/lifecycle';
@@ -171,6 +171,8 @@ async function handleSendRequest(
 
  //  when the agent declares allowed tools, resolve the agentic provider
  // based on the agent's configured provider (non-Anthropic uses ClaudeCompatProvider).
+ // A prior durable decision (allow/deny) short-circuits the UI prompt so a
+ // restart does NOT re-ask tools the user already decided on (P1-7).
   if (agentId) {
     const agent = await getRepos().agent.findById(agentId);
     if (agent && agent.allowedTools.length > 0) {
@@ -178,7 +180,12 @@ async function handleSendRequest(
         agentProvider: agent.provider,
         allowedTools: agent.allowedTools,
         workDir: getChatWorkDir(userId),
-        requestPermission: (callId) => requestToolPermission(callId),
+        requestPermission: (callId, tool) => {
+          const prior = getDecision(userId, agentId, tool);
+          if (prior === 'allow') return Promise.resolve(true);
+          if (prior === 'deny') return Promise.resolve(false);
+          return requestToolPermission(callId, { userId, agentId, tool });
+        },
         userId,
       });
     }

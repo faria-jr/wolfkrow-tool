@@ -50,6 +50,13 @@
       "when": 1782312294181,
       "tag": "0006_steep_alex_power",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1782352995783,
+      "tag": "0007_natural_corsair",
+      "breakpoints": true
     }
   ]
 }
