@@ -62,6 +62,34 @@ describe('BashTool', () => {
     expect(result.output).toMatch(/allowlist/i);
   });
 
+  it('rejects shell binary "bash" (closes -c bypass of FORBIDDEN_PATTERNS)', async () => {
+    const tool = new BashTool();
+    const result = await tool.execute({ command: ['bash', '-c', 'rm -rf /important'] }, ctx);
+    expect(result.isError).toBe(true);
+    expect(result.output).toMatch(/allowlist|not in allowlist/i);
+  });
+
+  it('rejects shell binary "sh" with -c bypass', async () => {
+    const tool = new BashTool();
+    const result = await tool.execute({ command: ['sh', '-c', 'sudo chmod 777 /'] }, ctx);
+    expect(result.isError).toBe(true);
+    expect(result.output).toMatch(/allowlist|not in allowlist/i);
+  });
+
+  it('rejects shell binary "zsh" with -c bypass', async () => {
+    const tool = new BashTool();
+    const result = await tool.execute({ command: ['zsh', '-c', 'rm -rf ~'] }, ctx);
+    expect(result.isError).toBe(true);
+    expect(result.output).toMatch(/allowlist|not in allowlist/i);
+  });
+
+  it('rejects shell binary "dash"', async () => {
+    const tool = new BashTool();
+    const result = await tool.execute({ command: ['dash', '-c', 'echo hi'] }, ctx);
+    expect(result.isError).toBe(true);
+    expect(result.output).toMatch(/allowlist|not in allowlist/i);
+  });
+
   it('rejects sudo commands', async () => {
     const tool = new BashTool();
     const result = await tool.execute({ command: ['sudo', 'rm', '-rf', '/'] }, ctx);

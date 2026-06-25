@@ -15,7 +15,11 @@ const ALLOWED_BINARIES = new Set([
   'git', 'mkdir', 'rmdir', 'touch', 'cp', 'mv', 'ln',
   'tar', 'gzip', 'gunzip', 'zip', 'unzip',
   'curl', 'wget', 'jq',
-  'bash', 'sh', 'dash', 'zsh',
+  // Shells (bash/sh/dash/zsh) intentionally excluded: allowing them lets an
+  // agent run `bash -c '<arbitrary>'`, bypassing FORBIDDEN_PATTERNS (which are
+  // only matched against the top-level tokens). spawn() uses shell:false, so
+  // pipes/redirects/&& are unusable anyway except via a shell — agents must use
+  // the allowed binaries directly instead.
   'make', 'cmake', 'gcc', 'clang',
   'test', 'true', 'false',
 ]);
