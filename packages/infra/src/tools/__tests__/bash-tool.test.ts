@@ -124,8 +124,8 @@ describe('BashTool', () => {
     // Spawn mock that simulates a long-running process: only resolves on close.
     const listeners: Record<string, ((...args: unknown[]) => void) | undefined> = {};
     const kill = vi.fn((sig: string) => {
-      // when killed, emit close with a non-zero code
-      listeners['close']?.(143);
+      // when killed, emit close with a non-zero code derived from the signal
+      listeners['close']?.(sig === 'SIGTERM' ? 143 : 1);
     });
     const mock = {
       stdout: { on: vi.fn() },
