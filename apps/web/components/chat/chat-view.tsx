@@ -1,22 +1,40 @@
 'use client';
 
 import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
-import { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { VariableSizeList } from 'react-window';
 
 import type { AttachmentData } from './attachment-dropzone';
 import { AttachmentDropzone } from './attachment-dropzone';
 import { useChatSession } from './chat-hooks';
 import type { DisplayMessage } from './chat-message';
-import { ChatMessage } from './chat-message';
 import { ConfirmDialog } from './confirm-dialog';
 import { StreamIndicator } from './stream-indicator';
 
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { VoiceOrb } from '@/components/voice/voice-orb';
 import type { VoiceConversationMessage } from '@/hooks/use-voice-conversation';
 import { useVoiceConversation } from '@/hooks/use-voice-conversation';
 
+/**
+ * Lazy-loaded ChatMessage keeps react-markdown (heavy) out of the route's
+ * eager bundle. Loaded on first render of the transcript with a skeleton
+ * placeholder while the chunk resolves.
+ */
+const ChatMessage = dynamic(
+  () => import('./chat-message').then((m) => m.ChatMessage),
+  { ssr: false, loading: () => <Skeleton className="h-16 w-full" /> },
+);
+
+type RowData = { messages: DisplayMessage[] };
+
+/** Minimum row height and cap for the itemSize estimator (token-based). */
+const ROW_BASE = 64;
+const ROW_PER_CHAR = 0.25;
+const ROW_CAP = 640;
 
 function voiceMessageToDisplay(msg: VoiceConversationMessage): DisplayMessage {
   return { id: crypto.randomUUID(), role: msg.role, content: msg.text, createdAt: new Date() };
@@ -50,13 +68,80 @@ function ChatInput({ value, onChange, onSend, onStop, disabled }: ChatInputProps
   );
 }
 
-interface ChatTranscriptProps { messages: DisplayMessage[]; isStreaming: boolean; bottomRef: React.RefObject<HTMLDivElement | null>; }
-function ChatTranscript({ messages, isStreaming, bottomRef }: ChatTranscriptProps) {
-  useEffect(() => { bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' }); }, [messages, bottomRef]);
+interface ChatTranscriptProps {
+  messages: DisplayMessage[];
+  isStreaming: boolean;
+  bottomRef: React.RefObject<HTMLDivElement | null>;
+}
+
+/** Measures the scroll container height; non-zero default so tests render rows. */
+function useContainerHeight(containerRef: React.RefObject<HTMLDivElement | null>): number {
+  const [height, setHeight] = useState(600);
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setHeight(el.clientHeight || 600);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [containerRef]);
+  return height;
+}
+
+/** Estimates a row height from content length (base + per-char, capped). */
+function estimateRowHeight(message: DisplayMessage): number {
+  const chars = message.content.length;
+  const extras = (message.toolCalls?.length ?? 0) + (message.artifacts?.length ?? 0);
+  return Math.min(ROW_CAP, ROW_BASE + Math.ceil(chars * ROW_PER_CHAR) + extras * 32);
+}
+
+function itemSizeGetter(messages: DisplayMessage[]) {
+  return (index: number) => estimateRowHeight(messages[index] ?? { id: '', role: 'user', content: '', createdAt: new Date() });
+}
+
+function MessageRow({ index, style, data }: { index: number; style: React.CSSProperties; data: RowData }) {
+  const message = data.messages[index];
+  if (!message) return null;
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {messages.length === 0 && <p className="text-center text-sm text-muted-foreground mt-8">Start a conversation</p>}
-      {messages.map((msg) => <ChatMessage key={msg.id} message={msg} />)}
+    <div style={style}>
+      <ChatMessage message={message} />
+    </div>
+  );
+}
+
+function ChatTranscript({ messages, isStreaming, bottomRef }: ChatTranscriptProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<VariableSizeList | null>(null);
+  const height = useContainerHeight(containerRef);
+  const lastIndex = messages.length - 1;
+  const lastContentLen = messages[lastIndex]?.content.length ?? 0;
+
+  useEffect(() => {
+    if (lastIndex < 0) return;
+    const list = listRef.current;
+    if (!list) return;
+    list.resetAfterIndex(lastIndex);
+    list.scrollToItem(lastIndex, 'end');
+  }, [lastIndex, lastContentLen, isStreaming]);
+
+  return (
+    <div ref={containerRef} className="min-h-0 flex-1 overflow-hidden p-4">
+      {messages.length === 0 ? (
+        <p className="text-center text-sm text-muted-foreground mt-8">Start a conversation</p>
+      ) : (
+        <VariableSizeList
+          ref={listRef}
+          height={height}
+          width="100%"
+          itemCount={messages.length}
+          itemSize={itemSizeGetter(messages)}
+          itemData={{ messages }}
+          overscanCount={4}
+        >
+          {MessageRow}
+        </VariableSizeList>
+      )}
       {isStreaming && <StreamIndicator />}
       <div ref={bottomRef} />
     </div>

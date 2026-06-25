@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -75,7 +76,7 @@ function ArtifactInline({ artifact }: { artifact: ArtifactPayload }) {
 
 interface Props { message: DisplayMessage; }
 
-export function ChatMessage({ message }: Props) {
+function ChatMessageImpl({ message }: Props) {
   const isUser = message.role === 'user';
   return (
     <div data-role={message.role} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -93,3 +94,10 @@ export function ChatMessage({ message }: Props) {
     </div>
   );
 }
+
+/**
+ * Memoized so only the message whose props reference changed re-renders.
+ * Parent (chat-hooks) updates messages immutably, so unchanged messages
+ * keep stable references and skip re-render during streaming deltas.
+ */
+export const ChatMessage = memo(ChatMessageImpl);
