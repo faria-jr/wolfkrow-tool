@@ -19,6 +19,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { bootstrapDesignSession } from '../open-design/bootstrap';
 import { OpenDesignClient } from '../open-design/client';
+import { lockDesign } from '../open-design/lock';
 import { openDesignManager } from '../open-design/manager';
 import { captureDesignArtifact } from '../open-design/snapshot';
 import type { AuthFastifyInstance } from '../types/fastify';
@@ -32,6 +33,11 @@ const bootstrapBody = z.object({
 });
 
 const snapshotBody = z.object({ odProjectId: z.string().min(1).max(128) });
+
+const lockBody = z.object({
+  odProjectId: z.string().min(1).max(128),
+  outputDir: z.string().min(1).max(4096),
+});
 
 /** Returns the daemon client + web URL, or sends 409 when the engine isn't up. */
 async function resolveEngine(reply: FastifyReply): Promise<{ client: OpenDesignClient; webUrl: string } | null> {
@@ -64,6 +70,13 @@ async function snapshotHandler(req: FastifyRequest, reply: FastifyReply) {
   return captureDesignArtifact(engine.client, body.odProjectId);
 }
 
+async function lockHandler(req: FastifyRequest, reply: FastifyReply) {
+  const engine = await resolveEngine(reply);
+  if (!engine) return;
+  const body = validate(lockBody, req.body);
+  return lockDesign({ client: engine.client, odProjectId: body.odProjectId, outputDir: body.outputDir });
+}
+
 export async function openDesignRoutes(server: AuthFastifyInstance) {
   server.post('/start', async (_req, reply) => {
     openDesignManager.start();
@@ -81,4 +94,5 @@ export async function openDesignRoutes(server: AuthFastifyInstance) {
 
   server.post('/bootstrap', bootstrapHandler);
   server.post('/snapshot', snapshotHandler);
+  server.post('/lock', lockHandler);
 }
