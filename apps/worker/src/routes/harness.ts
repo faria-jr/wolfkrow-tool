@@ -105,6 +105,7 @@ async function streamSprintRun(deps: SprintRunDeps): Promise<void> {
         {
           onProgress: (event) => deps.sse({ type: 'progress', sprintId: deps.sprint.id, featureIndex: i, ...event }),
           onCoderChunk: (delta) => deps.sse({ type: 'coder-chunk', sprintId: deps.sprint.id, featureIndex: i, delta }),
+          onEvaluatorChunk: (delta) => deps.sse({ type: 'evaluator-chunk', sprintId: deps.sprint.id, featureIndex: i, delta }),
           shouldAbort: isAborted,
         },
       );

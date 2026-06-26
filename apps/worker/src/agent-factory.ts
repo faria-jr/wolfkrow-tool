@@ -96,9 +96,13 @@ async function makeCoder(config: HarnessConfig, userId?: string): Promise<CoderA
 
 async function makeEvaluator(config: HarnessConfig, userId?: string): Promise<EvaluatorAgent> {
   return {
-    async evaluate(input: { coderOutput: string; acceptanceCriteria: string[] }) {
+    async evaluate(input: { coderOutput: string; acceptanceCriteria: string[]; onChunk?: (delta: string) => void }) {
       const provider = await resolveAIProvider(config.providerId ?? ANTHROPIC_BUILTIN_ID, userId);
-      const result = await provider.complete({
+      // DEBT #29 — stream the evaluator output, forwarding deltas for live display.
+      let content = '';
+      let inputTokens = 0;
+      let outputTokens = 0;
+      for await (const chunk of provider.query({
         model: 'claude-sonnet-4-6',
         system: 'You are a QA engineer. Evaluate if the implementation meets the acceptance criteria. Respond with JSON: {passed: boolean, feedback: string}',
         messages: [{
@@ -107,13 +111,20 @@ async function makeEvaluator(config: HarnessConfig, userId?: string): Promise<Ev
         }],
         maxTokens: 1024,
         temperature: 0.1,
-      });
+      })) {
+        if (chunk.delta) {
+          content += chunk.delta;
+          input.onChunk?.(chunk.delta);
+        }
+        if (chunk.inputTokens) inputTokens = chunk.inputTokens;
+        if (chunk.outputTokens) outputTokens = chunk.outputTokens;
+      }
       try {
-        const raw = result.content.match(/\{[\s\S]*\]/)?.[0] ?? result.content;
+        const raw = content.match(/\{[\s\S]*\}/)?.[0] ?? content;
         const parsed = JSON.parse(raw) as { passed: boolean; feedback: string };
-        return { ...parsed, tokens: result.usage.inputTokens + result.usage.outputTokens };
+        return { ...parsed, tokens: inputTokens + outputTokens };
       } catch {
-        return { passed: false, feedback: result.content, tokens: result.usage.inputTokens + result.usage.outputTokens };
+        return { passed: false, feedback: content, tokens: inputTokens + outputTokens };
       }
     },
   };

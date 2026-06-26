@@ -19,6 +19,7 @@ interface FeatureState {
   status: 'pending' | 'running' | 'passed' | 'failed';
   rounds: number;
   coderText: string;
+  evaluatorText: string;
 }
 
 type RunState = 'idle' | 'running' | 'done' | 'aborted' | 'error';
@@ -27,6 +28,7 @@ interface RunResult { passed: number; total: number; }
 type SsePayload =
   | { type: 'progress'; featureIndex: number; round: number; status: string; stage?: 'coder' | 'smoke' | 'evaluator' }
   | { type: 'coder-chunk'; featureIndex: number; delta: string }
+  | { type: 'evaluator-chunk'; featureIndex: number; delta: string }
   | { type: 'feature_done'; featureIndex: number; rounds: number; passed: boolean }
   | { type: 'done'; results: Array<{ featureIndex: number; passed: boolean }> };
 
@@ -35,7 +37,7 @@ function parseSse(raw: string): SsePayload | null {
 }
 
 function initFeatures(features: Feature[]): FeatureState[] {
-  return features.map((f, i) => ({ index: i, name: f.name, currentRound: 0, stage: 'idle', status: 'pending', rounds: 0, coderText: '' }));
+  return features.map((f, i) => ({ index: i, name: f.name, currentRound: 0, stage: 'idle', status: 'pending', rounds: 0, coderText: '', evaluatorText: '' }));
 }
 
 function applyProgress(prev: FeatureState[], featureIndex: number, round: number, stage: FeatureState['stage']): FeatureState[] {
@@ -49,6 +51,13 @@ function applyCoderChunk(prev: FeatureState[], featureIndex: number, delta: stri
   const next = [...prev];
   const f = next[featureIndex];
   if (f) next[featureIndex] = { ...f, coderText: f.coderText + delta };
+  return next;
+}
+
+function applyEvaluatorChunk(prev: FeatureState[], featureIndex: number, delta: string): FeatureState[] {
+  const next = [...prev];
+  const f = next[featureIndex];
+  if (f) next[featureIndex] = { ...f, evaluatorText: f.evaluatorText + delta };
   return next;
 }
 
@@ -71,6 +80,8 @@ function processLine(
     setFeatureStates((prev) => applyProgress(prev, ev.featureIndex, ev.round, ev.stage ?? 'evaluator'));
   } else if (ev.type === 'coder-chunk') {
     setFeatureStates((prev) => applyCoderChunk(prev, ev.featureIndex, ev.delta));
+  } else if (ev.type === 'evaluator-chunk') {
+    setFeatureStates((prev) => applyEvaluatorChunk(prev, ev.featureIndex, ev.delta));
   } else if (ev.type === 'feature_done') {
     setFeatureStates((prev) => applyFeatureDone(prev, ev.featureIndex, ev.rounds, ev.passed));
   } else if (ev.type === 'done') {
@@ -173,6 +184,9 @@ function FeatureRow({ f }: { f: FeatureState }) {
       </div>
       {f.coderText && (
         <pre className="mt-2 max-h-32 overflow-auto rounded bg-muted px-2 py-1 font-mono text-xs whitespace-pre-wrap">{f.coderText}</pre>
+      )}
+      {f.evaluatorText && (
+        <pre className="mt-1 max-h-24 overflow-auto rounded bg-muted px-2 py-1 font-mono text-xs whitespace-pre-wrap">{f.evaluatorText}</pre>
       )}
     </div>
   );

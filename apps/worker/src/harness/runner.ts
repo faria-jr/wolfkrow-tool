@@ -104,6 +104,7 @@ interface CoderArgs { input: RunFeatureInput; round: number; prevFeedback: strin
 interface TickArgs extends CoderArgs {
   onProgress: ((event: ProgressEvent) => void) | undefined;
   onCoderChunk: ((delta: string) => void) | undefined;
+  onEvaluatorChunk: ((delta: string) => void) | undefined;
 }
 
 async function runCoder(args: CoderArgs, onCoderChunk?: (delta: string) => void) {
@@ -117,8 +118,11 @@ async function runCoder(args: CoderArgs, onCoderChunk?: (delta: string) => void)
   });
 }
 
-async function runEvaluator(repos: Repos, ctx: HarnessCtx, roundId: string) {
-  return new EvaluateRoundUseCase(repos.roundRepo, ctx.evaluator).execute({ roundId });
+async function runEvaluator(repos: Repos, ctx: HarnessCtx, roundId: string, onEvaluatorChunk?: (delta: string) => void) {
+  return new EvaluateRoundUseCase(repos.roundRepo, ctx.evaluator).execute({
+    roundId,
+    ...(onEvaluatorChunk !== undefined ? { onEvaluatorChunk } : {}),
+  });
 }
 
 interface TickResult { result: FeatureRunResult | null; nextFeedback: string | undefined; }
@@ -130,7 +134,7 @@ async function tickRound(args: TickArgs): Promise<TickResult> {
     args.onProgress?.({ round: args.round + 1, status: 'failed', stage: 'smoke' });
     return { result: makeResult({ input: args.input, rounds: args.round + 1, passed: false, finalOutput: undefined, smokeFeedback: smoke.feedback }), nextFeedback: smoke.feedback };
   }
-  const evalOut = await runEvaluator(args.repos, args.ctx, coderOut.round.id);
+  const evalOut = await runEvaluator(args.repos, args.ctx, coderOut.round.id, args.onEvaluatorChunk);
   args.onProgress?.({ round: args.round + 1, status: evalOut.passed ? 'passed' : 'failed', stage: 'evaluator' });
   if (evalOut.passed) {
     const output = evalOut.round.coderOutput ?? undefined;
@@ -144,6 +148,8 @@ export interface RunHarnessHooks {
   onProgress?: (event: ProgressEvent) => void;
   /** DEBT #29 — streamed coder text deltas (live output). */
   onCoderChunk?: (delta: string) => void;
+  /** DEBT #29 — streamed evaluator text deltas (live output). */
+  onEvaluatorChunk?: (delta: string) => void;
   /** DEBT #29 — return true to stop the coder/evaluator loop early (abort). */
   shouldAbort?: () => boolean;
 }
@@ -154,14 +160,14 @@ export async function runHarnessFeature(
   ctx: HarnessCtx,
   hooks: RunHarnessHooks = {},
 ): Promise<FeatureRunResult> {
-  const { onProgress, onCoderChunk, shouldAbort } = hooks;
+  const { onProgress, onCoderChunk, onEvaluatorChunk, shouldAbort } = hooks;
   let prevFeedback: string | undefined;
   for (let round = 0; round < input.maxRounds; round++) {
     // DEBT #29 — stop the coder/evaluator loop early when the run is aborted.
     if (shouldAbort?.()) {
       return makeResult({ input, rounds: round, passed: false, finalOutput: undefined, smokeFeedback: undefined });
     }
-    const { result, nextFeedback } = await tickRound({ input, round, prevFeedback, repos, ctx, onProgress, onCoderChunk });
+    const { result, nextFeedback } = await tickRound({ input, round, prevFeedback, repos, ctx, onProgress, onCoderChunk, onEvaluatorChunk });
     if (result?.passed) return result;
     prevFeedback = nextFeedback;
   }
