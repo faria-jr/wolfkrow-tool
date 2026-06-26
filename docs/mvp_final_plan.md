@@ -2651,7 +2651,7 @@ const currentStatus = statusPriority.find(s => statuses.includes(s));
 
 ---
 
-### Tarefa 2.8 — Cadastro de Projetos Dedicado (Entity Project) [MiniMax 4.4.9 / 6.1]
+### Tarefa 2.2 — Cadastro de Projetos Dedicado (Entity Project) [MiniMax 4.4.9 / 6.1]
 
 **Arquivos afetados:**
 - Novo: `packages/infra/src/db/schema/projects.ts`
@@ -2736,7 +2736,7 @@ export const harnessProjects = sqliteTable('harness_projects', {
 
 ---
 
-### Tarefa 2.9 — Telegram: QR Pairing + Múltiplas Sessões [MiniMax 6.2 / GAP-040]
+### Tarefa 2.3 — Telegram: QR Pairing + Múltiplas Sessões [MiniMax 6.2 / GAP-040]
 
 **Arquivos afetados:**
 - `apps/worker/src/routes/telegram.ts`
@@ -2800,7 +2800,7 @@ server.post('/telegram/pair/confirm', async (request) => {
 
 ---
 
-### Tarefa 2.10 — Harness 4 Abas: Projects / Sprints / Execution / Metrics [Kimi 3.1]
+### Tarefa 2.4 — Harness 4 Abas: Projects / Sprints / Execution / Metrics [Kimi 3.1]
 
 **Arquivos afetados:**
 - `apps/web/components/harness/harness-view.tsx` (refatorar)
@@ -2849,7 +2849,7 @@ server.post('/telegram/pair/confirm', async (request) => {
 
 ---
 
-### Tarefa 2.11 — Harness: Carregar Design Lock como Input [Kimi 3.4]
+### Tarefa 2.5 — Harness: Carregar Design Lock como Input [Kimi 3.4]
 
 **Arquivos afetados:**
 - `apps/web/components/harness/harness-create-form.tsx`
@@ -2897,7 +2897,7 @@ if (project.designContractPath) {
 
 ---
 
-### Tarefa 2.12 — Pipeline Layout 3 Colunas Detalhado [GAP-040]
+### Tarefa 2.6 — Pipeline Layout 3 Colunas Detalhado [GAP-040]
 
 **Arquivos afetados:**
 - `apps/web/components/pipeline/pipeline-view.tsx` (refatorar)
@@ -2961,7 +2961,7 @@ if (project.designContractPath) {
 
 ---
 
-### Tarefa 2.13 — Grafo de Dependências entre Fases do Plano [MiniMax 1.3]
+### Tarefa 2.7 — Grafo de Dependências entre Fases do Plano [MiniMax 1.3]
 
 **Arquivos afetados:**
 - Adicionar diagrama mermaid no documento `mvp_final_plan.md`
@@ -2993,7 +2993,7 @@ graph LR
 
 ---
 
-### Tarefa 2.2 — Pipeline: Campo de Project Path + Conceito Unificado [E02]
+### Tarefa 2.8 — Pipeline: Campo de Project Path + Conceito Unificado [E02]
 
 **Arquivos afetados:**
 - `apps/web/components/pipeline/pipeline-view.tsx`
@@ -3049,7 +3049,7 @@ const result = await executeSprint({ workDir, /*...*/ });
 
 ---
 
-### Tarefa 2.3 — Métricas Conforme LionClaw [E03, E06]
+### Tarefa 2.9 — Métricas Conforme LionClaw [E03, E06]
 
 **Arquivos afetados:**
 - `apps/web/components/dashboard/dashboard-view.tsx`
@@ -3204,7 +3204,7 @@ const result = await executeSprint({ workDir, /*...*/ });
 
 ---
 
-### Tarefa 2.4 — Tipos de Pipeline + 14-17 Fases [E04, E05]
+### Tarefa 2.10 — Tipos de Pipeline + 14-17 Fases [E04, E05]
 
 **Arquivos afetados:**
 - `packages/domain/src/entities/pipeline-project.ts`
@@ -3329,7 +3329,7 @@ export const PIPELINE_TEMPLATES: Record<PipelineType, PipelinePhaseDefinition[]>
 
 ---
 
-### Tarefa 2.5 — Document Preview no Pipeline [E07]
+### Tarefa 2.11 — Document Preview no Pipeline [E07]
 
 **Arquivos afetados:**
 - Novo: `apps/web/components/pipeline/document-preview.tsx`
@@ -3375,7 +3375,7 @@ interface DocumentPreviewProps {
 
 ---
 
-### Tarefa 2.6 — Reset de Fases/Sprints [E08]
+### Tarefa 2.12 — Reset de Fases/Sprints [E08]
 
 **Arquivos afetados:**
 - `apps/web/components/pipeline/pipeline-view.tsx`
@@ -3424,7 +3424,7 @@ server.post<{ Params: { id: string; phaseId: string } }>(
 
 ---
 
-### Tarefa 2.7 — MCP Tools List Expandable [E10]
+### Tarefa 2.13 — MCP Tools List Expandable [E10]
 
 **Arquivos afetados:**
 - `apps/worker/src/routes/mcp-servers.ts`
@@ -4001,12 +4001,1223 @@ export async function runDesignLock(phase: PipelinePhase) {
 
 ---
 
-### Tarefa 4.3 — Validação End-to-End [D03]
+### Tarefa 4.3 — Worker: Manager (start/stop/restart/health/status) [D04 — Paridade LionClaw]
+
+**Arquivos afetados:**
+- Novo: `apps/worker/src/open-design/manager.ts` (~580 LOC equivalente)
+- Novo: `apps/worker/src/open-design/paths.ts` (~50 LOC)
+- Novo: `apps/worker/src/open-design/webview.ts` (~125 LOC)
+- Novo: `apps/worker/src/open-design/pnpm-runner.ts` (~280 LOC)
+- Novo: `apps/worker/src/open-design/boot-installer.ts` (~250 LOC)
+- Novo: `apps/worker/src/open-design/installer.ts` (~70 LOC)
+
+**Problema:** O LionClaw tem um manager completo que controla ciclo de vida do sidecar (start/stop/restart/health), cleanup de daemon órfão, one-at-a-time policy, e processo groups POSIX. O plano consolidado só menciona "5 estados" do Phase4Container.
+
+**Implementação:**
+
+**Passo 1 — `paths.ts` (resolve vendor root + data dir):**
+
+```typescript
+// apps/worker/src/open-design/paths.ts
+import path from 'path';
+
+let cachedRoot: string | null = null;
+let cachedDataDir: string | null = null;
+
+export function resolveOpenDesignRoot(): string {
+  if (cachedRoot) return cachedRoot;
+  // Vendor reside em apps/worker/vendor/open-design
+  cachedRoot = path.join(process.cwd(), 'apps/worker/vendor/open-design');
+  return cachedRoot;
+}
+
+export function resolveOpenDesignGlobalDataDir(): string {
+  if (cachedDataDir) return cachedDataDir;
+  cachedDataDir = path.join(process.env.WOLFKROW_DATA_DIR ?? `${process.cwd()}/.wolfkrow`, 'open-design/runtime/.od');
+  fs.mkdirSync(cachedDataDir, { recursive: true });
+  return cachedDataDir;
+}
+
+export function resolveInstallSentinelPath(): string {
+  return path.join(resolveOpenDesignGlobalDataDir(), '..', '.install', 'wolfkrow-install-ok');
+}
+```
+
+**Passo 2 — `manager.ts` (ciclo de vida do sidecar):**
+
+```typescript
+// apps/worker/src/open-design/manager.ts
+export interface SidecarHandle {
+  projectId: string;
+  runId: string;
+  daemonPort: number;
+  webPort: number;
+  daemonUrl: string;
+  webUrl: string;
+  process: ChildProcess;
+  logStream: fs.WriteStream;
+}
+
+let active: SidecarHandle | null = null;
+
+export async function start(
+  projectId: string
+): Promise<{ ok: true; daemonUrl: string; webUrl: string } | { error: string }> {
+  const cfg = getOpenDesignConfig(projectId);
+  if (!cfg) return { error: 'Open Design config not found for project' };
+
+  try {
+    await ensurePnpm();
+  } catch (err) {
+    return { error: `pnpm-runner indisponível: ${err}` };
+  }
+
+  // One-at-a-time: stop se outro projeto está ativo
+  if (active && active.projectId !== projectId) {
+    await stopHandle(active, 'replaced by new project');
+    active = null;
+  } else if (active && active.projectId === projectId) {
+    const alive = await waitForHealth(active.daemonUrl, 2, 200);
+    if (alive) return { ok: true, daemonUrl: active.daemonUrl, webUrl: active.webUrl };
+    await stopHandle(active, 'unhealthy, restarting');
+    active = null;
+  }
+
+  // Cleanup daemon órfão
+  await cleanupOrphanDaemon();
+
+  const daemonPort = await allocateFreePort();
+  const webPort = await allocateFreePort();
+  const daemonUrl = `http://127.0.0.1:${daemonPort}`;
+  const webUrl = `http://127.0.0.1:${webPort}`;
+  const logsDir = path.join(cfg.runDir, 'open-design/runtime/logs');
+  fs.mkdirSync(logsDir, { recursive: true });
+
+  const logPath = path.join(logsDir, `sidecar-${Date.now()}.log`);
+  const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+
+  // Process groups POSIX para matar arvore inteira
+  const proc = spawnPnpm(
+    ['tools-dev', 'run', 'web', '--daemon-port', String(daemonPort), '--web-port', String(webPort)],
+    {
+      cwd: resolveOpenDesignRoot(),
+      env: buildSidecarRuntimeEnv(),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      detached: process.platform !== 'win32',
+    }
+  );
+
+  proc.stdout?.pipe(logStream);
+  proc.stderr?.pipe(logStream);
+
+  // Health checks (60 attempts x 500ms = 30s)
+  const daemonHealthy = await waitForHealth(daemonUrl, 60, 500);
+  if (!daemonHealthy) {
+    await stopHandle({ projectId, runId: cfg.runId, process: proc, logStream, daemonPort, webPort, daemonUrl, webUrl }, 'failed health');
+    return { error: 'Open Design daemon did not become healthy in time' };
+  }
+
+  const webHealthy = await waitForWebReady(webUrl, 60, 500);
+  if (!webHealthy) {
+    await stopHandle({ ... }, 'failed web readiness');
+    return { error: 'web UI timeout' };
+  }
+
+  active = { projectId, runId: cfg.runId, daemonPort, webPort, daemonUrl, webUrl, process: proc, logStream };
+  setOpenDesignConfig(projectId, { daemonUrl, webUrl, dataDir: resolveOpenDesignGlobalDataDir() });
+
+  return { ok: true, daemonUrl, webUrl };
+}
+
+export async function stop(projectId: string): Promise<{ ok: true } | { error: string }> {
+  if (!active || active.projectId !== projectId) return { error: 'No active sidecar' };
+  await stopHandle(active, 'explicit stop');
+  active = null;
+  return { ok: true };
+}
+
+export async function restart(projectId: string): Promise<{ ok: true; daemonUrl: string; webUrl: string } | { error: string }> {
+  if (active && active.projectId === projectId) {
+    await stopHandle(active, 'restart');
+    active = null;
+  }
+  return start(projectId);
+}
+
+export function status(projectId: string) {
+  if (!active || active.projectId !== projectId) {
+    return { running: false, daemonUrl: null, webUrl: null, daemonPort: null, webPort: null };
+  }
+  return { running: true, daemonUrl: active.daemonUrl, webUrl: active.webUrl, daemonPort: active.daemonPort, webPort: active.webPort };
+}
+
+export async function health(projectId: string): Promise<{ ok: boolean; reason?: string }> {
+  if (!active || active.projectId !== projectId) return { ok: false, reason: 'No sidecar running' };
+  const alive = await waitForHealth(active.daemonUrl, 2, 200);
+  return alive ? { ok: true } : { ok: false, reason: 'Daemon not responding' };
+}
+
+export async function stopAll(): Promise<void> {
+  if (!active) return;
+  const h = active;
+  active = null;
+  await stopHandle(h, 'app quit');
+}
+
+// Helpers privados
+async function stopHandle(handle: SidecarHandle, reason: string): Promise<void> {
+  handle.logStream?.end();
+  return new Promise(resolve => {
+    const proc = handle.process;
+    if (proc.exitCode !== null) { resolve(); return; }
+    const killTimer = setTimeout(() => {
+      killProcessTree(proc.pid, 'SIGKILL');
+      resolve();
+    }, 3000);
+    proc.once('exit', () => { clearTimeout(killTimer); resolve(); });
+    killProcessTree(proc.pid, 'SIGTERM');
+  });
+}
+
+async function waitForHealth(url: string, attempts = 60, delayMs = 500): Promise<boolean> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const r = await fetch(`${url}/api/health`);
+      if (r.ok) return true;
+    } catch { /* ignore */ }
+    await new Promise(r => setTimeout(r, delayMs));
+  }
+  return false;
+}
+
+async function waitForWebReady(webUrl: string, attempts = 60, delayMs = 500): Promise<boolean> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const r = await fetch(webUrl);
+      if (r.ok) return true;
+    } catch { /* ignore */ }
+    await new Promise(r => setTimeout(r, delayMs));
+  }
+  return false;
+}
+
+async function cleanupOrphanDaemon(): Promise<void> {
+  // 1. tools-dev stop (best-effort)
+  // 2. lsof /tmp/open-design → kill process group
+  // 3. Remove IPC sockets stale
+  // 4. Limpa stamps preservando logs
+  // (ver LionClaw manager.ts linhas 110-220 para implementação completa)
+}
+```
+
+**Passo 3 — `pnpm-runner.ts` (cascata pnpm > corepack > npx):**
+
+```typescript
+// apps/worker/src/open-design/pnpm-runner.ts
+import { spawn } from 'child_process';
+
+interface PnpmInvocation {
+  bin: string;
+  prefixArgs: string[];
+  source: 'pnpm' | 'corepack' | 'npx';
+}
+
+let cached: PnpmInvocation | null = null;
+
+export async function ensurePnpm(): Promise<PnpmInvocation> {
+  if (cached) return cached;
+  // 1. Tenta pnpm direto
+  // 2. Fallback corepack
+  // 3. Fallback npx
+  // Cacheia resultado
+  cached = await detectPnpm();
+  if (!cached) throw new Error('pnpm not available via pnpm, corepack or npx');
+  return cached;
+}
+
+export function getCachedPnpm(): PnpmInvocation | null {
+  return cached;
+}
+
+async function detectPnpm(): Promise<PnpmInvocation | null> {
+  // tentar pnpm → corepack → npx
+}
+```
+
+**Passo 4 — `boot-installer.ts` (sentinela de install):**
+
+```typescript
+// apps/worker/src/open-design/boot-installer.ts
+export type BootInstallStatus =
+  | { kind: 'idle' }
+  | { kind: 'installing'; runner: 'pnpm' | 'corepack' | 'npx'; startedAt: string }
+  | { kind: 'ready'; finishedAt: string }
+  | { kind: 'failed'; error: string; failedAt: string };
+
+export async function ensureBootInstalled(): Promise<BootInstallStatus> {
+  const sentinel = resolveInstallSentinelPath();
+  if (fs.existsSync(sentinel)) return { kind: 'ready', finishedAt: fs.statSync(sentinel).mtime.toISOString() };
+
+  const invocation = await ensurePnpm();
+  // Run `pnpm install` no vendor root
+  // Escreve sentinela em sucesso
+  // Retorna status apropriado
+}
+```
+
+**Passo 5 — `webview.ts` (WebContentsView com partition persistente):**
+
+> **NOTA IMPORTANTE:** O Wolfkrow é Next.js (web), não Electron. O `WebContentsView` é específico do Electron. Precisamos adaptar para iframe sandboxed com cookie persistence via Service Worker, OU empacotar o worker em Electron no futuro.
+
+**Adaptação para Next.js:**
+
+```typescript
+// apps/web/components/open-design/OpenDesignShell.tsx
+'use client';
+
+interface OpenDesignShellProps {
+  webUrl: string;
+  sidecarStatus: SidecarStatus | null;
+}
+
+export function OpenDesignShell({ webUrl, sidecarStatus }: OpenDesignShellProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [bounds, setBounds] = useState<ViewBounds | null>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const update = () => {
+      const rect = containerRef.current!.getBoundingClientRect();
+      setBounds({ x: rect.left, y: rect.top, width: rect.width, height: rect.height });
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  return (
+    <div ref={containerRef} className="flex-1 relative overflow-hidden">
+      {sidecarStatus?.running ? (
+        <iframe
+          src={webUrl}
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+          className="absolute inset-0 w-full h-full"
+          // Service Worker persiste cookies OAuth entre cold starts
+        />
+      ) : (
+        <LoadingState message="Aguardando sidecar Open Design..." />
+      )}
+    </div>
+  );
+}
+```
 
 **Critérios de aceitação:**
-- [ ] Criar/lock de design produz `design-contract.json` + `design-brief.md` + snapshot
-- [ ] Próxima fase (tech_database) só executa após design_lock
-- [ ] Snapshot é imutável após lock
+- [ ] Manager start/stop/restart/health/status funcional
+- [ ] One-at-a-time policy: apenas 1 sidecar ativo
+- [ ] Cleanup daemon órfão (lsof, tools-dev stop)
+- [ ] Process groups POSIX (`detached: true` + `kill(-pid)`)
+- [ ] Cascata pnpm > corepack > npx com cache
+- [ ] Sentinela de install (`<userData>/open-design/runtime/.install/wolfkrow-install-ok`)
+- [ ] iframe sandboxed com cookie persistence via Service Worker (adaptação Wolfkrow)
+- [ ] Health checks com retry 60x500ms
+
+---
+
+### Tarefa 4.4 — Worker: Bootstrap 10 Estágios + Progress Events [D05]
+
+**Arquivos afetados:**
+- Novo: `apps/worker/src/open-design/bootstrap.ts` (~1059 LOC)
+- Novo: `apps/worker/src/open-design/session-config.ts` (~160 LOC)
+- Novo: `apps/worker/src/open-design/prompt-builder.ts` (~235 LOC)
+
+**Problema:** O LionClaw tem bootstrap em 10 estágios com progress events idempotente. Plano consolidado só cita "5 estados" do UI.
+
+**Implementação (resumo):**
+
+```typescript
+// apps/worker/src/open-design/bootstrap.ts
+export type OpenDesignBootstrapStage =
+  | 'run-dir'
+  | 'design-briefing'
+  | 'design-briefing-validator'
+  | 'sidecar'
+  | 'od-config'
+  | 'od-project'
+  | 'conversation'
+  | 'prompt'
+  | 'prompt-injection'
+  | 'prompt-verification'
+  | 'studio';
+
+export interface OpenDesignBootstrapProgressEvent {
+  projectId: string;
+  stage: OpenDesignBootstrapStage;
+  status: 'pending' | 'running' | 'done' | 'warning' | 'error';
+  label: string;
+  detail?: string;
+  at: string;
+}
+
+export async function ensureSession(projectId: string): Promise<BootstrapResult> {
+  // IDEMPOTENTE: reentrada após bootstrap completo retorna do DB
+  // sem chamar API do OD novamente.
+  const cfg = getOpenDesignConfig(projectId);
+  if (cfg?.bootstrappedAt && cfg.openDesignProjectId && cfg.conversationId) {
+    return reconstructBootstrapResult(cfg);
+  }
+
+  // 1. run-dir
+  emitEvent('run-dir', 'running', 'Resolvendo diretório do run');
+  const runDir = resolveRunDir(projectId);
+  emitEvent('run-dir', 'done');
+
+  // 2. design-briefing (agent gera brief)
+  emitEvent('design-briefing', 'running', 'Gerando briefing inicial');
+  const brief = await generateBrief(projectId);
+  emitEvent('design-briefing', 'done');
+
+  // 3. design-briefing-validator
+  emitEvent('design-briefing-validator', 'running', 'Validando briefing');
+  await validateBrief(brief);
+  emitEvent('design-briefing-validator', 'done');
+
+  // 4. sidecar (start)
+  emitEvent('sidecar', 'running', 'Iniciando sidecar OD');
+  const start = await manager.start(projectId);
+  if (!start.ok) throw new Error(start.error);
+  emitEvent('sidecar', 'done');
+
+  // 5. od-config
+  emitEvent('od-config', 'running', 'Configurando OD global');
+  // ...
+
+  // 6. od-project (POST /api/projects)
+  emitEvent('od-project', 'running', 'Criando projeto no OD');
+  const odProject = await adapter.createProject({...});
+  emitEvent('od-project', 'done');
+
+  // 7. conversation (POST /api/projects/:id/conversations)
+  emitEvent('conversation', 'running', 'Criando conversa');
+  const conv = await adapter.createConversation(odProject.id);
+  emitEvent('conversation', 'done');
+
+  // 8. prompt (montar)
+  emitEvent('prompt', 'running', 'Montando prompt inicial');
+  const prompt = buildPrompt({ projectName, discoveryContent, storiesContent });
+  emitEvent('prompt', 'done');
+
+  // 9. prompt-injection (PUT user message)
+  emitEvent('prompt-injection', 'running', 'Injetando prompt no OD');
+  await adapter.putUserMessage(odProject.id, conv.id, prompt);
+  emitEvent('prompt-injection', 'done');
+
+  // 10. prompt-verification (verificar injeção)
+  emitEvent('prompt-verification', 'running', 'Verificando injeção');
+  const verified = await adapter.getMessages(odProject.id, conv.id);
+  if (!verified) throw new Error('Prompt injection failed');
+  emitEvent('prompt-verification', 'done');
+
+  // 11. studio (pronto para usar)
+  emitEvent('studio', 'done', 'Studio pronto');
+
+  // Persistir no config
+  const initialPromptHash = sha256(prompt);
+  setOpenDesignConfig(projectId, {
+    openDesignProjectId: odProject.id,
+    conversationId: conv.id,
+    webUrl: start.webUrl,
+    initialPromptHash,
+    initialPromptSentAt: new Date().toISOString(),
+    bootstrappedAt: new Date().toISOString(),
+    sessionConfigHash: sha256(JSON.stringify(sessionConfig)),
+  });
+
+  return {
+    openDesignProjectId: odProject.id,
+    conversationId: conv.id,
+    webUrl: start.webUrl,
+    initialPromptHash,
+    initialPromptSentAt: new Date().toISOString(),
+    bootstrappedAt: new Date().toISOString(),
+  };
+}
+```
+
+**Critérios de aceitação:**
+- [ ] 10 estágios emitindo progress events
+- [ ] Idempotente: reentrada após completo retorna do DB
+- [ ] `sessionConfigHash` detecta mudança de config → re-bootstrap
+- [ ] Cada estágio tem `status: pending | running | done | warning | error`
+
+---
+
+### Tarefa 4.5 — Worker: Lock com 13 Regras de Validação [D06 — CRÍTICO]
+
+**Arquivos afetados:**
+- Novo: `apps/worker/src/open-design/lock.ts` (~325 LOC)
+- Novo: `apps/worker/src/open-design/validator.ts` (~695 LOC)
+- Novo: `apps/worker/src/open-design/contract.ts` (~70 LOC)
+- Novo: `apps/worker/src/open-design/snapshot.ts` (~270 LOC)
+- Novo: `apps/worker/src/open-design/brief-builder.ts` (~135 LOC)
+- Novo: `apps/worker/src/open-design/auto-correct.ts` (~127 LOC)
+- Novo: `apps/worker/src/open-design/escape-hatch.ts` (~220 LOC)
+- Novo: `apps/worker/src/open-design/auto-correct.ts` (~127 LOC)
+- Novo: `apps/worker/src/open-design/full-wipe.ts` (~110 LOC)
+
+**Problema:** O plano consolidado cita apenas 3 outputs do lock (`contract.json` + `brief.md` + snapshot). LionClaw tem **5 outputs canônicos** + **13 regras de validação** + **8 DENY_LIST_ITEMS** + **auto-correct**.
+
+**Implementação (resumo):**
+
+**13 Regras (10.2.1-13):**
+
+```typescript
+// apps/worker/src/open-design/validator.ts
+export type LockRuleId = '10.2.1' | '10.2.2' | '10.2.3' | '10.2.4' | '10.2.5' | '10.2.6'
+                     | '10.2.7' | '10.2.8' | '10.2.9' | '10.2.10' | '10.2.11' | '10.2.12' | '10.2.13';
+
+const DENY_LIST_ITEMS = [
+  'novo menu', 'nova tela', 'novo fluxo', 'nova entidade de dados',
+  'nova permissao', 'novo requisito', 'mudanca de navegacao principal',
+  'remocao de tela necessaria para uma user story aprovada',
+] as const;
+
+export async function validateLock(projectId: string): Promise<LockValidationResult> {
+  const problems: LockProblem[] = [];
+
+  // 10.2.1: HTML do snapshot deve existir
+  if (!fs.existsSync(htmlPath)) {
+    problems.push({ rule: '10.2.1', item: htmlPath, hint: 'Execute "Ver Snapshot" antes de travar' });
+  }
+
+  // 10.2.2: DesignContract válido (com issues detalhados)
+  const contract = await extractContractFromHtml(htmlPath);
+  if (!contract) {
+    const issues = getLastContractIssues(htmlPath);
+    issues.forEach(issue => problems.push({ rule: '10.2.2', item: htmlPath, hint: issue }));
+  } else {
+    const normalized = normalizeContract(contract);
+
+    // 10.2.3: telas sem userStoryIds (DENY: "nova tela")
+    normalized.screens.forEach(screen => {
+      if (!screen.userStoryIds?.length) {
+        problems.push({ rule: '10.2.3', item: `Tela "${screen.title}"`, hint: denyMsg('nova tela') });
+      }
+    });
+
+    // 10.2.4: menu/navegação sem userStoryIds (DENY: "novo menu")
+    [...normalized.navigation.primary, ...(normalized.navigation.secondary ?? [])].forEach(nav => {
+      if (!nav.userStoryIds?.length) {
+        problems.push({ rule: '10.2.4', item: `Menu "${nav.label}"`, hint: denyMsg('novo menu') });
+      }
+    });
+
+    // 10.2.5: actions principais (submit/navigate/filter) sem userStoryIds
+    normalized.screens.forEach(screen => {
+      screen.actions?.forEach(action => {
+        const isPrimary = ['submit', 'navigate', 'filter'].includes(action.type);
+        if (isPrimary && !action.userStoryIds?.length) {
+          problems.push({ rule: '10.2.5', item: `Action "${action.label}"`, hint: denyMsg('novo fluxo') });
+        }
+      });
+    });
+
+    // 10.2.6: deltas com requiresRequirementsChange=true
+    normalized.deltas?.forEach(delta => {
+      if (delta.requiresRequirementsChange) {
+        problems.push({ rule: '10.2.6', item: `Delta ${delta.id}`, hint: denyMsg('novo requisito') });
+      }
+    });
+
+    // 10.2.7: deltas new-screen/new-feature sem story link
+    normalized.deltas?.forEach(delta => {
+      if (['new-screen', 'new-feature'].includes(delta.type) && !delta.relatedUserStoryIds?.length) {
+        problems.push({ rule: '10.2.7', item: `Delta ${delta.id}`, hint: denyMsg(delta.type === 'new-screen' ? 'nova tela' : 'novo fluxo') });
+      }
+    });
+
+    // 10.2.8: dataRequirement sem story link
+    normalized.dataRequirements?.forEach(dr => {
+      if (!dr.userStoryIds?.length) {
+        problems.push({ rule: '10.2.8', item: `DataReq ${dr.name}`, hint: denyMsg('nova entidade de dados') });
+      }
+    });
+
+    // 10.2.9-13: outras regras (outras consistências)
+  }
+
+  const reportPath = resolveDesignSnapshotPaths(projectPath, pipelineDocsId)?.lockReportPath;
+  if (reportPath) writeReport(reportPath, problems);
+
+  return { ok: problems.length === 0, problems };
+}
+```
+
+**5 Outputs Canônicos (em `<projectPath>/docs/Docs<docsId>/design/`):**
+
+```typescript
+// apps/worker/src/open-design/lock.ts
+export async function lock(projectId: string): Promise<LockResult | LockRejected | { error: string }> {
+  const cfg = getOpenDesignConfig(projectId);
+  if (!cfg?.runDir) return { error: 'runDir not configured' };
+
+  const project = getHarnessProject(projectId);
+  const designPaths = project?.projectPath
+    ? resolveDesignSnapshotPaths(project.projectPath, project.pipelineDocsId ?? null)
+    : null;
+
+  if (!designPaths) return { error: 'Cannot resolve design snapshot paths' };
+
+  // 1. Para o sidecar (mas não destrói view)
+  await stop(projectId);
+
+  // 2. Captura snapshot
+  const snapshot = await captureSnapshot(projectId, designPaths);
+
+  // 3. Extrai contract
+  const contract = await extractContractFromHtml(designPaths.artifactHtmlPath);
+  if (!contract) {
+    const issues = getLastContractIssues(designPaths.artifactHtmlPath);
+    await manager.start(projectId); // restart
+    return { ok: false, reportPath: designPaths.lockReportPath, lockReportPath: designPaths.lockReportPath, report: { ok: false, problems: issues.map(i => ({ rule: '10.2.2', item: 'contract', hint: i })) } };
+  }
+
+  // 4. Valida
+  const validation = await validateLock(projectId);
+  if (!validation.ok) {
+    // AUTO-CORRECT: regenera HTML via agente
+    const { runId } = await requestAgentCorrection(projectId, validation, 1);
+    await adapter.waitForRunComplete(runId);
+    // Retry lock
+    return lock(projectId);
+  }
+
+  // 5. Persiste artefatos
+  const brief = buildBrief(contract);
+  fs.writeFileSync(designPaths.briefPath, brief);
+  fs.writeFileSync(designPaths.contractPath, JSON.stringify(contract, null, 2));
+  fs.writeFileSync(designPaths.manifestPath, JSON.stringify(snapshot.manifest, null, 2));
+  fs.writeFileSync(designPaths.lockReportPath, generateReport(validation));
+
+  // 6. Marca como locked
+  setOpenDesignConfig(projectId, {
+    locked: true,
+    lockedAt: new Date().toISOString(),
+    snapshotDir: designPaths.snapshotDir,
+    manifestPath: designPaths.manifestPath,
+    contractPath: designPaths.contractPath,
+    artifactHtmlPath: designPaths.artifactHtmlPath,
+    briefPath: designPaths.briefPath,
+    lockReportPath: designPaths.lockReportPath,
+  });
+
+  return {
+    ok: true,
+    snapshotDir: designPaths.snapshotDir,
+    manifestPath: designPaths.manifestPath,
+    contractPath: designPaths.contractPath,
+    briefPath: designPaths.briefPath,
+    lockReportPath: designPaths.lockReportPath,
+    reportPath: designPaths.lockReportPath,
+    artifactHtmlPath: designPaths.artifactHtmlPath,
+    lockedAt: new Date().toISOString(),
+  };
+}
+```
+
+**Snapshot dir canônico:**
+
+```typescript
+// apps/worker/src/open-design/paths.ts (helper)
+export function resolveDesignSnapshotPaths(
+  projectPath: string,
+  pipelineDocsId: string | null,
+): DesignSnapshotPaths | null {
+  if (!pipelineDocsId) return null;
+  const ctx = getPipelineDocsContext(projectPath, pipelineDocsId);
+  if (!ctx) return null;
+  const snapshotDir = path.join(ctx.docsDir, 'design');  // <projectPath>/docs/Docs<id>/design/
+  fs.mkdirSync(snapshotDir, { recursive: true });
+  return {
+    snapshotDir,
+    artifactHtmlPath: path.join(snapshotDir, 'artifact.html'),
+    contractPath: path.join(snapshotDir, 'design-contract.json'),
+    briefPath: path.join(snapshotDir, 'design-brief.md'),
+    manifestPath: path.join(snapshotDir, 'manifest.json'),
+    lockReportPath: path.join(snapshotDir, 'design-lock-report.md'),
+  };
+}
+```
+
+**Auto-correct (regenera HTML via agente):**
+
+```typescript
+// apps/worker/src/open-design/auto-correct.ts
+export async function requestAgentCorrection(
+  projectId: string,
+  validation: LockValidationResult,
+  attempt: number,
+): Promise<{ runId: string }> {
+  // Manda mensagem cirúrgica ao agente do OD com lista de problemas
+  const problemsList = validation.problems.map((p, i) => `${i + 1}. ${p.hint}`).join('\n');
+  const prompt = `[Wolfkrow — auto-correção do Design Lock, tentativa ${attempt}]\n\nO Design Lock recusou o HTML atual. Lista EXATA do que precisa ser ajustado:\n${problemsList}`;
+  return adapter.startInitialRun({ prompt });
+}
+```
+
+**Critérios de aceitação:**
+- [ ] 5 outputs canônicos: `artifact.html`, `design-contract.json`, `design-brief.md`, `manifest.json`, `design-lock-report.md`
+- [ ] Snapshot em `<projectPath>/docs/Docs<id>/design/` (NÃO `docs/design/`)
+- [ ] 13 regras de validação (10.2.1-13) implementadas
+- [ ] 8 DENY_LIST_ITEMS para scope creep pós-lock
+- [ ] Auto-correct: lock falho → regenera HTML via agente → retry
+- [ ] `collectDesignContractIssues` retorna lista cirúrgica (não erro genérico)
+- [ ] `isValidDesignContract` + `normalizeContract` (pre-lock)
+- [ ] Escape hatch via `DestructiveUnlockModal` (admin override)
+
+---
+
+### Tarefa 4.6 — Web: Phase4Container com 5 Estados + Sub-views [D07]
+
+**Arquivos afetados:**
+- Novo: `apps/web/components/open-design/Phase4Container.tsx` (~270 LOC)
+- Novo: `apps/web/components/open-design/SessionConfigView.tsx` (~270 LOC)
+- Novo: `apps/web/components/open-design/BootstrappingView.tsx` (~112 LOC)
+- Novo: `apps/web/components/open-design/StudioView.tsx` (~245 LOC)
+- Novo: `apps/web/components/open-design/OpenDesignShell.tsx` (~82 LOC)
+- Novo: `apps/web/components/open-design/LockedDesignViewer.tsx` (~143 LOC)
+- Novo: `apps/web/components/open-design/DestructiveUnlockModal.tsx` (~141 LOC)
+- Novo: `apps/web/app/(app)/open-design/page.tsx`
+
+**Implementação (resumo):**
+
+```typescript
+// apps/web/components/open-design/Phase4Container.tsx
+type BootstrapState = 'idle' | 'running' | 'done' | 'error';
+
+export function Phase4Container({ projectId }: { projectId: string }) {
+  const [bootInstallStatus, setBootInstallStatus] = useState<BootInstallStatus | null>(null);
+  const [sessionConfig, setSessionConfig] = useState<OpenDesignSessionConfig | null>(null);
+  const [bootstrapState, setBootstrapState] = useState<BootstrapState>('idle');
+  const [bootstrapResult, setBootstrapResult] = useState<BootstrapResult | null>(null);
+  const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+  const [bootstrapEvents, setBootstrapEvents] = useState<OpenDesignBootstrapProgressEvent[]>([]);
+
+  // Boot install status (subscribe + initial fetch)
+  useEffect(() => {
+    const unsubscribe = subscribeBootInstallStatus(setBootInstallStatus);
+    return () => unsubscribe();
+  }, []);
+
+  // Session config (initial fetch)
+  useEffect(() => {
+    void fetchSessionConfig(projectId).then(setSessionConfig);
+  }, [projectId]);
+
+  // State machine transitions:
+  if (bootInstallStatus?.kind === 'installing') return <PreparingView status={bootInstallStatus} />;
+  if (bootInstallStatus?.kind === 'failed') return <InstallFailedView status={bootInstallStatus} onRetry={retryInstall} />;
+  if (!bootInstallStatus) return <LoadingState />;
+  if (!sessionConfig) return <SessionConfigView projectId={projectId} onSave={setSessionConfig} />;
+  if (bootstrapState === 'running') return <BootstrappingView events={bootstrapEvents} />;
+  if (bootstrapResult) return <StudioView bootstrap={bootstrapResult} projectId={projectId} />;
+
+  return (
+    <SessionConfigView
+      projectId={projectId}
+      onSubmit={async (config) => {
+        setSessionConfig(config);
+        setBootstrapState('running');
+        try {
+          const result = await ensureSession(projectId, config, (e) => setBootstrapEvents(prev => [...prev, e]));
+          setBootstrapResult(result);
+          setBootstrapState('done');
+        } catch (err) {
+          setBootstrapError(err.message);
+          setBootstrapState('error');
+        }
+      }}
+    />
+  );
+}
+```
+
+**Critérios de aceitação:**
+- [ ] 5 estados: preparing / install-failed / session-config / bootstrapping / studio
+- [ ] Cada estado tem sua view dedicada
+- [ ] Subscribe a boot-install status via WebSocket/SSE
+- [ ] SessionConfigView com campos: agentId, model, reasoning, designSystemId, memoryEnabled, mcpServerIds, locale
+- [ ] StudioView mostra WebContentsView/iframe + botão "Lock"
+- [ ] LockedDesignViewer para projetos já travados
+- [ ] DestructiveUnlockModal para admin override
+
+---
+
+### Tarefa 4.7 — Tipos: DesignContract Completo + Validators [D08]
+
+**Arquivos afetados:**
+- Novo: `packages/shared-types/src/schemas/open-design.ts` (~414 LOC)
+- Novo: `packages/shared-types/src/schemas/open-design-contract.ts`
+
+**Problema:** Plano consolidado cita apenas `<script id="lionclaw-design-contract">`. LionClaw tem **8 entidades** no DesignContract + 2 validators manuais.
+
+**Implementação (resumo):**
+
+```typescript
+// packages/shared-types/src/schemas/open-design.ts
+import { z } from 'zod';
+
+export const DesignNavigationItemSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  targetScreenId: z.string(),
+  userStoryIds: z.array(z.string()),
+});
+
+export const DesignActionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  type: z.enum(['navigate', 'submit', 'filter', 'open-modal', 'close-modal', 'toggle', 'download', 'upload', 'other']),
+  targetScreenId: z.string().optional(),
+  userStoryIds: z.array(z.string()),
+  apiExpectationIds: z.array(z.string()).optional(),
+});
+
+export const DesignScreenSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  route: z.string(),
+  purpose: z.string(),
+  userStoryIds: z.array(z.string()),
+  states: z.array(z.enum(['loading', 'empty', 'error', 'success', 'disabled', 'readonly'])),
+  actions: z.array(DesignActionSchema),
+  dataRequirementIds: z.array(z.string()),
+});
+
+export const DesignComponentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(['layout', 'navigation', 'form', 'table', 'card', 'chart', 'modal', 'drawer', 'chat', 'calendar', 'kanban', 'other']),
+  usedInScreenIds: z.array(z.string()),
+  props: z.record(z.string()).optional(),
+  states: z.array(z.string()).optional(),
+});
+
+export const DesignDataRequirementSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  entityHint: z.string().optional(),
+  fields: z.array(z.object({ name: z.string(), typeHint: z.string(), required: z.boolean() })),
+  sourceScreenIds: z.array(z.string()),
+  userStoryIds: z.array(z.string()),
+});
+
+export const DesignApiExpectationSchema = z.object({
+  id: z.string(),
+  operation: z.string(),
+  screenIds: z.array(z.string()),
+  actionIds: z.array(z.string()),
+  methodHint: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']).optional(),
+  requestShape: z.record(z.string()).optional(),
+  responseShape: z.record(z.string()).optional(),
+  userStoryIds: z.array(z.string()),
+});
+
+export const DesignDeltaSchema = z.object({
+  id: z.string(),
+  type: z.enum(['new-screen', 'new-feature', 'new-data', 'new-permission', 'scope-change', 'unclear']),
+  description: z.string(),
+  impact: z.enum(['low', 'medium', 'high']),
+  relatedUserStoryIds: z.array(z.string()),
+  requiresRequirementsChange: z.boolean(),
+});
+
+export const DesignContractSchema = z.object({
+  version: z.literal('1.0'),
+  source: z.object({
+    openDesignProjectId: z.string().optional(),
+    artifactPath: z.string(),
+    lockedAt: z.string().optional(),
+    htmlSha256: z.string().optional(),
+  }).optional(),
+  visual: z.object({
+    direction: z.string(),
+    designSystem: z.string().optional(),
+    density: z.enum(['dense', 'balanced', 'editorial', 'mobile-first', 'unknown']),
+    tokens: z.object({
+      colors: z.record(z.string()),
+      typography: z.record(z.string()),
+      spacing: z.record(z.string()),
+      radii: z.record(z.string()),
+    }),
+  }),
+  navigation: z.object({
+    primary: z.array(DesignNavigationItemSchema),
+    secondary: z.array(DesignNavigationItemSchema).optional(),
+  }),
+  screens: z.array(DesignScreenSchema),
+  components: z.array(DesignComponentSchema),
+  dataRequirements: z.array(DesignDataRequirementSchema),
+  apiExpectations: z.array(DesignApiExpectationSchema),
+  deltas: z.array(DesignDeltaSchema),
+});
+
+export const OpenDesignSessionConfigSchema = z.object({
+  agentId: z.string(),  // 'claude' | 'codex' | 'gemini' | ...
+  model: z.string(),
+  reasoning: z.enum(['low', 'medium', 'high']).optional(),
+  designSystemId: z.string().optional(),
+  memoryEnabled: z.boolean(),
+  mcpServerIds: z.array(z.string()),
+  locale: z.string().default('pt-BR'),
+  configuredAt: z.string(),
+});
+
+export const OpenDesignConfigSchema = z.object({
+  enabled: z.boolean(),
+  providerMode: z.enum(['local-cli', 'api-byok']).optional(),
+  provider: z.string().optional(),
+  model: z.string().optional(),
+  runId: z.string().optional(),
+  runDir: z.string().optional(),
+  designRevisionId: z.string().optional(),
+  dataDir: z.string().optional(),
+  daemonUrl: z.string().optional(),
+  webUrl: z.string().optional(),
+  locked: z.boolean().optional(),
+  lockedAt: z.string().optional(),
+  snapshotDir: z.string().optional(),
+  manifestPath: z.string().optional(),
+  contractPath: z.string().optional(),
+  artifactHtmlPath: z.string().optional(),
+  briefPath: z.string().optional(),
+  lockReportPath: z.string().optional(),
+  pipelineDocsId: z.string().optional(),
+  sessionConfig: OpenDesignSessionConfigSchema.optional(),
+  openDesignProjectId: z.string().optional(),
+  conversationId: z.string().optional(),
+  initialPromptHash: z.string().optional(),
+  initialPromptSentAt: z.string().optional(),
+  sessionConfigHash: z.string().optional(),
+  bootstrappedAt: z.string().optional(),
+});
+
+// Validators manuais (sem dependência de Zod para issues detalhados)
+export function isValidDesignContract(input: unknown): input is DesignContract {
+  return collectDesignContractIssues(input).length === 0;
+}
+
+export function collectDesignContractIssues(input: unknown): string[] {
+  const issues: string[] = [];
+  if (typeof input !== 'object' || input === null) {
+    issues.push('Root: JSON precisa ser um object literal. Não pode ser array nem string.');
+    return issues;
+  }
+  const c = input as Record<string, unknown>;
+  if (c.version !== '1.0') issues.push('Falta `version: "1.0"` no topo');
+  if (!c.visual) issues.push('Falta `visual: { direction, density, tokens }`');
+  else {
+    const v = c.visual as any;
+    if (typeof v.direction !== 'string') issues.push('Falta `visual.direction` (string)');
+    if (!v.tokens?.colors) issues.push('Falta `visual.tokens.colors` (object)');
+    if (!v.tokens?.typography) issues.push('Falta `visual.tokens.typography` (object)');
+    if (!v.tokens?.spacing) issues.push('Falta `visual.tokens.spacing` (object)');
+    if (!v.tokens?.radii) issues.push('Falta `visual.tokens.radii` (object)');
+  }
+  if (!c.navigation?.primary) issues.push('Falta `navigation.primary` (array)');
+  if (!Array.isArray(c.screens)) issues.push('Falta `screens` (array)');
+  else c.screens.forEach((s, i) => {
+    if (!s.id) issues.push(`screens[${i}].id ausente`);
+    if (!Array.isArray(s.userStoryIds)) issues.push(`screens[${i}].userStoryIds precisa ser array (use ["US-XX"] ou [])`);
+  });
+  if (!Array.isArray(c.components)) issues.push('Falta `components` (array, pode ser [])');
+  if (!Array.isArray(c.dataRequirements)) issues.push('Falta `dataRequirements` (array, pode ser [])');
+  if (!Array.isArray(c.apiExpectations)) issues.push('Falta `apiExpectations` (array, pode ser [])');
+  if (!Array.isArray(c.deltas)) issues.push('Falta `deltas` (array, pode ser [])');
+  return issues;
+}
+
+export function normalizeContract(c: DesignContract): DesignContract {
+  // Regras 10.2.5/10.2.10/10.2.11 explodem sem normalização
+  // ... (ver LionClaw validator.ts:201-280)
+  return c;
+}
+```
+
+**REGRA CRÍTICA: Nada de token / API key no `OpenDesignSessionConfig`.** Credenciais vivem no data dir global do OD ou no Vault do Wolfkrow. `setSessionConfig` rejeita payload com qualquer chave contendo (case-insensitive) `token`, `apiKey` ou terminada em `Key`.
+
+**Critérios de aceitação:**
+- [ ] 8 entidades do DesignContract (navigation, action, screen, component, dataRequirement, apiExpectation, delta, contract)
+- [ ] `isValidDesignContract` + `collectDesignContractIssues` (lista cirúrgica)
+- [ ] `normalizeContract` para garantir invariantes
+- [ ] `OpenDesignSessionConfig` SEM tokens
+- [ ] `OpenDesignConfig` completo (18+ campos)
+- [ ] Validação Zod em `shared-types`
+
+---
+
+### Tarefa 4.8 — Pipeline dev-v2: 17 Fases com Agents Específicos + Phases Resetable [D09]
+
+**Arquivos afetados:**
+- `packages/domain/src/entities/pipeline-project.ts`
+- `packages/infra/src/seed/pipeline-templates.ts`
+- `apps/worker/src/routes/pipeline.ts`
+
+**Problema:** Plano consolidado cita "17 fases" mas sem agents específicos nem phases resetable.
+
+**Implementação (resumo):**
+
+```typescript
+// packages/domain/src/entities/pipeline-project.ts
+export const DEVELOPMENT_V2_PIPELINE_PHASES: PhaseDefinition[] = [
+  { number: 1,  name: 'Discovery',           type: 'conversation', agentId: 'discovery-agent',   stage: 1, stageName: 'Discovery',  resetable: true  },
+  { number: 2,  name: 'User Stories',        type: 'auto',         agentId: 'prd-generator',     stage: 2, stageName: 'PRD',        resetable: true  },
+  { number: 3,  name: 'PRD Validator',       type: 'conversation', agentId: 'prd-validator',     stage: 2, stageName: 'PRD',        resetable: false },
+  { number: 4,  name: 'Design Plan',         type: 'auto',         agentId: 'design-plan',        stage: 3, stageName: 'Design',     resetable: true  },
+  { number: 5,  name: 'Open Design Studio',  type: 'conversation', agentId: 'open-design-studio', stage: 3, stageName: 'Design',     resetable: true  },
+  { number: 6,  name: 'Design Lock',         type: 'auto',         agentId: 'design-lock',        stage: 3, stageName: 'Design',     resetable: false },
+  { number: 7,  name: 'PRD Completo',        type: 'auto',         agentId: 'pipe2-prd-completo', stage: 4, stageName: 'PRD+',       resetable: true  },
+  { number: 8,  name: 'Database',            type: 'conversation', agentId: 'tech-database',      stage: 5, stageName: 'Tech',       groupId: 'tech', resetable: false },
+  { number: 9,  name: 'Backend',             type: 'conversation', agentId: 'tech-backend',       stage: 5, stageName: 'Tech',       groupId: 'tech', resetable: false },
+  { number: 10, name: 'Frontend Tecnico',    type: 'conversation', agentId: 'pipe2-tech-frontend', stage: 5, stageName: 'Tech',      groupId: 'tech', resetable: false },
+  { number: 11, name: 'Security',            type: 'conversation', agentId: 'tech-security',      stage: 5, stageName: 'Tech',       groupId: 'tech', resetable: false },
+  { number: 12, name: 'Spec Generation',     type: 'auto',         agentId: 'pipe2-spec-builder', stage: 6, stageName: 'Spec',       resetable: true  },
+  { number: 13, name: 'Spec Enricher',       type: 'conversation', agentId: 'pipe2-spec-enricher', stage: 6, stageName: 'Spec',      resetable: false },
+  { number: 14, name: 'Planner',             type: 'auto',         agentId: 'harness-planner',    stage: 7, stageName: 'Execution',  resetable: true  },
+  { number: 15, name: 'Sprint Validator',    type: 'conversation', agentId: 'sprint-validator',   stage: 7, stageName: 'Execution',  resetable: true  },
+  { number: 16, name: 'Coder',               type: 'loop',         agentId: 'harness-coder',      stage: 7, stageName: 'Execution',  resetable: false },
+  { number: 17, name: 'Evaluator',           type: 'loop',         agentId: 'harness-evaluator',  stage: 7, stageName: 'Execution',  resetable: false },
+];
+
+// Phases resetable ANTES do Design Lock
+export const DEVELOPMENT_V2_RESETABLE_PHASES_BEFORE_LOCK = new Set([1, 2, 3, 4, 5]);
+// Phases resetable DEPOIS do Design Lock (fases 4 e 5 ficam protegidas)
+export const DEVELOPMENT_V2_RESETABLE_PHASES_AFTER_LOCK = new Set([7, 8, 9, 10, 11, 12, 13, 14, 15]);
+
+// PipelineProject com designArtifactPath
+export interface PipelineProject {
+  // ... existentes
+  pipelineType: 'development' | 'development-v2' | 'feature' | 'security' | 'architecture-review';
+  designArtifactPath?: string;  // ✅ campo novo
+}
+```
+
+**Adicionar 13 seed agents:**
+- `discovery-agent`
+- `prd-generator`
+- `prd-validator`
+- `design-plan`
+- `open-design-studio`
+- `design-lock`
+- `pipe2-prd-completo`
+- `tech-database`
+- `tech-backend`
+- `pipe2-tech-frontend`
+- `tech-security`
+- `pipe2-spec-builder`
+- `pipe2-spec-enricher`
+- `harness-planner`
+- `sprint-validator`
+- `harness-coder`
+- `harness-evaluator`
+
+**Critérios de aceitação:**
+- [ ] 17 fases dev-v2 com agents específicos (NÃO genéricos)
+- [ ] `DEVELOPMENT_V2_RESETABLE_PHASES_BEFORE_LOCK = {1,2,3,4,5}`
+- [ ] `DEVELOPMENT_V2_RESETABLE_PHASES_AFTER_LOCK = {7-15}`
+- [ ] `PipelineProject.designArtifactPath?: string`
+- [ ] 17 seed agents em `seed-agents/`
+
+---
+
+### Tarefa 4.9 — Vendor: vendor/open-design (read-only copy) [D10]
+
+**Arquivos afetados:**
+- Copiar: `vendor/open-design/` (~227.764 LOC) do LionClaw
+
+**Decisão:** O vendor Open Design é um app Next.js + daemon + desktop completo. **Manter como read-only copy** (igual LionClaw) com:
+
+```bash
+# 1. Copiar do LionClaw
+cp -r /Users/juniorfaria/projects/lionclawv1.0/vendor/open-design \
+      /Users/juniorfaria/projects/wolfkrow-tool/apps/worker/vendor/open-design
+
+# 2. Verificar flatten
+ls /Users/juniorfaria/projects/wolfkrow-tool/apps/worker/vendor/open-design/.git
+# Esperado: "No such file or directory" (deve ser flatten)
+
+ls /Users/juniorfaria/projects/wolfkrow-tool/apps/worker/vendor/open-design/.vendor-meta.json
+# Esperado: presente
+
+# 3. pnpm install no vendor
+cd /Users/juniorfaria/projects/wolfkrow-tool/apps/worker/vendor/open-design
+pnpm install
+
+# 4. Smoke test
+pnpm tools-dev run web --daemon-port 33113 --web-port 3300
+# Esperado: sidecar sobe em http://127.0.0.1:3300
+```
+
+**Critérios de aceitação:**
+- [ ] `apps/worker/vendor/open-design/` é cópia flatten do LionClaw
+- [ ] `.git` ausente
+- [ ] `.vendor-meta.json` presente
+- [ ] `pnpm install` funciona
+- [ ] `tools-dev run web` sobe sidecar com sucesso
+- [ ] Workers spawnam sidecar a partir desse vendor (ver Tarefa 4.4)
+- [ ] Não commitar `node_modules/` no git (adicionar ao `.gitignore`)
+
+---
+
+### Tarefa 4.10 — Adapter HTTP: 8 Endpoints Tipados [D11]
+
+**Arquivos afetados:**
+- Novo: `apps/worker/src/open-design/adapter-http.ts` (~540 LOC)
+
+**Implementação (resumo):**
+
+```typescript
+// apps/worker/src/open-design/adapter-http.ts
+const ALLOWED_ENDPOINTS = [
+  '/api/health',
+  '/api/projects',
+  '/api/projects/:id/conversations',
+  '/api/projects/:id/conversations/:cid/messages',
+  '/api/projects/:id/conversations/:cid/messages/:mid',
+  '/api/runs',
+  '/api/projects/:id/files',
+  '/api/projects/:id/files/*',
+];
+
+// REJEITA endpoints proibidos (finalize/anthropic, qualquer "finalize", DESIGN.md)
+const DENIED_PATTERNS = [/finalize/i, /DESIGN\.md/i, /anthropic/i];
+
+export class OpenDesignAdapter {
+  constructor(private baseUrl: string, private timeoutMs = 10_000) {}
+
+  private async fetch(path: string, init?: RequestInit): Promise<Response> {
+    if (DENIED_PATTERNS.some(p => p.test(path))) throw new Error(`Endpoint denied: ${path}`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+    try {
+      return await fetch(`${this.baseUrl}${path}`, { ...init, signal: controller.signal });
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async health(): Promise<{ ok: boolean }> {
+    const r = await this.fetch('/api/health');
+    return { ok: r.ok };
+  }
+
+  async createProject(payload: CreateProjectPayload): Promise<{ id: string }> { /*...*/ }
+  async createConversation(projectId: string): Promise<{ id: string }> { /*...*/ }
+  async getMessages(projectId: string, conversationId: string): Promise<ChatMessageShape[]> { /*...*/ }
+  async putUserMessage(projectId: string, conversationId: string, messageId: string, content: string): Promise<void> { /*...*/ }
+  async startInitialRun(payload: ChatRunCreateRequest): Promise<{ runId: string }> { /*...*/ }
+  async listFiles(projectId: string): Promise<FileEntry[]> { /*...*/ }
+  async getFile(projectId: string, path: string): Promise<string> { /*...*/ }
+  async fetchFinalArtifact(projectId: string): Promise<{ html: string; entryFile: string }> { /*...*/ }
+  async waitForRunComplete(runId: string, timeoutMs = 300_000): Promise<void> { /*...*/ }
+}
+
+// Retry policy: 1x em 5xx, não em 4xx
+private async fetchWithRetry(path: string, init?: RequestInit): Promise<Response> {
+  const r = await this.fetch(path, init);
+  if (r.status >= 500) {
+    // retry once
+    await new Promise(r => setTimeout(r, 1000));
+    return this.fetch(path, init);
+  }
+  return r;
+}
+```
+
+**Critérios de aceitação:**
+- [ ] 8 endpoints implementados e tipados
+- [ ] Allow-list interna rejeita endpoints proibidos
+- [ ] Timeout 10s default, retry 1x em 5xx
+- [ ] Erros bubblam com mensagens técnicas
+- [ ] Testes com mock HTTP para cada endpoint
+
+---
+
+### Tarefa 4.11 — Pipeline: Aprovação via `pipeline.approve` com `lock-and-continue` [D12]
+
+**Arquivos afetados:**
+- `apps/worker/src/routes/pipeline.ts`
+- `apps/worker/src/open-design/lock.ts` (integrar)
+
+**Problema:** No LionClaw, `lock` NÃO é exposto via IPC público. Renderer chama `pipeline.approve(projectId, { action: 'lock-and-continue' })` que internamente chama `lock()`.
+
+**Implementação:**
+
+```typescript
+// apps/worker/src/routes/pipeline.ts
+server.post<{ Params: { id: string }; Body: { action: string; phaseId?: number } }>(
+  '/pipeline-projects/:id/approve',
+  { preHandler: [server.authenticate] },
+  async (request) => {
+    const { id } = request.params;
+    const { action, phaseId } = request.body;
+
+    if (action === 'lock-and-continue') {
+      // Chama lock() do open-design
+      const result = await openDesignLock(id);
+      if ('error' in result) return reply.code(400).send(result);
+      if (result.ok === false) {
+        // Lock rejeitado: retorna problems para o renderer
+        return reply.code(422).send({
+          ok: false,
+          rejection: result.report.problems,
+          lockReportPath: result.lockReportPath,
+        });
+      }
+      // Lock OK: avança para próxima fase
+      await pipelineService.advanceToNextPhase(id, 6);  // 6 = Design Lock
+      return { ok: true, locked: true };
+    }
+
+    // Outras aprovações...
+    return pipelineService.approve(id, action, phaseId);
+  }
+);
+```
+
+**Crítico:** Lock IPC público **REMOVIDO** — renderer deve usar `pipeline.approve`.
+
+**Critérios de aceitação:**
+- [ ] Endpoint POST `/pipeline-projects/:id/approve` com `action: 'lock-and-continue'`
+- [ ] Internamente chama `openDesignLock()`
+- [ ] 200 OK + avança fase | 422 Unprocessable Entity com lista de problems
+- [ ] Lock IPC público removido (renderer não chama diretamente)
+
+---
+
+### Tarefa 4.12 — Validação End-to-End Completa (atualizada) [D03 v2]
+
+**Critérios de aceitação REVISADOS (após Tarefas 4.3-4.11):**
+
+- [ ] **Sidecar Manager** funcional (start/stop/restart/health/status)
+- [ ] **Bootstrap 10 estágios** idempotente com progress events
+- [ ] **SessionConfig** persistido (sem tokens)
+- [ ] **5 outputs canônicos** em `<projectPath>/docs/Docs<id>/design/`
+- [ ] **13 regras de validação** (10.2.1-13) implementadas
+- [ ] **8 DENY_LIST_ITEMS** aplicadas como scope creep
+- [ ] **Auto-correct** regenera HTML via agente em lock falho
+- [ ] **Adapter HTTP** com 8 endpoints tipados
+- [ ] **Cascata pnpm/corepack/npx** com cache
+- [ ] **One-at-a-time policy** (apenas 1 sidecar ativo)
+- [ ] **Cleanup daemon órfão** (lsof, tools-dev stop)
+- [ ] **Phases resetable** (before/after lock)
+- [ ] **17 seed agents** para dev-v2
+- [ ] **pipeline.approve + lock-and-continue** (não lock direto)
+- [ ] **iframe sandboxed** com cookie persistence (adaptação Wolfkrow)
+- [ ] **E2E**: criar projeto dev-v2 → fases 1-3 → fase 4 Design Plan → fase 5 Open Design Studio → bootstrap → Studio → Lock → design_lock → fase 7+
+- [ ] **E2E**: lock rejeitado → auto-correct → retry → sucesso
+- [ ] **E2E**: 2 usuários compartilham sidecar (one-at-a-time)
 
 ---
 
@@ -4689,11 +5900,21 @@ echo "GATE: APPROVED — release candidate"
 | 2.11 | Harness: Carregar Design Lock como input | Kimi 3.4 | P1 | 2 |
 | 2.12 | Pipeline layout 3 colunas detalhado | DeepSeek GAP-040 | P1 | 2 |
 | 2.13 | Grafo de dependências entre Epics | MiniMax 1.3 | P0 | 1 |
+| 4.3 | **Worker: Manager (start/stop/restart/health/status)** | LionClaw parity | **P0** | **4** |
+| 4.4 | **Worker: Bootstrap 10 estágios + progress events** | LionClaw parity | **P0** | **4** |
+| 4.5 | **Worker: Lock com 13 regras de validação + 5 outputs canônicos** | LionClaw parity | **P0** | **4** |
+| 4.6 | **Web: Phase4Container com 5 estados + sub-views** | LionClaw parity | P1 | 4 |
+| 4.7 | **Tipos: DesignContract completo (8 entidades) + validators** | LionClaw parity | P0 | 4 |
+| 4.8 | **Pipeline dev-v2: 17 fases com agents específicos + resetable** | LionClaw parity | P1 | 4 |
+| 4.9 | **Vendor: vendor/open-design (read-only copy, ~227k LOC)** | LionClaw parity | P0 | 4 |
+| 4.10 | **Adapter HTTP: 8 endpoints tipados com allow-list** | LionClaw parity | P1 | 4 |
+| 4.11 | **Pipeline: approve com `lock-and-continue` (não lock direto)** | LionClaw parity | P1 | 4 |
+| 4.12 | Validação E2E completa (atualizada) | — | P0 | 4 |
 | 5.6 | Chat: Persistir última escolha provider/model | Kimi 4.1 | P1 | 5 |
 | 5.7 | Seed Agents para todos os usuários (upsert) | DeepSeek GAP-016 | P1 | 5 |
 | 5.8 | Botão "Load Seed Agents" manual | DeepSeek GAP-016 | P2 | 5 |
 
-**Total adicionado: 15 tarefas** (3 P0 + 8 P1 + 4 P2)
+**Total adicionado: 24 tarefas** (8 P0 + 12 P1 + 4 P2) — sendo **9 tarefas críticas para paridade LionClaw Open Design** (4.3-4.11) que somam ~5.500 LOC de implementação.
 
 ### 17.2 Itens YAGNI / Explicitamente Fora do Escopo
 
@@ -4733,12 +5954,14 @@ Validados por auditoria de 2026-06-26 (todos os 4 auditores confirmam):
 | Métrica | Valor |
 |---|---|
 | **Total de Epics** | 9 (EPIC 0–8) |
-| **Total de Tarefas** | 68 (53 originais + 15 adicionadas no review) |
-| **Tarefas P0/BLOCKER** | 15 (EPIC 0) |
-| **Tarefas P1** | ~30 (EPICs 1, 2, 4, 5) |
+| **Total de Tarefas** | 76 (52 originais + 24 adicionadas no review) |
+| **Tarefas P0/BLOCKER** | 23 (15 EPIC 0 + 8 LionClaw parity) |
+| **Tarefas P1** | ~36 (EPICs 1, 2, 4, 5) |
 | **Tarefas P2** | ~18 (EPICs 3, 6) |
 | **Tarefas Auditoria/Gate** | 5 (EPIC 8) |
-| **Cronograma total** | 36–49 dias úteis (~7–10 semanas, 1 dev senior) |
+| **Cronograma total** | 45–60 dias úteis (~9–12 semanas, 1 dev senior) |
+| **LOC LionClaw parity (Open Design)** | ~5.500 LOC (4.3-4.11) |
+| **LOC Vendor copy** | ~227.764 LOC (read-only) |
 | **Itens YAGNI (cortados)** | 13 |
 | **Itens já satisfeitos** | 9 |
 | **Cobertura de testes exigida** | backend ≥85%, frontend ≥70% (auth ≥80%) |
@@ -4772,7 +5995,229 @@ graph LR
 
 ---
 
-**Fim do Plano Consolidado v2.1.**
+---
+
+## 18. Dependências, Pré-requisitos e Plano de Rollback
+
+### 18.1 Matriz de Dependências entre Tarefas Críticas
+
+| Tarefa | Depende de | Bloqueia |
+|---|---|---|
+| 0.1 (FK Chat) | — | 0.2, 5.1, 5.2, 5.3 |
+| 0.2 (SDK Routing) | 0.1 | 5.1, 5.2, 5.3 |
+| 0.3 (Provider Override) | — | 0.4, 0.14, 1.5, 1.10 |
+| 0.4 (Provider hasApiKey) | 0.3 | 1.5, 1.10 |
+| 0.5 (MCP Error Masking) | — | 1.4, 1.11, 4.7 |
+| 0.6 (Isolamento Worker) | — | 1.4, 1.7, 4.7 |
+| 0.7 (Auto-lock 30d) | — | (validação apenas) |
+| 0.8 (Settings Drift) | — | 0.15, 1.7, 1.9 |
+| 0.13 (Shadow Zod) | — | 0.14, 1.5, 1.6 |
+| 0.14 (Provider Catalog) | 0.13 | 0.3, 1.5, 1.9 |
+| 1.1 (Agents) | 0.1, 0.2, 1.7 | 2.4, 5.2, 5.7 |
+| 1.2 (Skills) | 0.5, 1.7 | 4.7 |
+| 1.3 (Rules) | 1.7 | 1.13, 4.7 |
+| 1.4 (MCP) | 0.5, 0.6, 0.12 | 1.11, 2.13 |
+| 1.5 (Provider) | 0.3, 0.4, 0.13, 0.14 | 1.9, 1.10 |
+| 1.7 (Settings) | 0.8, 0.15 | 1.1, 1.2, 1.3, 1.4, 1.9 |
+| 2.1 (Run Console) | 0.1, 0.6 | 2.4, 2.5, 2.6, 2.10 |
+| 2.2 (Projetos Entity) | 0.6 | 2.8, 2.4, 2.11 |
+| 2.4 (Harness 4 Abas) | 0.6, 1.1, 2.1 | 2.5, 2.8, 2.9 |
+| 2.8 (Pipeline projectPath) | 2.2, 0.6 | 2.4, 2.6 |
+| 2.9 (Métricas LionClaw) | 2.1, 2.4, 2.10 | 2.11 |
+| 2.10 (Tipos Pipeline) | 0.6, 1.1, 2.2 | 2.4, 2.11, 4.8 |
+| 2.11 (Doc Preview) | 2.4, 2.9 | (Epic 4) |
+| 4.1 (Sidecar UI) | 1.7 | 4.2, 4.6 |
+| 4.2 (Integração Pipeline) | 4.1, 2.10 | 4.12 |
+| 4.3 (Manager) | 4.9 (vendor), 0.6 | 4.4, 4.5, 4.10 |
+| 4.4 (Bootstrap) | 4.3, 4.7 | 4.5, 4.6 |
+| 4.5 (Lock 13 regras) | 4.4, 4.7, 4.10 | 4.11, 4.12 |
+| 4.6 (Phase4Container) | 4.1, 4.5, 1.1, 1.2 | (validação) |
+| 4.7 (DesignContract) | (Zod-first, ADR-0005) | 4.4, 4.5 |
+| 4.8 (Pipeline 17 fases) | 0.6, 1.1, 2.2, 2.10 | 4.11, 4.12 |
+| 4.9 (Vendor copy) | — | 4.3, 4.10 |
+| 4.10 (Adapter HTTP) | 4.3, 4.7 | 4.5, 4.6 |
+| 4.11 (approve lock-and-continue) | 4.5, 4.8, 2.10 | 4.12 |
+| 4.12 (Validação E2E) | 4.3, 4.4, 4.5, 4.6, 4.8, 4.9, 4.10, 4.11 | (gate final) |
+| 5.2 (Agent Selector) | 0.1, 0.2, 1.1 | (validação) |
+| 5.3 (Provider Selector) | 0.4, 1.5 | (validação) |
+| 6.1-6.2 (Débitos) | 0.1-0.15 | 7.1-7.3 |
+| 7.1-7.3 (Cobertura) | 0.1-0.15, 1.1-1.13, 2.1-2.13, 4.1-4.12 | 8.1-8.5 |
+| 8.1-8.5 (Auditoria) | TODAS | (gate final release) |
+
+### 18.2 Pré-requisitos de Ambiente (antes de iniciar)
+
+**Antes de começar Tarefa 0.1, garantir:**
+
+```bash
+# 1. Verificar dependências de sistema
+node --version    # >= 20.x
+pnpm --version    # >= 8.x
+sqlite3 --version # >= 3.40 (com FK enforcement)
+git --version     # >= 2.30
+
+# 2. Setup inicial
+cd /Users/juniorfaria/projects/wolfkrow-tool
+pnpm install
+cp .env.example .env.local
+# Preencher: ANTHROPIC_API_KEY, SESSION_MAX_AGE_DAYS=30, etc.
+
+# 3. Verificar build state
+pnpm typecheck     # deve estar verde
+pnpm lint          # deve estar verde
+pnpm test          # deve estar verde (1.083 testes)
+
+# 4. Worktree isolation
+git worktree add ../wolfkrow-epic-0 -b feature/epic-0-bugs-bloqueantes
+cd ../wolfkrow-epic-0
+pnpm install
+```
+
+**Tarefas com dependências externas:**
+
+- **T4.9 (Vendor copy):** Requer `vendor/open-design/` do LionClaw (já existe em `/Users/juniorfaria/projects/lionclawv1.0/vendor/open-design`)
+- **T0.11 (SSRF):** Requer `pnpm add ipaddr.js` (novo pacote)
+- **T1.2 (Skills frontmatter):** Requer `pnpm add gray-matter` (novo pacote)
+- **T5.4 (Syntax highlight):** Requer `pnpm add react-syntax-highlighter` (novo pacote)
+- **T4.3 (Manager):** Requer `pnpm` disponível no PATH (instalado via corepack se necessário)
+
+### 18.3 Estratégia de Execução Paralela
+
+**Rodar em paralelo (worktrees separados):**
+
+```
+worktree-1: EPIC 0 (5-7 dias) — T0.1 a T0.15 sequencial
+worktree-2: Aguardar EPIC 0 terminar
+worktree-2: EPIC 1 (8-10 dias) — T1.1 a T1.13
+worktree-3: Aguardar EPIC 0 terminar
+worktree-3: EPIC 2 (7-9 dias) — T2.1 a T2.13
+worktree-2 + worktree-3: Merge em main → EPIC 3 (5-7 dias)
+EPIC 4 (3-4 dias) — T4.1 a T4.12 (T4.9 vendor copy primeiro)
+EPIC 5 (2-3 dias) — T5.1 a T5.8 (após T0.1, T0.2)
+EPIC 6 (2-3 dias) — T6.1 a T6.2 (após EPIC 0)
+EPIC 7 (2-3 dias) — T7.1 a T7.3 (após EPICs 0-5)
+EPIC 8 (2-3 dias) — Gate final
+```
+
+**Total sequencial:** 45-60 dias
+**Com paralelização E1 || E2 (após E0):** 38-50 dias
+**Com paralelização E3 || E4 (após E1, E2):** 33-43 dias
+
+### 18.4 Plano de Rollback (por Epic)
+
+**EPIC 0 (Bugs):** Rollback atômico por tarefa. Migrations têm `down()`. Código revertido via `git revert`. Validação: `pnpm test` deve passar.
+
+**EPIC 1 (Cadastros):** Refactor grande mas modular. Rollback via `git revert <commit>` por componente (Agent/Skill/Rule/MCP/Provider). Validação: smoke test de cada tela.
+
+**EPIC 2 (Harness/Pipeline):** Tela de execução adicionada; fallback para master/detail antigo se falhar. Rollback por feature flag.
+
+**EPIC 3 (Layout):** Componentes isolados em `components/common/`. Rollback = reverter imports para versões antigas. Baixo risco.
+
+**EPIC 4 (Open Design):** **Alto risco** — vendor copy + ~5.500 LOC próprio. Rollback strategy:
+- Manter tag `pre-open-design` antes de iniciar
+- Cada tarefa (4.3-4.12) é commit separado
+- Se 4.5 (lock 13 regras) falhar, rollback apenas 4.5 mantendo 4.3-4.4 funcionais
+- Phase4Container tem fallback para placeholder se sidecar não estiver rodando
+
+**EPIC 5 (Chat):** Modificações isoladas em `components/chat/`. Rollback seguro.
+
+**EPIC 6 (Débitos):** `check-debts.sh` é read-only. Débitos podem ficar (YAGNI). Baixo risco.
+
+**EPIC 7 (Cobertura):** Thresholds de coverage. Se subir de 25% para 85% falhar, manter 50% + debt explícito.
+
+**EPIC 8 (Auditoria):** Gate final. Sem rollback — é validação.
+
+### 18.5 Comandos de Inicialização (Quick Start)
+
+```bash
+# 1. Clonar e instalar
+git clone https://github.com/anomalyco/wolfkrow-tool.git
+cd wolfkrow-tool
+pnpm install
+
+# 2. Setup env
+cp .env.example .env.local
+# Editar .env.local: ANTHROPIC_API_KEY, SESSION_MAX_AGE_DAYS=30
+
+# 3. Inicializar DB
+pnpm --filter @wolfkrow/infra db:migrate
+
+# 4. Seed inicial
+pnpm dev  # web + worker + sidecar
+# Aguardar boot completo (logs do worker)
+
+# 5. Verificar setup
+curl http://localhost:3000/api/health  # Next.js
+curl http://localhost:4000/api/health  # Worker Fastify
+
+# 6. Criar primeiro projeto dev-v2 (testar Open Design)
+# UI → Pipeline → New Project → development-v2
+# Fase 5 (Open Design Studio) → Bootstrap → Studio → Lock
+# Validar 5 outputs em <projectPath>/docs/Docs<id>/design/
+
+# 7. Rodar auditoria
+pnpm test
+pnpm typecheck
+pnpm lint
+bash scripts/check-debts.sh
+bash scripts/qa-verdict.sh  # deve retornar "GATE: APPROVED"
+```
+
+### 18.6 Critérios de Pronto por Camada
+
+**Tarefa está "done" quando:**
+
+1. ✅ Código implementado conforme especificação
+2. ✅ Testes unitários escritos (TDD RED→GREEN→REFACTOR)
+3. ✅ Testes passando (`pnpm test`)
+4. ✅ Lint verde (`pnpm lint`)
+5. ✅ Typecheck verde (`pnpm typecheck`)
+6. ✅ Critérios de aceitação da tarefa todos marcados
+7. ✅ PR revisado e mergeado em main
+8. ✅ Worktree mergeado (se isolado)
+
+**Epic está "done" quando:**
+
+1. ✅ Todas as tarefas do epic done
+2. ✅ Sub-agents QA rodaram (`spec-qa-backend/frontend/database/devops`)
+3. ✅ Veredicto determinístico verde
+4. ✅ Documentação atualizada (ADR, SPEC, README)
+5. ✅ `git tag epic-N-done` aplicado
+
+**MVP final está "done" quando:**
+
+1. ✅ EPIC 0-8 todos done
+2. ✅ `qa-verdict.sh` retorna "GATE: APPROVED — release candidate"
+3. ✅ Zero findings BLOCKER/CRITICAL/MAJOR abertos
+4. ✅ Smoke E2E completo (T8.2) verde
+5. ✅ Cobertura real ≥85% backend, ≥70% frontend
+
+### 18.7 Riscos e Mitigações
+
+| Risco | Probabilidade | Impacto | Mitigação |
+|---|---|---|---|
+| Open Design vendor (227k LOC) tem bugs | Média | Alto | Copiar vendor do LionClaw (já validado); smoke test E2E |
+| Subir worker coverage 25%→85% em paralelo com refactor | Alta | Alto | EPIC 7 após EPIC 0-5; não paralelizar |
+| `pipeline.approve` lock-and-continue quebra pipelines existentes | Média | Alto | Manter endpoint lock antigo como deprecated; migration gradual |
+| Vendor copy ~106MB infla repo | Alta | Médio | `vendor/` em `.gitignore`; usar git-lfs ou submódulo |
+| 13 regras de validação lock rejeitam designs válidos | Baixa | Médio | Auto-correct + lista cirúrgica de issues; review manual em DestructiveUnlockModal |
+| Tarefa 4.9 (vendor copy) bloqueia 4.3-4.11 (5.500 LOC) | Alta | Alto | Tarefa 4.9 PRIMEIRO; commit isolado; rollback = reverter 4.9 + pausar 4.3-4.11 |
+| Sidecar Electron-style vs iframe (adaptação Wolfkrow) | Média | Médio | Service Worker para cookies OAuth; documentar limitação |
+| Lock IPC público removido quebra consumers | Baixa | Alto | `pipeline.approve` cobre 100% dos casos; lock IPC só existe em dev local |
+| Tempo real 45-60 dias estoura para 70+ | Alta | Médio | Cortar LionClaw parity para 4.9 + 4.10 (vendor + adapter); adiar 4.5 (lock 13 regras) para v1.1 |
+
+### 18.8 Trimming Strategy (se tempo apertar)
+
+Se for necessário cortar escopo sem perder paridade LionClaw essencial:
+
+**Tier 1 (manter sempre):** EPIC 0 + EPIC 1 + EPIC 4 (T4.1, T4.2, T4.6, T4.9) + EPIC 8
+**Tier 2 (cortar se apertar):** EPIC 3 (polish), T4.4 (bootstrap 10 estágios — usar 3 estágios simples), T4.5 (lock 13 regras — usar 5 regras mínimas)
+**Tier 3 (cortar primeiro):** T1.11, T1.12, T1.13, T2.3, T2.5, T2.6, T2.7, T2.9, T2.11, T2.12, T2.13, T5.6, T5.7, T5.8, EPIC 7 (parcial)
+
+**Versão "MVP mínimo" (Tier 1):** ~30-35 dias úteis.
+
+---
+
+**Fim do Plano Consolidado v2.2.**
 
 > Para executar, use sub-skill `superpowers:executing-plans` ou `superpowers:subagent-driven-development` task-by-task.
-> Última atualização: 2026-06-26 — 68 tarefas, 9 epics, gate de release determinístico.
+> Última atualização: 2026-06-26 — 76 tarefas, 9 epics, gate de release determinístico.
