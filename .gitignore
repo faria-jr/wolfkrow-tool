@@ -83,3 +83,4 @@ apps/web/test-results/
 *.tmp
 *.bak
 *.orig
+.od/
