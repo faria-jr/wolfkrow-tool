@@ -1,59 +1,61 @@
 'use client';
 
 import type { SkillProps } from '@wolfkrow/domain';
-import { PencilIcon, TrashIcon } from 'lucide-react';
+import { CopyIcon, PencilIcon, Sparkles, TrashIcon } from 'lucide-react';
 import { useCallback, useState } from 'react';
 
 import { ConfirmDialog } from '@/components/chat/confirm-dialog';
+import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export type SkillData = Omit<SkillProps, 'createdAt' | 'updatedAt'> & { createdAt: string; updatedAt: string };
 
 interface SkillRowProps {
   skill: SkillData;
   onEdit: (s: SkillData) => void;
+  onDuplicate: (s: SkillData) => void;
   onDelete: (s: SkillData) => void;
   disableDelete?: boolean;
 }
 
-function SkillRow({ skill, onEdit, onDelete, disableDelete }: SkillRowProps) {
+function SkillRow({ skill, onEdit, onDuplicate, onDelete, disableDelete }: SkillRowProps) {
   return (
-    <Card className="transition-shadow hover:shadow-sm">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <CardTitle className="text-base">{skill.name}</CardTitle>
-            <p className="text-sm text-muted-foreground">{skill.description}</p>
-          </div>
-          <div className="flex shrink-0 gap-1">
-            {!skill.isBuiltIn && (
-              <>
-                <Button size="icon" variant="ghost" onClick={() => onEdit(skill)} aria-label="Edit skill"><PencilIcon className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => onDelete(skill)} disabled={disableDelete} aria-label="Delete skill"><TrashIcon className="h-4 w-4" /></Button>
-              </>
-            )}
-          </div>
+    <TableRow>
+      <TableCell>
+        <div className="space-y-1">
+          <div className="font-medium">{skill.name}</div>
+          <p className="max-w-[48ch] truncate text-sm text-muted-foreground">{skill.description}</p>
         </div>
-      </CardHeader>
-      <CardContent>
+      </TableCell>
+      <TableCell>
         <div className="flex flex-wrap gap-1">
-          {skill.isBuiltIn && <Badge variant="secondary">built-in</Badge>}
-          {skill.tags.map((t) => <Badge key={t} variant="outline">{t}</Badge>)}
+          {skill.tags.length > 0 ? skill.tags.map((tag) => <Badge key={tag} variant="outline">{tag}</Badge>) : <span className="text-muted-foreground">None</span>}
         </div>
-      </CardContent>
-    </Card>
+      </TableCell>
+      <TableCell>
+        <Badge variant={skill.isBuiltIn ? 'secondary' : 'default'}>{skill.isBuiltIn ? 'built-in' : 'custom'}</Badge>
+      </TableCell>
+      <TableCell>
+        <div className="flex gap-1">
+          <Button size="icon" variant="ghost" onClick={() => onDuplicate(skill)} aria-label="Duplicate skill"><CopyIcon className="h-4 w-4" /></Button>
+          {!skill.isBuiltIn && <Button size="icon" variant="ghost" onClick={() => onEdit(skill)} aria-label="Edit skill"><PencilIcon className="h-4 w-4" /></Button>}
+          {!skill.isBuiltIn && <Button size="icon" variant="ghost" onClick={() => onDelete(skill)} disabled={disableDelete} aria-label="Delete skill"><TrashIcon className="h-4 w-4 text-destructive" /></Button>}
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
 
 interface SkillListProps {
   skills: SkillData[];
   onEdit: (s: SkillData) => void;
+  onDuplicate: (s: SkillData) => void;
   onDelete: (id: string) => Promise<void>;
 }
 
-export function SkillList({ skills, onEdit, onDelete }: SkillListProps) {
+export function SkillList({ skills, onEdit, onDuplicate, onDelete }: SkillListProps) {
   const [toDelete, setToDelete] = useState<SkillData | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -66,13 +68,28 @@ export function SkillList({ skills, onEdit, onDelete }: SkillListProps) {
 
   const cancelDelete = useCallback(() => setToDelete(null), []);
 
-  if (skills.length === 0) return <p className="py-8 text-center text-muted-foreground">No skills yet. Create one to get started.</p>;
+  if (skills.length === 0) {
+    return <EmptyState title="No skills yet" description="Create one to get started." icon={<Sparkles className="h-6 w-6" />} />;
+  }
+
   return (
     <>
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {skills.map((s) => (
-          <SkillRow key={s.id} skill={s} onEdit={onEdit} onDelete={setToDelete} disableDelete={deleting} />
-        ))}
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Tags</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-24" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {skills.map((s) => (
+              <SkillRow key={s.id} skill={s} onEdit={onEdit} onDuplicate={onDuplicate} onDelete={setToDelete} disableDelete={deleting} />
+            ))}
+          </TableBody>
+        </Table>
       </div>
       {toDelete && (
         <ConfirmDialog

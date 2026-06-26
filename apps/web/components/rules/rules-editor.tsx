@@ -1,212 +1,169 @@
 'use client';
 
+import { Copy, Pencil, Plus, ScrollText, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
+import { RULE_KIND_LABELS, type RuleData } from './rule-types';
+
 import { ConfirmDialog } from '@/components/chat/confirm-dialog';
+import { EmptyState } from '@/components/common/empty-state';
+import { ErrorState } from '@/components/common/error-state';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-type RuleKind = 'behavior' | 'soul' | 'user' | 'custom';
-
-interface RuleProps {
-  id: string;
-  kind: RuleKind;
-  title: string;
-  body: string;
-  enabled: boolean;
-  sortOrder: number;
+async function apiFetch(path: string, opts?: RequestInit): Promise<Response> {
+  return fetch(path, { credentials: 'include', ...opts });
 }
 
-const KIND_LABELS: Record<RuleKind, string> = {
-  behavior: 'Behavior',
-  soul: 'Soul',
-  user: 'User',
-  custom: 'Custom',
-};
+async function fetchRules(): Promise<RuleData[]> {
+  const res = await apiFetch('/api/rules');
+  if (!res.ok) throw new Error(`Failed to load rules (HTTP ${res.status})`);
+  return ((await res.json()) as { rules: RuleData[] }).rules;
+}
 
-const KINDS = ['behavior', 'soul', 'user', 'custom'] as RuleKind[];
+interface RuleRowProps {
+  rule: RuleData;
+  onEdit: (rule: RuleData) => void;
+  onDuplicate: (rule: RuleData) => void;
+  onToggle: (rule: RuleData) => void;
+  onDelete: (rule: RuleData) => void;
+}
 
-interface RuleGroupProps { kind: RuleKind; rules: RuleProps[]; onToggle: (id: string) => void; deletingId: string | null; onRequestDelete: (id: string) => void; }
-function RuleGroup({ kind, rules, onToggle, deletingId, onRequestDelete }: RuleGroupProps) {
+function RuleRow({ rule, onEdit, onDuplicate, onToggle, onDelete }: RuleRowProps) {
   return (
-    <div>
-      <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground">{KIND_LABELS[kind]}</h3>
-      <div className="flex flex-col gap-2">
-        {rules.length === 0 && <p className="text-sm text-muted-foreground">No {kind} rules</p>}
-        {rules.map((rule) => (
-          <div key={rule.id} className={`rounded border p-3 ${rule.enabled ? '' : 'opacity-50'}`}>
-            <div className="flex items-center justify-between">
-              <span className="font-medium">{rule.title}</span>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => onToggle(rule.id)}>{rule.enabled ? 'Disable' : 'Enable'}</Button>
-                <Button size="sm" variant="destructive" disabled={deletingId === rule.id} onClick={() => onRequestDelete(rule.id)}>Delete</Button>
-              </div>
-            </div>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{rule.body}</pre>
-          </div>
-        ))}
-      </div>
-    </div>
+    <TableRow>
+      <TableCell>
+        <div className="space-y-1">
+          <div className="font-medium">{rule.title}</div>
+          <p className="max-w-[54ch] truncate text-sm text-muted-foreground">{rule.body}</p>
+        </div>
+      </TableCell>
+      <TableCell>{RULE_KIND_LABELS[rule.kind]}</TableCell>
+      <TableCell>
+        <Badge variant={rule.enabled ? 'default' : 'secondary'}>{rule.enabled ? 'enabled' : 'disabled'}</Badge>
+      </TableCell>
+      <TableCell>
+        <div className="flex gap-1">
+          <Button size="icon" variant="ghost" onClick={() => onEdit(rule)} aria-label="Edit rule"><Pencil className="h-4 w-4" /></Button>
+          <Button size="icon" variant="ghost" onClick={() => onDuplicate(rule)} aria-label="Duplicate rule"><Copy className="h-4 w-4" /></Button>
+          <Button size="sm" variant="outline" onClick={() => onToggle(rule)}>{rule.enabled ? 'Disable' : 'Enable'}</Button>
+          <Button size="icon" variant="ghost" onClick={() => onDelete(rule)} aria-label="Delete rule"><Trash2 className="h-4 w-4 text-destructive" /></Button>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }
 
-interface CreateFormProps { kind: RuleKind; setKind: (k: RuleKind) => void; title: string; setTitle: (t: string) => void; body: string; setBody: (b: string) => void; saving: boolean; onSubmit: () => void; onCancel: () => void; }
-function RuleCreateForm({ kind, setKind, title, setTitle, body, setBody, saving, onSubmit, onCancel }: CreateFormProps) {
-  return (
-    <div className="flex flex-col gap-3 rounded border p-4">
-      <h3 className="font-semibold">New Rule</h3>
-      <div className="flex gap-3">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="rule-kind">Kind</Label>
-          <select id="rule-kind" className="rounded border px-3 py-2 text-sm" value={kind} onChange={(e) => setKind(e.target.value as RuleKind)}>
-            {KINDS.map((k) => <option key={k} value={k}>{KIND_LABELS[k]}</option>)}
-          </select>
-        </div>
-        <div className="flex flex-1 flex-col gap-1">
-          <Label htmlFor="rule-title">Title</Label>
-          <Input id="rule-title" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1" />
-        </div>
-      </div>
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="rule-body">Body</Label>
-        <textarea id="rule-body" className="h-32 rounded border px-3 py-2 text-sm font-mono" placeholder="Rule body (markdown supported)" value={body} onChange={(e) => setBody(e.target.value)} />
-      </div>
-      <div className="flex gap-2">
-        <Button onClick={onSubmit} disabled={saving || !title || !body}>{saving ? 'Saving…' : 'Create'}</Button>
-        <Button variant="outline" onClick={onCancel}>Cancel</Button>
-      </div>
-    </div>
-  );
-}
+function useRulesData() {
+  const [rules, setRules] = useState<RuleData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
-interface CreateRuleParams {
-  kind: RuleKind;
-  title: string;
-  body: string;
-  setSaving: (b: boolean) => void;
-  setShowForm: (b: boolean) => void;
-  setTitle: (t: string) => void;
-  setBody: (b: string) => void;
-  load: () => Promise<void>;
-}
-async function doCreateRule(p: CreateRuleParams) {
-  p.setSaving(true);
-  try {
-    const res = await fetch('/api/rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: p.kind, title: p.title, body: p.body }) });
-    if (!res.ok) {
-      const d = (await res.json().catch(() => null)) as { error?: string } | null;
-      toast.error(d?.error ?? 'Failed to create rule');
-      return;
+  const loadRules = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setRules(await fetchRules());
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load rules'));
+    } finally {
+      setLoading(false);
     }
-    toast.success('Rule created');
-    p.setShowForm(false);
-    p.setTitle('');
-    p.setBody('');
-    await p.load();
-  } catch {
-    toast.error('Failed to create rule');
-  } finally {
-    p.setSaving(false);
-  }
-}
-
-async function doToggleRule(id: string, load: () => Promise<void>) {
-  try {
-    const res = await fetch(`/api/rules/${id}/toggle`, { method: 'POST' });
-    if (!res.ok) { toast.error('Failed to toggle rule'); return; }
-    toast.success('Rule toggled');
-    await load();
-  } catch {
-    toast.error('Failed to toggle rule');
-  }
-}
-
-interface DeleteRuleParams { id: string; load: () => Promise<void>; setDeletingId: (id: string | null) => void; clearPending: () => void; }
-async function doDeleteRule(p: DeleteRuleParams) {
-  p.setDeletingId(p.id);
-  p.clearPending();
-  try {
-    const res = await fetch(`/api/rules/${p.id}`, { method: 'DELETE' });
-    if (!res.ok) { toast.error('Failed to delete rule'); return; }
-    toast.success('Rule deleted');
-    await p.load();
-  } catch {
-    toast.error('Failed to delete rule');
-  } finally {
-    p.setDeletingId(null);
-  }
-}
-
-interface RulesActions {
-  rules: RuleProps[];
-  showForm: boolean;
-  setShowForm: (b: boolean) => void;
-  kind: RuleKind;
-  setKind: (k: RuleKind) => void;
-  title: string;
-  setTitle: (t: string) => void;
-  body: string;
-  setBody: (b: string) => void;
-  saving: boolean;
-  deletingId: string | null;
-  pendingDeleteId: string | null;
-  handleCreate: () => Promise<void>;
-  handleToggle: (id: string) => Promise<void>;
-  performDelete: (id: string) => Promise<void>;
-  requestDelete: (id: string) => void;
-  cancelDelete: () => void;
-}
-function useRulesActions(): RulesActions {
-  const [rules, setRules] = useState<RuleProps[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [kind, setKind] = useState<RuleKind>('behavior');
-  const [title, setTitle] = useState('');
-  const [body, setBody] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    const res = await fetch('/api/rules');
-    if (res.ok) setRules(((await res.json()) as { rules: RuleProps[] }).rules);
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void loadRules(); }, [loadRules]);
+  return { rules, loading, error, loadRules };
+}
 
-  const handleCreate = useCallback(() => doCreateRule({ kind, title, body, setSaving, setShowForm, setTitle, setBody, load }), [body, kind, load, setBody, setSaving, setShowForm, setTitle, title]);
-  const handleToggle = useCallback((id: string) => doToggleRule(id, load), [load]);
-  const performDelete = useCallback((id: string) => doDeleteRule({ id, load, setDeletingId, clearPending: () => setPendingDeleteId(null) }), [load]);
+function useRuleMutations(loadRules: () => Promise<void>) {
+  const duplicate = useCallback(async (rule: RuleData) => {
+    const payload = { kind: rule.kind, title: `${rule.title} copy`, body: rule.body, enabled: rule.enabled, sortOrder: rule.sortOrder };
+    try {
+      const res = await apiFetch('/api/rules', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      toast.success('Rule duplicated');
+      await loadRules();
+    } catch {
+      toast.error('Failed to duplicate rule');
+    }
+  }, [loadRules]);
 
-  return {
-    rules, showForm, setShowForm, kind, setKind, title, setTitle, body, setBody,
-    saving, deletingId, pendingDeleteId,
-    handleCreate, handleToggle, performDelete,
-    requestDelete: setPendingDeleteId,
-    cancelDelete: () => setPendingDeleteId(null),
-  };
+  const toggle = useCallback(async (rule: RuleData) => {
+    try {
+      const res = await apiFetch(`/api/rules/${rule.id}/toggle`, { method: 'POST' });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      toast.success('Rule updated');
+      await loadRules();
+    } catch {
+      toast.error('Failed to toggle rule');
+    }
+  }, [loadRules]);
+
+  const remove = useCallback(async (rule: RuleData) => {
+    try {
+      const res = await apiFetch(`/api/rules/${rule.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      toast.success('Rule deleted');
+      await loadRules();
+    } catch {
+      toast.error('Failed to delete rule');
+    }
+  }, [loadRules]);
+
+  return { duplicate, toggle, remove };
 }
 
 export function RulesEditor() {
-  const a = useRulesActions();
-  const grouped = Object.fromEntries(KINDS.map((k) => [k, a.rules.filter((r) => r.kind === k)]));
+  const router = useRouter();
+  const { rules, loading, error, loadRules } = useRulesData();
+  const { duplicate, toggle, remove } = useRuleMutations(loadRules);
+  const [toDelete, setToDelete] = useState<RuleData | null>(null);
+
+  if (loading) {
+    return <div className="space-y-2"><Skeleton className="h-10 w-full" /><Skeleton className="h-10 w-full" /></div>;
+  }
+
+  if (error) return <ErrorState title="Failed to load rules" description={error.message} onRetry={() => void loadRules()} />;
 
   return (
-    <div className="flex flex-col gap-6">
-      {KINDS.map((k) => <RuleGroup key={k} kind={k} rules={grouped[k] ?? []} onToggle={(id) => void a.handleToggle(id)} deletingId={a.deletingId} onRequestDelete={a.requestDelete} />)}
-      {a.showForm ? (
-        <RuleCreateForm kind={a.kind} setKind={a.setKind} title={a.title} setTitle={a.setTitle} body={a.body} setBody={a.setBody} saving={a.saving} onSubmit={() => void a.handleCreate()} onCancel={() => a.setShowForm(false)} />
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => router.push('/rules/new')}><Plus className="mr-2 h-4 w-4" />New rule</Button>
+      </div>
+      {rules.length === 0 ? (
+        <EmptyState title="No rules yet" description="Create one to shape global prompt behavior." icon={<ScrollText className="h-6 w-6" />} />
       ) : (
-        <Button onClick={() => a.setShowForm(true)} className="w-fit">Add Rule</Button>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow><TableHead>Name</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead className="w-40" /></TableRow>
+            </TableHeader>
+            <TableBody>
+              {rules.map((rule) => (
+                <RuleRow
+                  key={rule.id}
+                  rule={rule}
+                  onEdit={() => router.push(`/rules/${rule.id}/edit`)}
+                  onDuplicate={(r) => void duplicate(r)}
+                  onToggle={(r) => void toggle(r)}
+                  onDelete={setToDelete}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
       <ConfirmDialog
-        open={a.pendingDeleteId !== null}
+        open={toDelete !== null}
         title="Delete rule"
-        description="Delete this rule? This cannot be undone."
+        description={toDelete ? `Delete ${toDelete.title}? This cannot be undone.` : ''}
         confirmLabel="Delete"
-        onConfirm={() => a.pendingDeleteId && void a.performDelete(a.pendingDeleteId)}
-        onCancel={a.cancelDelete}
+        onConfirm={() => toDelete && void remove(toDelete).finally(() => setToDelete(null))}
+        onCancel={() => setToDelete(null)}
       />
     </div>
   );

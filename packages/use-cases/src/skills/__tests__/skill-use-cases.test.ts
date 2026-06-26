@@ -7,6 +7,7 @@ import { AttachSkillToAgentUseCase } from '../attach-skill-to-agent';
 import { CreateSkillUseCase } from '../create-skill';
 import { DeleteSkillUseCase } from '../delete-skill';
 import { DetachSkillFromAgentUseCase } from '../detach-skill-from-agent';
+import { GetSkillUseCase } from '../get-skill';
 import { ListSkillsUseCase } from '../list-skills';
 import { UpdateSkillUseCase } from '../update-skill';
 
@@ -142,6 +143,32 @@ describe('ListSkillsUseCase', () => {
   it('returns empty for unknown user', async () => {
     const { skills } = await useCase.execute({ userId: 'unknown' });
     expect(skills).toHaveLength(0);
+  });
+});
+
+describe('GetSkillUseCase', () => {
+  let repo: InMemorySkillRepo;
+  let useCase: GetSkillUseCase;
+
+  beforeEach(async () => {
+    repo = new InMemorySkillRepo();
+    useCase = new GetSkillUseCase(repo);
+    await repo.save(makeSkill({ name: 'skill-a' }));
+  });
+
+  it('returns a skill when it exists', async () => {
+    const [skill] = await repo.findByUserId(USER);
+    const out = await useCase.execute({ id: skill!.id, userId: USER });
+    expect(out.skill.name).toBe('skill-a');
+  });
+
+  it('throws NotFoundError for an unknown skill', async () => {
+    await expect(useCase.execute({ id: 'missing', userId: USER })).rejects.toThrow(NotFoundError);
+  });
+
+  it('throws NotFoundError for a skill owned by another user', async () => {
+    const other = await repo.save(makeSkill({ name: 'private-skill', userId: 'user-2' }));
+    await expect(useCase.execute({ id: other.id, userId: USER })).rejects.toThrow(NotFoundError);
   });
 });
 

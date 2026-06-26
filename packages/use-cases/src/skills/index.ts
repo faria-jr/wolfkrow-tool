@@ -6,6 +6,8 @@ export { DeleteSkillUseCase } from './delete-skill';
 export type { DeleteSkillInput } from './delete-skill';
 export { ListSkillsUseCase } from './list-skills';
 export type { ListSkillsInput, ListSkillsOutput } from './list-skills';
+export { GetSkillUseCase } from './get-skill';
+export type { GetSkillInput, GetSkillOutput } from './get-skill';
 export { AttachSkillToAgentUseCase } from './attach-skill-to-agent';
 export type { AttachSkillInput, AttachSkillOutput } from './attach-skill-to-agent';
 export { DetachSkillFromAgentUseCase } from './detach-skill-from-agent';

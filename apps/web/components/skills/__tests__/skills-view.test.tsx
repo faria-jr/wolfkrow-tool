@@ -1,8 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useRouter } from 'next/navigation';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SkillsView } from '../skills-view';
+
+vi.mock('next/navigation', () => ({ useRouter: vi.fn() }));
 
 function makeSkill() {
   return {
@@ -14,8 +17,11 @@ function makeSkill() {
 
 describe('SkillsView', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
+  let push: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    push = vi.fn();
+    vi.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ skills: [makeSkill()] }),
@@ -30,6 +36,35 @@ describe('SkillsView', () => {
     expect(screen.getByRole('button', { name: /new skill/i })).toBeInTheDocument();
     // settle the mount-time fetch inside this test's act() boundary
     await waitFor(() => expect(screen.getByText('My Skill')).toBeInTheDocument());
+  });
+
+  it('navigates to the dedicated edit screen when editing a skill', async () => {
+    render(<SkillsView />);
+    await waitFor(() => expect(screen.getByText('My Skill')).toBeInTheDocument());
+
+    await userEvent.click(screen.getByLabelText('Edit skill'));
+
+    expect(push).toHaveBeenCalledWith('/skills/sk1/edit');
+  });
+
+  it('navigates to the dedicated create screen from New skill', async () => {
+    render(<SkillsView />);
+    await waitFor(() => expect(screen.getByText('My Skill')).toBeInTheDocument());
+
+    await userEvent.click(screen.getByRole('button', { name: /new skill/i }));
+
+    expect(push).toHaveBeenCalledWith('/skills/new');
+  });
+
+  it('duplicates a skill from the table action', async () => {
+    render(<SkillsView />);
+    await waitFor(() => expect(screen.getByText('My Skill')).toBeInTheDocument());
+
+    await userEvent.click(screen.getByLabelText('Duplicate skill'));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/skills', expect.objectContaining({ method: 'POST' }));
+    });
   });
 
   it('shows error state when fetch fails and allows retry', async () => {

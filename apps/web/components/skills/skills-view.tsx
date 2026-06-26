@@ -1,16 +1,15 @@
 'use client';
 
 import { Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { SkillEditor, type SkillEditorValues } from './skill-editor';
 import type { SkillData } from './skill-list';
 import { SkillList } from './skill-list';
 
 import { ErrorState } from '@/components/common/error-state';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const API = '/api/skills';
@@ -22,13 +21,14 @@ async function fetchSkills(): Promise<SkillData[]> {
 }
 
 export function SkillsView() {
+  const router = useRouter();
   const { skills, loading, error, loadSkills } = useSkillsData();
-  const { modalOpen, setModalOpen, editing, setEditing, saving, save, remove } = useSkillMutations(loadSkills);
+  const { duplicate, remove } = useSkillMutations(loadSkills);
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => { setEditing(null); setModalOpen(true); }}>
+        <Button onClick={() => router.push('/skills/new')}>
           <Plus className="mr-2 h-4 w-4" />New skill
         </Button>
       </div>
@@ -45,21 +45,13 @@ export function SkillsView() {
           onRetry={() => void loadSkills()}
         />
       ) : (
-        <SkillList skills={skills} onEdit={(s) => { setEditing(s); setModalOpen(true); }} onDelete={remove} />
+        <SkillList
+          skills={skills}
+          onEdit={(s) => router.push(`/skills/${s.id}/edit`)}
+          onDuplicate={duplicate}
+          onDelete={remove}
+        />
       )}
-      <Dialog open={modalOpen} onOpenChange={(o) => { if (!o) setModalOpen(false); }}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'Edit skill' : 'New skill'}</DialogTitle>
-          </DialogHeader>
-          <SkillEditor
-            {...(editing ? { initialValues: { name: editing.name, description: editing.description, content: editing.content, tags: editing.tags } } : {})}
-            onSave={save}
-            onCancel={() => setModalOpen(false)}
-            loading={saving}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -86,24 +78,25 @@ function useSkillsData() {
 }
 
 function useSkillMutations(loadSkills: () => Promise<void>) {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<SkillData | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  const save = useCallback(async (values: SkillEditorValues) => {
-    setSaving(true);
+  const duplicate = useCallback(async (skill: SkillData) => {
     try {
-      const method = editing?.id ? 'PUT' : 'POST';
-      const path = editing?.id ? `${API}/${editing.id}` : API;
-      const res = await apiFetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) });
+      const res = await apiFetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${skill.name} copy`,
+          description: skill.description,
+          content: skill.content,
+          tags: skill.tags,
+        }),
+      });
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      toast.success('Skill saved');
-      setModalOpen(false);
+      toast.success('Skill duplicated');
       await loadSkills();
     } catch {
-      toast.error('Failed to save skill');
-    } finally { setSaving(false); }
-  }, [editing, loadSkills]);
+      toast.error('Failed to duplicate skill');
+    }
+  }, [loadSkills]);
 
   const remove = useCallback(async (id: string) => {
     try {
@@ -116,5 +109,5 @@ function useSkillMutations(loadSkills: () => Promise<void>) {
     }
   }, [loadSkills]);
 
-  return { modalOpen, setModalOpen, editing, setEditing, saving, save, remove };
+  return { duplicate, remove };
 }

@@ -56,12 +56,13 @@ function TagField({ tags, onChange, disabled }: TagFieldProps) {
 }
 
 interface ActionsProps { onSave: () => void; onCancel: () => void; loading: boolean | undefined; }
+interface ActionsLabels { saveLabel?: string; savingLabel?: string; }
 
-function SkillFormActions({ onSave, onCancel, loading }: ActionsProps) {
+function SkillFormActions({ onSave, onCancel, loading, saveLabel = 'Save skill', savingLabel = 'Saving…' }: ActionsProps & ActionsLabels) {
   return (
     <div className="flex justify-end gap-2">
       <Button variant="outline" onClick={onCancel}>Cancel</Button>
-      <Button onClick={onSave} disabled={loading}>{loading ? 'Saving…' : 'Save skill'}</Button>
+      <Button onClick={onSave} disabled={loading}>{loading ? savingLabel : saveLabel}</Button>
     </div>
   );
 }
@@ -72,9 +73,10 @@ interface Props {
   onCancel: () => void;
   loading?: boolean;
   readOnly?: boolean;
+  saveLabel?: string;
 }
 
-export function SkillEditor({ initialValues, onSave, onCancel, loading, readOnly }: Props) {
+export function SkillEditor({ initialValues, onSave, onCancel, loading, readOnly, saveLabel }: Props) {
   const form = useForm<SkillEditorValues>({
     resolver: zodResolver(skillSchema),
     defaultValues: buildDefaults(initialValues),
@@ -90,6 +92,7 @@ export function SkillEditor({ initialValues, onSave, onCancel, loading, readOnly
   const { control, handleSubmit, watch, setValue } = form;
   const tags = watch('tags');
   const content = watch('content');
+  const actionLabels = saveLabel ? { saveLabel } : {};
 
   return (
     <Form {...form}>
@@ -123,7 +126,14 @@ export function SkillEditor({ initialValues, onSave, onCancel, loading, readOnly
           <TagField tags={tags} onChange={readOnly ? () => undefined : (t) => setValue('tags', t)} disabled={readOnly} />
         </div>
         <MarkdownEditor value={content} onChange={(v) => setValue('content', v)} disabled={readOnly ?? false} label="Skill content" />
-        {!readOnly && <SkillFormActions onSave={handleSubmit((v) => { void onSave(v); })} onCancel={onCancel} loading={loading} />}
+        {!readOnly && (
+          <SkillFormActions
+            onSave={handleSubmit((v) => { void onSave(v); })}
+            onCancel={onCancel}
+            loading={Boolean(loading)}
+            {...actionLabels}
+          />
+        )}
       </div>
     </Form>
   );
