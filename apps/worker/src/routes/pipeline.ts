@@ -140,6 +140,34 @@ async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams }>, reply
   return runAiPhase(req, reply);
 }
 
+/** Runs an AI (non-implementation) pipeline phase and emits phase-complete. */
+async function streamAiPhase(req: FastifyRequest<{ Params: RunParams }>, sse: (data: unknown) => void): Promise<void> {
+  const { projectRepo, phaseRepo: pr } = _repos;
+  const body = validate(runPhaseBody, req.body ?? {});
+  const project = await projectRepo.findById(req.params.id);
+  if (!project) throw new Error('Project not found');
+
+  const apiKey = await getAnthropicApiKey();
+  const aiProvider = getAdapters().aiFactory.create('anthropic', apiKey);
+  const phaseSystemPrompt = await new BuildSystemPromptUseCase(getRepos().globalRule).execute({
+    userId: project.userId, agentSystemPrompt: 'You are a helpful assistant.',
+  });
+  const wrappedProvider = {
+    query: aiProvider.query.bind(aiProvider),
+    complete: async (opts: Parameters<typeof aiProvider.complete>[0]) =>
+      aiProvider.complete({ ...opts, system: opts.system ? `${phaseSystemPrompt}\n\n${opts.system}` : phaseSystemPrompt }),
+  };
+  const result = await new RunPhaseUseCase(
+    projectRepo, pr, wrappedProvider,
+    { messageRepo: getRepos().pipelineMessage, artifactWriter: getArtifactWriter() },
+  ).execute({
+    projectId: req.params.id, phaseId: req.params.phaseId,
+    ...(body.userPrompt !== undefined ? { userPrompt: body.userPrompt } : {}),
+    ...(body.model !== undefined ? { model: body.model } : {}),
+  });
+  sse({ type: 'phase-complete', output: result.output, phase: result.phase.toProps(), project: result.project.toProps() });
+}
+
 async function runPhaseSseHandler(req: FastifyRequest<{ Params: RunParams }>, reply: FastifyReply) {
   const { phaseRepo } = _repos;
   const phase = await phaseRepo.findById(req.params.phaseId);
@@ -161,30 +189,7 @@ async function runPhaseSseHandler(req: FastifyRequest<{ Params: RunParams }>, re
         sse({ type: 'phase-complete', ...result });
       }
     } else {
-      const { projectRepo, phaseRepo: pr } = _repos;
-      const body = validate(runPhaseBody, req.body ?? {});
-      const project = await projectRepo.findById(req.params.id);
-      if (!project) { sse({ type: 'error', message: 'Project not found' }); reply.raw.end(); return; }
-
-      const apiKey = await getAnthropicApiKey();
-      const aiProvider = getAdapters().aiFactory.create('anthropic', apiKey);
-      const phaseSystemPrompt = await new BuildSystemPromptUseCase(getRepos().globalRule).execute({
-        userId: project.userId, agentSystemPrompt: 'You are a helpful assistant.',
-      });
-      const wrappedProvider = {
-        query: aiProvider.query.bind(aiProvider),
-        complete: async (opts: Parameters<typeof aiProvider.complete>[0]) =>
-          aiProvider.complete({ ...opts, system: opts.system ? `${phaseSystemPrompt}\n\n${opts.system}` : phaseSystemPrompt }),
-      };
-      const result = await new RunPhaseUseCase(
-        projectRepo, pr, wrappedProvider,
-        { messageRepo: getRepos().pipelineMessage, artifactWriter: getArtifactWriter() },
-      ).execute({
-        projectId: req.params.id, phaseId: req.params.phaseId,
-        ...(body.userPrompt !== undefined ? { userPrompt: body.userPrompt } : {}),
-        ...(body.model !== undefined ? { model: body.model } : {}),
-      });
-      sse({ type: 'phase-complete', output: result.output, phase: result.phase.toProps(), project: result.project.toProps() });
+      await streamAiPhase(req, sse);
     }
   } catch (err) {
     sse({ type: 'error', message: err instanceof Error ? err.message : 'Unknown error' });

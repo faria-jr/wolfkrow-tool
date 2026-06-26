@@ -17,9 +17,9 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getHarnessAgents, getHarnessProjectWorkDir, makeCoderWithTools, getRepos } from '../container';
-import { validateProjectPath } from '../lib/project-path';
 import type { FeatureRunResult } from '../harness/runner';
 import { runHarnessFeature } from '../harness/runner';
+import { validateProjectPath } from '../lib/project-path';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, z } from '../validation';
 
@@ -157,28 +157,30 @@ async function roundsListHandler(req: FastifyRequest<{ Params: { sprintId: strin
   return (await roundRepo.findBySprintId(req.params.sprintId)).map((r) => r.toProps());
 }
 
+async function createProjectHandler(req: FastifyRequest, reply: FastifyReply) {
+  const userId = req.user?.userId ?? 'anonymous';
+  const body = validate(createProjectBody, req.body);
+  if (body.projectPath !== undefined) {
+    const checked = validateProjectPath(body.projectPath);
+    if (!checked.ok) return reply.status(400).send({ error: checked.reason });
+    body.projectPath = checked.path;
+  }
+  const { project } = await new CreateHarnessProjectUseCase(harnessRepos().projectRepo).execute({
+    userId,
+    name: body.name,
+    specPath: body.specPath,
+    ...(body.projectPath !== undefined ? { projectPath: body.projectPath } : {}),
+    ...(body.description !== undefined ? { description: body.description } : {}),
+    ...(body.maxRoundsPerFeature !== undefined ? { maxRoundsPerFeature: body.maxRoundsPerFeature } : {}),
+  });
+  return project.toProps();
+}
+
 export async function harnessRoutes(server: AuthFastifyInstance) {
   const auth = { preHandler: [server.authenticate] };
   const projectRepo = () => harnessRepos().projectRepo;
 
-  server.post('/projects', auth, async (req, reply) => {
-    const userId = req.user?.userId ?? 'anonymous';
-    const body = validate(createProjectBody, req.body);
-    if (body.projectPath !== undefined) {
-      const checked = validateProjectPath(body.projectPath);
-      if (!checked.ok) return reply.status(400).send({ error: checked.reason });
-      body.projectPath = checked.path;
-    }
-    const { project } = await new CreateHarnessProjectUseCase(projectRepo()).execute({
-      userId,
-      name: body.name,
-      specPath: body.specPath,
-      ...(body.projectPath !== undefined ? { projectPath: body.projectPath } : {}),
-      ...(body.description !== undefined ? { description: body.description } : {}),
-      ...(body.maxRoundsPerFeature !== undefined ? { maxRoundsPerFeature: body.maxRoundsPerFeature } : {}),
-    });
-    return project.toProps();
-  });
+  server.post('/projects', auth, createProjectHandler);
 
   server.get('/projects', auth, async (req) => {
     const userId = req.user?.userId ?? 'anonymous';

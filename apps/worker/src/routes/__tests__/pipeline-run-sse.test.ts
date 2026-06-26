@@ -10,8 +10,6 @@ import { PipelinePhase, PipelineProject } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { authedDecorator, setErrorHandler } from './helpers/app';
-
 const { fakePhaseRepo, fakeProjectRepo } = vi.hoisted(() => {
   const phases = new Map<string, PipelinePhase>();
   const projects = new Map<string, PipelineProject>();
@@ -76,6 +74,8 @@ vi.mock('../../lib/keychain', () => ({ getAnthropicApiKey: vi.fn(async () => 'sk
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { pipelineRoutes } from '../pipeline';
 
+import { authedDecorator, setErrorHandler } from './helpers/app';
+
 function parseSSE(body: string): unknown[] {
   return body
     .split('\n\n')
@@ -90,7 +90,7 @@ let implPhaseId: string;
 
 beforeAll(async () => {
   const project = PipelineProject.create({ userId: 'u1', name: 'SSE project' });
-  fakeProjectRepo.save(project);
+  await fakeProjectRepo.save(project);
   projectId = project.id;
 
   const discovery = PipelinePhase.create({ projectId, stage: 'discovery' });
