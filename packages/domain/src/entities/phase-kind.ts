@@ -21,6 +21,8 @@ const STAGE_KINDS: Readonly<Record<PipelineStage, PhaseKind>> = {
  spec_build: 'auto',
  spec_validate: 'auto',
  approval: 'conversation',
+ design: 'conversation',
+ design_lock: 'auto',
  implementation: 'auto',
  completed: 'auto',
 };

@@ -13,8 +13,10 @@ const STAGE_ORDER: Record<PipelineStage, number> = {
  spec_build: 1,
  spec_validate: 2,
  approval: 3,
- implementation: 4,
- completed: 5,
+ design: 4,
+ design_lock: 5,
+ implementation: 6,
+ completed: 7,
 };
 
 export interface GenerateReportInput {

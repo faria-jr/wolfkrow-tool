@@ -5,7 +5,9 @@ const NEXT_STAGE: Record<PipelineStage, PipelineStage | null> = {
   discovery: 'spec_build',
   spec_build: 'spec_validate',
   spec_validate: 'approval',
-  approval: 'implementation',
+  approval: 'design',
+  design: 'design_lock',
+  design_lock: 'implementation',
   implementation: 'completed',
   completed: null,
 };

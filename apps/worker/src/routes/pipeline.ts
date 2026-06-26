@@ -13,17 +13,18 @@ import {
  DeletePipelineProjectUseCase,
  GeneratePipelineReportUseCase,
  GetPipelineProjectUseCase,
- ImplementViaHarnessUseCase,
  ListPipelineProjectsUseCase,
  RunPhaseUseCase,
  StartPhaseUseCase,
 } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { getAdapters, getArtifactWriter, getHarnessAgents, getRepos } from '../container';
+import { getAdapters, getArtifactWriter, getRepos } from '../container';
 import { getAnthropicApiKey } from '../lib/keychain';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, z } from '../validation';
+
+import { runDesignBootstrap, runDesignLock, runImplementationViaHarness } from './pipeline-design';
 
 function makeRepos() {
   const r = getRepos();
@@ -54,40 +55,6 @@ type RunParams = { id: string; phaseId: string };
 
 /** Derive the authenticated user's id from the session — never from the body. */
 const uid = (req: FastifyRequest) => (req as unknown as { user: { userId: string } }).user.userId;
-
-async function runImplementationViaHarness(
-  req: FastifyRequest<{ Params: RunParams }>,
-  reply: FastifyReply,
-): Promise<unknown> {
-  const { projectRepo, phaseRepo } = _repos;
-  const r = getRepos();
-  const body = validate(runPhaseBody, req.body ?? {});
-  try {
-    const { planner } = await getHarnessAgents({ maxRoundsPerFeature: 5, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' });
-    const result = await new ImplementViaHarnessUseCase({
-      pipelineProjectRepo: projectRepo,
-      pipelinePhaseRepo: phaseRepo,
-      harnessProjectRepo: r.harnessProject,
-      harnessSprintRepo: r.harnessSprint,
-      planner,
-      artifactWriter: getArtifactWriter(),
-    }).execute({
-      projectId: req.params.id,
-      phaseId: req.params.phaseId,
-      ...(body.userPrompt !== undefined ? { inlineSpec: body.userPrompt } : {}),
-    });
-    return {
-      phase: result.phase.toProps(),
-      project: result.pipeline.toProps(),
-      output: result.artifact,
-      harnessProjectId: result.harness.toProps().id,
-      sprintCount: result.sprints.length,
-    };
-  } catch (err) {
-    req.log.error({ err }, 'ImplementViaHarnessUseCase failed');
-    return reply.status(500).send({ error: 'Implementation via Harness failed' });
-  }
-}
 
 async function runAiPhase(
   req: FastifyRequest<{ Params: RunParams }>,
@@ -136,6 +103,12 @@ async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams }>, reply
 
   if (phase.stage === 'implementation') {
     return runImplementationViaHarness(req, reply);
+  }
+  if (phase.stage === 'design') {
+    return runDesignBootstrap(req, reply);
+  }
+  if (phase.stage === 'design_lock') {
+    return runDesignLock(req, reply);
   }
   return runAiPhase(req, reply);
 }

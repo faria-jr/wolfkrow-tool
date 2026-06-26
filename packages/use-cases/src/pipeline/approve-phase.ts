@@ -62,7 +62,7 @@ export class ApprovePipelinePhaseUseCase {
  if (input.specEdits !== undefined) approvalExtras.specEdits = input.specEdits;
 
  const nextStage =
- phase.stage === 'approval' ? 'implementation' : project.currentStage;
+ phase.stage === 'approval' ? 'design' : project.currentStage;
  updatedProject = await this.projectRepo.save(project.withStage(nextStage, approvalExtras));
  return { project: updatedProject, phase: updatedPhase };
  }

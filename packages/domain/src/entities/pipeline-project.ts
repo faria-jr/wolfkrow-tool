@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-export type PipelineStage = 'discovery' | 'spec_build' | 'spec_validate' | 'approval' | 'implementation' | 'completed';
+export type PipelineStage = 'discovery' | 'spec_build' | 'spec_validate' | 'approval' | 'design' | 'design_lock' | 'implementation' | 'completed';
 export type PipelineStatus = 'running' | 'paused' | 'awaiting_approval' | 'completed' | 'failed' | 'cancelled';
 
 export interface PipelineMetrics {

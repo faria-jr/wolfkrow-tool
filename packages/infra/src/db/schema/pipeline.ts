@@ -15,7 +15,7 @@ export const pipelineProjects = sqliteTable('pipeline_projects', {
   name: shortText('name').notNull(),
   description: text('description'),
   currentStage: text('current_stage', {
-    enum: ['discovery', 'spec_build', 'spec_validate', 'approval', 'implementation', 'completed'],
+    enum: ['discovery', 'spec_build', 'spec_validate', 'approval', 'design', 'design_lock', 'implementation', 'completed'],
   }).notNull(),
   status: text('status', {
     enum: ['running', 'paused', 'awaiting_approval', 'completed', 'failed', 'cancelled'],
