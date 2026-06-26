@@ -6,6 +6,8 @@ export { DeleteAgentUseCase } from './delete-agent';
 export type { DeleteAgentInput, DeleteAgentOutput } from './delete-agent';
 export { DuplicateAgentUseCase } from './duplicate-agent';
 export type { DuplicateAgentInput, DuplicateAgentOutput } from './duplicate-agent';
+export { GetAgentUseCase } from './get-agent';
+export type { GetAgentInput, GetAgentOutput } from './get-agent';
 export { ListAgentsUseCase } from './list-agents';
 export type { ListAgentsInput, ListAgentsOutput } from './list-agents';
 export { SyncAgentsToOrchestratorUseCase } from './sync-agents';

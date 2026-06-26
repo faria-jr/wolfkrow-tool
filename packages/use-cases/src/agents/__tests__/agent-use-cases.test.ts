@@ -6,6 +6,7 @@ import {
   CreateAgentUseCase,
   DeleteAgentUseCase,
   DuplicateAgentUseCase,
+  GetAgentUseCase,
   ListAgentsUseCase,
   SyncAgentsToOrchestratorUseCase,
   UpdateAgentUseCase,
@@ -234,5 +235,23 @@ describe('SyncAgentsToOrchestratorUseCase', () => {
     await uc.execute({ userId: 'u1', targetRuntime: 'codex', targetModel: undefined });
     const out = await uc.execute({ userId: 'u1', targetRuntime: 'codex', targetModel: undefined });
     expect(out.synced).toBe(0);
+  });
+});
+
+// ── GetAgentUseCase ──────────────────────────────────────────────────────────
+
+describe('GetAgentUseCase', () => {
+  let repo: InMemoryAgentRepo;
+  beforeEach(() => { repo = new InMemoryAgentRepo(); });
+
+  it('returns the agent when it exists', async () => {
+    const { agent: created } = await new CreateAgentUseCase(repo).execute({ ...baseInput, userId: 'u1', name: 'a1' });
+    const out = await new GetAgentUseCase(repo).execute({ id: created.id, userId: 'u1' });
+    expect(out.agent.id).toBe(created.id);
+    expect(out.agent.name).toBe('a1');
+  });
+
+  it('throws NotFoundError when the agent does not exist', async () => {
+    await expect(new GetAgentUseCase(repo).execute({ id: 'missing', userId: 'u1' })).rejects.toBeInstanceOf(NotFoundError);
   });
 });

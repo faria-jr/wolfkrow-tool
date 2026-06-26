@@ -48,12 +48,48 @@ const customProviders: ProviderDTO[] = [
     models: ['glm-4.7', 'glm-5.1'],
     supportsTools: true,
   },
+  {
+    id: 'anthropic',
+    displayName: 'Anthropic (Claude)',
+    protocol: 'anthropic-compat',
+    baseUrl: 'https://api.anthropic.com',
+    apiKeyAccount: 'anthropic',
+    models: ['claude-opus-4-8', 'claude-sonnet-4-6'],
+    supportsTools: true,
+  },
+  {
+    id: 'openai',
+    displayName: 'OpenAI',
+    protocol: 'openai-compatible',
+    baseUrl: 'https://api.openai.com/v1',
+    apiKeyAccount: 'openai',
+    models: ['gpt-4o', 'gpt-4.1'],
+    supportsTools: true,
+  },
+  {
+    id: 'ollama',
+    displayName: 'Ollama (local)',
+    protocol: 'openai-compatible',
+    baseUrl: 'http://localhost:11434/v1',
+    apiKeyAccount: 'ollama',
+    models: ['llama3', 'mistral'],
+    supportsTools: false,
+  },
+  {
+    id: 'openrouter',
+    displayName: 'OpenRouter',
+    protocol: 'openai-compatible',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    apiKeyAccount: 'openrouter',
+    models: ['openrouter/auto'],
+    supportsTools: true,
+  },
 ];
 
-function Wrapper({ providers }: { providers?: ProviderDTO[] }) {
+function Wrapper({ providers, runtime }: { providers?: ProviderDTO[]; runtime?: AgentFormValues['runtime'] }) {
   const form = useForm<AgentFormValues>({
     resolver: zodResolver(agentSchema),
-    defaultValues,
+    defaultValues: { ...defaultValues, ...(runtime ? { runtime } : {}) },
   });
   return (
     <Form {...form}>
@@ -109,5 +145,78 @@ describe('ModelSection', () => {
     // model should have auto-reset to Z.ai's first model (glm-4.7).
     const modelTrigger = screen.getByRole('combobox', { name: /^model/i });
     expect(modelTrigger).toHaveTextContent('glm-4.7');
+  });
+
+  // EPIC 1.1 — provider selector visible for every runtime (was gated to claude-compat).
+  it('shows provider selector for cloud runtime (anthropic-compat providers only)', async () => {
+    const user = userEvent.setup();
+    render(<Wrapper providers={customProviders} runtime="cloud" />);
+    const providerSelect = screen.getByRole('combobox', { name: /provider/i });
+    await user.click(providerSelect);
+    expect(await screen.findByRole('option', { name: 'Anthropic (Claude)' })).toBeTruthy();
+    expect(await screen.findByRole('option', { name: 'Z.ai' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Ollama (local)' })).toBeNull();
+    expect(screen.queryByRole('option', { name: 'OpenAI' })).toBeNull();
+    await user.keyboard('{Escape}');
+  });
+
+  it('shows provider selector for local runtime (openai-compatible only — Ollama)', async () => {
+    const user = userEvent.setup();
+    render(<Wrapper providers={customProviders} runtime="local" />);
+    const providerSelect = screen.getByRole('combobox', { name: /provider/i });
+    await user.click(providerSelect);
+    expect(await screen.findByRole('option', { name: 'Ollama (local)' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Z.ai' })).toBeNull();
+    expect(screen.queryByRole('option', { name: 'Anthropic (Claude)' })).toBeNull();
+    await user.keyboard('{Escape}');
+  });
+
+  it('shows provider selector for codex runtime (openai-compatible — OpenAI)', async () => {
+    const user = userEvent.setup();
+    render(<Wrapper providers={customProviders} runtime="codex" />);
+    const providerSelect = screen.getByRole('combobox', { name: /provider/i });
+    await user.click(providerSelect);
+    expect(await screen.findByRole('option', { name: 'OpenAI' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Z.ai' })).toBeNull();
+    await user.keyboard('{Escape}');
+  });
+
+  it('shows provider selector for external runtime (openai-compatible — OpenRouter)', async () => {
+    const user = userEvent.setup();
+    render(<Wrapper providers={customProviders} runtime="external" />);
+    const providerSelect = screen.getByRole('combobox', { name: /provider/i });
+    await user.click(providerSelect);
+    expect(await screen.findByRole('option', { name: 'OpenRouter' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Anthropic (Claude)' })).toBeNull();
+    await user.keyboard('{Escape}');
+  });
+
+  it('shows provider selector for claude-compat runtime (anthropic-compat excluding anthropic itself)', async () => {
+    const user = userEvent.setup();
+    render(<Wrapper providers={customProviders} runtime="claude-compat" />);
+    const providerSelect = screen.getByRole('combobox', { name: /provider/i });
+    await user.click(providerSelect);
+    expect(await screen.findByRole('option', { name: 'Z.ai' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Anthropic (Claude)' })).toBeNull();
+    await user.keyboard('{Escape}');
+  });
+
+  it('replaces default models with selected provider models when provider changes on cloud runtime', async () => {
+    const user = userEvent.setup();
+    render(<Wrapper providers={customProviders} runtime="cloud" />);
+
+    const modelSelect = screen.getByRole('combobox', { name: /^model/i });
+    await user.click(modelSelect);
+    expect(await screen.findByRole('option', { name: 'claude-opus-4-8' })).toBeTruthy();
+    await user.keyboard('{Escape}');
+
+    // Pick Z.ai as provider — model list should reset to glm-4.7.
+    const providerSelect = screen.getByRole('combobox', { name: /provider/i });
+    await user.click(providerSelect);
+    await user.click(await screen.findByRole('option', { name: 'Z.ai' }));
+
+    await user.click(modelSelect);
+    expect(await screen.findByRole('option', { name: 'glm-4.7' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'claude-opus-4-8' })).toBeNull();
   });
 });

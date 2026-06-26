@@ -1,11 +1,12 @@
 /**
+ * GET    /api/agents/[id] — fetch a single agent
  * PUT    /api/agents/[id] — update agent
  * DELETE /api/agents/[id] — delete agent
  */
 
 import { NotFoundError } from '@wolfkrow/domain';
 import { UpdateAgentInputSchema } from '@wolfkrow/shared-types';
-import { DeleteAgentUseCase, UpdateAgentUseCase } from '@wolfkrow/use-cases';
+import { DeleteAgentUseCase, GetAgentUseCase, UpdateAgentUseCase } from '@wolfkrow/use-cases';
 import { cookies } from 'next/headers';
 
 import { parsePatchInput } from '../parse';
@@ -15,6 +16,21 @@ import { getRepos } from '@/lib/container';
 import { validateBody } from '@/lib/validation';
 
 interface Ctx { params: Promise<{ id: string }>; }
+
+export async function GET(_request: Request, ctx: Ctx) {
+  const cookieStore = await cookies();
+  const session = await getSession(cookieStore.get('session')?.value);
+  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { id } = await ctx.params;
+  try {
+    const { agent } = await new GetAgentUseCase(getRepos().agent).execute({ id, userId: session.userId });
+    return Response.json({ agent: agent.toProps() });
+  } catch (err) {
+    if (err instanceof NotFoundError) return Response.json({ error: err.message }, { status: 404 });
+    throw err;
+  }
+}
 
 export async function PUT(request: Request, ctx: Ctx) {
   const cookieStore = await cookies();
