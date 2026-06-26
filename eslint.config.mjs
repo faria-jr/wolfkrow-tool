@@ -34,8 +34,10 @@ export default tseslint.config(
             'apps/web/.storybook/main.ts',
             'apps/web/.storybook/preview.ts',
             'apps/web/e2e/*.ts',
+            'apps/web/e2e/helpers/*.ts',
             'apps/web/components/ui/*.stories.tsx',
           ],
+          maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 25,
         },
         tsconfigRootDir: import.meta.dirname,
       },
@@ -127,6 +129,15 @@ export default tseslint.config(
     files: ['apps/web/{app,components}/**/*.{ts,tsx}'],
     rules: {
       'wolfkrow/no-arbitrary-tailwind': 'error',
+    },
+  },
+
+  // E2E specs + helpers are Playwright (not React) — the `use` fixture callback
+  // trips react-hooks/rules-of-hooks. Disable it for the e2e directory.
+  {
+    files: ['**/e2e/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
     },
   },
 

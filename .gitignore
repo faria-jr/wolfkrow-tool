@@ -71,6 +71,8 @@ resources/ffmpeg/
 # Generated artifacts
 **/next-env.d.ts
 apps/web/public/sw.js
+apps/web/playwright-report/
+apps/web/test-results/
 
 # OS specific
 *.pem
