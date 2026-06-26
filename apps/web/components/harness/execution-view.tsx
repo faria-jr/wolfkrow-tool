@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { statusBadgeVariant } from '@/lib/status-badge';
 
 interface Feature { name: string; description: string; acceptanceCriteria: string[]; }
 
@@ -148,16 +149,13 @@ function useHarnessRun(projectId: string, sprintId: string, features: Feature[])
 const STAGE_LABEL: Record<string, string> = { coder: 'Coder', smoke: 'Smoke', evaluator: 'Evaluator', idle: '' };
 
 function FeatureRow({ f }: { f: FeatureState }) {
-  const variantMap: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    passed: 'default', failed: 'destructive', running: 'secondary', pending: 'outline',
-  };
   return (
     <div className="flex items-center gap-3 rounded border bg-card px-3 py-2 text-sm">
       <span className="flex-1 truncate font-medium">{f.name || `Feature ${f.index + 1}`}</span>
       {f.status === 'running' && f.stage !== 'idle' && (
         <span className="text-xs text-muted-foreground">{STAGE_LABEL[f.stage]} · Round {f.currentRound}</span>
       )}
-      <Badge variant={variantMap[f.status] ?? 'outline'} className="shrink-0 text-xs">{f.status}</Badge>
+      <Badge variant={statusBadgeVariant(f.status)} className="shrink-0 text-xs">{f.status}</Badge>
     </div>
   );
 }

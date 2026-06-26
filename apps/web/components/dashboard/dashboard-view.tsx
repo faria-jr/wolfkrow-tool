@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { statusBadgeVariant } from '@/lib/status-badge';
 
 interface HarnessProject {
   id: string;
@@ -38,13 +39,6 @@ interface DashboardKpis {
 }
 
 const ACTIVE_STATUSES = ['running', 'in_progress', 'planning', 'active'];
-
-function statusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-  if (['completed', 'done', 'active'].includes(status)) return 'default';
-  if (ACTIVE_STATUSES.includes(status)) return 'secondary';
-  if (['failed', 'cancelled', 'rejected'].includes(status)) return 'destructive';
-  return 'outline';
-}
 
 function deriveKpis(harness: HarnessProject[], pipeline: PipelineProject[]): DashboardKpis {
   const tokens = harness.reduce((s, p) => s + (p.metrics?.totalTokens ?? 0), 0);
@@ -132,7 +126,7 @@ function RecentRunRow({ run }: { run: RecentRun }) {
         <p className="truncate font-medium">{run.name}</p>
         <p className="text-xs text-muted-foreground">{new Date(run.createdAt).toLocaleString()}</p>
       </div>
-      <Badge variant={statusVariant(run.status)} className="ml-2 shrink-0 text-xs">{run.status}</Badge>
+      <Badge variant={statusBadgeVariant(run.status)} className="ml-2 shrink-0 text-xs">{run.status}</Badge>
     </Link>
   );
 }

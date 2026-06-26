@@ -10,6 +10,7 @@ import { RoundsList } from './rounds-list';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { statusBadgeVariant } from '@/lib/status-badge';
 
 interface ProjectData {
   id: string;
@@ -37,13 +38,6 @@ interface SprintData {
 interface NewProjectForm { name: string; specPath: string; projectPath: string; description: string; maxRoundsPerFeature: number; }
 
 const EMPTY_FORM: NewProjectForm = { name: '', specPath: '', projectPath: '', description: '', maxRoundsPerFeature: 5 };
-
-function statusVariant(status: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-  const map: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    completed: 'default', running: 'secondary', failed: 'destructive',
-  };
-  return map[status] ?? 'outline';
-}
 
 interface CreateParams { form: NewProjectForm; setCreating: (b: boolean) => void; setError: (e: string | null) => void; setForm: (f: NewProjectForm) => void; load: () => Promise<void>; }
 async function doCreate(e: React.FormEvent, p: CreateParams) {
@@ -107,7 +101,7 @@ function ProjectListItem({ project: p, isSelected, onSelect, onPlan, onDelete, p
           <p className="font-medium text-sm">{p.name}</p>
           {p.description && <p className="text-xs text-muted-foreground">{p.description}</p>}
         </div>
-        <Badge variant={statusVariant(p.status)} className="text-xs">{p.status}</Badge>
+        <Badge variant={statusBadgeVariant(p.status)} className="text-xs">{p.status}</Badge>
       </div>
       <div className="mt-2 flex gap-2">
         <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onPlan(); }} disabled={planning}>
@@ -128,7 +122,7 @@ function SprintCard({ sprint, projectId: _projectId, onRun }: SprintCardProps) {
       <div className="flex items-center justify-between">
         <h3 className="font-medium">Sprint {sprint.number}: {sprint.name}</h3>
         <div className="flex items-center gap-2">
-          <Badge variant={statusVariant(sprint.status)} className="text-xs">{sprint.status}</Badge>
+          <Badge variant={statusBadgeVariant(sprint.status)} className="text-xs">{sprint.status}</Badge>
           <Button size="sm" onClick={() => onRun(sprint)}>Run</Button>
         </div>
       </div>
