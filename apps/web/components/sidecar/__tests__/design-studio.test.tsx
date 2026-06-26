@@ -30,6 +30,16 @@ describe('DesignStudio', () => {
     render(<DesignStudio />);
     const start = await screen.findByRole('button', { name: 'Start' });
     await userEvent.click(start);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/sidecar?action=start', { method: 'POST' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/open-design?action=start', { method: 'POST' }));
+  });
+
+  it('iframes the engine webUrl when running', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ state: { status: 'running', webUrl: 'http://127.0.0.1:7460/' } }),
+    } as Response);
+    render(<DesignStudio />);
+    const frame = await screen.findByTitle('Open Design Studio');
+    expect(frame).toHaveAttribute('src', 'http://127.0.0.1:7460/');
   });
 });

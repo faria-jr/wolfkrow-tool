@@ -2,8 +2,8 @@
  * Tests: EPIC 1.1 — validateProjectPath (path safety for harness coder cwd).
  */
 
-import { mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { realpathSync } from 'node:fs';
+import { mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 

@@ -2,12 +2,18 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-type SidecarStatus = 'stopped' | 'starting' | 'running' | 'crashed' | 'unknown';
+import { Button } from '@/components/ui/button';
 
-const SIDECAR_URL = process.env['NEXT_PUBLIC_SIDECAR_URL'] ?? 'http://localhost:5000';
+type StudioStatus = 'stopped' | 'starting' | 'running' | 'crashed' | 'unknown';
+
 const POLL_MS = 3000;
 
-const STATUS_COLOR: Record<SidecarStatus, string> = {
+interface StudioState {
+  status: StudioStatus;
+  webUrl: string | null;
+}
+
+const STATUS_COLOR: Record<StudioStatus, string> = {
   running: 'text-green-500',
   starting: 'text-yellow-500',
   stopped: 'text-gray-500',
@@ -16,38 +22,48 @@ const STATUS_COLOR: Record<SidecarStatus, string> = {
 };
 
 export function DesignStudio() {
-  const sidecar = useSidecar();
+  const studio = useOpenDesign();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   return (
-    <div className="flex flex-col gap-3 h-full">
+    <div className="flex h-full flex-col gap-3">
       <div className="flex items-center justify-between px-1">
-        <span className={`text-sm font-medium ${STATUS_COLOR[sidecar.status]}`}>
-          Studio: {sidecar.status}
+        <span className={`text-sm font-medium ${STATUS_COLOR[studio.status]}`}>
+          Studio: {studio.status}
         </span>
-        <StudioControls sidecar={sidecar} />
+        <StudioControls studio={studio} />
       </div>
-      <StudioFrame status={sidecar.status} iframeRef={iframeRef} />
+      <StudioFrame studio={studio} iframeRef={iframeRef} />
     </div>
   );
 }
 
-function useSidecar() {
-  const [status, setStatus] = useState<SidecarStatus>('unknown');
+async function fetchStudioStatus(): Promise<{ status: StudioStatus; webUrl: string | null } | null> {
+  try {
+    const res = await fetch('/api/open-design');
+    if (!res.ok) return null;
+    const data = (await res.json()) as { state?: { status: StudioStatus; webUrl: string | null } };
+    return { status: data.state?.status ?? 'unknown', webUrl: data.state?.webUrl ?? null };
+  } catch {
+    return null;
+  }
+}
+
+function useOpenDesign() {
+  const [status, setStatus] = useState<StudioStatus>('unknown');
+  const [webUrl, setWebUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let alive = true;
     const poll = async () => {
       if (!alive) return;
-      try {
-        const res = await fetch('/api/sidecar');
-        if (res.ok) {
-          const data = (await res.json()) as { state?: { status: SidecarStatus } };
-          if (alive) setStatus(data.state?.status ?? 'unknown');
-        }
-      } catch {
-        if (alive) setStatus('unknown');
+      const snapshot = await fetchStudioStatus();
+      if (alive && snapshot) {
+        setStatus(snapshot.status);
+        setWebUrl(snapshot.webUrl);
+      } else if (alive) {
+        setStatus('unknown');
       }
       if (alive) setTimeout(poll, POLL_MS);
     };
@@ -58,7 +74,7 @@ function useSidecar() {
   const start = useCallback(async () => {
     setLoading(true);
     try {
-      await fetch('/api/sidecar?action=start', { method: 'POST' });
+      await fetch('/api/open-design?action=start', { method: 'POST' });
       setStatus('starting');
     } finally {
       setLoading(false);
@@ -68,61 +84,54 @@ function useSidecar() {
   const stop = useCallback(async () => {
     setLoading(true);
     try {
-      await fetch('/api/sidecar?action=stop', { method: 'POST' });
+      await fetch('/api/open-design?action=stop', { method: 'POST' });
       setStatus('stopped');
+      setWebUrl(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  return { status, loading, start, stop };
+  return { status, webUrl, loading, start, stop };
 }
 
-function StudioControls({ sidecar }: { sidecar: { status: SidecarStatus; loading: boolean; start: () => void; stop: () => void } }) {
-  const { status, loading, start, stop } = sidecar;
+function StudioControls({ studio }: { studio: { status: StudioStatus; loading: boolean; start: () => void; stop: () => void } }) {
+  const { status, loading, start, stop } = studio;
   return (
     <div className="flex gap-2">
       {status !== 'running' && (
-        <button
-          onClick={start}
-          disabled={loading || status === 'starting'}
-          className="px-3 py-1 text-xs rounded bg-primary text-primary-foreground disabled:opacity-50"
-        >
+        <Button onClick={start} disabled={loading || status === 'starting'} size="sm">
           {status === 'starting' ? 'Starting…' : 'Start'}
-        </button>
+        </Button>
       )}
       {(status === 'running' || status === 'starting') && (
-        <button
-          onClick={stop}
-          disabled={loading}
-          className="px-3 py-1 text-xs rounded border border-destructive text-destructive disabled:opacity-50"
-        >
+        <Button onClick={stop} disabled={loading} variant="outline" size="sm" className="text-destructive">
           Stop
-        </button>
+        </Button>
       )}
     </div>
   );
 }
 
-function StudioFrame({ status, iframeRef }: { status: SidecarStatus; iframeRef: React.RefObject<HTMLIFrameElement | null> }) {
-  if (status === 'running') {
+function StudioFrame({ studio, iframeRef }: { studio: StudioState; iframeRef: React.RefObject<HTMLIFrameElement | null> }) {
+  if (studio.status === 'running' && studio.webUrl) {
     return (
       <iframe
         ref={iframeRef}
-        src={SIDECAR_URL}
-        className="flex-1 w-full rounded border border-border bg-background"
+        src={studio.webUrl}
+        className="w-full flex-1 rounded border border-border bg-background"
         title="Open Design Studio"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
       />
     );
   }
-  const message = status === 'starting'
+  const message = studio.status === 'starting'
     ? 'Design Studio is starting up…'
-    : status === 'crashed'
+    : studio.status === 'crashed'
       ? 'Studio crashed. Click Start to retry.'
       : 'Click Start to launch the Design Studio.';
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-3 rounded border border-dashed border-border text-muted-foreground">
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded border border-dashed border-border text-muted-foreground">
       <span className="text-3xl">🎨</span>
       <p className="text-sm">{message}</p>
     </div>
