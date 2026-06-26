@@ -17,6 +17,7 @@ function toEntity(row: DbRow): HarnessProject {
     name: row.name,
     description: row.description ?? undefined,
     specPath: row.specPath,
+    ...(row.projectPath !== null ? { projectPath: row.projectPath } : {}),
     status: row.status,
     config: fromJsonRequired<HarnessConfig>(row.config),
     metrics: fromJsonRequired<ProjectMetrics>(row.metrics),
@@ -43,7 +44,8 @@ export class DrizzleHarnessProjectRepo implements HarnessProjectRepo {
     const p = project.toProps();
     this.db.insert(harnessProjects).values({
       id: p.id, userId: p.userId, name: p.name,
-      description: p.description ?? null, specPath: p.specPath, status: p.status,
+      description: p.description ?? null, specPath: p.specPath,
+      projectPath: p.projectPath ?? null, status: p.status,
       config: asJsonField(p.config),
       metrics: asJsonField(p.metrics),
       createdAt: p.createdAt, updatedAt: p.updatedAt,
@@ -51,7 +53,8 @@ export class DrizzleHarnessProjectRepo implements HarnessProjectRepo {
     }).onConflictDoUpdate({
       target: harnessProjects.id,
       set: {
-        name: p.name, description: p.description ?? null, status: p.status,
+        name: p.name, description: p.description ?? null,
+        projectPath: p.projectPath ?? null, status: p.status,
         config: asJsonField(p.config),
         metrics: asJsonField(p.metrics),
         updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,

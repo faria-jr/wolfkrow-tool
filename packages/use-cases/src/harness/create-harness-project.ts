@@ -5,6 +5,7 @@ export interface CreateHarnessProjectInput {
   userId: string;
   name: string;
   specPath: string;
+  projectPath?: string;
   description?: string;
   maxRoundsPerFeature?: number;
 }
@@ -21,6 +22,7 @@ export class CreateHarnessProjectUseCase {
       userId: input.userId,
       name: input.name,
       specPath: input.specPath,
+      ...(input.projectPath !== undefined ? { projectPath: input.projectPath } : {}),
       description: input.description,
       config: {
         maxRoundsPerFeature: input.maxRoundsPerFeature ?? 5,

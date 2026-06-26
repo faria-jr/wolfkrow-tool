@@ -17,6 +17,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getHarnessAgents, getHarnessProjectWorkDir, makeCoderWithTools, getRepos } from '../container';
+import { validateProjectPath } from '../lib/project-path';
 import type { FeatureRunResult } from '../harness/runner';
 import { runHarnessFeature } from '../harness/runner';
 import type { AuthFastifyInstance } from '../types/fastify';
@@ -34,6 +35,7 @@ function harnessRepos() {
 const createProjectBody = z.object({
   name: z.string().min(1).max(256),
   specPath: z.string().min(1).max(4096),
+  projectPath: z.string().max(4096).optional(),
   description: z.string().max(8192).optional(),
   maxRoundsPerFeature: z.number().int().min(1).max(50).optional(),
 });
@@ -89,7 +91,7 @@ async function runSseHandler(
   const sprint = await sprintRepo.findById(body.sprintId);
   if (!sprint) return reply.status(404).send({ error: 'Sprint not found' });
 
-  const workDir = getHarnessProjectWorkDir(project.id);
+  const workDir = project.projectPath ?? getHarnessProjectWorkDir(project.id);
   const userId = req.user?.userId;
   const coder = await makeCoderWithTools(workDir, project.config, userId);
   const { evaluator } = await getHarnessAgents(project.config, userId);
@@ -159,13 +161,19 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
   const auth = { preHandler: [server.authenticate] };
   const projectRepo = () => harnessRepos().projectRepo;
 
-  server.post('/projects', auth, async (req) => {
+  server.post('/projects', auth, async (req, reply) => {
     const userId = req.user?.userId ?? 'anonymous';
     const body = validate(createProjectBody, req.body);
+    if (body.projectPath !== undefined) {
+      const checked = validateProjectPath(body.projectPath);
+      if (!checked.ok) return reply.status(400).send({ error: checked.reason });
+      body.projectPath = checked.path;
+    }
     const { project } = await new CreateHarnessProjectUseCase(projectRepo()).execute({
       userId,
       name: body.name,
       specPath: body.specPath,
+      ...(body.projectPath !== undefined ? { projectPath: body.projectPath } : {}),
       ...(body.description !== undefined ? { description: body.description } : {}),
       ...(body.maxRoundsPerFeature !== undefined ? { maxRoundsPerFeature: body.maxRoundsPerFeature } : {}),
     });

@@ -24,6 +24,8 @@ export interface HarnessProjectProps {
   name: string;
   description: string | undefined;
   specPath: string;
+  /** Absolute path of the target repository the coder works in. Falls back to a tmpdir sandbox when absent. */
+  projectPath?: string;
   status: HarnessProjectStatus;
   config: HarnessConfig;
   metrics: ProjectMetrics;
@@ -51,6 +53,7 @@ export class HarnessProject {
   readonly name: string;
   readonly description: string | undefined;
   readonly specPath: string;
+  readonly projectPath: string | undefined; // stored as optional in props
   readonly status: HarnessProjectStatus;
   readonly config: HarnessConfig;
   readonly metrics: ProjectMetrics;
@@ -64,6 +67,7 @@ export class HarnessProject {
     this.name = props.name;
     this.description = props.description;
     this.specPath = props.specPath;
+    this.projectPath = props.projectPath;
     this.status = props.status;
     this.config = props.config;
     this.metrics = props.metrics;
@@ -75,14 +79,18 @@ export class HarnessProject {
   static create(input: HarnessProjectCreateInput): HarnessProject {
     const now = new Date();
     return new HarnessProject({
-      ...input,
       id: randomUUID(),
+      userId: input.userId,
+      name: input.name,
+      description: input.description,
+      specPath: input.specPath,
       status: 'planning',
       config: { ...DEFAULT_CONFIG, ...input.config },
       metrics: { ...DEFAULT_METRICS },
       createdAt: now,
       updatedAt: now,
       completedAt: undefined,
+      ...(input.projectPath !== undefined ? { projectPath: input.projectPath } : {}),
     });
   }
 
@@ -93,8 +101,10 @@ export class HarnessProject {
   toProps(): HarnessProjectProps {
     return {
       id: this.id, userId: this.userId, name: this.name, description: this.description,
-      specPath: this.specPath, status: this.status, config: this.config, metrics: this.metrics,
+      specPath: this.specPath, status: this.status,
+      config: this.config, metrics: this.metrics,
       createdAt: this.createdAt, updatedAt: this.updatedAt, completedAt: this.completedAt,
+      ...(this.projectPath !== undefined ? { projectPath: this.projectPath } : {}),
     };
   }
 

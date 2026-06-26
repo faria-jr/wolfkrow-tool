@@ -140,6 +140,59 @@ async function runPhaseHandler(req: FastifyRequest<{ Params: RunParams }>, reply
   return runAiPhase(req, reply);
 }
 
+async function runPhaseSseHandler(req: FastifyRequest<{ Params: RunParams }>, reply: FastifyReply) {
+  const { phaseRepo } = _repos;
+  const phase = await phaseRepo.findById(req.params.phaseId);
+  if (!phase) return reply.status(404).send({ error: 'Phase not found' });
+
+  reply.raw.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
+  const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+
+  sse({ type: 'phase-start', stage: phase.stage, phaseId: phase.id });
+
+  try {
+    if (phase.stage === 'implementation') {
+      const result = await runImplementationViaHarness(req, reply);
+      if (result && typeof result === 'object') {
+        sse({ type: 'phase-complete', ...result });
+      }
+    } else {
+      const { projectRepo, phaseRepo: pr } = _repos;
+      const body = validate(runPhaseBody, req.body ?? {});
+      const project = await projectRepo.findById(req.params.id);
+      if (!project) { sse({ type: 'error', message: 'Project not found' }); reply.raw.end(); return; }
+
+      const apiKey = await getAnthropicApiKey();
+      const aiProvider = getAdapters().aiFactory.create('anthropic', apiKey);
+      const phaseSystemPrompt = await new BuildSystemPromptUseCase(getRepos().globalRule).execute({
+        userId: project.userId, agentSystemPrompt: 'You are a helpful assistant.',
+      });
+      const wrappedProvider = {
+        query: aiProvider.query.bind(aiProvider),
+        complete: async (opts: Parameters<typeof aiProvider.complete>[0]) =>
+          aiProvider.complete({ ...opts, system: opts.system ? `${phaseSystemPrompt}\n\n${opts.system}` : phaseSystemPrompt }),
+      };
+      const result = await new RunPhaseUseCase(
+        projectRepo, pr, wrappedProvider,
+        { messageRepo: getRepos().pipelineMessage, artifactWriter: getArtifactWriter() },
+      ).execute({
+        projectId: req.params.id, phaseId: req.params.phaseId,
+        ...(body.userPrompt !== undefined ? { userPrompt: body.userPrompt } : {}),
+        ...(body.model !== undefined ? { model: body.model } : {}),
+      });
+      sse({ type: 'phase-complete', output: result.output, phase: result.phase.toProps(), project: result.project.toProps() });
+    }
+  } catch (err) {
+    sse({ type: 'error', message: err instanceof Error ? err.message : 'Unknown error' });
+  }
+  sse({ type: 'done' });
+  reply.raw.end();
+}
+
 async function approvePhaseHandler(req: FastifyRequest<{ Params: RunParams }>, reply: FastifyReply) {
   const { projectRepo, phaseRepo } = _repos;
   const body = validate(approveBody, req.body);
@@ -169,6 +222,7 @@ export async function pipelineRoutes(server: AuthFastifyInstance) {
   registerPipelinePhaseRoutes(server, projectRepo, phaseRepo, auth);
 
   server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/run', auth, runPhaseHandler);
+  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/run/stream', auth, runPhaseSseHandler);
   server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/approve', auth, approvePhaseHandler);
 }
 

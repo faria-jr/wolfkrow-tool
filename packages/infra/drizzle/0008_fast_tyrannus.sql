@@ -1,0 +1,1 @@
+ALTER TABLE `harness_projects` ADD `project_path` text;

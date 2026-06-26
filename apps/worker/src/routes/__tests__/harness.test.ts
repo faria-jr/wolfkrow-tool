@@ -114,6 +114,15 @@ describe('harness POST /projects — create', () => {
     const res = await app.inject({ method: 'POST', url: '/projects', headers: BEARER, payload: { name: 'x' } });
     expect(res.statusCode).toBe(400);
   });
+
+  it('rejects a non-existent projectPath → 400 (EPIC 1.1 path safety)', async () => {
+    const res = await app.inject({
+      method: 'POST', url: '/projects', headers: BEARER,
+      payload: { name: 'Bad path', specPath: '/tmp/x.md', projectPath: '/definitely/not/a/real/dir/xyz' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body)).toMatchObject({ error: expect.stringContaining('projectPath') });
+  });
 });
 
 describe('harness GET /projects — list', () => {

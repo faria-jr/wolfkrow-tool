@@ -15,6 +15,7 @@ export const harnessProjects = sqliteTable('harness_projects', {
   name: shortText('name').notNull(),
   description: text('description'),
   specPath: text('spec_path').notNull(),
+  projectPath: text('project_path'),
   status: text('status', {
     enum: ['planning', 'ready', 'running', 'paused', 'completed', 'failed', 'cancelled'],
   }).notNull(),
