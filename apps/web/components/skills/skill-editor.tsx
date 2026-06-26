@@ -5,13 +5,12 @@ import { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { MarkdownEditor } from '@/components/common/markdown-editor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 
 export const skillSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -53,27 +52,6 @@ function TagField({ tags, onChange, disabled }: TagFieldProps) {
       </div>
       <Input placeholder="Type tag + Enter" onKeyDown={handleKeyDown} disabled={disabled} />
     </div>
-  );
-}
-
-interface ContentTabsProps { content: string; onChange: (v: string) => void; disabled: boolean | undefined; }
-
-function SkillContentTabs({ content, onChange, disabled }: ContentTabsProps) {
-  return (
-    <Tabs defaultValue="edit">
-      <TabsList>
-        <TabsTrigger value="edit">Edit</TabsTrigger>
-        <TabsTrigger value="preview">Preview</TabsTrigger>
-      </TabsList>
-      <TabsContent value="edit">
-        <Textarea value={content} onChange={(e) => onChange(e.target.value)} disabled={disabled} rows={16} placeholder="# Skill Title&#10;&#10;Describe the skill capabilities and instructions here..." className="font-mono text-sm" />
-      </TabsContent>
-      <TabsContent value="preview">
-        <div className="prose prose-sm dark:prose-invert min-h-48 rounded-md border p-4">
-          {content || <span className="text-muted-foreground">No content yet.</span>}
-        </div>
-      </TabsContent>
-    </Tabs>
   );
 }
 
@@ -144,7 +122,7 @@ export function SkillEditor({ initialValues, onSave, onCancel, loading, readOnly
           <Label>Tags</Label>
           <TagField tags={tags} onChange={readOnly ? () => undefined : (t) => setValue('tags', t)} disabled={readOnly} />
         </div>
-        <SkillContentTabs content={content} onChange={(v) => setValue('content', v)} disabled={readOnly} />
+        <MarkdownEditor value={content} onChange={(v) => setValue('content', v)} disabled={readOnly ?? false} label="Skill content" />
         {!readOnly && <SkillFormActions onSave={handleSubmit((v) => { void onSave(v); })} onCancel={onCancel} loading={loading} />}
       </div>
     </Form>

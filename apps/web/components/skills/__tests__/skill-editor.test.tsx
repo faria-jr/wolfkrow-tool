@@ -26,7 +26,7 @@ describe('SkillEditor', () => {
     render(<SkillEditor onSave={save} onCancel={noop} />);
     await userEvent.type(screen.getByLabelText('Name'), 'my-skill');
     await userEvent.type(screen.getByLabelText('Description'), 'My skill');
-    await userEvent.type(screen.getByPlaceholderText(/Describe the skill/), 'body');
+    await userEvent.type(screen.getByLabelText('Skill content'), 'body');
     await userEvent.click(screen.getByText('Save skill'));
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-skill', description: 'My skill' }));
   });
