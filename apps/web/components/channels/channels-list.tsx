@@ -1,42 +1,133 @@
 'use client';
 
+import {
+  Hash,
+  MessageCircle,
+  MessageSquare,
+  Phone,
+  Settings,
+} from 'lucide-react';
+import type { ComponentType, SVGProps } from 'react';
+import { useMemo, useState } from 'react';
+
 import { TelegramSetup } from './telegram-setup';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CHANNEL_CATALOG, type ChannelCatalogEntry } from '@/lib/channels';
 
-function ChannelIcon({ type }: { type: ChannelCatalogEntry['type'] }) {
-  const label = CHANNEL_CATALOG.find((c) => c.type === type)?.label ?? type;
-  return <span className="text-lg font-semibold uppercase">{label.charAt(0)}</span>;
+type ChannelType = ChannelCatalogEntry['type'];
+type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+
+const CHANNEL_ICONS: Record<ChannelType, IconComponent> = {
+  discord: MessageCircle,
+  slack: Hash,
+  telegram: MessageSquare,
+  whatsapp: Phone,
+};
+
+function ChannelIcon({ type }: { type: ChannelType }) {
+  const Icon = CHANNEL_ICONS[type];
+  return <Icon className="h-4 w-4" aria-hidden="true" />;
 }
 
-function ChannelCard({ entry }: { entry: ChannelCatalogEntry }) {
+function availabilityLabel(entry: ChannelCatalogEntry): string {
+  return entry.status === 'available' ? 'Available' : 'Coming soon';
+}
+
+function stateLabel(entry: ChannelCatalogEntry): string {
+  return entry.status === 'available' ? 'Disconnected' : 'Planned';
+}
+
+function getChannelEntry(type: ChannelType): ChannelCatalogEntry {
+  const selected = CHANNEL_CATALOG.find((entry) => entry.type === type);
+  if (selected) return selected;
+  const fallback = CHANNEL_CATALOG[0];
+  if (fallback) return fallback;
+  throw new Error('Channel catalog cannot be empty');
+}
+
+function ChannelConfigPanel({ entry }: { entry: ChannelCatalogEntry }) {
   const available = entry.status === 'available';
   return (
-    <Card className={available ? '' : 'opacity-70'}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <span className="flex h-8 w-8 items-center justify-center rounded bg-muted"><ChannelIcon type={entry.type} /></span>
-          {entry.label}
-        </CardTitle>
-        <Badge variant={available ? 'default' : 'outline'} className="text-xs">{available ? 'Available' : 'Em breve'}</Badge>
-      </CardHeader>
-      <CardContent>
-        {entry.type === 'telegram' ? (
-          <TelegramSetup />
-        ) : (
-          <p className="text-xs text-muted-foreground">Bridge + configuration coming soon.</p>
-        )}
-      </CardContent>
-    </Card>
+    <section className="rounded-lg border bg-card p-4" aria-label={`${entry.label} settings`}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground">
+            <ChannelIcon type={entry.type} />
+          </span>
+          <div>
+            <h3 className="font-semibold">{entry.label}</h3>
+            <p className="text-sm text-muted-foreground">{available ? 'Channel bridge configuration' : 'Bridge not enabled yet'}</p>
+          </div>
+        </div>
+        <Badge variant={available ? 'default' : 'outline'}>{availabilityLabel(entry)}</Badge>
+      </div>
+      {entry.type === 'telegram' ? (
+        <TelegramSetup />
+      ) : (
+        <p className="rounded border border-dashed p-4 text-sm text-muted-foreground">
+          Configuration UI is prepared for this channel. The bridge is still coming soon.
+        </p>
+      )}
+    </section>
   );
 }
 
 export function ChannelsList() {
+  const [selectedType, setSelectedType] = useState<ChannelType>('telegram');
+  const selectedEntry = useMemo(() => getChannelEntry(selectedType), [selectedType]);
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      {CHANNEL_CATALOG.map((entry) => <ChannelCard key={entry.type} entry={entry} />)}
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
+      <Table aria-label="Channel configuration">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Channel</TableHead>
+            <TableHead>Availability</TableHead>
+            <TableHead>State</TableHead>
+            <TableHead className="w-36" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {CHANNEL_CATALOG.map((entry) => {
+            const available = entry.status === 'available';
+            return (
+              <TableRow key={entry.type} data-state={selectedEntry.type === entry.type ? 'selected' : undefined}>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-8 w-8 items-center justify-center rounded bg-muted text-muted-foreground">
+                      <ChannelIcon type={entry.type} />
+                    </span>
+                    <span className="font-medium">{entry.label}</span>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={available ? 'default' : 'outline'}>{availabilityLabel(entry)}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={available ? 'secondary' : 'outline'}>{stateLabel(entry)}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={selectedEntry.type === entry.type ? 'secondary' : 'outline'}
+                    disabled={!available}
+                    aria-label={`Configure ${entry.label}`}
+                    onClick={() => setSelectedType(entry.type)}
+                  >
+                    <Settings className="h-4 w-4" aria-hidden="true" />
+                    Configure
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+      <ChannelConfigPanel entry={selectedEntry} />
     </div>
   );
 }
