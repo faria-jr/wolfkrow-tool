@@ -76,7 +76,7 @@ async function makePlanner(config: HarnessConfig, userId?: string): Promise<Harn
 
 async function makeCoder(config: HarnessConfig, userId?: string): Promise<CoderAgent> {
   return {
-    async implement(input: { sprintName: string; featureName: string; featureDescription: string; acceptanceCriteria: string[]; previousFeedback?: string; coderModel: string }) {
+    async implement(input: { sprintName: string; featureName: string; featureDescription: string; acceptanceCriteria: string[]; previousFeedback?: string; coderModel: string; onChunk?: (delta: string) => void; onToolCall?: (call: { id: string; name: string; input: Record<string, unknown> }) => void; onToolResult?: (result: { callId: string; output: string; isError: boolean }) => void }) {
       const provider = await resolveAIProvider(config.providerId ?? ANTHROPIC_BUILTIN_ID, userId);
       const previousContext = input.previousFeedback ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}` : '';
       const result = await provider.complete({
@@ -148,6 +148,41 @@ function createToolProvider(cfg: ProviderConfig, apiKey: string, tools: ToolExec
   });
 }
 
+interface CoderPromptInput {
+  sprintName: string; featureName: string; featureDescription: string;
+  acceptanceCriteria: string[]; previousFeedback?: string;
+}
+
+/** Build the feature-implementation prompt for the coder. */
+function buildCoderPrompt(input: CoderPromptInput): string {
+  const previousContext = input.previousFeedback ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}` : '';
+  return (
+    `Sprint: ${input.sprintName}\n` +
+    `Feature: ${input.featureName}\n` +
+    `Description: ${input.featureDescription}\n` +
+    `Acceptance Criteria:\n${input.acceptanceCriteria.map((c: string) => `- ${c}`).join('\n')}` +
+    `${previousContext}\n\nImplement this feature completely. Use your tools to write files and run tests.`
+  );
+}
+
+interface CoderAccumulator { content: string; inputTokens: number; outputTokens: number; }
+
+/** Apply one streamed chunk to the accumulator + forward callbacks (DEBT #29). */
+function applyCoderChunk(
+  chunk: { delta?: string; toolCall?: { id: string; name: string; input: Record<string, unknown> }; toolResult?: { callId: string; output: string; isError: boolean }; inputTokens?: number; outputTokens?: number },
+  acc: CoderAccumulator,
+  input: { onChunk?: (delta: string) => void; onToolCall?: (call: { id: string; name: string; input: Record<string, unknown> }) => void; onToolResult?: (result: { callId: string; output: string; isError: boolean }) => void },
+): void {
+  if (chunk.delta) {
+    acc.content += chunk.delta;
+    input.onChunk?.(chunk.delta);
+  }
+  if (chunk.toolCall) input.onToolCall?.(chunk.toolCall);
+  if (chunk.toolResult) input.onToolResult?.(chunk.toolResult);
+  if (chunk.inputTokens) acc.inputTokens = chunk.inputTokens;
+  if (chunk.outputTokens) acc.outputTokens = chunk.outputTokens;
+}
+
 /** CoderAgent backed by the configured provider with bash + filesystem tools sandboxed to workDir. */
 export async function makeCoderWithTools(workDir: string, config: HarnessConfig, userId?: string): Promise<CoderAgent> {
   const providerId = config.providerId ?? ANTHROPIC_BUILTIN_ID;
@@ -161,22 +196,11 @@ export async function makeCoderWithTools(workDir: string, config: HarnessConfig,
     'Write files to the workspace directory. Run tests to verify your implementation.';
 
   return {
-    async implement(input: { sprintName: string; featureName: string; featureDescription: string; acceptanceCriteria: string[]; previousFeedback?: string; coderModel: string; onChunk?: (delta: string) => void }) {
-      const previousContext = input.previousFeedback
-        ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}`
-        : '';
-      const prompt =
-        `Sprint: ${input.sprintName}\n` +
-        `Feature: ${input.featureName}\n` +
-        `Description: ${input.featureDescription}\n` +
-        `Acceptance Criteria:\n${input.acceptanceCriteria.map((c: string) => `- ${c}`).join('\n')}` +
-        `${previousContext}\n\nImplement this feature completely. Use your tools to write files and run tests.`;
-
+    async implement(input: { sprintName: string; featureName: string; featureDescription: string; acceptanceCriteria: string[]; previousFeedback?: string; coderModel: string; onChunk?: (delta: string) => void; onToolCall?: (call: { id: string; name: string; input: Record<string, unknown> }) => void; onToolResult?: (result: { callId: string; output: string; isError: boolean }) => void }) {
+      const prompt = buildCoderPrompt(input);
       const provider = createToolProvider(cfg, apiKey, tools, workDir);
-      // DEBT #29 — stream the agentic loop, forwarding text deltas for live output.
-      let content = '';
-      let inputTokens = 0;
-      let outputTokens = 0;
+      // DEBT #29 — stream the agentic loop, forwarding text deltas + tool chips.
+      const acc = { content: '', inputTokens: 0, outputTokens: 0 };
       for await (const chunk of provider.query({
         model: input.coderModel,
         system: systemPrompt,
@@ -184,14 +208,9 @@ export async function makeCoderWithTools(workDir: string, config: HarnessConfig,
         maxTokens: 16384,
         temperature: 0.2,
       })) {
-        if (chunk.delta) {
-          content += chunk.delta;
-          input.onChunk?.(chunk.delta);
-        }
-        if (chunk.inputTokens) inputTokens = chunk.inputTokens;
-        if (chunk.outputTokens) outputTokens = chunk.outputTokens;
+        applyCoderChunk(chunk, acc, input);
       }
-      return { output: content, tokens: inputTokens + outputTokens };
+      return { output: acc.content, tokens: acc.inputTokens + acc.outputTokens };
     },
   };
 }

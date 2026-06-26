@@ -20,7 +20,10 @@ interface FeatureState {
   rounds: number;
   coderText: string;
   evaluatorText: string;
+  toolCalls: ToolCallChip[];
 }
+
+interface ToolCallChip { id: string; name: string; status: 'running' | 'done' | 'error'; }
 
 type RunState = 'idle' | 'running' | 'done' | 'aborted' | 'error';
 interface RunResult { passed: number; total: number; }
@@ -28,6 +31,8 @@ interface RunResult { passed: number; total: number; }
 type SsePayload =
   | { type: 'progress'; featureIndex: number; round: number; status: string; stage?: 'coder' | 'smoke' | 'evaluator' }
   | { type: 'coder-chunk'; featureIndex: number; delta: string }
+  | { type: 'coder-tool-call'; featureIndex: number; call: { id: string; name: string } }
+  | { type: 'coder-tool-result'; featureIndex: number; result: { callId: string; isError: boolean } }
   | { type: 'evaluator-chunk'; featureIndex: number; delta: string }
   | { type: 'feature_done'; featureIndex: number; rounds: number; passed: boolean }
   | { type: 'done'; results: Array<{ featureIndex: number; passed: boolean }> };
@@ -37,7 +42,7 @@ function parseSse(raw: string): SsePayload | null {
 }
 
 function initFeatures(features: Feature[]): FeatureState[] {
-  return features.map((f, i) => ({ index: i, name: f.name, currentRound: 0, stage: 'idle', status: 'pending', rounds: 0, coderText: '', evaluatorText: '' }));
+  return features.map((f, i) => ({ index: i, name: f.name, currentRound: 0, stage: 'idle', status: 'pending', rounds: 0, coderText: '', evaluatorText: '', toolCalls: [] }));
 }
 
 function applyProgress(prev: FeatureState[], featureIndex: number, round: number, stage: FeatureState['stage']): FeatureState[] {
@@ -61,6 +66,20 @@ function applyEvaluatorChunk(prev: FeatureState[], featureIndex: number, delta: 
   return next;
 }
 
+function applyToolCall(prev: FeatureState[], featureIndex: number, call: { id: string; name: string }): FeatureState[] {
+  const next = [...prev];
+  const f = next[featureIndex];
+  if (f) next[featureIndex] = { ...f, toolCalls: [...f.toolCalls, { id: call.id, name: call.name, status: 'running' }] };
+  return next;
+}
+
+function applyToolResult(prev: FeatureState[], featureIndex: number, callId: string, isError: boolean): FeatureState[] {
+  const next = [...prev];
+  const f = next[featureIndex];
+  if (f) next[featureIndex] = { ...f, toolCalls: f.toolCalls.map((tc) => tc.id === callId ? { ...tc, status: isError ? 'error' : 'done' } : tc) };
+  return next;
+}
+
 function applyFeatureDone(prev: FeatureState[], featureIndex: number, rounds: number, passed: boolean): FeatureState[] {
   const next = [...prev];
   const f = next[featureIndex];
@@ -80,6 +99,10 @@ function processLine(
     setFeatureStates((prev) => applyProgress(prev, ev.featureIndex, ev.round, ev.stage ?? 'evaluator'));
   } else if (ev.type === 'coder-chunk') {
     setFeatureStates((prev) => applyCoderChunk(prev, ev.featureIndex, ev.delta));
+  } else if (ev.type === 'coder-tool-call') {
+    setFeatureStates((prev) => applyToolCall(prev, ev.featureIndex, ev.call));
+  } else if (ev.type === 'coder-tool-result') {
+    setFeatureStates((prev) => applyToolResult(prev, ev.featureIndex, ev.result.callId, ev.result.isError));
   } else if (ev.type === 'evaluator-chunk') {
     setFeatureStates((prev) => applyEvaluatorChunk(prev, ev.featureIndex, ev.delta));
   } else if (ev.type === 'feature_done') {
@@ -182,6 +205,13 @@ function FeatureRow({ f }: { f: FeatureState }) {
         )}
         <Badge variant={statusBadgeVariant(f.status)} className="shrink-0 text-xs">{f.status}</Badge>
       </div>
+      {f.toolCalls.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {f.toolCalls.map((tc) => (
+            <Badge key={tc.id} variant="outline" className="px-1.5 py-0 text-xs">{tc.name}{tc.status === 'running' ? '…' : tc.status === 'error' ? ' ✗' : ' ✓'}</Badge>
+          ))}
+        </div>
+      )}
       {f.coderText && (
         <pre className="mt-2 max-h-32 overflow-auto rounded bg-muted px-2 py-1 font-mono text-xs whitespace-pre-wrap">{f.coderText}</pre>
       )}

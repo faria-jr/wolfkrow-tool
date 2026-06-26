@@ -105,6 +105,8 @@ async function streamSprintRun(deps: SprintRunDeps): Promise<void> {
         {
           onProgress: (event) => deps.sse({ type: 'progress', sprintId: deps.sprint.id, featureIndex: i, ...event }),
           onCoderChunk: (delta) => deps.sse({ type: 'coder-chunk', sprintId: deps.sprint.id, featureIndex: i, delta }),
+          onCoderToolCall: (call) => deps.sse({ type: 'coder-tool-call', sprintId: deps.sprint.id, featureIndex: i, call }),
+          onCoderToolResult: (result) => deps.sse({ type: 'coder-tool-result', sprintId: deps.sprint.id, featureIndex: i, result }),
           onEvaluatorChunk: (delta) => deps.sse({ type: 'evaluator-chunk', sprintId: deps.sprint.id, featureIndex: i, delta }),
           shouldAbort: isAborted,
         },

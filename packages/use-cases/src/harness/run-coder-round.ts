@@ -1,6 +1,9 @@
 import type { HarnessRound, HarnessRoundRepo, HarnessSprintRepo } from '@wolfkrow/domain';
 import { HarnessRound as HarnessRoundEntity, NotFoundError } from '@wolfkrow/domain';
 
+export interface CoderToolCall { id: string; name: string; input: Record<string, unknown>; }
+export interface CoderToolResult { callId: string; output: string; isError: boolean; }
+
 export interface CoderAgent {
   implement(input: {
     sprintName: string;
@@ -11,6 +14,10 @@ export interface CoderAgent {
     coderModel: string;
     /** DEBT #29 — streamed text deltas (live coder output). */
     onChunk?: (delta: string) => void;
+    /** DEBT #29 — tool-call invocation (live tool chips). */
+    onToolCall?: (call: CoderToolCall) => void;
+    /** DEBT #29 — tool-call result (live tool chips). */
+    onToolResult?: (result: CoderToolResult) => void;
   }): Promise<{ output: string; tokens: number }>;
 }
 
@@ -22,6 +29,9 @@ export interface RunCoderRoundInput {
   coderModel?: string;
   /** DEBT #29 — forwarded to the coder as onChunk for live streaming. */
   onCoderChunk?: (delta: string) => void;
+  /** DEBT #29 — forwarded tool-call/result for live tool chips. */
+  onCoderToolCall?: (call: CoderToolCall) => void;
+  onCoderToolResult?: (result: CoderToolResult) => void;
 }
 
 export interface RunCoderRoundOutput {
@@ -54,6 +64,8 @@ export class RunCoderRoundUseCase {
       coderModel: input.coderModel ?? 'claude-sonnet-4-6',
       ...(input.previousFeedback !== undefined ? { previousFeedback: input.previousFeedback } : {}),
       ...(input.onCoderChunk !== undefined ? { onChunk: input.onCoderChunk } : {}),
+      ...(input.onCoderToolCall !== undefined ? { onToolCall: input.onCoderToolCall } : {}),
+      ...(input.onCoderToolResult !== undefined ? { onToolResult: input.onCoderToolResult } : {}),
     });
 
     round = await this.roundRepo.save(round.withCoderOutput(result.output, result.tokens));

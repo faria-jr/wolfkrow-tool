@@ -104,17 +104,27 @@ interface CoderArgs { input: RunFeatureInput; round: number; prevFeedback: strin
 interface TickArgs extends CoderArgs {
   onProgress: ((event: ProgressEvent) => void) | undefined;
   onCoderChunk: ((delta: string) => void) | undefined;
+  onCoderToolCall: ((call: { id: string; name: string; input: Record<string, unknown> }) => void) | undefined;
+  onCoderToolResult: ((result: { callId: string; output: string; isError: boolean }) => void) | undefined;
   onEvaluatorChunk: ((delta: string) => void) | undefined;
 }
 
-async function runCoder(args: CoderArgs, onCoderChunk?: (delta: string) => void) {
+interface CoderHooks {
+  onCoderChunk: ((delta: string) => void) | undefined;
+  onCoderToolCall: ((call: { id: string; name: string; input: Record<string, unknown> }) => void) | undefined;
+  onCoderToolResult: ((result: { callId: string; output: string; isError: boolean }) => void) | undefined;
+}
+
+async function runCoder(args: CoderArgs, hooks: Partial<CoderHooks> = {}) {
   return new RunCoderRoundUseCase(args.repos.sprintRepo, args.repos.roundRepo, args.ctx.coder).execute({
     sprintId: args.input.sprintId,
     featureIndex: args.input.featureIndex,
     roundNumber: args.round + 1,
     coderModel: args.input.coderModel,
     ...(args.prevFeedback !== undefined ? { previousFeedback: args.prevFeedback } : {}),
-    ...(onCoderChunk !== undefined ? { onCoderChunk } : {}),
+    ...(hooks.onCoderChunk !== undefined ? { onCoderChunk: hooks.onCoderChunk } : {}),
+    ...(hooks.onCoderToolCall !== undefined ? { onCoderToolCall: hooks.onCoderToolCall } : {}),
+    ...(hooks.onCoderToolResult !== undefined ? { onCoderToolResult: hooks.onCoderToolResult } : {}),
   });
 }
 
@@ -128,7 +138,11 @@ async function runEvaluator(repos: Repos, ctx: HarnessCtx, roundId: string, onEv
 interface TickResult { result: FeatureRunResult | null; nextFeedback: string | undefined; }
 
 async function tickRound(args: TickArgs): Promise<TickResult> {
-  const coderOut = await runCoder(args, args.onCoderChunk);
+  const coderOut = await runCoder(args, {
+    onCoderChunk: args.onCoderChunk,
+    onCoderToolCall: args.onCoderToolCall,
+    onCoderToolResult: args.onCoderToolResult,
+  });
   const smoke = await runSmoke(args.ctx, args.input);
   if (smoke.failed) {
     args.onProgress?.({ round: args.round + 1, status: 'failed', stage: 'smoke' });
@@ -148,6 +162,9 @@ export interface RunHarnessHooks {
   onProgress?: (event: ProgressEvent) => void;
   /** DEBT #29 — streamed coder text deltas (live output). */
   onCoderChunk?: (delta: string) => void;
+  /** DEBT #29 — coder tool-call/result (live tool chips). */
+  onCoderToolCall?: (call: { id: string; name: string; input: Record<string, unknown> }) => void;
+  onCoderToolResult?: (result: { callId: string; output: string; isError: boolean }) => void;
   /** DEBT #29 — streamed evaluator text deltas (live output). */
   onEvaluatorChunk?: (delta: string) => void;
   /** DEBT #29 — return true to stop the coder/evaluator loop early (abort). */
@@ -160,14 +177,14 @@ export async function runHarnessFeature(
   ctx: HarnessCtx,
   hooks: RunHarnessHooks = {},
 ): Promise<FeatureRunResult> {
-  const { onProgress, onCoderChunk, onEvaluatorChunk, shouldAbort } = hooks;
+  const { onProgress, onCoderChunk, onCoderToolCall, onCoderToolResult, onEvaluatorChunk, shouldAbort } = hooks;
   let prevFeedback: string | undefined;
   for (let round = 0; round < input.maxRounds; round++) {
     // DEBT #29 — stop the coder/evaluator loop early when the run is aborted.
     if (shouldAbort?.()) {
       return makeResult({ input, rounds: round, passed: false, finalOutput: undefined, smokeFeedback: undefined });
     }
-    const { result, nextFeedback } = await tickRound({ input, round, prevFeedback, repos, ctx, onProgress, onCoderChunk, onEvaluatorChunk });
+    const { result, nextFeedback } = await tickRound({ input, round, prevFeedback, repos, ctx, onProgress, onCoderChunk, onCoderToolCall, onCoderToolResult, onEvaluatorChunk });
     if (result?.passed) return result;
     prevFeedback = nextFeedback;
   }
