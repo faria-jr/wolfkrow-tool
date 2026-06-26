@@ -20,6 +20,7 @@ interface Props {
 }
 
 export function ProviderFormModal({ open, initial, onSave, onClose }: Props) {
+  const isEditing = Boolean(initial?.id);
   const form = useForm<ProviderFormValues>({
     resolver: zodResolver(providerFormSchema),
     defaultValues: buildProviderFormValues(initial),
@@ -30,18 +31,18 @@ export function ProviderFormModal({ open, initial, onSave, onClose }: Props) {
   }, [initial, form]);
 
   function handleSubmit(values: ProviderFormValues) {
-    onSave(resolveProviderId(values));
+    onSave(resolveProviderId(values, isEditing ? initial?.id : undefined));
   }
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Provider Configuration</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Provider' : 'Provider Configuration'}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <ProviderFormFields form={form} />
+            <ProviderFormFields form={form} isEditing={isEditing} />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
               <Button type="submit">Save</Button>
