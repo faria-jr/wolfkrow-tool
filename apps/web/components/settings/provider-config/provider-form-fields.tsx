@@ -133,9 +133,10 @@ function ModelInput({ models, onChange, error }: { models: readonly string[]; on
 interface ProviderFormFieldsProps {
   form: UseFormReturn<ProviderFormValues>;
   isEditing?: boolean;
+  hasApiKey?: boolean;
 }
 
-export function ProviderFormFields({ form, isEditing = false }: ProviderFormFieldsProps) {
+export function ProviderFormFields({ form, isEditing = false, hasApiKey = false }: ProviderFormFieldsProps) {
   const models = form.watch('models');
 
   return (
@@ -151,7 +152,16 @@ export function ProviderFormFields({ form, isEditing = false }: ProviderFormFiel
         error={form.formState.errors.models?.message}
       />
       <SupportsToolsField control={form.control} />
-      <TextField control={form.control} name="apiKey" label="API key (optional — stored in vault)" type="password" placeholder="sk-..." />
+      <TextField
+        control={form.control}
+        name="apiKey"
+        label={hasApiKey ? 'API key (leave blank to keep existing)' : 'API key (optional — stored in vault)'}
+        type="password"
+        placeholder="sk-..."
+      />
+      {isEditing && hasApiKey && (
+        <p className="text-muted-foreground text-xs">An API key is already stored. Leave the field blank to keep it.</p>
+      )}
     </>
   );
 }

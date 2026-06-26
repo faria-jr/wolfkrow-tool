@@ -14,13 +14,14 @@ import { Form } from '@/components/ui/form';
 
 interface Props {
   open: boolean;
-  initial?: Partial<ProviderFormValues>;
+  initial?: Partial<ProviderFormValues & { hasApiKey?: boolean }>;
   onSave: (values: ProviderFormValues) => void;
   onClose: () => void;
 }
 
 export function ProviderFormModal({ open, initial, onSave, onClose }: Props) {
   const isEditing = Boolean(initial?.id);
+  const hasApiKey = Boolean(initial?.hasApiKey);
   const form = useForm<ProviderFormValues>({
     resolver: zodResolver(providerFormSchema),
     defaultValues: buildProviderFormValues(initial),
@@ -42,7 +43,7 @@ export function ProviderFormModal({ open, initial, onSave, onClose }: Props) {
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <ProviderFormFields form={form} isEditing={isEditing} />
+            <ProviderFormFields form={form} isEditing={isEditing} hasApiKey={hasApiKey} />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
               <Button type="submit">Save</Button>

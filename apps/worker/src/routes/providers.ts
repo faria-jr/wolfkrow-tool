@@ -28,7 +28,15 @@ export async function providerRoutes(server: AuthFastifyInstance) {
     const repo = getRepos().providerConfig;
     const uc = new ListProvidersUseCase(repo);
     const { providers } = await uc.execute({ userId: userId(req) });
-    return providers.map((p) => p.toJSON());
+    const secrets = getAdapters().secrets;
+    const results = await Promise.all(
+      providers.map(async (p) => {
+        const config = p.toJSON();
+        const key = await secrets.get(config.apiKeyAccount);
+        return { ...config, hasApiKey: Boolean(key) };
+      }),
+    );
+    return results;
   });
 
   server.post<{ Body: ProviderBody }>(

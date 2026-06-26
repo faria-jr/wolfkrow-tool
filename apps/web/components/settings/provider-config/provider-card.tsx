@@ -10,6 +10,7 @@ export interface ProviderRow {
   apiKeyAccount: string;
   models: readonly string[];
   supportsTools: boolean;
+  hasApiKey: boolean;
 }
 
 interface ProviderCardProps {
