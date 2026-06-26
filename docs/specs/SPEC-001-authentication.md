@@ -48,8 +48,8 @@ Sistema de autenticação single-user com password + TOTP opcional + auto-lock e
 - [ ] Lock screen aparece após 5min de idle OU tab hidden
 - [ ] Lock screen requer password (com TOTP se ativado)
 - [ ] 5 tentativas erradas → lockout de 5min
-- [ ] Sessão JWT expira em 7 dias
-- [ ] Refresh token implementado (futuro v1.1)
+- [ ] Sessão JWT expira em 30 dias
+- [ ] Refresh token fora do MVP; reautenticar após expiração fixa
 
 ---
 
@@ -62,8 +62,8 @@ Sistema de autenticação single-user com password + TOTP opcional + auto-lock e
 
 ### Segurança
 - Password nunca armazenado em plaintext
-- JWT assinado com HS256 + secret ≥256 bits
-- Cookies HttpOnly + Secure (prod) + SameSite=Strict
+- JWT assinado com ES256 + chave P-256 local, validado pelo Worker via JWKS
+- Cookies HttpOnly + SameSite=Lax
 - CSRF protection via SameSite + token
 - Rate limit: 10 attempts/min per IP
 - Audit log de todas tentativas (success/fail)
@@ -310,7 +310,7 @@ export const EnableTotpInputSchema = z.object({
 | Brute force attack | Rate limiting + lockout + audit log |
 | JWT secret leaked | Auto-rotate secret, force re-login |
 | Session hijacking | HttpOnly + Secure + SameSite cookies |
-| CSRF attack | SameSite=Strict + CSRF token |
+| CSRF attack | SameSite=Lax + CSRF token |
 
 ---
 

@@ -22,65 +22,50 @@ Opções:
 
 ## Decisão
 
-**JWT (HS256)** assinado com secret compartilhado entre Next.js e Worker, armazenado em **HttpOnly + Secure + SameSite=Strict** cookies.
+**JWT (ES256)** assinado com chave P-256 local, exposto ao Worker via JWKS e armazenado em cookie **HttpOnly + SameSite=Lax**. A sessão tem expiração fixa de **30 dias**; o middleware bloqueia somente quando o `exp` do token já passou.
 
 ```typescript
 // packages/infra/src/auth/jwt.ts
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify, createLocalJWKSet, exportJWK } from 'jose';
 
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || crypto.randomBytes(32));
-
-export async function signJWT(payload: { sub: string }): Promise<string> {
-  return new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
+export async function createToken(payload: AuthTokenPayload, privateKey: CryptoKey) {
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: 'ES256' })
     .setIssuedAt()
-    .setExpirationTime('7d')
-    .sign(SECRET);
+    .setIssuer('wolfkrow')
+    .setAudience('wolfkrow-worker')
+    .setExpirationTime('30d')
+    .setSubject(payload.sub)
+    .sign(privateKey);
 }
 
-export async function verifyJWT(token: string): Promise<{ sub: string } | null> {
-  try {
-    const { payload } = await jwtVerify(token, SECRET);
-    return { sub: payload.sub as string };
-  } catch {
-    return null;
-  }
+export async function verifyToken(token: string, publicKey: CryptoKey) {
+  const keySet = createLocalJWKSet({ keys: [await exportJWK(publicKey)] });
+  const { payload } = await jwtVerify(token, keySet, {
+    issuer: 'wolfkrow',
+    audience: 'wolfkrow-worker',
+  });
+  return payload;
 }
 ```
 
 ```typescript
-// apps/web/lib/auth/session.ts
+// apps/web/app/api/auth/login/route.ts
 import { cookies } from 'next/headers';
 
-const COOKIE_NAME = 'wolfkrow_session';
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+const COOKIE_NAME = 'session';
+const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export async function createSession(userId: string) {
-  const token = await signJWT({ sub: userId });
+  const token = await createToken({ sub: userId, userId }, privateKey);
   
   cookies().set(COOKIE_NAME, token, {
-    httpOnly: true,                 // ❌ JS can't access (XSS-proof)
-    secure: process.env.NODE_ENV === 'production',  // HTTPS only
-    sameSite: 'strict',             // ❌ CSRF-proof
+    httpOnly: true,
+    secure: false,
+    sameSite: 'lax',
     maxAge: COOKIE_MAX_AGE,
     path: '/',
   });
-}
-
-export async function getSession(): Promise<{ userId: string } | null> {
-  const token = cookies().get(COOKIE_NAME)?.value;
-  if (!token) return null;
-  return verifyJWT(token);
-}
-
-export async function requireSession(): Promise<{ userId: string }> {
-  const session = await getSession();
-  if (!session) throw new UnauthorizedError();
-  return session;
-}
-
-export async function destroySession() {
-  cookies().delete(COOKIE_NAME);
 }
 ```
 
@@ -89,21 +74,20 @@ export async function destroySession() {
 ### Positivas
 
 - **HttpOnly**: JS não acessa (XSS-proof)
-- **Secure**: HTTPS only em produção
-- **SameSite=Strict**: CSRF-proof
+- **SameSite=Lax**: reduz CSRF em navegação comum e mantém compatibilidade local/Electron
 - **Stateless**: não precisa server-side session store
-- **Cross-process**: Next.js e Worker compartilham mesmo secret
+- **Cross-process**: Worker valida assinatura via JWKS publicado pelo Web
 - **WS-friendly**: WebSocket pode validar via query string (futuro)
 
 ### Negativas
 
-- **JWT revocation**: stateless = sem revoke imediato (mitigado por expiração curta)
-- **Secret rotation**: requer migração cuidadosa
+- **JWT revocation**: stateless = sem revoke imediato (mitigado por expiração fixa)
+- **Key rotation**: requer migração cuidadosa
 - **Cookie size**: 4KB limit (não problema para nosso caso)
 
 ### Mitigações
 
-- Short expiry (7 dias) + refresh token (futuro)
+- Expiração fixa de 30 dias; reautenticação após `exp`
 - Logout invalida cookie no client + future JWT blacklist (opcional)
 
 ## Auth Flow
@@ -146,11 +130,21 @@ export async function POST(req: NextRequest) {
 
 ```typescript
 // apps/web/middleware.ts
+import { decodeJwt } from 'jose';
 import { NextResponse } from 'next/server';
-import { verifyJWT } from '@wolfkrow/infra/auth/jwt';
+
+function isValidSession(token: string | undefined): boolean {
+  if (!token) return false;
+  try {
+    const payload = decodeJwt(token);
+    return payload.exp !== undefined && payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
 
 export async function middleware(req: NextRequest) {
-  const token = req.cookies.get('wolfkrow_session')?.value;
+  const token = req.cookies.get('session')?.value;
   
   // Public routes
   const isPublic = 
@@ -163,10 +157,7 @@ export async function middleware(req: NextRequest) {
   
   if (isPublic) return NextResponse.next();
   
-  // Verify JWT
-  const session = token ? await verifyJWT(token) : null;
-  
-  if (!session) {
+  if (!isValidSession(token)) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
   
@@ -306,7 +297,7 @@ ws.onmessage = (e) => {
 
 ## CSRF Protection
 
-SameSite=Strict cookies são CSRF-proof por design. Para defense in depth:
+SameSite=Lax reduz exposição a CSRF em navegação comum. Para defense in depth:
 
 ```typescript
 // apps/web/lib/auth/csrf.ts
@@ -324,8 +315,8 @@ export async function getCsrfToken(): Promise<string> {
   cookies().set(CSRF_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 60 * 60 * 24 * 7,
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 30,
   });
   
   return token;
