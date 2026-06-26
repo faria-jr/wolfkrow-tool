@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SkillsView } from '../skills-view';
@@ -31,8 +32,16 @@ describe('SkillsView', () => {
     await waitFor(() => expect(screen.getByText('My Skill')).toBeInTheDocument());
   });
 
-  it('loads skills and displays them', async () => {
+  it('shows error state when fetch fails and allows retry', async () => {
+    fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'server error' }),
+    } as Response);
+    vi.stubGlobal('fetch', fetchMock);
     render(<SkillsView />);
-    await waitFor(() => expect(screen.getByText('My Skill')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/failed to load skills/i)).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: /try again/i }));
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 });

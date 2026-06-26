@@ -35,9 +35,16 @@ describe('AgentsView', () => {
     await waitFor(() => expect(screen.getByText('Alpha')).toBeInTheDocument());
   });
 
-  it('opens sync modal', async () => {
+  it('shows error state when fetch fails and allows retry', async () => {
+    fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'server error' }),
+    } as Response);
+    vi.stubGlobal('fetch', fetchMock);
     render(<AgentsView />);
-    await userEvent.click(screen.getByRole('button', { name: /sync to orchestrator/i }));
-    expect(await screen.findByText(/Sync Agents to Orchestrator/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText(/failed to load agents/i)).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: /try again/i }));
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 });

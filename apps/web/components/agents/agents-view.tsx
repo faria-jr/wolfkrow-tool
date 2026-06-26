@@ -10,6 +10,7 @@ import { AgentList } from './agent-list';
 import type { AgentFormValues } from './schema';
 import { SyncAgentsModal } from './sync-agents-modal';
 
+import { ErrorState } from '@/components/common/error-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -52,14 +53,22 @@ function AgentListSkeleton() {
 function useAgents() {
   const [agents, setAgents] = useState<AgentData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const loadAgents = useCallback(async () => {
-    try { setAgents(await fetchAgents()); } catch { /* graceful */ }
-    finally { setLoading(false); }
+    setLoading(true);
+    setError(null);
+    try {
+      setAgents(await fetchAgents());
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load agents'));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void loadAgents(); }, [loadAgents]);
-  return { agents, loading, loadAgents };
+  return { agents, loading, error, loadAgents };
 }
 
 function useAgentMutations(loadAgents: () => Promise<void>) {
@@ -113,7 +122,7 @@ function useAgentMutations(loadAgents: () => Promise<void>) {
 }
 
 export function AgentsView() {
-  const { agents, loading, loadAgents } = useAgents();
+  const { agents, loading, error, loadAgents } = useAgents();
   const { saving, modalOpen, setModalOpen, editing, setEditing, submit, duplicate, remove } = useAgentMutations(loadAgents);
   const [syncOpen, setSyncOpen] = useState(false);
 
@@ -123,7 +132,13 @@ export function AgentsView() {
   return (
     <div className="space-y-4">
       <ViewActions onNew={openNew} onSync={() => setSyncOpen(true)} />
-      {loading ? <AgentListSkeleton /> : (
+      {loading ? <AgentListSkeleton /> : error ? (
+        <ErrorState
+          title="Failed to load agents"
+          description={error.message}
+          onRetry={() => void loadAgents()}
+        />
+      ) : (
         <AgentList agents={agents} onEdit={openEdit} onDuplicate={duplicate} onDelete={remove} />
       )}
       <AgentFormModal
