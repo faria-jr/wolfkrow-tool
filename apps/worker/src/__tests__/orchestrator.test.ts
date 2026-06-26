@@ -108,6 +108,62 @@ describe('OrchestratorService', () => {
     ).rejects.toThrow(/Missing API key/);
   });
 
+  it('infers claude-compat:zai for glm-* models without agent', async () => {
+    const createSpy = vi.fn().mockReturnValue(new MockProvider());
+    await collect(
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
+        messages: [{ role: 'user', content: 'x' }],
+        model: 'glm-4.7',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('claude-compat:zai', expect.any(String));
+  });
+
+  it('infers claude-compat:minimax for minimax-* models without agent', async () => {
+    const createSpy = vi.fn().mockReturnValue(new MockProvider());
+    await collect(
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
+        messages: [{ role: 'user', content: 'x' }],
+        model: 'minimax-text-01',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('claude-compat:minimax', expect.any(String));
+  });
+
+  it('infers claude-compat:moonshot for kimi-* models without agent', async () => {
+    const createSpy = vi.fn().mockReturnValue(new MockProvider());
+    await collect(
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
+        messages: [{ role: 'user', content: 'x' }],
+        model: 'kimi-k2',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('claude-compat:moonshot', expect.any(String));
+  });
+
+  it('infers claude-compat:qwen for qwen-* models without agent', async () => {
+    const createSpy = vi.fn().mockReturnValue(new MockProvider());
+    await collect(
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
+        messages: [{ role: 'user', content: 'x' }],
+        model: 'qwen-2.5',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('claude-compat:qwen', expect.any(String));
+  });
+
+  it('maps explicit claude-compat provider id to claude-compat wire', async () => {
+    const createSpy = vi.fn().mockReturnValue(new MockProvider());
+    await collect(
+      new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
+        messages: [{ role: 'user', content: 'x' }],
+        model: 'glm-4.7',
+        provider: 'zai',
+      }),
+    );
+    expect(createSpy).toHaveBeenCalledWith('claude-compat:zai', expect.any(String));
+  });
+
   it('passes system prompt through to the query call', async () => {
     const createSpy = vi.fn().mockReturnValue(new MockProvider(['ok']));
     await collect(

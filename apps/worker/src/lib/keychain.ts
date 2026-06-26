@@ -20,7 +20,11 @@ const ACCOUNT_MAP: Record<string, string> = {
 export async function getProviderApiKey(provider: string, service = KEYTAR_SERVICE): Promise<string> {
   if (provider === 'mock') return '';
   if (provider === 'ollama') return 'ollama';
-  const account = ACCOUNT_MAP[provider] ?? `${provider}-api-key`;
+  const normalized = provider.toLowerCase();
+  const lookupKey = normalized.startsWith('claude-compat:')
+    ? normalized.slice('claude-compat:'.length)
+    : normalized;
+  const account = ACCOUNT_MAP[lookupKey] ?? `${lookupKey}-api-key`;
   const key = await keytar.getPassword(service, account);
   if (!key) throw new Error(`Missing API key in keychain: ${service}/${account}`);
   return key;
