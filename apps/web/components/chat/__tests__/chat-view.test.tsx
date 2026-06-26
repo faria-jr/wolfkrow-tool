@@ -47,6 +47,22 @@ function sseEvent(data: unknown): string {
   return `data: ${JSON.stringify(data)}\n\n`;
 }
 
+/**
+ * Routes fetch by URL: /api/providers → empty array (ChatView's ModelPicker
+ * fetches providers on mount), everything else → the chat-send SSE stream.
+ * Returns a FRESH Response per call so the providers fetch doesn't consume the
+ * shared SSE body the send relies on.
+ */
+function mockChatSse(events: string[]): void {
+  vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input.toString();
+    if (url.includes('/api/providers')) {
+      return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return makeSSEResponse(events);
+  });
+}
+
 describe('ChatView', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn());
@@ -93,9 +109,7 @@ describe('ChatView', () => {
 
   it('streams assistant response text', async () => {
     const user = userEvent.setup();
-    vi.mocked(fetch).mockResolvedValue(
-      makeSSEResponse([sseEvent({ type: 'text', content: 'Hello' }), sseEvent({ type: 'text', content: ' world' }), sseEvent({ type: 'done' })]),
-    );
+    mockChatSse([sseEvent({ type: 'text', content: 'Hello' }), sseEvent({ type: 'text', content: ' world' }), sseEvent({ type: 'done' })]);
     render(<ChatView />);
     await user.type(screen.getByLabelText('Chat input'), 'hi');
     await user.click(screen.getByLabelText('Send'));
@@ -210,12 +224,10 @@ describe('ChatView', () => {
 
   it('renders tool call inline when tool_call SSE event received (T17)', async () => {
     const user = userEvent.setup();
-    vi.mocked(fetch).mockResolvedValue(
-      makeSSEResponse([
-        sseEvent({ type: 'tool_call', id: 'tc-1', name: 'read_file', input: { path: '/foo.txt' } }),
-        sseEvent({ type: 'done' }),
-      ]),
-    );
+    mockChatSse([
+      sseEvent({ type: 'tool_call', id: 'tc-1', name: 'read_file', input: { path: '/foo.txt' } }),
+      sseEvent({ type: 'done' }),
+    ]);
     render(<ChatView />);
     await user.type(screen.getByLabelText('Chat input'), 'read a file');
     await user.click(screen.getByLabelText('Send'));
@@ -224,13 +236,11 @@ describe('ChatView', () => {
 
   it('shows tool result output when tool_result SSE event received (T17)', async () => {
     const user = userEvent.setup();
-    vi.mocked(fetch).mockResolvedValue(
-      makeSSEResponse([
-        sseEvent({ type: 'tool_call', id: 'tc-1', name: 'read_file', input: { path: '/foo.txt' } }),
-        sseEvent({ type: 'tool_result', callId: 'tc-1', output: 'file contents here', isError: false }),
-        sseEvent({ type: 'done' }),
-      ]),
-    );
+    mockChatSse([
+      sseEvent({ type: 'tool_call', id: 'tc-1', name: 'read_file', input: { path: '/foo.txt' } }),
+      sseEvent({ type: 'tool_result', callId: 'tc-1', output: 'file contents here', isError: false }),
+      sseEvent({ type: 'done' }),
+    ]);
     render(<ChatView />);
     await user.type(screen.getByLabelText('Chat input'), 'read a file');
     await user.click(screen.getByLabelText('Send'));
@@ -239,16 +249,16 @@ describe('ChatView', () => {
 
   it('shows ConfirmDialog on tool_permission and POSTs the approval (T17 UI)', async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn();
-    // 1st call: the /chat/send SSE stream emitting tool_permission.
-    fetchMock.mockImplementationOnce(async () =>
-      makeSSEResponse([
+    // Route by URL: /api/providers → [], /chat/permission → OK, /chat/send → SSE.
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/api/providers')) return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+      if (url.endsWith('/chat/permission')) return new Response('{}', { status: 200 });
+      return makeSSEResponse([
         sseEvent({ type: 'tool_permission', id: 'perm-1', name: 'Write', input: {}, prompt: 'Allow Write?' }),
         sseEvent({ type: 'done' }),
-      ]),
-    );
-    // Subsequent calls (POST /chat/permission) resolve OK.
-    fetchMock.mockResolvedValue(new Response('{}', { status: 200 }));
+      ]);
+    });
     vi.stubGlobal('fetch', fetchMock);
 
     render(<ChatView />);
@@ -263,7 +273,7 @@ describe('ChatView', () => {
       expect(permCall).toBeDefined();
     });
     const permCall = fetchMock.mock.calls.find((c) => String(c[0]).endsWith('/chat/permission'));
-    const init = permCall?.[1] as RequestInit;
-    expect(JSON.parse(String(init.body))).toEqual({ callId: 'perm-1', approved: true });
+    const init = permCall?.[1] as RequestInit | undefined;
+    expect(JSON.parse(String(init?.body))).toEqual({ callId: 'perm-1', approved: true });
   });
 });

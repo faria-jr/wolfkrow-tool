@@ -10,6 +10,7 @@ import { AttachmentDropzone } from './attachment-dropzone';
 import { useChatSession } from './chat-hooks';
 import type { DisplayMessage } from './chat-message';
 import { ConfirmDialog } from './confirm-dialog';
+import { ModelPicker } from './model-picker';
 import { StreamIndicator } from './stream-indicator';
 
 import { Button } from '@/components/ui/button';
@@ -40,15 +41,18 @@ function voiceMessageToDisplay(msg: VoiceConversationMessage): DisplayMessage {
   return { id: crypto.randomUUID(), role: msg.role, content: msg.text, createdAt: new Date() };
 }
 
-interface ChatHeaderProps { title: string; onClear: () => void; }
-function ChatHeader({ title, onClear }: ChatHeaderProps) {
+interface ChatHeaderProps { title: string; model: string; onModelChange: (m: string) => void; onClear: () => void; }
+function ChatHeader({ title, model, onModelChange, onClear }: ChatHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between border-b px-6">
-      <div>
-        <h1 className="text-lg font-semibold">{title}</h1>
+      <div className="min-w-0">
+        <h1 className="truncate text-lg font-semibold">{title}</h1>
         <p className="text-xs text-muted-foreground">Multi-SDK AI conversation</p>
       </div>
-      <button onClick={onClear} className="text-muted-foreground hover:text-destructive text-xs transition-colors">Clear</button>
+      <div className="flex items-center gap-3">
+        <ModelPicker value={model} onChange={onModelChange} />
+        <Button onClick={onClear} variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive text-xs">Clear</Button>
+      </div>
     </header>
   );
 }
@@ -193,7 +197,19 @@ function ChatFooter({ input, onInputChange, onSend, onStop, disabled, voice, pen
 
 interface Props { model?: string; sessionId?: string; }
 
-export function ChatView({ model = DEFAULT_CHAT_MODEL, sessionId }: Props) {
+const MODEL_STORAGE_KEY = 'wolfkrow.chat.model.v1';
+
+function readPersistedModel(fallback: string): string {
+  if (typeof window === 'undefined') return fallback;
+  return window.localStorage.getItem(MODEL_STORAGE_KEY) ?? fallback;
+}
+
+export function ChatView({ model: initialModel = DEFAULT_CHAT_MODEL, sessionId }: Props) {
+  // EPIC 3.1 — model is in-chat state (picker), persisted across sessions so
+  // reopening chat keeps the last-used model. useChatStream depends on `model`,
+  // so the next send uses the newly selected model.
+  const [model, setModel] = useState(() => readPersistedModel(initialModel));
+  useEffect(() => { if (typeof window !== 'undefined') window.localStorage.setItem(MODEL_STORAGE_KEY, model); }, [model]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const {
     messages, input, setInput, isStreaming, sessionTitle,
@@ -210,7 +226,7 @@ export function ChatView({ model = DEFAULT_CHAT_MODEL, sessionId }: Props) {
   }, [setPendingAttachments]);
   return (
     <div className="flex h-full flex-col">
-      <ChatHeader title={sessionTitle} onClear={() => setConfirmOpen(true)} />
+      <ChatHeader title={sessionTitle} model={model} onModelChange={setModel} onClear={() => setConfirmOpen(true)} />
       <ChatTranscript messages={messages} isStreaming={isStreaming} bottomRef={bottomRef} />
       <ChatFooter
         input={input} onInputChange={setInput} onSend={send} onStop={stop} disabled={isStreaming}

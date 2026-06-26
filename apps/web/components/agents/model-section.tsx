@@ -1,6 +1,7 @@
 'use client';
 
-import { useWatch, type Control } from 'react-hook-form';
+import { useEffect } from 'react';
+import { useFormContext, useWatch, type Control } from 'react-hook-form';
 
 import type { AgentFormValues } from './schema';
 
@@ -30,8 +31,19 @@ interface Props {
 
 function ModelField({ control, providers }: Props) {
   const selectedProvider = useWatch({ control, name: 'provider' });
+  const currentModel = useWatch({ control, name: 'model' });
   const providerCfg = providers?.find((p) => p.id === selectedProvider);
   const models = providerCfg ? providerCfg.models : DEFAULT_MODELS;
+  const { setValue } = useFormContext<AgentFormValues>();
+
+  // EPIC 3.3 — when the provider changes, reset the model to the new provider's
+  // first model if the currently-held model isn't offered by it (prevents
+  // submitting a model that belongs to a different provider).
+  useEffect(() => {
+    if (models.length > 0 && !models.includes(currentModel ?? '')) {
+      setValue('model', models[0]!, { shouldValidate: true });
+    }
+  }, [models, currentModel, setValue]);
 
   return (
     <FormField control={control} name="model" render={({ field }) => (

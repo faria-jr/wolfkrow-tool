@@ -92,4 +92,22 @@ describe('ModelSection', () => {
     expect(await screen.findByRole('option', { name: 'glm-4.7' })).toBeTruthy();
     expect(await screen.findByRole('option', { name: 'glm-5.1' })).toBeTruthy();
   });
+
+  it('resets the model to the new provider first model when provider changes (EPIC 3.3)', async () => {
+    const user = userEvent.setup();
+    render(<Wrapper providers={customProviders} />);
+
+    // default model is 'claude-sonnet-4-6', which is NOT in Z.ai's models.
+    const runtimeSelect = screen.getByRole('combobox', { name: /runtime/i });
+    await user.click(runtimeSelect);
+    await user.click(await screen.findByRole('option', { name: 'claude-compat' }));
+
+    const providerSelect = await screen.findByRole('combobox', { name: /provider/i });
+    await user.click(providerSelect);
+    await user.click(await screen.findByRole('option', { name: 'Z.ai' }));
+
+    // model should have auto-reset to Z.ai's first model (glm-4.7).
+    const modelTrigger = screen.getByRole('combobox', { name: /^model/i });
+    expect(modelTrigger).toHaveTextContent('glm-4.7');
+  });
 });
