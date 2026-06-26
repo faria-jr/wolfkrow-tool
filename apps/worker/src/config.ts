@@ -20,6 +20,9 @@ const configSchema = z.object({
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
   // Endpoint JWKS do web (corrige G2: era hardcoded http://localhost:3000/api/auth/login).
   JWKS_URL: z.string().url().default('http://localhost:3000/.well-known/jwks.json'),
+  // Modo shared-workspace: quando !== 'false' (default), o worker rewrite o userId
+  // efetivo para o owner, espelhando o comportamento do web.
+  WOLFKROW_SHARED_WORKSPACE: z.enum(['true', 'false']).default('true'),
 });
 
 export type Config = z.infer<typeof configSchema>;
