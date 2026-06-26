@@ -15,9 +15,7 @@ export const chatSessions = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    agentId: text('agent_id')
-      .notNull()
-      .references(() => agents.id, { onDelete: 'restrict' }),
+    agentId: text('agent_id').references(() => agents.id, { onDelete: 'set null' }),
     title: shortText('title'),
     archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
     metadata: metadata(),

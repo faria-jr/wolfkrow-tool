@@ -23,7 +23,7 @@ export class DrizzleChatSessionRepo implements ChatSessionRepo {
 
   async save(session: ChatSession): Promise<ChatSession> {
     const now = new Date();
-    const agentId = session.agentId ?? '';
+    const agentId = session.agentId ?? null;
     const title = session.title ?? '';
     this.db
       .insert(chatSessions)

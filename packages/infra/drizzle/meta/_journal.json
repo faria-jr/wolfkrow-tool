@@ -64,6 +64,13 @@
       "when": 1782436271274,
       "tag": "0008_fast_tyrannus",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1782504364218,
+      "tag": "0009_cool_magneto",
+      "breakpoints": true
     }
   ]
 }
