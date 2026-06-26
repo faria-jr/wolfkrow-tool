@@ -9,6 +9,8 @@ export interface CoderAgent {
     acceptanceCriteria: string[];
     previousFeedback?: string;
     coderModel: string;
+    /** DEBT #29 — streamed text deltas (live coder output). */
+    onChunk?: (delta: string) => void;
   }): Promise<{ output: string; tokens: number }>;
 }
 
@@ -18,6 +20,8 @@ export interface RunCoderRoundInput {
   roundNumber: number;
   previousFeedback?: string;
   coderModel?: string;
+  /** DEBT #29 — forwarded to the coder as onChunk for live streaming. */
+  onCoderChunk?: (delta: string) => void;
 }
 
 export interface RunCoderRoundOutput {
@@ -49,6 +53,7 @@ export class RunCoderRoundUseCase {
       acceptanceCriteria: feature.acceptanceCriteria,
       coderModel: input.coderModel ?? 'claude-sonnet-4-6',
       ...(input.previousFeedback !== undefined ? { previousFeedback: input.previousFeedback } : {}),
+      ...(input.onCoderChunk !== undefined ? { onChunk: input.onCoderChunk } : {}),
     });
 
     round = await this.roundRepo.save(round.withCoderOutput(result.output, result.tokens));

@@ -18,6 +18,7 @@ interface FeatureState {
   stage: 'coder' | 'smoke' | 'evaluator' | 'idle';
   status: 'pending' | 'running' | 'passed' | 'failed';
   rounds: number;
+  coderText: string;
 }
 
 type RunState = 'idle' | 'running' | 'done' | 'aborted' | 'error';
@@ -25,6 +26,7 @@ interface RunResult { passed: number; total: number; }
 
 type SsePayload =
   | { type: 'progress'; featureIndex: number; round: number; status: string; stage?: 'coder' | 'smoke' | 'evaluator' }
+  | { type: 'coder-chunk'; featureIndex: number; delta: string }
   | { type: 'feature_done'; featureIndex: number; rounds: number; passed: boolean }
   | { type: 'done'; results: Array<{ featureIndex: number; passed: boolean }> };
 
@@ -33,13 +35,20 @@ function parseSse(raw: string): SsePayload | null {
 }
 
 function initFeatures(features: Feature[]): FeatureState[] {
-  return features.map((f, i) => ({ index: i, name: f.name, currentRound: 0, stage: 'idle', status: 'pending', rounds: 0 }));
+  return features.map((f, i) => ({ index: i, name: f.name, currentRound: 0, stage: 'idle', status: 'pending', rounds: 0, coderText: '' }));
 }
 
 function applyProgress(prev: FeatureState[], featureIndex: number, round: number, stage: FeatureState['stage']): FeatureState[] {
   const next = [...prev];
   const f = next[featureIndex];
   if (f) next[featureIndex] = { ...f, currentRound: round, stage, status: 'running' };
+  return next;
+}
+
+function applyCoderChunk(prev: FeatureState[], featureIndex: number, delta: string): FeatureState[] {
+  const next = [...prev];
+  const f = next[featureIndex];
+  if (f) next[featureIndex] = { ...f, coderText: f.coderText + delta };
   return next;
 }
 
@@ -60,6 +69,8 @@ function processLine(
   if (!ev) return;
   if (ev.type === 'progress') {
     setFeatureStates((prev) => applyProgress(prev, ev.featureIndex, ev.round, ev.stage ?? 'evaluator'));
+  } else if (ev.type === 'coder-chunk') {
+    setFeatureStates((prev) => applyCoderChunk(prev, ev.featureIndex, ev.delta));
   } else if (ev.type === 'feature_done') {
     setFeatureStates((prev) => applyFeatureDone(prev, ev.featureIndex, ev.rounds, ev.passed));
   } else if (ev.type === 'done') {
@@ -152,12 +163,17 @@ const STAGE_LABEL: Record<string, string> = { coder: 'Coder', smoke: 'Smoke', ev
 
 function FeatureRow({ f }: { f: FeatureState }) {
   return (
-    <div className="flex items-center gap-3 rounded border bg-card px-3 py-2 text-sm">
-      <span className="flex-1 truncate font-medium">{f.name || `Feature ${f.index + 1}`}</span>
-      {f.status === 'running' && f.stage !== 'idle' && (
-        <span className="text-xs text-muted-foreground">{STAGE_LABEL[f.stage]} · Round {f.currentRound}</span>
+    <div className="rounded border bg-card px-3 py-2 text-sm">
+      <div className="flex items-center gap-3">
+        <span className="flex-1 truncate font-medium">{f.name || `Feature ${f.index + 1}`}</span>
+        {f.status === 'running' && f.stage !== 'idle' && (
+          <span className="text-xs text-muted-foreground">{STAGE_LABEL[f.stage]} · Round {f.currentRound}</span>
+        )}
+        <Badge variant={statusBadgeVariant(f.status)} className="shrink-0 text-xs">{f.status}</Badge>
+      </div>
+      {f.coderText && (
+        <pre className="mt-2 max-h-32 overflow-auto rounded bg-muted px-2 py-1 font-mono text-xs whitespace-pre-wrap">{f.coderText}</pre>
       )}
-      <Badge variant={statusBadgeVariant(f.status)} className="shrink-0 text-xs">{f.status}</Badge>
     </div>
   );
 }

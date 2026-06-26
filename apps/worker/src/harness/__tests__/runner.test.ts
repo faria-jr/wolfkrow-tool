@@ -106,6 +106,25 @@ describe('runHarnessFeature', () => {
     expect(result.rounds).toBe(0);
   });
 
+  it('forwards coder text deltas via onCoderChunk (DEBT #29 streaming)', async () => {
+    const coder = makeCoder(async (input) => {
+      input.onChunk?.('Hel');
+      input.onChunk?.('lo');
+      return { output: 'Hello', tokens: 10 };
+    });
+    const evaluator = makeEvaluator(async () => ({ passed: true, feedback: 'ok', tokens: 5 }));
+    const deltas: string[] = [];
+
+    await runHarnessFeature(
+      { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 5 },
+      { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
+      { coder, evaluator },
+      { onCoderChunk: (d) => deltas.push(d) },
+    );
+
+    expect(deltas).toEqual(['Hel', 'lo']);
+  });
+
   it('passes feedback from evaluator to next coder call', async () => {
     const coderInputs: string[] = [];
     const coder = makeCoder(async (input) => {

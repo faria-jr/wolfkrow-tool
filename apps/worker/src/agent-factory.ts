@@ -150,7 +150,7 @@ export async function makeCoderWithTools(workDir: string, config: HarnessConfig,
     'Write files to the workspace directory. Run tests to verify your implementation.';
 
   return {
-    async implement(input: { sprintName: string; featureName: string; featureDescription: string; acceptanceCriteria: string[]; previousFeedback?: string; coderModel: string }) {
+    async implement(input: { sprintName: string; featureName: string; featureDescription: string; acceptanceCriteria: string[]; previousFeedback?: string; coderModel: string; onChunk?: (delta: string) => void }) {
       const previousContext = input.previousFeedback
         ? `\n\nPrevious evaluator feedback:\n${input.previousFeedback}`
         : '';
@@ -162,14 +162,25 @@ export async function makeCoderWithTools(workDir: string, config: HarnessConfig,
         `${previousContext}\n\nImplement this feature completely. Use your tools to write files and run tests.`;
 
       const provider = createToolProvider(cfg, apiKey, tools, workDir);
-      const result = await provider.complete({
+      // DEBT #29 — stream the agentic loop, forwarding text deltas for live output.
+      let content = '';
+      let inputTokens = 0;
+      let outputTokens = 0;
+      for await (const chunk of provider.query({
         model: input.coderModel,
         system: systemPrompt,
         messages: [{ role: 'user', content: prompt }],
         maxTokens: 16384,
         temperature: 0.2,
-      });
-      return { output: result.content, tokens: result.usage.inputTokens + result.usage.outputTokens };
+      })) {
+        if (chunk.delta) {
+          content += chunk.delta;
+          input.onChunk?.(chunk.delta);
+        }
+        if (chunk.inputTokens) inputTokens = chunk.inputTokens;
+        if (chunk.outputTokens) outputTokens = chunk.outputTokens;
+      }
+      return { output: content, tokens: inputTokens + outputTokens };
     },
   };
 }

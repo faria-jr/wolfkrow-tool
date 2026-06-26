@@ -102,7 +102,11 @@ async function streamSprintRun(deps: SprintRunDeps): Promise<void> {
         { sprintId: deps.sprint.id, featureIndex: i, coderModel: deps.project.config.coderModel, maxRounds: deps.project.config.maxRoundsPerFeature, workDir },
         deps.repos as Parameters<typeof runHarnessFeature>[1],
         { coder: deps.coder, evaluator: deps.evaluator, smokeRunner: deps.smokeRunner } as Parameters<typeof runHarnessFeature>[2],
-        { onProgress: (event) => deps.sse({ type: 'progress', sprintId: deps.sprint.id, featureIndex: i, ...event }), shouldAbort: isAborted },
+        {
+          onProgress: (event) => deps.sse({ type: 'progress', sprintId: deps.sprint.id, featureIndex: i, ...event }),
+          onCoderChunk: (delta) => deps.sse({ type: 'coder-chunk', sprintId: deps.sprint.id, featureIndex: i, delta }),
+          shouldAbort: isAborted,
+        },
       );
       results.push(result);
       deps.sse({ type: 'feature_done', ...result });

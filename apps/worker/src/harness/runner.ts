@@ -101,15 +101,19 @@ function makeResult(args: { input: RunFeatureInput; rounds: number; passed: bool
 }
 
 interface CoderArgs { input: RunFeatureInput; round: number; prevFeedback: string | undefined; repos: Repos; ctx: HarnessCtx; }
-interface TickArgs extends CoderArgs { onProgress: ((event: ProgressEvent) => void) | undefined; }
+interface TickArgs extends CoderArgs {
+  onProgress: ((event: ProgressEvent) => void) | undefined;
+  onCoderChunk: ((delta: string) => void) | undefined;
+}
 
-async function runCoder(args: CoderArgs) {
+async function runCoder(args: CoderArgs, onCoderChunk?: (delta: string) => void) {
   return new RunCoderRoundUseCase(args.repos.sprintRepo, args.repos.roundRepo, args.ctx.coder).execute({
     sprintId: args.input.sprintId,
     featureIndex: args.input.featureIndex,
     roundNumber: args.round + 1,
     coderModel: args.input.coderModel,
     ...(args.prevFeedback !== undefined ? { previousFeedback: args.prevFeedback } : {}),
+    ...(onCoderChunk !== undefined ? { onCoderChunk } : {}),
   });
 }
 
@@ -120,7 +124,7 @@ async function runEvaluator(repos: Repos, ctx: HarnessCtx, roundId: string) {
 interface TickResult { result: FeatureRunResult | null; nextFeedback: string | undefined; }
 
 async function tickRound(args: TickArgs): Promise<TickResult> {
-  const coderOut = await runCoder(args);
+  const coderOut = await runCoder(args, args.onCoderChunk);
   const smoke = await runSmoke(args.ctx, args.input);
   if (smoke.failed) {
     args.onProgress?.({ round: args.round + 1, status: 'failed', stage: 'smoke' });
@@ -138,6 +142,8 @@ async function tickRound(args: TickArgs): Promise<TickResult> {
 
 export interface RunHarnessHooks {
   onProgress?: (event: ProgressEvent) => void;
+  /** DEBT #29 — streamed coder text deltas (live output). */
+  onCoderChunk?: (delta: string) => void;
   /** DEBT #29 — return true to stop the coder/evaluator loop early (abort). */
   shouldAbort?: () => boolean;
 }
@@ -148,14 +154,14 @@ export async function runHarnessFeature(
   ctx: HarnessCtx,
   hooks: RunHarnessHooks = {},
 ): Promise<FeatureRunResult> {
-  const { onProgress, shouldAbort } = hooks;
+  const { onProgress, onCoderChunk, shouldAbort } = hooks;
   let prevFeedback: string | undefined;
   for (let round = 0; round < input.maxRounds; round++) {
     // DEBT #29 — stop the coder/evaluator loop early when the run is aborted.
     if (shouldAbort?.()) {
       return makeResult({ input, rounds: round, passed: false, finalOutput: undefined, smokeFeedback: undefined });
     }
-    const { result, nextFeedback } = await tickRound({ input, round, prevFeedback, repos, ctx, onProgress });
+    const { result, nextFeedback } = await tickRound({ input, round, prevFeedback, repos, ctx, onProgress, onCoderChunk });
     if (result?.passed) return result;
     prevFeedback = nextFeedback;
   }
