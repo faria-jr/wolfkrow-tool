@@ -26,7 +26,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <SidebarInset>
         <Topbar />
         <CommandPalette />
-        <main id="main-content" tabIndex={-1}>{children}</main>
+        {/* EPIC 2.1 — bounded scroll region: SidebarInset is the flex/h-svh
+            column; this div is the flex-1 overflow boundary so each page's
+            PageShell/PageContent scrolls internally instead of the window.
+            (SidebarInset itself renders the single <main> landmark.) */}
+        <div id="main-content" tabIndex={-1} className="flex-1 min-h-0 overflow-hidden">
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

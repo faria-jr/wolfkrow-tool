@@ -1,28 +1,5 @@
 'use client';
 
-import {
-  BarChart3,
-  Bot,
-  BookOpen,
-  Calendar,
-  Database,
-  FileText,
-  Folder,
-  FolderSearch,
-  KeyRound,
-  ListTodo,
-  MessageSquare,
-  Network,
-  PencilRuler,
-  Settings,
-  ShieldAlert,
-  ShieldCheck,
-  Sparkles,
-  TerminalSquare,
-  Wand2,
-  Workflow,
-  Zap,
-} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -38,47 +15,9 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
+import { NAV_GROUPS, type NavItem } from '@/lib/nav';
+import { APP_VERSION } from '@/lib/version';
 
-type NavItem = {
-  title: string;
-  url: string;
-  icon: React.ComponentType<{ className?: string }>;
-};
-
-const MAIN_NAV: NavItem[] = [
-  { title: 'Chat', url: '/chat', icon: MessageSquare },
-  { title: 'Agents', url: '/agents', icon: Bot },
-  { title: 'Skills', url: '/skills', icon: Sparkles },
-  { title: 'MCP Servers', url: '/mcp-servers', icon: Network },
-  { title: 'Knowledge', url: '/knowledge', icon: BookOpen },
-  { title: 'Graph', url: '/graph', icon: Network },
-  { title: 'Tasks', url: '/tasks', icon: ListTodo },
-];
-
-const AUTOMATION_NAV: NavItem[] = [
-  { title: 'Scheduler', url: '/scheduler', icon: Calendar },
-  { title: 'Harness', url: '/harness', icon: Zap },
-  { title: 'Pipeline', url: '/pipeline', icon: Workflow },
-  { title: 'Security Audit', url: '/audit', icon: ShieldAlert },
-];
-
-const TOOLS_NAV: NavItem[] = [
-  { title: 'Design Studio', url: '/design', icon: PencilRuler },
-  { title: 'Terminal', url: '/terminal', icon: TerminalSquare },
-  { title: 'Enrich', url: '/enrich', icon: Wand2 },
-  { title: 'Profiler', url: '/profiler', icon: FolderSearch },
-];
-
-const SYSTEM_NAV: NavItem[] = [
-  { title: 'Memory', url: '/memory', icon: Database },
-  { title: 'Rules', url: '/rules', icon: FileText },
-  { title: 'Vault', url: '/vault', icon: KeyRound },
-  { title: 'Channels', url: '/channels', icon: Folder },
-  { title: 'Permissions', url: '/permissions', icon: ShieldCheck },
-  { title: 'Usage', url: '/usage', icon: BarChart3 },
-  { title: 'Settings', url: '/settings', icon: Settings },
-  { title: 'Logs', url: '/logs', icon: FileText },
-];
 
 /**
  * A nav item is active when the current pathname matches its route.
@@ -110,15 +49,7 @@ function NavMenuItem({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
-function NavGroup({
-  label,
-  items,
-  pathname,
-}: {
-  label: string;
-  items: NavItem[];
-  pathname: string;
-}) {
+function NavGroup({ label, items, pathname }: { label: string; items: readonly NavItem[]; pathname: string }) {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
@@ -141,7 +72,7 @@ function SidebarBrand() {
       </div>
       <div className="flex flex-col">
         <span className="text-sm font-semibold">Wolfkrow</span>
-        <span className="text-xs text-muted-foreground">v1.0.0</span>
+        <span className="text-xs text-muted-foreground">v{APP_VERSION}</span>
       </div>
     </div>
   );
@@ -157,10 +88,9 @@ export function Sidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavGroup label="Main" items={MAIN_NAV} pathname={pathname} />
-        <NavGroup label="Automation" items={AUTOMATION_NAV} pathname={pathname} />
-        <NavGroup label="Tools" items={TOOLS_NAV} pathname={pathname} />
-        <NavGroup label="System" items={SYSTEM_NAV} pathname={pathname} />
+        {NAV_GROUPS.map((group) => (
+          <NavGroup key={group.label} label={group.label} items={group.items} pathname={pathname} />
+        ))}
       </SidebarContent>
 
       <SidebarFooter>

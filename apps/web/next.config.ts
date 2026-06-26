@@ -1,11 +1,24 @@
 import bundleAnalyzer from '@next/bundle-analyzer';
 import withSerwistInit from '@serwist/next';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import type { NextConfig } from 'next';
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env['ANALYZE'] === 'true',
   openAnalyzer: false,
 });
+
+// EPIC 2.2 — read the version once at build time so the sidebar reflects the
+// actual package version instead of a hard-coded literal. process.cwd() is the
+// app dir (apps/web) during next build/dev.
+const pkgVersion = (() => {
+  try {
+    return JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).version as string;
+  } catch {
+    return '0.1.0';
+  }
+})();
 
 const withSerwist = withSerwistInit({
   swSrc: 'src/sw.ts',
@@ -15,6 +28,10 @@ const withSerwist = withSerwistInit({
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+
+  env: {
+    NEXT_PUBLIC_APP_VERSION: pkgVersion,
+  },
 
   transpilePackages: ['@wolfkrow/design-tokens'],
 
@@ -87,7 +104,7 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
-      { source: '/', destination: '/chat', permanent: false },
+      { source: '/', destination: '/dashboard', permanent: false },
     ];
   },
 

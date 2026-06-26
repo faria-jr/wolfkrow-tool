@@ -1,10 +1,11 @@
 'use client';
 
-import { Bot, BookOpen, Calendar, Database, FileText, Folder, KeyRound, ListTodo, MessageSquare, Network, Settings, ShieldAlert, ShieldCheck, Sparkles, Workflow, Zap } from 'lucide-react';
+import { Bot, FileText, Settings, ShieldAlert, Sparkles, Zap } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { NAV_GROUPS } from '@/lib/nav';
 
 interface CommandEntry {
   label: string;
@@ -14,26 +15,15 @@ interface CommandEntry {
   onSelect?: () => void;
 }
 
-const ENTRIES: CommandEntry[] = [
-  { label: 'Chat', url: '/chat', group: 'Main', icon: MessageSquare },
-  { label: 'Agents', url: '/agents', group: 'Main', icon: Bot },
-  { label: 'Skills', url: '/skills', group: 'Main', icon: Sparkles },
-  { label: 'MCP Servers', url: '/mcp-servers', group: 'Main', icon: Network },
-  { label: 'Knowledge', url: '/knowledge', group: 'Main', icon: BookOpen },
-  { label: 'Graph', url: '/graph', group: 'Main', icon: Network },
-  { label: 'Tasks', url: '/tasks', group: 'Main', icon: ListTodo },
-  { label: 'Scheduler', url: '/scheduler', group: 'Automation', icon: Calendar },
-  { label: 'Harness', url: '/harness', group: 'Automation', icon: Zap },
-  { label: 'Pipeline', url: '/pipeline', group: 'Automation', icon: Workflow },
-  { label: 'Security Audit', url: '/audit', group: 'Automation', icon: ShieldAlert },
-  { label: 'Memory', url: '/memory', group: 'Knowledge', icon: Database },
-  { label: 'Rules', url: '/rules', group: 'Knowledge', icon: FileText },
-  { label: 'Vault', url: '/vault', group: 'System', icon: KeyRound },
-  { label: 'Channels', url: '/channels', group: 'System', icon: Folder },
-  { label: 'Permissions', url: '/permissions', group: 'System', icon: ShieldCheck },
-  { label: 'Settings', url: '/settings', group: 'System', icon: Settings },
-  { label: 'Usage', url: '/usage', group: 'System', icon: FileText },
-  { label: 'Logs', url: '/logs', group: 'System', icon: FileText },
+// EPIC 2.2 — page entries are derived from the single nav config so the palette
+// can't drift from the sidebar (it previously omitted the whole Tools group).
+function pageEntries(): CommandEntry[] {
+  return NAV_GROUPS.flatMap((group) =>
+    group.items.map((item) => ({ label: item.title, url: item.url, group: group.label, icon: item.icon })),
+  );
+}
+
+const ACTIONS: CommandEntry[] = [
   { label: 'New agent', url: '/agents', group: 'Actions', icon: Bot },
   { label: 'Run audit', url: '/audit', group: 'Actions', icon: ShieldAlert },
   { label: 'New provider', url: '/settings/providers', group: 'Actions', icon: Settings },
@@ -41,6 +31,8 @@ const ENTRIES: CommandEntry[] = [
   { label: 'Copy page URL', group: 'Actions', icon: FileText, onSelect: () => { if (typeof window !== 'undefined') void navigator.clipboard.writeText(window.location.href); } },
   { label: 'Reload page', group: 'Actions', icon: Zap, onSelect: () => { if (typeof window !== 'undefined') window.location.reload(); } },
 ];
+
+const ENTRIES: CommandEntry[] = [...pageEntries(), ...ACTIONS];
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
