@@ -25,7 +25,7 @@ describe('createRepoRegistry (FIX-007)', () => {
     const r = createRepoRegistry();
     expect(Object.keys(r).sort()).toEqual(
       [
-        'agent', 'auditLog', 'authAudit', 'chatSession', 'dailySummary', 'enrichSession',
+        'agent', 'auditLog', 'authAudit', 'chatSession', 'compactionLog', 'dailySummary', 'enrichSession',
         'globalRule', 'graph', 'harnessProject', 'harnessRound', 'harnessSprint',
         'knowledgeChunk', 'knowledgeDoc', 'message', 'mcpServer', 'mcpToolRegistry',
         'pipelineMessage', 'pipelinePhase', 'pipelineProject', 'providerConfig', 'scheduledTask',

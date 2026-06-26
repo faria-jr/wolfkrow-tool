@@ -134,7 +134,7 @@ describe('CompletePhaseUseCase', () => {
 // ── ApprovePipelinePhaseUseCase ───────────────────────────────────────────────
 
 describe('ApprovePipelinePhaseUseCase', () => {
-  it('approves approval phase and moves to implementation', async () => {
+  it('approves approval phase and moves to design', async () => {
     const projectRepo = new InMemoryProjectRepo();
     const phaseRepo = new InMemoryPhaseRepo();
     let p = PipelineProject.create({ userId: 'u1', name: 'P' });
@@ -145,7 +145,7 @@ describe('ApprovePipelinePhaseUseCase', () => {
     const { project } = await new ApprovePipelinePhaseUseCase(projectRepo, phaseRepo).execute({
       projectId: p.id, phaseId: phase.id, approved: true, notes: 'Looks good',
     });
-    expect(project.currentStage).toBe('implementation');
+    expect(project.currentStage).toBe('design');
     expect(project.status).toBe('running');
   });
 
@@ -163,7 +163,7 @@ describe('ApprovePipelinePhaseUseCase', () => {
     expect(project.status).toBe('paused');
   });
 
-  it('approve-with-edits persists specEdits and advances to implementation (M5.5)', async () => {
+  it('approve-with-edits persists specEdits and advances to design (M5.5)', async () => {
     const projectRepo = new InMemoryProjectRepo();
     const phaseRepo = new InMemoryPhaseRepo();
     let p = PipelineProject.create({ userId: 'u1', name: 'P' });
@@ -176,7 +176,7 @@ describe('ApprovePipelinePhaseUseCase', () => {
       projectId: p.id, phaseId: phase.id, approved: true,
       notes: 'Approve with edit', specEdits: editedSpec,
     });
-    expect(project.currentStage).toBe('implementation');
+    expect(project.currentStage).toBe('design');
     expect(project.specEdits).toBe(editedSpec);
     expect(project.approvalNotes).toBe('Approve with edit');
     expect(project.status).toBe('running');

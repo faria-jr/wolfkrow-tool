@@ -42,30 +42,12 @@ export class SearchKnowledgeUseCase implements UseCase<SearchKnowledgeInput, Sea
     if (!query) return { results: [], query };
 
     const limit = input.limit ?? 10;
-    const fetchLimit = limit * 3; // candidate pool for rerank
-
     const embedding = await this.embedder.embed(query);
+    const effectiveEmbedding = await this.applyHyde(query, embedding);
+    const fused = await this.chunkRepo.hybridSearch(query, effectiveEmbedding, limit * 3, input.documentIds);
 
-    // HyDE: optionally swap the vector-embedding for a hypothetical answer's.
-    let effectiveEmbedding = embedding;
-    if (this.hyde?.enabled) {
-      const hypothetical = await this.hyde.generate(query);
-      if (hypothetical) effectiveEmbedding = await this.embedder.embed(hypothetical);
-    }
-
-    const fused = await this.chunkRepo.hybridSearch(query, effectiveEmbedding, fetchLimit, input.documentIds);
-
-    // Reranker: optionally reorder the candidate pool by cross-encoder score.
-    if (this.reranker?.enabled && fused.length > 0) {
-      const documents = fused.map((f) => f.chunk.content);
-      const hits = await this.reranker.rerank(query, documents, limit);
-      const results: SearchResult[] = [];
-      for (const { index, score } of hits) {
-        const chunk = fused[index]?.chunk;
-        if (chunk) results.push({ chunk, score, documentId: chunk.documentId });
-      }
-      if (results.length > 0) return { results, query };
-    }
+    const reranked = await this.rerank(query, fused, limit);
+    if (reranked) return { results: reranked, query };
 
     const results = fused.slice(0, limit).map((h) => ({
       chunk: h.chunk,
@@ -73,5 +55,25 @@ export class SearchKnowledgeUseCase implements UseCase<SearchKnowledgeInput, Sea
       documentId: h.chunk.documentId,
     }));
     return { results, query };
+  }
+
+  /** HyDE: optionally swap the embedding for a hypothetical answer's. */
+  private async applyHyde<T>(query: string, embedding: T): Promise<T> {
+    if (!this.hyde?.enabled) return embedding;
+    const hypothetical = await this.hyde.generate(query);
+    return hypothetical ? ((await this.embedder.embed(hypothetical)) as T) : embedding;
+  }
+
+  /** Reranker: optionally reorder the candidate pool by cross-encoder score. */
+  private async rerank(query: string, fused: ReadonlyArray<{ chunk: KnowledgeChunk }>, limit: number): Promise<SearchResult[] | null> {
+    if (!this.reranker?.enabled || fused.length === 0) return null;
+    const documents = fused.map((f) => f.chunk.content);
+    const hits = await this.reranker.rerank(query, documents, limit);
+    const results: SearchResult[] = [];
+    for (const { index, score } of hits) {
+      const chunk = fused[index]?.chunk;
+      if (chunk) results.push({ chunk, score, documentId: chunk.documentId });
+    }
+    return results.length > 0 ? results : null;
   }
 }

@@ -15,7 +15,7 @@ import { NotFoundError } from '@wolfkrow/domain';
  * 2. Approve-with-edits: the user submits a `specEdits` string that
  * replaces the spec the next stages will see.
  * 3. Stage progression: when the approved stage is the `approval`
- * checkpoint, advances the project to `implementation`; otherwise
+ * checkpoint, advances the project to `design`; otherwise
  * the project just resumes from the current stage.
  */
 export interface ApprovePipelinePhaseInput {
@@ -29,6 +29,15 @@ export interface ApprovePipelinePhaseInput {
 export interface ApprovePipelinePhaseOutput {
  project: PipelineProject;
  phase: PipelinePhase;
+}
+
+type ApprovalExtras = Partial<Pick<PipelineProjectProps, 'approvalNotes' | 'specEdits' | 'status'>>;
+
+function buildApprovalExtras(input: ApprovePipelinePhaseInput): ApprovalExtras {
+ const extras: ApprovalExtras = { status: 'running' };
+ if (input.notes !== undefined) extras.approvalNotes = input.notes;
+ if (input.specEdits !== undefined) extras.specEdits = input.specEdits;
+ return extras;
 }
 
 export class ApprovePipelinePhaseUseCase {
@@ -47,23 +56,13 @@ export class ApprovePipelinePhaseUseCase {
 
  const updatedPhase = await this.phaseRepo.save(input.approved ? phase.complete() : phase.fail());
 
- let updatedProject: PipelineProject;
  if (!input.approved) {
- updatedProject = await this.projectRepo.save(project.withStatus('paused'));
+ const updatedProject = await this.projectRepo.save(project.withStatus('paused'));
  return { project: updatedProject, phase: updatedPhase };
  }
 
- const approvalExtras: Partial<
- Pick<PipelineProjectProps, 'approvalNotes' | 'specEdits' | 'status'>
- > = {
- status: 'running',
- };
- if (input.notes !== undefined) approvalExtras.approvalNotes = input.notes;
- if (input.specEdits !== undefined) approvalExtras.specEdits = input.specEdits;
-
- const nextStage =
- phase.stage === 'approval' ? 'design' : project.currentStage;
- updatedProject = await this.projectRepo.save(project.withStage(nextStage, approvalExtras));
+ const nextStage = phase.stage === 'approval' ? 'design' : project.currentStage;
+ const updatedProject = await this.projectRepo.save(project.withStage(nextStage, buildApprovalExtras(input)));
  return { project: updatedProject, phase: updatedPhase };
  }
 }
