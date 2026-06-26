@@ -54,6 +54,27 @@ describe('McpServerList', () => {
     expect(screen.getByText('custom-mcp')).toBeInTheDocument();
   });
 
+  it('renders servers in the shared table pattern and exposes edit action', async () => {
+    const edit = vi.fn();
+    render(
+      <McpServerList
+        servers={[makeServer()]}
+        onToggle={noop}
+        onDelete={noop}
+        onEdit={edit}
+        onRestart={noop}
+        onHealthCheck={noop}
+        onVisibilityChange={noop}
+      />,
+    );
+
+    expect(screen.getByRole('columnheader', { name: /name/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /source/i })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: /status/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText('Edit server'));
+    expect(edit).toHaveBeenCalledWith('s1');
+  });
+
   it('shows empty state when no servers', () => {
     render(
       <McpServerList

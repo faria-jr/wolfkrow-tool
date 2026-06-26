@@ -15,6 +15,10 @@ function isValidVisibility(value: unknown): value is McpServerVisibility {
   return typeof value === 'string' && VALID_VISIBILITY.includes(value as McpServerVisibility);
 }
 
+function hasCustomEditableFields(body: Record<string, unknown>): boolean {
+  return ['name', 'description', 'command', 'args', 'env', 'healthCheck'].some((key) => key in body);
+}
+
 export async function PATCH(request: Request, { params }: Params) {
   const cookieStore = await cookies();
   const session = await getSession(cookieStore.get('session')?.value);
@@ -29,6 +33,9 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!existing || existing.userId !== session.userId) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
+  if (existing.isBuiltIn && hasCustomEditableFields(body)) {
+    return Response.json({ error: 'Built-in servers only allow active and visibility changes' }, { status: 422 });
+  }
 
   if (body.isActive !== undefined) {
     repo.toggleActive(id, body.isActive);
@@ -41,6 +48,21 @@ export async function PATCH(request: Request, { params }: Params) {
       );
     }
     repo.setVisibility(id, body.visibility);
+  }
+  if (!existing.isBuiltIn && hasCustomEditableFields(body)) {
+    const current = repo.findById(id) ?? existing;
+    repo.save(id, {
+      userId: current.userId,
+      name: body.name ?? current.name,
+      ...(body.description !== undefined ? { description: body.description } : current.description !== undefined ? { description: current.description } : {}),
+      command: body.command ?? current.command,
+      args: body.args ?? current.args,
+      env: body.env ?? current.env,
+      isActive: body.isActive ?? current.isActive,
+      isBuiltIn: current.isBuiltIn,
+      visibility: isValidVisibility(body.visibility) ? body.visibility : current.visibility,
+      ...(body.healthCheck !== undefined ? { healthCheck: body.healthCheck } : current.healthCheck !== undefined ? { healthCheck: current.healthCheck } : {}),
+    });
   }
   return Response.json({ server: repo.findById(id) });
 }

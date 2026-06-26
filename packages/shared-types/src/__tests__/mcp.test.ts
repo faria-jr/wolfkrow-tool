@@ -167,6 +167,17 @@ describe('mcp schemas', () => {
         UpdateMcpServerRequestBodySchema.parse({ visibility: 'always' }),
       ).not.toThrow();
     });
+    it('accepts editable custom server fields', () => {
+      const parsed = UpdateMcpServerRequestBodySchema.parse({
+        name: 'filesystem',
+        description: 'Local files',
+        command: 'npx',
+        args: ['-y', 'server'],
+        env: { ROOT: '/tmp' },
+        healthCheck: 'tools/list',
+      });
+      expect(parsed).toMatchObject({ name: 'filesystem', command: 'npx' });
+    });
     it('rejects an empty object (refine: at least one field)', () => {
       expect(() => UpdateMcpServerRequestBodySchema.parse({})).toThrow();
     });

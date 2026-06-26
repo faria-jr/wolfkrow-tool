@@ -1,14 +1,13 @@
 'use client';
 
 import type { McpServerRecord, McpServerSource, McpServerVisibility } from '@wolfkrow/domain';
-import { Network, RotateCw, RefreshCw, TrashIcon } from 'lucide-react';
-import { memo, useState } from 'react';
+import { Network } from 'lucide-react';
+import { memo } from 'react';
 
-import { ConfirmDialog } from '@/components/chat/confirm-dialog';
+import { ServerActions } from './mcp-server-actions';
+
 import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -16,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export type McpServerData = Omit<McpServerRecord, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
@@ -42,17 +41,10 @@ interface RowProps {
   server: McpServerData;
   onToggle: (id: string, active: boolean) => void;
   onDelete: (id: string) => void | Promise<void>;
+  onEdit?: (id: string) => void;
   onRestart: (id: string) => void;
   onHealthCheck: (id: string) => void;
   onVisibilityChange: (id: string, visibility: McpServerVisibility) => void;
-}
-
-interface ServerActionsProps {
-  server: McpServerData;
-  onToggle: (id: string, active: boolean) => void;
-  onDelete: (id: string) => void | Promise<void>;
-  onRestart: (id: string) => void;
-  onHealthCheck: (id: string) => void;
 }
 
 interface ServerBadgesProps {
@@ -89,89 +81,9 @@ function healthLabel(snapshot: McpHealthSnapshot | undefined): string {
   return 'health: stopped';
 }
 
-function DeleteServerButton({ server, onDelete }: { server: McpServerData; onDelete: (id: string) => void | Promise<void> }) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  async function confirmDeletion() {
-    setDeleting(true);
-    try {
-      await onDelete(server.id);
-    } finally {
-      setDeleting(false);
-      setConfirmDelete(false);
-    }
-  }
-
-  return (
-    <>
-      <Button
-        size="icon"
-        variant="ghost"
-        onClick={() => setConfirmDelete(true)}
-        disabled={deleting}
-        aria-label="Delete server"
-      >
-        <TrashIcon className="h-4 w-4" />
-      </Button>
-      <ConfirmDialog
-        open={confirmDelete}
-        title="Delete server"
-        description={`Remove "${server.name}"? This cannot be undone.`}
-        confirmLabel="Delete"
-        onConfirm={() => void confirmDeletion()}
-        onCancel={() => setConfirmDelete(false)}
-      />
-    </>
-  );
-}
-
-function ServerActions({
-  server,
-  onToggle,
-  onDelete,
-  onRestart,
-  onHealthCheck,
-}: ServerActionsProps) {
-  const showRestart = server.source === 'built-in';
-  return (
-    <div className="flex shrink-0 items-center gap-2">
-      <Switch
-        checked={server.isActive}
-        onCheckedChange={(v) => onToggle(server.id, v)}
-        aria-label="Toggle active"
-      />
-      {showRestart && (
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => onHealthCheck(server.id)}
-          aria-label="Check health"
-          title="Run health check"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-      )}
-      {showRestart && (
-        <Button
-          size="icon"
-          variant="ghost"
-          onClick={() => onRestart(server.id)}
-          aria-label="Restart server"
-          title="Restart MCP server"
-        >
-          <RotateCw className="h-4 w-4" />
-        </Button>
-      )}
-      {!server.isBuiltIn && <DeleteServerButton server={server} onDelete={onDelete} />}
-    </div>
-  );
-}
-
 function ServerBadges({ server }: ServerBadgesProps) {
   return (
     <div className="flex flex-wrap items-center gap-1">
-      <Badge variant={sourceVariant(server.source)}>{sourceLabel(server.source)}</Badge>
       <Badge variant={server.isActive ? 'default' : 'outline'}>
         {server.isActive ? 'active' : 'inactive'}
       </Badge>
@@ -210,39 +122,46 @@ const McpServerRow = memo(function McpServerRow({
   server,
   onToggle,
   onDelete,
+  onEdit,
   onRestart,
   onHealthCheck,
   onVisibilityChange,
 }: RowProps) {
   return (
-    <Card className="transition-shadow hover:shadow-sm">
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <CardTitle className="text-base">{server.name}</CardTitle>
-            <p className="truncate text-xs text-muted-foreground font-mono">
-              {server.command} {server.args.join(' ')}
-            </p>
-          </div>
-          <ServerActions
-            server={server}
-            onToggle={onToggle}
-            onDelete={onDelete}
-            onRestart={onRestart}
-            onHealthCheck={onHealthCheck}
-          />
+    <TableRow>
+      <TableCell>
+        <div className="space-y-1">
+          <div className="font-medium">{server.name}</div>
+          <p className="max-w-[48ch] truncate font-mono text-xs text-muted-foreground">
+            {server.command} {server.args.join(' ')}
+          </p>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-2">
+      </TableCell>
+      <TableCell>
+        <Badge variant={sourceVariant(server.source)}>{sourceLabel(server.source)}</Badge>
+      </TableCell>
+      <TableCell>
         <ServerBadges server={server} />
+      </TableCell>
+      <TableCell>
         <ServerVisibilitySelect server={server} onVisibilityChange={onVisibilityChange} />
         {server.health?.lastError && (
           <p className="rounded bg-destructive/10 px-2 py-1 text-xs text-destructive">
             {server.health.lastError}
           </p>
         )}
-      </CardContent>
-    </Card>
+      </TableCell>
+      <TableCell>
+        <ServerActions
+          server={server}
+          onToggle={onToggle}
+          onDelete={onDelete}
+          {...(onEdit ? { onEdit } : {})}
+          onRestart={onRestart}
+          onHealthCheck={onHealthCheck}
+        />
+      </TableCell>
+    </TableRow>
   );
 });
 
@@ -250,6 +169,7 @@ interface Props {
   servers: McpServerData[];
   onToggle: (id: string, active: boolean) => void;
   onDelete: (id: string) => void | Promise<void>;
+  onEdit?: (id: string) => void;
   onRestart: (id: string) => void;
   onHealthCheck: (id: string) => void;
   onVisibilityChange: (id: string, visibility: McpServerVisibility) => void;
@@ -259,6 +179,7 @@ export function McpServerList({
   servers,
   onToggle,
   onDelete,
+  onEdit,
   onRestart,
   onHealthCheck,
   onVisibilityChange,
@@ -272,18 +193,32 @@ export function McpServerList({
       />
     );
   return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {servers.map((s) => (
-        <McpServerRow
-          key={s.id}
-          server={s}
-          onToggle={onToggle}
-          onDelete={onDelete}
-          onRestart={onRestart}
-          onHealthCheck={onHealthCheck}
-          onVisibilityChange={onVisibilityChange}
-        />
-      ))}
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Source</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Visibility</TableHead>
+            <TableHead className="w-48" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {servers.map((s) => (
+            <McpServerRow
+              key={s.id}
+              server={s}
+              onToggle={onToggle}
+              onDelete={onDelete}
+              {...(onEdit ? { onEdit } : {})}
+              onRestart={onRestart}
+              onHealthCheck={onHealthCheck}
+              onVisibilityChange={onVisibilityChange}
+            />
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

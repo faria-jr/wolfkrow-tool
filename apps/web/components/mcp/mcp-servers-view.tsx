@@ -1,15 +1,17 @@
 'use client';
 
 import type { McpServerSource, McpServerVisibility } from '@wolfkrow/domain';
+import { Plus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { AddMcpServerModal } from './add-mcp-server-modal';
 import { GoogleOAuthPanel } from './google-oauth-panel';
 import type { McpHealthSnapshot, McpServerData } from './mcp-server-list';
 import { McpServerList } from './mcp-server-list';
 
 import { ErrorState } from '@/components/common/error-state';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const API = '/api/mcp-servers';
@@ -161,6 +163,7 @@ function useMcpServers() {
 }
 
 export function McpServersView() {
+  const router = useRouter();
   const { servers, loading, error, reload, setServers } = useMcpServers();
   const actions = useServerActions(reload, setServers);
   const serverNames = servers.map((s) => s.name);
@@ -168,10 +171,10 @@ export function McpServersView() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <AddMcpServerModal
-          onDone={() => void reload()}
-          onCreate={() => toast.success('Server created')}
-        />
+        <Button onClick={() => router.push('/mcp-servers/new')}>
+          <Plus className="mr-2 h-4 w-4" />
+          New server
+        </Button>
       </div>
       <GoogleOAuthPanel configuredServers={serverNames} />
       {loading ? (
@@ -190,6 +193,7 @@ export function McpServersView() {
           servers={servers}
           onToggle={actions.toggle}
           onDelete={actions.remove}
+          onEdit={(id) => router.push(`/mcp-servers/${id}/edit`)}
           onRestart={actions.restart}
           onHealthCheck={actions.checkHealth}
           onVisibilityChange={actions.setVisibility}

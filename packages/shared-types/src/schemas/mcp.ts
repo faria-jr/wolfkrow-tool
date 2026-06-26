@@ -111,11 +111,17 @@ export type CreateMcpServerRequestBody = z.infer<typeof CreateMcpServerRequestBo
  */
 export const UpdateMcpServerRequestBodySchema = z
   .object({
+    name: ShortStringSchema.optional(),
+    description: z.string().max(1000).optional(),
+    command: NonEmptyStringSchema.optional(),
+    args: z.array(z.string()).optional(),
+    env: z.record(z.string(), z.string()).optional(),
     isActive: z.boolean().optional(),
+    healthCheck: z.string().optional(),
     visibility: z.string().optional(),
   })
-  .refine((data) => data.isActive !== undefined || data.visibility !== undefined, {
-    message: 'Provide at least one of isActive or visibility',
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'Provide at least one field to update',
   });
 
 export type UpdateMcpServerRequestBody = z.infer<typeof UpdateMcpServerRequestBodySchema>;
