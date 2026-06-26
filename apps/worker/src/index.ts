@@ -42,6 +42,9 @@ import { mcpManager } from './routes/mcp';
 import { Scheduler } from './scheduler';
 import { resolveSeedAgentsDir } from './seed-agents/paths';
 import { ensureSeedAgents } from './seed-agents/seeder';
+import { ensureBuiltInChannels } from './seed-data/channels-seeder';
+import { ensureBuiltInRules } from './seed-data/rules-seeder';
+import { ensureBuiltInSkills } from './seed-data/skills-seeder';
 import { createServer } from './server';
 
 const logger = createLogger('worker');
@@ -70,6 +73,20 @@ async function startMcpsAsync(): Promise<void> {
  );
 }
 
+async function seedBuiltInDataForOwner(): Promise<void> {
+ try {
+  const repos = getRepos();
+  const owner = await repos.user.findOwner();
+  if (!owner) return;
+
+  await ensureBuiltInSkills(repos.skill, owner.id);
+  await ensureBuiltInRules(repos.globalRule, owner.id);
+  await ensureBuiltInChannels(owner.id);
+ } catch (err) {
+  logger.error({ err }, 'Built-in data seeding failed (non-fatal)');
+ }
+}
+
 async function main(): Promise<void> {
  logger.info('Worker starting');
 
@@ -77,6 +94,7 @@ async function main(): Promise<void> {
  getDb();
 
  await seedAgentsForExistingUsers();
+ await seedBuiltInDataForOwner();
 
  // Warm the durable permission-decision cache from the DB so a restart does
  // NOT re-ask tools the user already approved/denied (P1-7 / Bug #3).

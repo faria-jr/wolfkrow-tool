@@ -43,7 +43,7 @@ export async function createToken(
     .setIssuedAt()
     .setIssuer(issuer)
     .setAudience('wolfkrow-worker')
-    .setExpirationTime('24h')
+    .setExpirationTime('30d')
     .setSubject(payload.sub)
     .sign(privateKey);
 }

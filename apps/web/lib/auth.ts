@@ -1,4 +1,5 @@
 import { loadOrCreateKeyPair } from '@wolfkrow/infra';
+import { createRepoRegistry } from '@wolfkrow/infra/repos';
 import { jwtVerify } from 'jose';
 
 /**
@@ -23,12 +24,47 @@ async function getPublicKey(): Promise<CryptoKey> {
   return _publicKey;
 }
 
+let _ownerUserId: string | null = null;
+
+/**
+ * Returns the owner's userId for shared-workspace resource queries.
+ * Cached after first DB lookup.
+ */
+async function resolveOwnerUserId(): Promise<string | null> {
+  if (_ownerUserId) return _ownerUserId;
+  try {
+    const repo = createRepoRegistry().user;
+    const owner = await repo.findOwner();
+    _ownerUserId = owner?.id ?? null;
+  } catch {
+    _ownerUserId = null;
+  }
+  return _ownerUserId;
+}
+
+/**
+ * Resolves the JWT cookie and returns the session payload.
+ *
+ * Shared workspace mode (WOLFKROW_SHARED_WORKSPACE !== 'false', default on):
+ * the returned `userId` is always the owner's userId regardless of which
+ * authenticated user made the request. This allows all users to read/write
+ * shared resources without per-user scoping, while the `sub` field retains
+ * the real caller's identity for audit purposes.
+ */
 export async function getSession(token: string | undefined): Promise<SessionPayload | null> {
   if (!token) return null;
   try {
     const key = await getPublicKey();
     const { payload } = await jwtVerify(token, key, { algorithms: ['ES256'] });
-    return payload as unknown as SessionPayload;
+    const raw = payload as unknown as SessionPayload;
+
+    const sharedWorkspace = process.env['WOLFKROW_SHARED_WORKSPACE'] !== 'false';
+    if (sharedWorkspace) {
+      const ownerId = await resolveOwnerUserId();
+      if (ownerId) return { ...raw, userId: ownerId };
+    }
+
+    return raw;
   } catch {
     return null;
   }

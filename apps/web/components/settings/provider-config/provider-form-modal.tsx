@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ProviderFormFields } from './provider-form-fields';
@@ -23,6 +24,10 @@ export function ProviderFormModal({ open, initial, onSave, onClose }: Props) {
     resolver: zodResolver(providerFormSchema),
     defaultValues: buildProviderFormValues(initial),
   });
+
+  useEffect(() => {
+    form.reset(buildProviderFormValues(initial));
+  }, [initial, form]);
 
   function handleSubmit(values: ProviderFormValues) {
     onSave(resolveProviderId(values));

@@ -20,10 +20,10 @@ async function setSessionCookie(userId: string): Promise<void> {
   const store = await cookies();
   store.set('session', token, {
     httpOnly: true,
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    secure: false,
     path: '/',
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: 60 * 60 * 24 * 30,
   });
 }
 

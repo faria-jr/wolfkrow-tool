@@ -36,6 +36,10 @@
     "./secrets/keytar-adapter": {
       "types": "./dist/secrets/keytar-adapter.d.ts",
       "default": "./dist/secrets/keytar-adapter.js"
+    },
+    "./seed/skill-loader": {
+      "types": "./dist/seed/skill-loader.d.ts",
+      "default": "./dist/seed/skill-loader.js"
     }
   },
   "files": [
