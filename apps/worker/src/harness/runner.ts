@@ -136,14 +136,25 @@ async function tickRound(args: TickArgs): Promise<TickResult> {
   return { result: null, nextFeedback: buildFinalFeedback(evalFeedback, smoke.feedback) };
 }
 
+export interface RunHarnessHooks {
+  onProgress?: (event: ProgressEvent) => void;
+  /** DEBT #29 — return true to stop the coder/evaluator loop early (abort). */
+  shouldAbort?: () => boolean;
+}
+
 export async function runHarnessFeature(
   input: RunFeatureInput,
   repos: Repos,
   ctx: HarnessCtx,
-  onProgress?: (event: ProgressEvent) => void,
+  hooks: RunHarnessHooks = {},
 ): Promise<FeatureRunResult> {
+  const { onProgress, shouldAbort } = hooks;
   let prevFeedback: string | undefined;
   for (let round = 0; round < input.maxRounds; round++) {
+    // DEBT #29 — stop the coder/evaluator loop early when the run is aborted.
+    if (shouldAbort?.()) {
+      return makeResult({ input, rounds: round, passed: false, finalOutput: undefined, smokeFeedback: undefined });
+    }
     const { result, nextFeedback } = await tickRound({ input, round, prevFeedback, repos, ctx, onProgress });
     if (result?.passed) return result;
     prevFeedback = nextFeedback;

@@ -17,6 +17,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getHarnessAgents, getHarnessProjectWorkDir, makeCoderWithTools, getRepos } from '../container';
+import { abortRun, registerRun, unregisterRun } from '../harness/run-registry';
 import type { FeatureRunResult } from '../harness/runner';
 import { runHarnessFeature } from '../harness/runner';
 import { validateProjectPath } from '../lib/project-path';
@@ -79,6 +80,39 @@ async function runCoderHandler(req: FastifyRequest<{ Params: { id: string; sprin
   return round.toProps();
 }
 
+interface SprintRunDeps {
+  project: { id: string; config: { maxRoundsPerFeature: number; coderModel: string }; projectPath: string | undefined };
+  sprint: { id: string; features: readonly unknown[] };
+  coder: unknown;
+  evaluator: unknown;
+  smokeRunner: unknown;
+  repos: { sprintRepo: unknown; roundRepo: unknown };
+  sse: (data: unknown) => void;
+}
+
+/** Runs each sprint feature through the harness loop, emitting SSE + honoring abort. */
+async function streamSprintRun(deps: SprintRunDeps): Promise<void> {
+  const isAborted = registerRun(deps.project.id);
+  const results: FeatureRunResult[] = [];
+  const workDir = deps.project.projectPath ?? getHarnessProjectWorkDir(deps.project.id);
+  try {
+    for (let i = 0; i < deps.sprint.features.length; i++) {
+      if (isAborted()) { deps.sse({ type: 'aborted', featureIndex: i }); break; }
+      const result = await runHarnessFeature(
+        { sprintId: deps.sprint.id, featureIndex: i, coderModel: deps.project.config.coderModel, maxRounds: deps.project.config.maxRoundsPerFeature, workDir },
+        deps.repos as Parameters<typeof runHarnessFeature>[1],
+        { coder: deps.coder, evaluator: deps.evaluator, smokeRunner: deps.smokeRunner } as Parameters<typeof runHarnessFeature>[2],
+        { onProgress: (event) => deps.sse({ type: 'progress', sprintId: deps.sprint.id, featureIndex: i, ...event }), shouldAbort: isAborted },
+      );
+      results.push(result);
+      deps.sse({ type: 'feature_done', ...result });
+    }
+    deps.sse({ type: 'done', results });
+  } finally {
+    unregisterRun(deps.project.id);
+  }
+}
+
 async function runSseHandler(
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
@@ -105,26 +139,7 @@ async function runSseHandler(
   });
   const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
 
-  const results: FeatureRunResult[] = [];
-
-  for (let i = 0; i < sprint.features.length; i++) {
-    const result = await runHarnessFeature(
-      {
-        sprintId: sprint.id,
-        featureIndex: i,
-        coderModel: project.config.coderModel,
-        maxRounds: project.config.maxRoundsPerFeature,
-        workDir,
-      },
-      { sprintRepo, roundRepo },
-      { coder, evaluator, smokeRunner },
-      (event) => sse({ type: 'progress', sprintId: sprint.id, featureIndex: i, ...event }),
-    );
-    results.push(result);
-    sse({ type: 'feature_done', ...result });
-  }
-
-  sse({ type: 'done', results });
+  await streamSprintRun({ project, sprint, coder, evaluator, smokeRunner, repos: { sprintRepo, roundRepo }, sse });
   reply.raw.end();
 }
 
@@ -220,4 +235,9 @@ export async function harnessRoutes(server: AuthFastifyInstance) {
   server.get<{ Params: { sprintId: string } }>('/sprints/:sprintId/rounds', auth, roundsListHandler);
 
   server.post<{ Params: { id: string } }>('/projects/:id/run', auth, runSseHandler);
+
+  // DEBT #29 — server-side abort: stops the in-flight coder/evaluator loop.
+  server.post<{ Params: { id: string } }>('/projects/:id/abort', auth, async (req, reply) => {
+    return reply.send({ ok: abortRun(req.params.id) });
+  });
 }

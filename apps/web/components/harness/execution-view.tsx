@@ -116,8 +116,10 @@ function useHarnessRun(projectId: string, sprintId: string, features: Feature[])
 
   const abort = useCallback(() => {
     readerRef.current?.cancel().catch(() => undefined);
+    // DEBT #29 — also signal the server to stop the coder/evaluator loop.
+    void fetch(`/api/harness/projects/${projectId}/abort`, { method: 'POST' }).catch(() => undefined);
     setRunState('aborted');
-  }, []);
+  }, [projectId]);
 
   const start = useCallback(() => {
     setRunState('running');

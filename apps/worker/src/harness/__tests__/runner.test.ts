@@ -91,6 +91,21 @@ describe('runHarnessFeature', () => {
     expect(result.rounds).toBe(2);
   });
 
+  it('stops the loop early when shouldAbort returns true (DEBT #29)', async () => {
+    const coder = makeCoder(async () => ({ output: 'out', tokens: 10 }));
+    const evaluator = makeEvaluator(async () => ({ passed: false, feedback: 'no', tokens: 5 }));
+
+    const result = await runHarnessFeature(
+      { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 5 },
+      { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
+      { coder, evaluator },
+      { shouldAbort: () => true },
+    );
+
+    expect(result.passed).toBe(false);
+    expect(result.rounds).toBe(0);
+  });
+
   it('passes feedback from evaluator to next coder call', async () => {
     const coderInputs: string[] = [];
     const coder = makeCoder(async (input) => {
@@ -138,7 +153,7 @@ describe('runHarnessFeature', () => {
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 5 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
       { coder, evaluator },
-      (msg) => progress.push(msg),
+      { onProgress: (msg) => progress.push(msg) },
     );
 
     expect(progress).toHaveLength(1);
