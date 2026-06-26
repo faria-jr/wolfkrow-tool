@@ -78,6 +78,33 @@ function visualIssues(visual: unknown): string[] {
   return issues;
 }
 
+function itemStringFields(item: unknown, index: number, path: string, fields: readonly string[]): string[] {
+  if (!isRecord(item)) return [`${path}[${index}] must be an object`];
+  return fields.flatMap((f) => (typeof item[f] === 'string' ? [] : [`${path}[${index}].${f} must be a string`]));
+}
+
+/** Per-field checks for navigation items, screens, components (DEBT #4.2 parity). */
+function collectionItemIssues(x: Record<string, unknown>): string[] {
+  const issues: string[] = [];
+  const navigation = x['navigation'];
+  if (isRecord(navigation) && Array.isArray(navigation['primary'])) {
+    navigation['primary'].forEach((item, i) => {
+      issues.push(...itemStringFields(item, i, 'navigation.primary', ['id', 'label', 'targetScreenId']));
+      if (isRecord(item) && !Array.isArray(item['userStoryIds'])) issues.push(`navigation.primary[${i}].userStoryIds must be an array`);
+    });
+  }
+  if (Array.isArray(x['screens'])) {
+    x['screens'].forEach((screen, i) => {
+      issues.push(...itemStringFields(screen, i, 'screens', ['id', 'title', 'route']));
+      if (isRecord(screen) && !Array.isArray(screen['userStoryIds'])) issues.push(`screens[${i}].userStoryIds must be an array`);
+    });
+  }
+  if (Array.isArray(x['components'])) {
+    x['components'].forEach((comp, i) => issues.push(...itemStringFields(comp, i, 'components', ['id', 'name', 'type'])));
+  }
+  return issues;
+}
+
 function collectionIssues(x: Record<string, unknown>): string[] {
   const issues: string[] = [];
   if (x['version'] !== '1.0') issues.push('version must be "1.0"');
@@ -85,7 +112,7 @@ function collectionIssues(x: Record<string, unknown>): string[] {
   if (!isRecord(navigation) || !Array.isArray(navigation['primary'])) issues.push('navigation.primary must be an array');
   if (!Array.isArray(x['screens'])) issues.push('screens must be an array');
   if (!Array.isArray(x['components'])) issues.push('components must be an array');
-  return issues;
+  return [...issues, ...collectionItemIssues(x)];
 }
 
 /** Collect human-readable schema problems (drives the lock rejection report). */

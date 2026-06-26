@@ -60,6 +60,19 @@ describe('contract extraction + validation', () => {
     expect(problems.some((p) => p.includes('version'))).toBe(true);
     expect(validateContract({ version: '2.0' }).contract).toBeNull();
   });
+
+  it('flags per-field problems on malformed items (DEBT #4.2 validator depth)', () => {
+    const problems = collectDesignContractIssues({
+      version: '1.0',
+      visual: { direction: 'x', density: 'dense', tokens: { colors: {}, typography: {}, spacing: {}, radii: {} } },
+      navigation: { primary: [{ id: 'n1', targetScreenId: 's1', userStoryIds: [] }] }, // missing label
+      screens: [{ id: 's1', title: 'Home', userStoryIds: [] }], // missing route
+      components: [{ id: 'c1', name: 'Btn' }], // missing type
+    });
+    expect(problems.some((p) => p.includes('navigation.primary[0].label'))).toBe(true);
+    expect(problems.some((p) => p.includes('screens[0].route'))).toBe(true);
+    expect(problems.some((p) => p.includes('components[0].type'))).toBe(true);
+  });
 });
 
 describe('buildBrief', () => {
