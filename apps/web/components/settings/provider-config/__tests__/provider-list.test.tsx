@@ -90,7 +90,7 @@ describe('ProviderList', () => {
     await screen.findByText('Custom Provider');
     const deleteBtn = screen.getByRole('button', { name: /^delete$/i });
     await user.click(deleteBtn);
-    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(screen.getByRole('alertdialog')).toBeTruthy();
     expect(screen.getByText(/are you sure/i)).toBeTruthy();
   });
 
@@ -126,7 +126,7 @@ describe('ProviderList', () => {
 
     await screen.findByText('Custom Provider');
     await user.click(screen.getByRole('button', { name: /^delete$/i }));
-    const dialog = await screen.findByRole('dialog');
+    const dialog = await screen.findByRole('alertdialog');
     expect(dialog).toBeTruthy();
     expect(dialog.textContent).toContain('Are you sure');
     expect(dialog.textContent).toContain(custom.displayName);

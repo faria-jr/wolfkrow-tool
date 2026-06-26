@@ -9,6 +9,7 @@ import { ProviderCard, type ProviderRow } from './provider-card';
 import { ProviderFormModal } from './provider-form-modal';
 import type { ProviderFormValues } from './schema';
 
+import { ConfirmDialog } from '@/components/chat/confirm-dialog';
 import { Button } from '@/components/ui/button';
 
 async function fetchProviders(): Promise<ProviderRow[]> {
@@ -75,9 +76,7 @@ export function ProviderList() {
       />
       {confirmProvider && (
         <DeleteConfirmDialog
-          providerId={confirmProvider.id}
           providerName={confirmProvider.displayName}
-          isPending={deleteMut.isPending}
           onCancel={() => setConfirmDeleteId(null)}
           onConfirm={() => deleteMut.mutate(confirmProvider.id)}
         />
@@ -139,35 +138,21 @@ function ProviderGrid({
 
 function DeleteConfirmDialog({
   providerName,
-  isPending,
   onCancel,
   onConfirm,
 }: {
-  providerId: string;
   providerName: string;
-  isPending: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background/80"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Confirm delete provider"
-    >
-      <div className="w-full max-w-sm rounded-lg border bg-background p-6 shadow-lg">
-        <h2 className="text-lg font-semibold">Delete provider</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Are you sure you want to delete <strong>{providerName}</strong>? This cannot be undone.
-        </p>
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="outline" onClick={onCancel} disabled={isPending}>Cancel</Button>
-          <Button variant="destructive" onClick={onConfirm} disabled={isPending}>
-            {isPending ? 'Deleting…' : 'Delete'}
-          </Button>
-        </div>
-      </div>
-    </div>
+    <ConfirmDialog
+      open
+      title="Delete provider"
+      description={`Are you sure you want to delete ${providerName}? This cannot be undone.`}
+      confirmLabel="Delete"
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
   );
 }
