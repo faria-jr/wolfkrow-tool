@@ -29,15 +29,22 @@ describe('Topbar', () => {
   });
 
   it('renders breadcrumb from the current pathname', () => {
-    mockPathname = '/chat';
+    mockPathname = '/agents';
     render(<Topbar />);
-    expect(screen.getByText('Chat')).toBeInTheDocument();
+    expect(screen.getByText('Agents')).toBeInTheDocument();
   });
 
   it('renders actions slot', () => {
-    mockPathname = '/chat';
+    mockPathname = '/agents';
     render(<Topbar actions={<button type="button">Save</button>} />);
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+  });
+
+  it('hides breadcrumb on flush routes (chat owns its header)', () => {
+    mockPathname = '/chat';
+    render(<Topbar actions={<button type="button">Save</button>} />);
+    expect(screen.queryByText('Chat')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
   });
 
   it('shows Dashboard for the root route', () => {
