@@ -1,9 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
-
-import { PhaseStreamView } from './phase-stream-view';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -72,14 +71,6 @@ async function doCreatePipeline(e: React.FormEvent, name: string, description: s
   }
 }
 
-async function doStartPhase(projectId: string, stage: string): Promise<PhaseData | null> {
-  const res = await fetch(`/api/pipeline/projects/${projectId}/phases`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage }),
-  });
-  if (!res.ok) return null;
-  return res.json() as Promise<PhaseData>;
-}
-
 interface ApproveParams { setError: (e: string | null) => void; setSelected: (p: ProjectData) => void; loadPhases: (id: string) => Promise<void>; loadProjects: () => Promise<void>; }
 async function doApprove(projectId: string, phaseId: string, approved: boolean, p: ApproveParams) {
   p.setError(null);
@@ -137,59 +128,44 @@ function ApproveButtons({ onApprove }: { onApprove: (v: boolean) => void }) {
   );
 }
 
-function usePhaseCardState(selectedId: string, stage: string, onPhaseStarted: (p: PhaseData) => void) {
-  const [startingPhase, setStartingPhase] = useState(false);
-  const [activePhase, setActivePhase] = useState<PhaseData | null>(null);
-  const handleRun = useCallback(async () => {
-    setStartingPhase(true);
-    const started = await doStartPhase(selectedId, stage);
-    setStartingPhase(false);
-    if (started) { setActivePhase(started); onPhaseStarted(started); }
-  }, [selectedId, stage, onPhaseStarted]);
-  return { startingPhase, activePhase, setActivePhase, handleRun };
-}
-
-interface PhaseHeaderProps { stage: string; phase: PhaseData | undefined; canRun: boolean; canApprove: boolean; starting: boolean; onRun: () => void; onApprove: (v: boolean) => void; }
-function PhaseHeader({ stage, phase, canRun, canApprove, starting, onRun, onApprove }: PhaseHeaderProps) {
+interface PhaseHeaderProps { stage: string; phase: PhaseData | undefined; canRun: boolean; canApprove: boolean; projectId: string; onApprove: (v: boolean) => void; }
+function PhaseHeader({ stage, phase, canRun, canApprove, projectId, onApprove }: PhaseHeaderProps) {
   return (
     <div className="flex items-center justify-between">
       <h3 className="font-medium text-sm">{STAGE_LABEL[stage]}</h3>
       <div className="flex items-center gap-2">
         {phase && <Badge variant={statusVariant(phase.status)} className="text-xs">{phase.status}</Badge>}
-        {canRun && <Button size="sm" onClick={onRun} disabled={starting}>{starting ? 'Starting…' : 'Run'}</Button>}
+        {canRun && (
+          <Button size="sm" asChild>
+            <Link href={`/pipeline/${projectId}/run?stage=${stage}`}>Run</Link>
+          </Button>
+        )}
         {canApprove && <ApproveButtons onApprove={onApprove} />}
       </div>
     </div>
   );
 }
 
-interface PhaseBodyProps { streamPhase: PhaseData | null; phase: PhaseData | undefined; selectedId: string; stage: string; onComplete: () => void; }
-function PhaseBody({ streamPhase, phase, selectedId, stage, onComplete }: PhaseBodyProps) {
-  if (streamPhase) {
-    return <div className="mt-3"><PhaseStreamView projectId={selectedId} phaseId={streamPhase.id} stage={stage} onComplete={onComplete} /></div>;
-  }
+function PhaseBody({ phase }: { phase: PhaseData | undefined }) {
   if (phase?.status === 'completed' && phase.artifactPath) {
     return <p className="mt-2 text-xs text-muted-foreground">Artifact: {phase.artifactPath}</p>;
   }
   return null;
 }
 
-interface PhaseCardProps { stage: string; phase: PhaseData | undefined; selected: ProjectData; isActive: boolean; canApprove: boolean; onApprove: (approved: boolean) => void; onPhaseStarted: (phase: PhaseData) => void; onPhaseComplete: (projectId: string) => void; }
-function PhaseCard({ stage, phase, selected, isActive, canApprove, onApprove, onPhaseStarted, onPhaseComplete }: PhaseCardProps) {
-  const { startingPhase, activePhase, setActivePhase, handleRun } = usePhaseCardState(selected.id, stage, onPhaseStarted);
-  const canRun = isActive && (!phase || phase.status === 'pending') && !activePhase;
-  const streamPhase = activePhase ?? (phase?.status === 'in_progress' ? phase : null);
-  const handleComplete = useCallback(() => { setActivePhase(null); onPhaseComplete(selected.id); }, [selected.id, setActivePhase, onPhaseComplete]);
+interface PhaseCardProps { stage: string; phase: PhaseData | undefined; selected: ProjectData; isActive: boolean; canApprove: boolean; onApprove: (approved: boolean) => void; }
+function PhaseCard({ stage, phase, selected, isActive, canApprove, onApprove }: PhaseCardProps) {
+  const canRun = isActive && (!phase || phase.status === 'pending');
   return (
     <div className={`rounded border p-4 ${isActive ? 'border-info' : ''}`}>
-      <PhaseHeader stage={stage} phase={phase} canRun={canRun} canApprove={canApprove} starting={startingPhase} onRun={() => { void handleRun(); }} onApprove={onApprove} />
-      <PhaseBody streamPhase={streamPhase} phase={phase} selectedId={selected.id} stage={stage} onComplete={handleComplete} />
+      <PhaseHeader stage={stage} phase={phase} canRun={canRun} canApprove={canApprove} projectId={selected.id} onApprove={onApprove} />
+      <PhaseBody phase={phase} />
     </div>
   );
 }
 
-interface RightPanelProps { selected: ProjectData | null; phases: PhaseData[]; currentStageIdx: number; onApprove: (id: string, phaseId: string, approved: boolean) => void; onRefresh: (id: string) => void; }
-function PipelineRightPanel({ selected, phases, currentStageIdx, onApprove, onRefresh }: RightPanelProps) {
+interface RightPanelProps { selected: ProjectData | null; phases: PhaseData[]; currentStageIdx: number; onApprove: (id: string, phaseId: string, approved: boolean) => void; }
+function PipelineRightPanel({ selected, phases, currentStageIdx, onApprove }: RightPanelProps) {
   if (!selected) return <div className="flex flex-1 h-full items-center justify-center text-muted-foreground">Select a pipeline project to view phases</div>;
   return (
     <div className="flex-1 overflow-auto space-y-6">
@@ -218,8 +194,6 @@ function PipelineRightPanel({ selected, phases, currentStageIdx, onApprove, onRe
             isActive={isActive}
             canApprove={stage === 'approval' && phase?.status === 'awaiting_user'}
             onApprove={(approved) => phase && onApprove(selected.id, phase.id, approved)}
-            onPhaseStarted={() => { void onRefresh(selected.id); }}
-            onPhaseComplete={(id) => { void onRefresh(id); }}
           />
         );
       })}
@@ -264,22 +238,13 @@ export function PipelineView() {
     await loadProjects();
   };
 
-  const handleRefresh = async (id: string) => {
-    const [projectRes] = await Promise.all([
-      fetch(`/api/pipeline/projects/${id}`),
-      loadPhases(id),
-    ]);
-    if (projectRes.ok) setSelected(await projectRes.json() as ProjectData);
-    await loadProjects();
-  };
-
   return (
     <div className="flex h-full gap-6 p-6">
       <PipelineLeftPanel name={name} setName={setName} description={description} setDescription={setDescription}
         creating={creating} error={error} projects={projects} selected={selected}
         onSubmit={handleCreate} onSelect={(p) => { void handleSelect(p); }} onDelete={(id) => { void handleDelete(id); }} />
       <PipelineRightPanel selected={selected} phases={phases} currentStageIdx={selected ? stageIndex(selected.currentStage) : -1}
-        onApprove={handleApprove} onRefresh={handleRefresh} />
+        onApprove={handleApprove} />
     </div>
   );
 }

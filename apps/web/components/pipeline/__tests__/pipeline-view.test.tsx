@@ -52,4 +52,13 @@ describe('PipelineView', () => {
     await userEvent.click(screen.getByText('Proj'));
     expect((await screen.findAllByText('Discovery')).length).toBeGreaterThan(0);
   });
+
+  it('links active phase runs to the dedicated run console', async () => {
+    render(<PipelineView />);
+    await waitFor(() => expect(screen.getByText('Proj')).toBeInTheDocument());
+    await userEvent.click(screen.getByText('Proj'));
+
+    const runLink = await screen.findByRole('link', { name: 'Run' });
+    expect(runLink).toHaveAttribute('href', '/pipeline/p1/run?stage=discovery');
+  });
 });
