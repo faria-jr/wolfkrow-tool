@@ -17,8 +17,21 @@ vi.mock('jose', () => ({
   jwtVerify: vi.fn(),
 }));
 
-vi.mock('../../config', () => ({ config: { JWKS_URL: 'https://example/.well-known/jwks.json' } }));
+vi.mock('@wolfkrow/infra/repos', () => ({
+  createRepoRegistry: vi.fn(() => ({
+    user: { findOwner: vi.fn().mockResolvedValue({ id: 'owner-1' }) },
+  })),
+  resetRepoRegistry: vi.fn(),
+}));
 
+vi.mock('../../config', () => ({
+  config: {
+    JWKS_URL: 'https://example/.well-known/jwks.json',
+    WOLFKROW_SHARED_WORKSPACE: 'true',
+  },
+}));
+
+import { config } from '../../config';
 import { authPlugin } from '../auth';
 
 let app: FastifyInstance;
@@ -30,6 +43,7 @@ beforeAll(async () => {
   // the decorator's preHandler-style call).
   app.get('/probe', { preHandler: [app.authenticate] }, async (req) => ({
     userId: req.user?.userId ?? null,
+    sub: req.user?.sub ?? null,
   }));
   await app.ready();
 });
@@ -55,7 +69,7 @@ describe('auth plugin — authenticate decorator', () => {
     expect(res.json().error).toMatch(/invalid/i);
   });
 
-  it('populates req.user and returns 200 when the token verifies', async () => {
+  it('populates req.user with owner id and preserves token sub when shared workspace is on', async () => {
     vi.mocked(jwtVerify).mockResolvedValueOnce({
       payload: { sub: 'user-42', iss: 'wolfkrow', aud: 'wolfkrow-worker' },
     } as never);
@@ -64,12 +78,28 @@ describe('auth plugin — authenticate decorator', () => {
       headers: { authorization: 'Bearer valid.token.here' },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json().userId).toBe('user-42');
+    expect(res.json().userId).toBe('owner-1');
+    expect(res.json().sub).toBe('user-42');
     // jwtVerify was called with the expected issuer/audience constraints.
     expect(jwtVerify).toHaveBeenCalledWith(
       'valid.token.here',
       expect.anything(),
       expect.objectContaining({ issuer: 'wolfkrow', audience: 'wolfkrow-worker' }),
     );
+  });
+
+  it('uses token sub as userId when shared workspace is disabled', async () => {
+    vi.mocked(jwtVerify).mockResolvedValueOnce({
+      payload: { sub: 'user-42', iss: 'wolfkrow', aud: 'wolfkrow-worker' },
+    } as never);
+    config.WOLFKROW_SHARED_WORKSPACE = 'false';
+    const res = await app.inject({
+      method: 'GET', url: '/probe',
+      headers: { authorization: 'Bearer valid.token.here' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().userId).toBe('user-42');
+    expect(res.json().sub).toBe('user-42');
+    config.WOLFKROW_SHARED_WORKSPACE = 'true';
   });
 });

@@ -8,8 +8,10 @@ import { SkillEditor, type SkillEditorValues } from './skill-editor';
 import type { SkillData } from './skill-list';
 import { SkillList } from './skill-list';
 
+import { ErrorState } from '@/components/common/error-state';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const API = '/api/skills';
 async function apiFetch(path: string, opts?: RequestInit) { return fetch(path, { credentials: 'include', ...opts }); }
@@ -20,7 +22,7 @@ async function fetchSkills(): Promise<SkillData[]> {
 }
 
 export function SkillsView() {
-  const { skills, loadSkills } = useSkillsData();
+  const { skills, loading, error, loadSkills } = useSkillsData();
   const { modalOpen, setModalOpen, editing, setEditing, saving, save, remove } = useSkillMutations(loadSkills);
 
   return (
@@ -30,7 +32,21 @@ export function SkillsView() {
           <Plus className="mr-2 h-4 w-4" />New skill
         </Button>
       </div>
-      <SkillList skills={skills} onEdit={(s) => { setEditing(s); setModalOpen(true); }} onDelete={remove} />
+      {loading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      ) : error ? (
+        <ErrorState
+          title="Failed to load skills"
+          description={error.message}
+          onRetry={() => void loadSkills()}
+        />
+      ) : (
+        <SkillList skills={skills} onEdit={(s) => { setEditing(s); setModalOpen(true); }} onDelete={remove} />
+      )}
       <Dialog open={modalOpen} onOpenChange={(o) => { if (!o) setModalOpen(false); }}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -50,11 +66,23 @@ export function SkillsView() {
 
 function useSkillsData() {
   const [skills, setSkills] = useState<SkillData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
   const loadSkills = useCallback(async () => {
-    try { setSkills(await fetchSkills()); } catch { /* graceful */ }
+    setLoading(true);
+    setError(null);
+    try {
+      setSkills(await fetchSkills());
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load skills'));
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
   useEffect(() => { void loadSkills(); }, [loadSkills]);
-  return { skills, loadSkills };
+  return { skills, loading, error, loadSkills };
 }
 
 function useSkillMutations(loadSkills: () => Promise<void>) {

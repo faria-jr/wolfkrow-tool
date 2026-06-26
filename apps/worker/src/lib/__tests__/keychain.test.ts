@@ -37,6 +37,18 @@ describe('getProviderApiKey', () => {
     expect(mockKeytar.getPassword).toHaveBeenCalledWith('my-service', 'anthropic-api-key');
   });
 
+  it('reads preset key for claude-compat prefixed provider', async () => {
+    mockKeytar.getPassword.mockResolvedValue('zai-key');
+    await expect(getProviderApiKey('claude-compat:zai')).resolves.toBe('zai-key');
+    expect(mockKeytar.getPassword).toHaveBeenCalledWith('wolfkrow', 'zai-api-key');
+  });
+
+  it('reads preset key for claude-compat prefixed provider regardless of case', async () => {
+    mockKeytar.getPassword.mockResolvedValue('qwen-key');
+    await expect(getProviderApiKey('CLAUDE-COMPAT:qwen')).resolves.toBe('qwen-key');
+    expect(mockKeytar.getPassword).toHaveBeenCalledWith('wolfkrow', 'qwen-api-key');
+  });
+
   it('derives account name for unknown providers', async () => {
     mockKeytar.getPassword.mockResolvedValue('test-key');
     await getProviderApiKey('myprovider');

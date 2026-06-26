@@ -7,7 +7,7 @@
  */
 
 import type { Runtime } from '@wolfkrow/domain';
-import { defaultPermissionResolver, getProviderForModel } from '@wolfkrow/domain';
+import { defaultPermissionResolver, getProviderForModel, isClaudeCompatProviderId } from '@wolfkrow/domain';
 import { ProviderAIProviderFactory } from '@wolfkrow/infra';
 import type { AIProvider, AIProviderFactory, CompletionOptions, StreamChunk } from '@wolfkrow/infra';
 
@@ -82,21 +82,33 @@ function isClaudeCompatPresetId(id: string): id is 'zai' | 'minimax' | 'moonshot
  * the factory's wire names differ for OpenAI-compatible models ("codex").
  * Claude-compat providers are reached via the agent-runtime path, not here.
  */
+const REGISTRY_TO_WIRE: Record<string, string> = {
+ anthropic: 'anthropic',
+ openai: 'codex',
+ ollama: 'ollama',
+ openrouter: 'openrouter',
+ zai: 'claude-compat:zai',
+ minimax: 'claude-compat:minimax',
+ moonshot: 'claude-compat:moonshot',
+ qwen: 'claude-compat:qwen',
+};
+
 function mapRegistryProviderToWire(providerId: string): string {
- switch (providerId) {
- case 'anthropic':
- return 'anthropic';
- case 'openai':
- return 'codex';
- case 'ollama':
- return 'ollama';
- case 'openrouter':
- return 'openrouter';
- default:
- // Unknown / claude-compat provider — let prefix fallback handle it.
- return 'anthropic';
- }
+ return REGISTRY_TO_WIRE[providerId] ?? 'anthropic';
 }
+
+const MODEL_PREFIX_TO_WIRE: [string, string][] = [
+ ['claude-', 'anthropic'],
+ ['gpt-', 'codex'],
+ ['o1-', 'codex'],
+ ['o3-', 'codex'],
+ ['llama-', 'ollama'],
+ ['phi-', 'ollama'],
+ ['glm-', 'claude-compat:zai'],
+ ['minimax-', 'claude-compat:minimax'],
+ ['kimi-', 'claude-compat:moonshot'],
+ ['qwen-', 'claude-compat:qwen'],
+];
 
 /** resolve a persisted Agent → provider/model/system overrides. */
 async function resolveAgentRuntime(
@@ -164,10 +176,15 @@ export class OrchestratorService {
  }
 
  private async resolveProvider(request: ChatRequest): Promise<AIProvider> {
- const providerName = request.provider ?? this.inferProvider(request.model);
+ const providerName = this.normalizeProvider(request.provider ?? this.inferProvider(request.model));
  const apiKey = await this.loadApiKey(providerName);
  this.logger?.info({ provider: providerName, model: request.model }, 'Orchestrator: resolving provider');
  return this.factory.create(providerName, apiKey);
+ }
+
+ private normalizeProvider(provider: string): string {
+ if (isClaudeCompatProviderId(provider)) return `claude-compat:${provider}`;
+ return provider;
  }
 
  private inferProvider(model: string): string {
@@ -177,9 +194,9 @@ export class OrchestratorService {
  if (catalogProvider) return mapRegistryProviderToWire(catalogProvider);
 
  const m = model.toLowerCase();
- if (m.startsWith('claude-')) return 'anthropic';
- if (m.startsWith('gpt-') || m.startsWith('o1-') || m.startsWith('o3-')) return 'codex';
- if (m.startsWith('llama-') || m.startsWith('qwen') || m.startsWith('phi-')) return 'ollama';
+ for (const [prefix, wire] of MODEL_PREFIX_TO_WIRE) {
+ if (m.startsWith(prefix)) return wire;
+ }
  return 'anthropic';
  }
 

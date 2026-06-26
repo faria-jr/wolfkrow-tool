@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { McpServersView } from '../mcp-servers-view';
@@ -34,15 +35,32 @@ describe('McpServersView', () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('renders Add server button enabled', () => {
+  it('renders Add server button enabled', async () => {
     render(<McpServersView />);
-    const btn = screen.getByRole('button', { name: /add server/i });
+    const btn = await waitFor(() => screen.getByRole('button', { name: /add server/i }));
     expect(btn).toBeDefined();
     expect(btn).not.toBeDisabled();
   });
 
-  it('loads servers and displays them', async () => {
+  it('shows error state when server list fetch fails and allows retry', async () => {
+    fetchMock = vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/catalog')) {
+        return {
+          ok: true,
+          json: async () => ({ builtIn: [], planned: [] }),
+        } as Response;
+      }
+      return {
+        ok: false,
+        status: 500,
+        json: async () => ({ error: 'server error' }),
+      } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
     render(<McpServersView />);
-    await waitFor(() => expect(screen.getByText('filesystem')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('heading', { name: /failed to load mcp servers/i })).toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: /try again/i }));
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
   });
 });

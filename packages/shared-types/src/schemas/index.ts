@@ -11,6 +11,7 @@ export * from './memory';
 export * from './vault';
 export * from './auth';
 export * from './settings';
+export * from './provider-config';
 export * from './channels';
 export * from './tasks';
 export * from './audit';

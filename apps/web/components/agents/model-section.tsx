@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useFormContext, useWatch, type Control } from 'react-hook-form';
 
 import type { AgentFormValues } from './schema';
@@ -23,6 +23,17 @@ export interface ProviderDTO {
 const DEFAULT_MODELS = ['claude-opus-4-8', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'];
 const EFFORTS = ['low', 'medium', 'high', 'max'] as const;
 const RUNTIMES = ['cloud', 'local', 'codex', 'external', 'claude-compat'] as const;
+type Runtime = (typeof RUNTIMES)[number];
+
+/** EPIC 1.1 — runtime → supported protocols for the provider selector.
+ *  Matches the orchestration layer's SDK routing (see apps/worker/src/agent-factory.ts). */
+const RUNTIME_PROTOCOLS: Record<Runtime, ReadonlyArray<ProviderDTO['protocol']>> = {
+  cloud: ['anthropic-compat'],
+  local: ['openai-compatible'],
+  codex: ['openai-compatible'],
+  external: ['openai-compatible'],
+  'claude-compat': ['anthropic-compat'],
+};
 
 interface Props {
   control: Control<AgentFormValues>;
@@ -90,10 +101,18 @@ const FALLBACK_CLAUDE_COMPAT = [
   { id: 'qwen', displayName: 'Qwen (DashScope)' },
 ];
 
-function ProviderField({ control, providers }: Props) {
-  const claudeCompatProviders = providers
-    ? providers.filter((p) => p.protocol === 'anthropic-compat' && p.id !== 'anthropic')
-    : FALLBACK_CLAUDE_COMPAT;
+function ProviderField({ control, providers, runtime }: Props & { runtime: Runtime }) {
+  // EPIC 1.1 — provider selector is shown for every runtime, filtered by
+  // supported protocols. For `claude-compat`, the direct `anthropic` entry is
+  // excluded — routing through the compat layer with the upstream provider is
+  // redundant. When `providers` is undefined we keep a graceful fallback only
+  // for the `claude-compat` runtime (legacy behaviour); other runtimes render
+  // an empty list until `/api/providers` resolves.
+  const list = useMemo(() => {
+    if (!providers) return runtime === 'claude-compat' ? FALLBACK_CLAUDE_COMPAT : [];
+    const supported = RUNTIME_PROTOCOLS[runtime] ?? [];
+    return providers.filter((p) => supported.includes(p.protocol) && !(runtime === 'claude-compat' && p.id === 'anthropic'));
+  }, [providers, runtime]);
 
   return (
     <FormField control={control} name="provider" render={({ field }) => (
@@ -102,7 +121,7 @@ function ProviderField({ control, providers }: Props) {
         <Select onValueChange={field.onChange} value={field.value ?? ''}>
           <FormControl><SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger></FormControl>
           <SelectContent>
-            {claudeCompatProviders.map((p) => (
+            {list.map((p) => (
               <SelectItem key={p.id} value={p.id}>{p.displayName}</SelectItem>
             ))}
           </SelectContent>
@@ -131,7 +150,7 @@ export function ModelSection({ control, providers }: Props) {
           <FormMessage />
         </FormItem>
       )} />
-      {runtime === 'claude-compat' && <ProviderField control={control} {...(providers !== undefined ? { providers } : {})} />}
+      <ProviderField control={control} runtime={runtime} {...(providers !== undefined ? { providers } : {})} />
     </div>
   );
 }

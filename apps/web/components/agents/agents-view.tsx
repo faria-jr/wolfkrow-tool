@@ -1,6 +1,7 @@
 'use client';
 
 import { Plus, RefreshCw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -10,6 +11,7 @@ import { AgentList } from './agent-list';
 import type { AgentFormValues } from './schema';
 import { SyncAgentsModal } from './sync-agents-modal';
 
+import { ErrorState } from '@/components/common/error-state';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -52,35 +54,46 @@ function AgentListSkeleton() {
 function useAgents() {
   const [agents, setAgents] = useState<AgentData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const loadAgents = useCallback(async () => {
-    try { setAgents(await fetchAgents()); } catch { /* graceful */ }
-    finally { setLoading(false); }
+    setLoading(true);
+    setError(null);
+    try {
+      setAgents(await fetchAgents());
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load agents'));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { void loadAgents(); }, [loadAgents]);
-  return { agents, loading, loadAgents };
+  return { agents, loading, error, loadAgents };
 }
 
 function useAgentMutations(loadAgents: () => Promise<void>) {
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<AgentData | null>(null);
 
+  // EPIC 1.1 — the modal is now used for "new agent" only; editing happens in
+  // the dedicated `/agents/[id]/edit` screen (see `AgentEditScreen`).
   const submit = useCallback(async (values: AgentFormValues) => {
     setSaving(true);
     try {
-      const method = editing?.id ? 'PUT' : 'POST';
-      const path = editing?.id ? `${API}/${editing.id}` : API;
-      const res = await apiFetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(values) });
+      const res = await apiFetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
       if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      toast.success(editing?.id ? 'Agent updated' : 'Agent created');
+      toast.success('Agent created');
       setModalOpen(false);
       await loadAgents();
     } catch {
       toast.error('Failed to save agent');
     } finally { setSaving(false); }
-  }, [editing, loadAgents]);
+  }, [loadAgents]);
 
   const duplicate = useCallback(async (agent: AgentData) => {
     if (!agent.id) return;
@@ -109,28 +122,38 @@ function useAgentMutations(loadAgents: () => Promise<void>) {
     }
   }, [loadAgents]);
 
-  return { saving, modalOpen, setModalOpen, editing, setEditing, submit, duplicate, remove };
+  return { saving, modalOpen, setModalOpen, submit, duplicate, remove };
 }
 
 export function AgentsView() {
-  const { agents, loading, loadAgents } = useAgents();
-  const { saving, modalOpen, setModalOpen, editing, setEditing, submit, duplicate, remove } = useAgentMutations(loadAgents);
+  const { agents, loading, error, loadAgents } = useAgents();
+  const { saving, modalOpen, setModalOpen, submit, duplicate, remove } = useAgentMutations(loadAgents);
+  const router = useRouter();
   const [syncOpen, setSyncOpen] = useState(false);
 
-  const openNew = useCallback(() => { setEditing(null); setModalOpen(true); }, [setEditing, setModalOpen]);
-  const openEdit = useCallback((a: AgentData) => { setEditing(a); setModalOpen(true); }, [setEditing, setModalOpen]);
+  const openNew = useCallback(() => { setModalOpen(true); }, [setModalOpen]);
+  // EPIC 1.1 — edit now navigates to a dedicated full-screen route.
+  const openEdit = useCallback((a: AgentData) => {
+    if (!a.id) return;
+    router.push(`/agents/${a.id}/edit`);
+  }, [router]);
 
   return (
     <div className="space-y-4">
       <ViewActions onNew={openNew} onSync={() => setSyncOpen(true)} />
-      {loading ? <AgentListSkeleton /> : (
+      {loading ? <AgentListSkeleton /> : error ? (
+        <ErrorState
+          title="Failed to load agents"
+          description={error.message}
+          onRetry={() => void loadAgents()}
+        />
+      ) : (
         <AgentList agents={agents} onEdit={openEdit} onDuplicate={duplicate} onDelete={remove} />
       )}
       <AgentFormModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={submit}
-        {...(editing !== null ? { agent: editing } : {})}
         loading={saving}
       />
       <SyncAgentsModal open={syncOpen} onClose={() => setSyncOpen(false)} onSynced={() => { void loadAgents(); }} agentCount={agents.length} />

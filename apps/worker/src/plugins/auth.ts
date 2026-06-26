@@ -7,6 +7,7 @@
  * busca, cacheia e refetcha automaticamente.
  */
 
+import { createRepoRegistry } from '@wolfkrow/infra/repos';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
@@ -19,11 +20,32 @@ declare module 'fastify' {
   }
 
   interface FastifyRequest {
-    user?: { userId: string };
+    user?: { userId: string; sub?: string };
   }
 }
 
 const keySet = createRemoteJWKSet(new URL(config.JWKS_URL));
+
+let cachedOwnerId: string | null = null;
+
+async function resolveOwnerId(): Promise<string | null> {
+  if (cachedOwnerId) return cachedOwnerId;
+  try {
+    const owner = await createRepoRegistry().user.findOwner();
+    cachedOwnerId = owner?.id ?? null;
+  } catch {
+    cachedOwnerId = null;
+  }
+  return cachedOwnerId;
+}
+
+async function resolveEffectiveUserId(sub: string): Promise<string> {
+  if (config.WOLFKROW_SHARED_WORKSPACE !== 'false') {
+    const ownerId = await resolveOwnerId();
+    if (ownerId) return ownerId;
+  }
+  return sub;
+}
 
 async function verifyBearer(request: FastifyRequest): Promise<string | null> {
   const auth = request.headers.authorization;
@@ -55,7 +77,8 @@ export const authPlugin = fp(async function (fastify: FastifyInstance) {
         issuer: 'wolfkrow',
         audience: 'wolfkrow-worker',
       });
-      request.user = { userId: payload.sub as string };
+      const sub = payload.sub as string;
+      request.user = { userId: await resolveEffectiveUserId(sub), sub };
     } catch {
       return reply.status(401).send({ error: 'Invalid token' });
     }

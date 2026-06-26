@@ -9,6 +9,7 @@ import { GoogleOAuthPanel } from './google-oauth-panel';
 import type { McpHealthSnapshot, McpServerData } from './mcp-server-list';
 import { McpServerList } from './mcp-server-list';
 
+import { ErrorState } from '@/components/common/error-state';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const API = '/api/mcp-servers';
@@ -24,13 +25,9 @@ async function apiFetch(path: string, opts?: RequestInit): Promise<Response> {
 }
 
 async function fetchCatalog(): Promise<CatalogIndex> {
-  try {
-    const res = await apiFetch(CATALOG_API);
-    if (!res.ok) return { builtIn: [], planned: [] };
-    return (await res.json()) as CatalogIndex;
-  } catch {
-    return { builtIn: [], planned: [] };
-  }
+  const res = await apiFetch(CATALOG_API);
+  if (!res.ok) throw new Error('Failed to load MCP catalog');
+  return (await res.json()) as CatalogIndex;
 }
 
 function deriveSource(name: string, catalog: CatalogIndex): McpServerSource {
@@ -138,31 +135,34 @@ function useServerActions(
   return { toggle, remove, setVisibility, restart, checkHealth };
 }
 
-export function McpServersView() {
+function useMcpServers() {
   const [servers, setServers] = useState<McpServerData[]>([]);
   const [catalog, setCatalog] = useState<CatalogIndex>({ builtIn: [], planned: [] });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const reload = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const idx =
-        catalog.builtIn.length || catalog.planned.length ? catalog : await fetchCatalog();
+      const idx = catalog.builtIn.length || catalog.planned.length ? catalog : await fetchCatalog();
       if (!catalog.builtIn.length && idx.builtIn.length) setCatalog(idx);
       const res = await apiFetch(API);
-      if (!res.ok) return;
+      if (!res.ok) throw new Error('Failed to load MCP servers');
       const data = (await res.json()) as { servers: Array<Omit<McpServerData, 'source'>> };
       setServers(data.servers.map((s) => ({ ...s, source: deriveSource(s.name, idx) })));
-    } catch {
-      /* graceful */
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load MCP servers'));
     } finally { setLoading(false); }
   }, [catalog]);
 
-  useEffect(() => {
-    void reload();
-  }, [reload]);
+  useEffect(() => { void reload(); }, [reload]);
+  return { servers, loading, error, reload, setServers };
+}
 
+export function McpServersView() {
+  const { servers, loading, error, reload, setServers } = useMcpServers();
   const actions = useServerActions(reload, setServers);
-
   const serverNames = servers.map((s) => s.name);
 
   return (
@@ -179,6 +179,12 @@ export function McpServersView() {
           <Skeleton className="h-32 w-full rounded-lg" />
           <Skeleton className="h-32 w-full rounded-lg" />
         </div>
+      ) : error ? (
+        <ErrorState
+          title="Failed to load MCP servers"
+          description={error.message}
+          onRetry={() => void reload()}
+        />
       ) : (
         <McpServerList
           servers={servers}

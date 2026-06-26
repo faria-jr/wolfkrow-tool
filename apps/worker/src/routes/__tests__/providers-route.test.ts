@@ -42,10 +42,11 @@ describe('GET /providers', () => {
 
   beforeEach(async () => {
     mockProviderConfigRepo.findAll.mockReset();
+    mockSecrets.get.mockReset();
     app = await buildApp();
   });
 
-  it('returns merged providers list', async () => {
+  it('returns merged providers list with hasApiKey flags', async () => {
     const custom = ProviderConfig.create({
       id: 'custom1',
       displayName: 'Custom 1',
@@ -56,13 +57,20 @@ describe('GET /providers', () => {
       supportsTools: true,
     });
     mockProviderConfigRepo.findAll.mockResolvedValue([custom]);
+    mockSecrets.get.mockImplementation(async (account: string) =>
+      account === 'custom1' ? 'secret' : null,
+    );
 
     const res = await app.inject({ method: 'GET', url: '/providers' });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
     expect(body).toBeInstanceOf(Array);
     expect(body.some((p: { id: string }) => p.id === 'anthropic')).toBe(true);
-    expect(body.some((p: { id: string }) => p.id === 'custom1')).toBe(true);
+    const customRow = body.find((p: { id: string }) => p.id === 'custom1');
+    expect(customRow).toBeDefined();
+    expect(customRow.hasApiKey).toBe(true);
+    const builtIn = body.find((p: { id: string }) => p.id === 'anthropic');
+    expect(builtIn.hasApiKey).toBe(false);
   });
 });
 

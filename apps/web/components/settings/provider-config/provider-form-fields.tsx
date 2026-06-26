@@ -16,13 +16,14 @@ type FieldName = keyof ProviderFormValues;
 
 interface TextFieldProps {
   control: FormControlType;
-  name: Extract<FieldName, 'displayName' | 'baseUrl' | 'apiKeyAccount' | 'apiKey'>;
+  name: Extract<FieldName, 'id' | 'displayName' | 'baseUrl' | 'apiKeyAccount' | 'apiKey'>;
   label: string;
   type?: string;
   placeholder?: string;
+  disabled?: boolean;
 }
 
-function TextField({ control, name, label, type = 'text', placeholder }: TextFieldProps) {
+function TextField({ control, name, label, type = 'text', placeholder, disabled }: TextFieldProps) {
   return (
     <FormField
       control={control}
@@ -30,7 +31,7 @@ function TextField({ control, name, label, type = 'text', placeholder }: TextFie
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
-          <FormControl><Input type={type} placeholder={placeholder} {...field} /></FormControl>
+          <FormControl><Input type={type} placeholder={placeholder} disabled={disabled} {...field} /></FormControl>
           <FormMessage />
         </FormItem>
       )}
@@ -131,13 +132,16 @@ function ModelInput({ models, onChange, error }: { models: readonly string[]; on
 
 interface ProviderFormFieldsProps {
   form: UseFormReturn<ProviderFormValues>;
+  isEditing?: boolean;
+  hasApiKey?: boolean;
 }
 
-export function ProviderFormFields({ form }: ProviderFormFieldsProps) {
+export function ProviderFormFields({ form, isEditing = false, hasApiKey = false }: ProviderFormFieldsProps) {
   const models = form.watch('models');
 
   return (
     <>
+      {isEditing && <TextField control={form.control} name="id" label="Provider ID" disabled />}
       <TextField control={form.control} name="displayName" label="Display name" />
       <ProtocolField control={form.control} />
       <TextField control={form.control} name="baseUrl" label="Base URL" placeholder="https://..." />
@@ -148,7 +152,16 @@ export function ProviderFormFields({ form }: ProviderFormFieldsProps) {
         error={form.formState.errors.models?.message}
       />
       <SupportsToolsField control={form.control} />
-      <TextField control={form.control} name="apiKey" label="API key (optional — stored in vault)" type="password" placeholder="sk-..." />
+      <TextField
+        control={form.control}
+        name="apiKey"
+        label={hasApiKey ? 'API key (leave blank to keep existing)' : 'API key (optional — stored in vault)'}
+        type="password"
+        placeholder="sk-..."
+      />
+      {isEditing && hasApiKey && (
+        <p className="text-muted-foreground text-xs">An API key is already stored. Leave the field blank to keep it.</p>
+      )}
     </>
   );
 }
