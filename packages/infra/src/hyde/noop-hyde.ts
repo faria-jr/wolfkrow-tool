@@ -6,7 +6,7 @@ import type { HydePort } from '@wolfkrow/domain';
 export class NoOpHyde implements HydePort {
   readonly enabled = false;
 
-  async generate(): Promise<string | null> {
+  async generate(_query: string): Promise<string | null> {
     return null;
   }
 }

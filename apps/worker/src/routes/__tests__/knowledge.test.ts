@@ -38,7 +38,7 @@ const { docs, fakeDocRepo, fakeChunkRepo, fakeEmbedder } = vi.hoisted(() => {
           documentId: 'd1',
           content: 'hello world',
           embedding: [],
-          metadata: {},
+          metadata: { sourceType: 'raw', position: 0 },
           position: 0,
         }),
         score: 0.5,
