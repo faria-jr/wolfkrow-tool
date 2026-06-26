@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ExecutionView } from './execution-view';
 import { MetricsPanel } from './metrics-panel';
 import { RoundsList } from './rounds-list';
+import { SprintMetricsTable } from './sprint-metrics-table';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -129,6 +130,7 @@ function SprintCard({ sprint, projectId: _projectId, onRun }: SprintCardProps) {
       {sprint.description && <p className="mt-1 text-sm text-muted-foreground">{sprint.description}</p>}
       <div className="mt-2 text-xs text-muted-foreground">{sprint.features.length} feature{sprint.features.length !== 1 ? 's' : ''}</div>
       <RoundsList sprintId={sprint.id} />
+      <SprintMetricsTable sprintId={sprint.id} />
     </div>
   );
 }
