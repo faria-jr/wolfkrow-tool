@@ -19,12 +19,26 @@ function makeProject(overrides: Partial<Record<string, unknown>> = {}) {
   };
 }
 
+function makeSprint() {
+  return {
+    id: 's1',
+    projectId: 'p1',
+    number: 1,
+    name: 'Foundations',
+    status: 'planned',
+    features: [{ name: 'Login', description: 'Auth flow', acceptanceCriteria: ['works'] }],
+  };
+}
+
 describe('HarnessView', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     fetchMock = vi.fn().mockImplementation((url: string) => {
       if (url.includes('/plan')) {
+        return Promise.resolve({ ok: true, json: async () => [] } as Response);
+      }
+      if (url.includes('/rounds')) {
         return Promise.resolve({ ok: true, json: async () => [] } as Response);
       }
       if (url.includes('/sprints')) {
@@ -56,5 +70,24 @@ describe('HarnessView', () => {
     await waitFor(() => expect(screen.getByText('Project Alpha')).toBeInTheDocument());
     await userEvent.click(screen.getByText('Project Alpha'));
     expect(await screen.findByText(/Features passed/i)).toBeInTheDocument();
+  });
+
+  it('links sprint runs to the dedicated run console', async () => {
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes('/rounds')) {
+        return Promise.resolve({ ok: true, json: async () => [] } as Response);
+      }
+      if (url.includes('/sprints')) {
+        return Promise.resolve({ ok: true, json: async () => [makeSprint()] } as Response);
+      }
+      return Promise.resolve({ ok: true, json: async () => [makeProject()] } as Response);
+    });
+
+    render(<HarnessView />);
+    await waitFor(() => expect(screen.getByText('Project Alpha')).toBeInTheDocument());
+    await userEvent.click(screen.getByText('Project Alpha'));
+
+    const runLink = await screen.findByRole('link', { name: 'Run' });
+    expect(runLink).toHaveAttribute('href', '/harness/p1/run?sprintId=s1');
   });
 });

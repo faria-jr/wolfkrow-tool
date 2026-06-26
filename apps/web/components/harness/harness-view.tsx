@@ -1,9 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
-import { ExecutionView } from './execution-view';
 import { MetricsPanel } from './metrics-panel';
 import { RoundsList } from './rounds-list';
 import { SprintMetricsTable } from './sprint-metrics-table';
@@ -116,15 +116,17 @@ function ProjectListItem({ project: p, isSelected, onSelect, onPlan, onDelete, p
   );
 }
 
-interface SprintCardProps { sprint: SprintData; projectId: string; onRun: (sprint: SprintData) => void; }
-function SprintCard({ sprint, projectId: _projectId, onRun }: SprintCardProps) {
+interface SprintCardProps { sprint: SprintData; projectId: string; }
+function SprintCard({ sprint, projectId }: SprintCardProps) {
   return (
     <div className="rounded border p-4">
       <div className="flex items-center justify-between">
         <h3 className="font-medium">Sprint {sprint.number}: {sprint.name}</h3>
         <div className="flex items-center gap-2">
           <Badge variant={statusBadgeVariant(sprint.status)} className="text-xs">{sprint.status}</Badge>
-          <Button size="sm" onClick={() => onRun(sprint)}>Run</Button>
+          <Button size="sm" asChild>
+            <Link href={`/harness/${projectId}/run?sprintId=${sprint.id}`}>Run</Link>
+          </Button>
         </div>
       </div>
       {sprint.description && <p className="mt-1 text-sm text-muted-foreground">{sprint.description}</p>}
@@ -135,8 +137,8 @@ function SprintCard({ sprint, projectId: _projectId, onRun }: SprintCardProps) {
   );
 }
 
-interface SprintPanelProps { selected: ProjectData | null; sprints: SprintData[]; activeSprint: SprintData | null; onRun: (sprint: SprintData) => void; onCloseExecution: () => void; }
-function SprintPanel({ selected, sprints, activeSprint, onRun, onCloseExecution }: SprintPanelProps) {
+interface SprintPanelProps { selected: ProjectData | null; sprints: SprintData[]; }
+function SprintPanel({ selected, sprints }: SprintPanelProps) {
   if (!selected) return <div className="flex h-full flex-1 items-center justify-center text-muted-foreground">Select a project to view sprints</div>;
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-auto">
@@ -146,18 +148,9 @@ function SprintPanel({ selected, sprints, activeSprint, onRun, onCloseExecution 
         <p className="text-sm text-muted-foreground">Status: <strong>{selected.status}</strong></p>
       </div>
       <MetricsPanel metrics={selected.metrics} />
-      {activeSprint && (
-        <ExecutionView
-          projectId={selected.id}
-          sprintId={activeSprint.id}
-          sprintName={activeSprint.name}
-          features={activeSprint.features}
-          onClose={onCloseExecution}
-        />
-      )}
       {sprints.length === 0
         ? <p className="text-sm text-muted-foreground">No sprints yet. Click "Plan Sprints" to generate them.</p>
-        : sprints.map((sprint) => <SprintCard key={sprint.id} sprint={sprint} projectId={selected.id} onRun={onRun} />)
+        : sprints.map((sprint) => <SprintCard key={sprint.id} sprint={sprint} projectId={selected.id} />)
       }
     </div>
   );
@@ -189,7 +182,6 @@ export function HarnessView() {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [selected, setSelected] = useState<ProjectData | null>(null);
   const [sprints, setSprints] = useState<SprintData[]>([]);
-  const [activeSprint, setActiveSprint] = useState<SprintData | null>(null);
   const [form, setForm] = useState<NewProjectForm>(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
   const [planning, setPlanningId] = useState<string | null>(null);
@@ -207,7 +199,6 @@ export function HarnessView() {
 
   const handleSelect = async (p: ProjectData) => {
     setSelected(p);
-    setActiveSprint(null);
     const res = await fetch(`/api/harness/projects/${p.id}/sprints`);
     if (res.ok) setSprints(await res.json() as SprintData[]);
     else setSprints([]);
@@ -215,7 +206,7 @@ export function HarnessView() {
 
   const handleDelete = async (projectId: string) => {
     await fetch(`/api/harness/projects/${projectId}`, { method: 'DELETE' });
-    if (selected?.id === projectId) { setSelected(null); setSprints([]); setActiveSprint(null); }
+    if (selected?.id === projectId) { setSelected(null); setSprints([]); }
     await loadProjects();
   };
 
@@ -225,8 +216,7 @@ export function HarnessView() {
         projects={projects} selected={selected} planning={planning}
         onCreate={handleCreate} onSelect={(p) => { void handleSelect(p); }}
         onPlan={handlePlan} onDelete={(id) => { void handleDelete(id); }} />
-      <SprintPanel selected={selected} sprints={sprints} activeSprint={activeSprint}
-        onRun={(sprint) => setActiveSprint(sprint)} onCloseExecution={() => setActiveSprint(null)} />
+      <SprintPanel selected={selected} sprints={sprints} />
     </div>
   );
 }
