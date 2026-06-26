@@ -6,6 +6,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 export interface PhaseCompleteData {
   output: string | undefined;
@@ -78,12 +79,15 @@ interface HookReturn {
   error: string | null;
   run: (userPrompt?: string) => void;
   abort: () => void;
+  sendChat: (message: string) => Promise<void>;
+  chatBusy: boolean;
 }
 
 function usePhaseStream(projectId: string, phaseId: string, onComplete: (d: PhaseCompleteData) => void): HookReturn {
   const [state, setState] = useState<StreamState>('idle');
   const [output, setOutput] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [chatBusy, setChatBusy] = useState(false);
   const readerRef = useRef<ReadableStreamDefaultReader | null>(null);
 
   const abort = useCallback(() => {
@@ -114,7 +118,26 @@ function usePhaseStream(projectId: string, phaseId: string, onComplete: (d: Phas
     });
   }, [projectId, phaseId, onComplete]);
 
-  return { state, output, error, run, abort };
+  const sendChat = useCallback(async (message: string) => {
+    setChatBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/pipeline/projects/${projectId}/phases/${phaseId}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userPrompt: message }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as { output?: string };
+      if (data.output) setOutput((prev) => `${prev ?? ''}\n\n— user: ${message}\n\n— assistant: ${data.output}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Chat error');
+    } finally {
+      setChatBusy(false);
+    }
+  }, [projectId, phaseId]);
+
+  return { state, output, error, run, abort, sendChat, chatBusy };
 }
 
 const STAGE_LABEL: Record<string, string> = {
@@ -146,7 +169,14 @@ export interface PhaseStreamViewProps {
 }
 
 export function PhaseStreamView({ projectId, phaseId, stage, onComplete }: PhaseStreamViewProps) {
-  const { state, output, error, run, abort } = usePhaseStream(projectId, phaseId, onComplete);
+  const { state, output, error, run, abort, sendChat, chatBusy } = usePhaseStream(projectId, phaseId, onComplete);
+  const [chatInput, setChatInput] = useState('');
+  const handleSendChat = () => {
+    const msg = chatInput.trim();
+    if (!msg || chatBusy) return;
+    setChatInput('');
+    void sendChat(msg);
+  };
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -160,6 +190,21 @@ export function PhaseStreamView({ projectId, phaseId, stage, onComplete }: Phase
         )}
         {state === 'idle' && !output && (
           <p className="text-sm text-muted-foreground">Click Run to execute this phase with AI.</p>
+        )}
+        {output && (
+          <div className="mt-2 flex gap-2">
+            <Input
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendChat(); } }}
+              placeholder="Continue the conversation…"
+              disabled={chatBusy}
+              aria-label="Phase chat input"
+            />
+            <Button size="sm" onClick={handleSendChat} disabled={chatBusy || !chatInput.trim()}>
+              {chatBusy ? '…' : 'Send'}
+            </Button>
+          </div>
         )}
       </CardContent>
     </Card>

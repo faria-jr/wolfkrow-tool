@@ -24,7 +24,7 @@ import { getAnthropicApiKey } from '../lib/keychain';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, z } from '../validation';
 
-import { runDesignBootstrap, runDesignLock, runImplementationViaHarness } from './pipeline-design';
+import { continuePhaseChat, runDesignBootstrap, runDesignLock, runImplementationViaHarness } from './pipeline-design';
 
 function makeRepos() {
   const r = getRepos();
@@ -202,6 +202,7 @@ export async function pipelineRoutes(server: AuthFastifyInstance) {
   server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/run', auth, runPhaseHandler);
   server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/run/stream', auth, runPhaseSseHandler);
   server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/approve', auth, approvePhaseHandler);
+  server.post<{ Params: RunParams }>('/projects/:id/phases/:phaseId/chat', auth, continuePhaseChat);
 }
 
 /** Project CRUD: create, list, get, delete. */

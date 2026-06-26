@@ -11,10 +11,11 @@ import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { ImplementViaHarnessUseCase } from '@wolfkrow/use-cases';
+import { ContinuePipelineConversationUseCase, ImplementViaHarnessUseCase } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { getArtifactWriter, getHarnessAgents, getRepos } from '../container';
+import { getAdapters, getArtifactWriter, getHarnessAgents, getRepos } from '../container';
+import { getAnthropicApiKey } from '../lib/keychain';
 import { bootstrapDesignSession, sanitizeOdProjectId } from '../open-design/bootstrap';
 import { OpenDesignClient } from '../open-design/client';
 import { lockDesign } from '../open-design/lock';
@@ -120,4 +121,31 @@ export async function runDesignLock(req: FastifyRequest<{ Params: RunParams }>, 
     outputDir,
   });
   return { phase: phase?.toProps(), project: project.toProps(), lock: result, designDir: outputDir };
+}
+
+const chatBody = z.object({
+  userPrompt: z.string().min(1).max(200_000),
+  model: z.string().max(128).optional(),
+});
+
+/** DEBT #12 — multi-turn conversation within a pipeline phase (no stage advance). */
+export async function continuePhaseChat(req: FastifyRequest<{ Params: RunParams }>, reply: FastifyReply): Promise<unknown> {
+  const r = getRepos();
+  const project = await r.pipelineProject.findById(req.params.id);
+  if (!project) return reply.status(404).send({ error: 'Not found' });
+  const phase = await r.pipelinePhase.findById(req.params.phaseId);
+  const body = validate(chatBody, req.body);
+
+  const apiKey = await getAnthropicApiKey();
+  const aiProvider = getAdapters().aiFactory.create('anthropic', apiKey);
+  const result = await new ContinuePipelineConversationUseCase(
+    r.pipelineProject, r.pipelinePhase, aiProvider,
+    { messageRepo: r.pipelineMessage, artifactWriter: getArtifactWriter() },
+  ).execute({
+    projectId: req.params.id,
+    phaseId: req.params.phaseId,
+    userPrompt: body.userPrompt,
+    ...(body.model !== undefined ? { model: body.model } : {}),
+  });
+  return { phase: phase?.toProps(), output: result.output, tokens: result.tokens };
 }
