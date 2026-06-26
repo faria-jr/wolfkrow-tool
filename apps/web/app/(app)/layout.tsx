@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { ActiveRunsBar } from '@/components/common/active-runs-bar';
 import { AutoLock } from '@/components/common/auto-lock';
 import { CommandPalette } from '@/components/common/command-palette';
 import { Sidebar } from '@/components/common/sidebar';
@@ -33,6 +34,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <div id="main-content" tabIndex={-1} className="flex-1 min-h-0 overflow-hidden">
           {children}
         </div>
+        {/* DEBT #13 — global active-runs strip (hidden when no runs in flight). */}
+        <ActiveRunsBar />
       </SidebarInset>
     </SidebarProvider>
   );
