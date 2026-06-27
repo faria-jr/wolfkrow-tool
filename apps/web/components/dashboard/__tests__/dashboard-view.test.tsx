@@ -5,10 +5,31 @@ import { DashboardView } from '../dashboard-view';
 
 let originalFetch: typeof globalThis.fetch;
 
+const usageSummary = {
+  totalInputTokens: 5000,
+  totalOutputTokens: 2500,
+  totalCostUSD: 1.25,
+  byModel: {},
+  bySource: {
+    chat: { inputTokens: 1500, outputTokens: 700, costUSD: 0.3 },
+    harness: { inputTokens: 2000, outputTokens: 1000, costUSD: 0.5 },
+    pipeline: { inputTokens: 1500, outputTokens: 800, costUSD: 0.45 },
+  },
+  byRuntime: {
+    cloud: { inputTokens: 4500, outputTokens: 2200, costUSD: 1.2 },
+    local: { inputTokens: 500, outputTokens: 300, costUSD: 0.05 },
+  },
+  byDay: [],
+};
+
 function mockFetch(harness: unknown[], pipeline: unknown[]) {
   global.fetch = vi.fn(async (input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input.toString();
-    const body = url.includes('/api/harness/projects') ? harness : pipeline;
+    let body: unknown;
+    if (url.includes('/api/harness/projects')) body = harness;
+    else if (url.includes('/api/pipeline/projects')) body = pipeline;
+    else if (url.includes('/api/usage/summary')) body = usageSummary;
+    else body = [];
     return { ok: true, status: 200, json: async () => body } as Response;
   }) as unknown as typeof fetch;
 }
@@ -62,5 +83,12 @@ describe('DashboardView', () => {
     expect(screen.getByRole('link', { name: /new chat/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /new pipeline/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /run audit/i })).toBeInTheDocument();
+  });
+
+  it('shows cloud/local runtime split from usage summary', async () => {
+    render(<DashboardView />);
+    await waitFor(() => expect(screen.getByText(/Cloud cost/i)).toBeInTheDocument());
+    expect(screen.getByText('$1.2000')).toBeInTheDocument();
+    expect(screen.getByText('$0.0500')).toBeInTheDocument();
   });
 });

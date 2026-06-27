@@ -38,6 +38,21 @@ interface DashboardKpis {
   activeRuns: number;
 }
 
+interface UsageBreakdown {
+  inputTokens: number;
+  outputTokens: number;
+  costUSD: number;
+}
+
+interface UsageSummary {
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCostUSD: number;
+  bySource: Record<string, UsageBreakdown>;
+  byRuntime: Record<string, UsageBreakdown>;
+  byDay: Array<{ day: string; inputTokens: number; outputTokens: number; costUSD: number }>;
+}
+
 const ACTIVE_STATUSES = ['running', 'in_progress', 'planning', 'active'];
 
 function deriveKpis(harness: HarnessProject[], pipeline: PipelineProject[]): DashboardKpis {
@@ -61,26 +76,35 @@ function toRecentRuns(harness: HarnessProject[], pipeline: PipelineProject[]): R
 interface DashboardData {
   kpis: DashboardKpis;
   recent: RecentRun[];
+  usage: UsageSummary | null;
   error: string | null;
 }
 
-/** Fetches harness + pipeline projects and derives dashboard KPIs + recent runs. */
+/** Fetches harness + pipeline + usage summary and derives dashboard KPIs + recent runs. */
 function useDashboardData(): DashboardData {
   const [data, setData] = useState<DashboardData>({
     kpis: { tokens: 0, cost: 0, projects: 0, activeRuns: 0 },
     recent: [],
+    usage: null,
     error: null,
   });
 
   const load = useCallback(async () => {
     try {
-      const [hRes, pRes] = await Promise.all([
+      const [hRes, pRes, uRes] = await Promise.all([
         fetch('/api/harness/projects'),
         fetch('/api/pipeline/projects'),
+        fetch('/api/usage/summary'),
       ]);
       const harness = hRes.ok ? ((await hRes.json()) as HarnessProject[]) : [];
       const pipeline = pRes.ok ? ((await pRes.json()) as PipelineProject[]) : [];
-      setData({ kpis: deriveKpis(harness, pipeline), recent: toRecentRuns(harness, pipeline), error: null });
+      const usage = uRes.ok ? ((await uRes.json()) as UsageSummary) : null;
+      setData({
+        kpis: deriveKpis(harness, pipeline),
+        recent: toRecentRuns(harness, pipeline),
+        usage,
+        error: null,
+      });
     } catch (err) {
       setData((d) => ({ ...d, error: err instanceof Error ? err.message : 'Failed to load dashboard' }));
     }
@@ -142,6 +166,45 @@ function KpiGrid({ kpis }: { kpis: DashboardKpis }) {
   );
 }
 
+function RuntimeSplitCard({ usage }: { usage: UsageSummary | null }) {
+  if (!usage) return null;
+  const cloud = usage.byRuntime['cloud'];
+  const local = usage.byRuntime['local'];
+  const sources = Object.entries(usage.bySource);
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm">Usage breakdown</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 text-sm">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded border bg-card px-3 py-2">
+            <p className="text-xs text-muted-foreground">Cloud cost</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {cloud ? `$${cloud.costUSD.toFixed(4)}` : '—'}
+            </p>
+          </div>
+          <div className="rounded border bg-card px-3 py-2">
+            <p className="text-xs text-muted-foreground">Local cost</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {local ? `$${local.costUSD.toFixed(4)}` : '—'}
+            </p>
+          </div>
+        </div>
+        {sources.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {sources.map(([name, b]) => (
+              <Badge key={name} variant="outline" className="text-xs">
+                {name}: ${b.costUSD.toFixed(2)}
+              </Badge>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function RecentRunsCard({ recent, error }: { recent: RecentRun[]; error: string | null }) {
   return (
     <Card>
@@ -160,7 +223,7 @@ function RecentRunsCard({ recent, error }: { recent: RecentRun[]; error: string 
 }
 
 export function DashboardView() {
-  const { kpis, recent, error } = useDashboardData();
+  const { kpis, recent, usage, error } = useDashboardData();
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -171,6 +234,7 @@ export function DashboardView() {
         <QuickActions />
       </div>
       <KpiGrid kpis={kpis} />
+      <RuntimeSplitCard usage={usage} />
       <RecentRunsCard recent={recent} error={error} />
     </div>
   );
