@@ -1,33 +1,29 @@
 import {
-  BarChart3,
-  Bot,
-  Calendar,
-  FileText,
-  Folder,
-  KeyRound,
-  Network,
-  ShieldCheck,
   Cpu,
   AudioLines,
+  FolderOpen,
 } from 'lucide-react';
 import Link from 'next/link';
 
+// EPIC 3.2 — Settings hub now only surfaces items that don't already have
+// a sidebar entry. The 8 items previously duplicated here (Vault, Agents,
+// MCP Servers, Scheduler, Rules, Permissions, Channels, Usage) live in
+// NAV_GROUPS already; the hub exists only for /settings/providers and
+// /settings/voice which are orphan routes inside the /settings segment.
 const SECTIONS = [
   { title: 'Providers', href: '/settings/providers', icon: Cpu, description: 'LLM providers and API configuration' },
-  { title: 'Vault', href: '/vault', icon: KeyRound, description: 'API keys and secrets' },
-  { title: 'Agents', href: '/agents', icon: Bot, description: 'Manage AI agents' },
-  { title: 'MCP Servers', href: '/mcp-servers', icon: Network, description: 'Model Context Protocol servers' },
-  { title: 'Scheduler', href: '/scheduler', icon: Calendar, description: 'Scheduled task automation' },
-  { title: 'Rules', href: '/rules', icon: FileText, description: 'Behavioral rules and guidelines' },
-  { title: 'Permissions', href: '/permissions', icon: ShieldCheck, description: 'Access control policies' },
   { title: 'Voice', href: '/settings/voice', icon: AudioLines, description: 'STT/TTS engines and voice provider' },
-  { title: 'Channels', href: '/channels', icon: Folder, description: 'Notification channels' },
-  { title: 'Usage', href: '/usage', icon: BarChart3, description: 'Token analytics and costs' },
+  { title: 'Workspace data', href: '/vault', icon: FolderOpen, description: 'API keys and secrets (shortcut)' },
 ] as const;
 
 export function SettingsView() {
   return (
     <div className="space-y-6">
+      <p className="text-muted-foreground text-sm">
+        Workspace-wide settings. Page-level configuration (agents, skills,
+        MCP, scheduler, rules, permissions, channels, usage) lives in the
+        sidebar under its own entry.
+      </p>
       <div className="grid gap-3 sm:grid-cols-2">
         {SECTIONS.map(({ title, href, icon: Icon, description }) => (
           <Link
