@@ -58,6 +58,38 @@ async function ensurePhase(projectId: string, phases: PhaseData[], phaseId: stri
   });
 }
 
+interface PipelineRunHeaderProps {
+  project: ProjectData;
+  phases: PhaseData[];
+  activePhaseId: string;
+}
+
+function PipelineRunHeader({ project, phases, activePhaseId }: PipelineRunHeaderProps) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-4">
+      <div>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">{project.name}</h2>
+          <Badge variant="outline">{project.status}</Badge>
+        </div>
+        {project.description && (
+          <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
+        )}
+        <p className="mt-1 text-sm text-muted-foreground">
+          Tokens: {project.metrics.totalTokens} · Phases: {project.metrics.phasesCompleted}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {phases.map((item) => (
+          <Badge key={item.id} variant={item.id === activePhaseId ? 'default' : 'outline'}>
+            {item.stage}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function PipelineRunConsole({ projectId, stage, phaseId }: PipelineRunConsoleProps) {
   const router = useRouter();
   const [data, setData] = useState<RunData | null>(null);
@@ -99,27 +131,7 @@ export function PipelineRunConsole({ projectId, stage, phaseId }: PipelineRunCon
 
   return (
     <div className="flex min-h-full flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">{data.project.name}</h2>
-            <Badge variant="outline">{data.project.status}</Badge>
-          </div>
-          {data.project.description && (
-            <p className="mt-1 text-sm text-muted-foreground">{data.project.description}</p>
-          )}
-          <p className="mt-1 text-sm text-muted-foreground">
-            Tokens: {data.project.metrics.totalTokens} · Phases: {data.project.metrics.phasesCompleted}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {phases.map((item) => (
-            <Badge key={item.id} variant={item.id === data.phase.id ? 'default' : 'outline'}>
-              {item.stage}
-            </Badge>
-          ))}
-        </div>
-      </div>
+      <PipelineRunHeader project={data.project} phases={phases} activePhaseId={data.phase.id} />
       <PhaseStreamView
         projectId={projectId}
         phaseId={data.phase.id}

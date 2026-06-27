@@ -39,7 +39,7 @@ function RuleRow({ rule, onEdit, onDuplicate, onToggle, onDelete }: RuleRowProps
       <TableCell>
         <div className="space-y-1">
           <div className="font-medium">{rule.title}</div>
-          <p className="max-w-[54ch] truncate text-sm text-muted-foreground">{rule.body}</p>
+          <p className="max-w-md truncate text-sm text-muted-foreground">{rule.body}</p>
         </div>
       </TableCell>
       <TableCell>{RULE_KIND_LABELS[rule.kind]}</TableCell>

@@ -67,6 +67,51 @@ function SkillFormActions({ onSave, onCancel, loading, saveLabel = 'Save skill',
   );
 }
 
+interface SkillFormFieldsProps {
+  control: ReturnType<typeof useForm<SkillEditorValues>>['control'];
+  readOnly: boolean | undefined;
+  tags: string[];
+  content: string;
+  onTagsChange: (tags: string[]) => void;
+  onContentChange: (value: string) => void;
+}
+
+function SkillFormFields({ control, readOnly, tags, content, onTagsChange, onContentChange }: SkillFormFieldsProps) {
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <FormField
+          control={control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Name</FormLabel>
+              <FormControl><Input placeholder="e.g. pdf-processing" disabled={readOnly} {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl><Input placeholder="Brief description" disabled={readOnly} {...field} /></FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+      <div className="space-y-1">
+        <Label>Tags</Label>
+        <TagField tags={tags} onChange={readOnly ? () => undefined : onTagsChange} disabled={readOnly} />
+      </div>
+      <MarkdownEditor value={content} onChange={onContentChange} disabled={readOnly ?? false} label="Skill content" />
+    </>
+  );
+}
+
 interface Props {
   initialValues?: Partial<SkillEditorValues>;
   onSave: (values: SkillEditorValues) => Promise<void>;
@@ -97,35 +142,14 @@ export function SkillEditor({ initialValues, onSave, onCancel, loading, readOnly
   return (
     <Form {...form}>
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <FormField
-            control={control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl><Input placeholder="e.g. pdf-processing" disabled={readOnly} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Description</FormLabel>
-                <FormControl><Input placeholder="Brief description" disabled={readOnly} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label>Tags</Label>
-          <TagField tags={tags} onChange={readOnly ? () => undefined : (t) => setValue('tags', t)} disabled={readOnly} />
-        </div>
-        <MarkdownEditor value={content} onChange={(v) => setValue('content', v)} disabled={readOnly ?? false} label="Skill content" />
+        <SkillFormFields
+          control={control}
+          readOnly={readOnly}
+          tags={tags}
+          content={content}
+          onTagsChange={(t) => setValue('tags', t)}
+          onContentChange={(v) => setValue('content', v)}
+        />
         {!readOnly && (
           <SkillFormActions
             onSave={handleSubmit((v) => { void onSave(v); })}

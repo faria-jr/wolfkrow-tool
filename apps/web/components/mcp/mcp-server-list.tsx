@@ -132,7 +132,7 @@ const McpServerRow = memo(function McpServerRow({
       <TableCell>
         <div className="space-y-1">
           <div className="font-medium">{server.name}</div>
-          <p className="max-w-[48ch] truncate font-mono text-xs text-muted-foreground">
+          <p className="max-w-md truncate font-mono text-xs text-muted-foreground">
             {server.command} {server.args.join(' ')}
           </p>
         </div>

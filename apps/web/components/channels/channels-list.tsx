@@ -75,6 +75,47 @@ function ChannelConfigPanel({ entry }: { entry: ChannelCatalogEntry }) {
   );
 }
 
+interface ChannelRowProps {
+  entry: ChannelCatalogEntry;
+  isSelected: boolean;
+  onSelect: (type: ChannelType) => void;
+}
+
+function ChannelRow({ entry, isSelected, onSelect }: ChannelRowProps) {
+  const available = entry.status === 'available';
+  return (
+    <TableRow data-state={isSelected ? 'selected' : undefined}>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded bg-muted text-muted-foreground">
+            <ChannelIcon type={entry.type} />
+          </span>
+          <span className="font-medium">{entry.label}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge variant={available ? 'default' : 'outline'}>{availabilityLabel(entry)}</Badge>
+      </TableCell>
+      <TableCell>
+        <Badge variant={available ? 'secondary' : 'outline'}>{stateLabel(entry)}</Badge>
+      </TableCell>
+      <TableCell>
+        <Button
+          type="button"
+          size="sm"
+          variant={isSelected ? 'secondary' : 'outline'}
+          disabled={!available}
+          aria-label={`Configure ${entry.label}`}
+          onClick={() => onSelect(entry.type)}
+        >
+          <Settings className="h-4 w-4" aria-hidden="true" />
+          Configure
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export function ChannelsList() {
   const [selectedType, setSelectedType] = useState<ChannelType>('telegram');
   const selectedEntry = useMemo(() => getChannelEntry(selectedType), [selectedType]);
@@ -91,40 +132,14 @@ export function ChannelsList() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {CHANNEL_CATALOG.map((entry) => {
-            const available = entry.status === 'available';
-            return (
-              <TableRow key={entry.type} data-state={selectedEntry.type === entry.type ? 'selected' : undefined}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span className="flex h-8 w-8 items-center justify-center rounded bg-muted text-muted-foreground">
-                      <ChannelIcon type={entry.type} />
-                    </span>
-                    <span className="font-medium">{entry.label}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={available ? 'default' : 'outline'}>{availabilityLabel(entry)}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={available ? 'secondary' : 'outline'}>{stateLabel(entry)}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={selectedEntry.type === entry.type ? 'secondary' : 'outline'}
-                    disabled={!available}
-                    aria-label={`Configure ${entry.label}`}
-                    onClick={() => setSelectedType(entry.type)}
-                  >
-                    <Settings className="h-4 w-4" aria-hidden="true" />
-                    Configure
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          {CHANNEL_CATALOG.map((entry) => (
+            <ChannelRow
+              key={entry.type}
+              entry={entry}
+              isSelected={selectedEntry.type === entry.type}
+              onSelect={setSelectedType}
+            />
+          ))}
         </TableBody>
       </Table>
       <ChannelConfigPanel entry={selectedEntry} />

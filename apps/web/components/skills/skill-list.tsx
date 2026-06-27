@@ -26,7 +26,7 @@ function SkillRow({ skill, onEdit, onDuplicate, onDelete, disableDelete }: Skill
       <TableCell>
         <div className="space-y-1">
           <div className="font-medium">{skill.name}</div>
-          <p className="max-w-[48ch] truncate text-sm text-muted-foreground">{skill.description}</p>
+          <p className="max-w-md truncate text-sm text-muted-foreground">{skill.description}</p>
         </div>
       </TableCell>
       <TableCell>

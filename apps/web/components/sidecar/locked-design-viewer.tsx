@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +21,7 @@ export function LockedDesignViewer({ odProjectId }: { odProjectId: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -37,9 +37,9 @@ export function LockedDesignViewer({ odProjectId }: { odProjectId: string }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [odProjectId]);
 
-  useEffect(() => { void load(); }, [odProjectId]);
+  useEffect(() => { void load(); }, [load]);
 
   return (
     <Card>

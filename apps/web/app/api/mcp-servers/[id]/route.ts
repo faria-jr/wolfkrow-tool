@@ -2,7 +2,6 @@ import type { McpServerVisibility } from '@wolfkrow/domain';
 import { UpdateMcpServerRequestBodySchema } from '@wolfkrow/shared-types';
 import { cookies } from 'next/headers';
 
-
 import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
 import { validateBody } from '@/lib/validation';
@@ -19,6 +18,64 @@ function hasCustomEditableFields(body: Record<string, unknown>): boolean {
   return ['name', 'description', 'command', 'args', 'env', 'healthCheck'].some((key) => key in body);
 }
 
+function optionalField<T>(value: T | undefined, current: T | undefined): T | undefined {
+  return value !== undefined ? value : current;
+}
+
+function applyActiveToggle(repo: ReturnType<typeof getRepos>['mcpServer'], id: string, body: Record<string, unknown>): void {
+  if (body.isActive !== undefined) {
+    repo.toggleActive(id, body.isActive as boolean);
+  }
+}
+
+function applyVisibilityChange(
+  repo: ReturnType<typeof getRepos>['mcpServer'],
+  id: string,
+  body: Record<string, unknown>,
+): Response | null {
+  if (body.visibility === undefined) return null;
+  if (!isValidVisibility(body.visibility)) {
+    return Response.json(
+      { error: `visibility must be one of ${VALID_VISIBILITY.join(', ')}` },
+      { status: 422 },
+    );
+  }
+  repo.setVisibility(id, body.visibility);
+  return null;
+}
+
+function applyCustomFieldsSave(
+  repo: ReturnType<typeof getRepos>['mcpServer'],
+  id: string,
+  body: Record<string, unknown>,
+  existing: NonNullable<ReturnType<typeof repo.findById>>,
+): void {
+  const current = repo.findById(id) ?? existing;
+  repo.save(id, {
+    userId: current.userId,
+    name: (body.name as string | undefined) ?? current.name,
+    description: optionalField(body.description as string | undefined, current.description),
+    command: (body.command as string | undefined) ?? current.command,
+    args: (body.args as string[] | undefined) ?? current.args,
+    env: (body.env as Record<string, string> | undefined) ?? current.env,
+    isActive: (body.isActive as boolean | undefined) ?? current.isActive,
+    isBuiltIn: current.isBuiltIn,
+    visibility: isValidVisibility(body.visibility) ? body.visibility : current.visibility,
+    healthCheck: optionalField(body.healthCheck as Record<string, unknown> | undefined, current.healthCheck),
+  });
+}
+
+function applyNonBuiltInCustomSave(
+  repo: ReturnType<typeof getRepos>['mcpServer'],
+  id: string,
+  body: Record<string, unknown>,
+  existing: NonNullable<ReturnType<typeof repo.findById>>,
+): void {
+  if (!existing.isBuiltIn && hasCustomEditableFields(body)) {
+    applyCustomFieldsSave(repo, id, body, existing);
+  }
+}
+
 export async function PATCH(request: Request, { params }: Params) {
   const cookieStore = await cookies();
   const session = await getSession(cookieStore.get('session')?.value);
@@ -33,37 +90,17 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!existing || existing.userId !== session.userId) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
+
   if (existing.isBuiltIn && hasCustomEditableFields(body)) {
     return Response.json({ error: 'Built-in servers only allow active and visibility changes' }, { status: 422 });
   }
 
-  if (body.isActive !== undefined) {
-    repo.toggleActive(id, body.isActive);
-  }
-  if (body.visibility !== undefined) {
-    if (!isValidVisibility(body.visibility)) {
-      return Response.json(
-        { error: `visibility must be one of ${VALID_VISIBILITY.join(', ')}` },
-        { status: 422 },
-      );
-    }
-    repo.setVisibility(id, body.visibility);
-  }
-  if (!existing.isBuiltIn && hasCustomEditableFields(body)) {
-    const current = repo.findById(id) ?? existing;
-    repo.save(id, {
-      userId: current.userId,
-      name: body.name ?? current.name,
-      ...(body.description !== undefined ? { description: body.description } : current.description !== undefined ? { description: current.description } : {}),
-      command: body.command ?? current.command,
-      args: body.args ?? current.args,
-      env: body.env ?? current.env,
-      isActive: body.isActive ?? current.isActive,
-      isBuiltIn: current.isBuiltIn,
-      visibility: isValidVisibility(body.visibility) ? body.visibility : current.visibility,
-      ...(body.healthCheck !== undefined ? { healthCheck: body.healthCheck } : current.healthCheck !== undefined ? { healthCheck: current.healthCheck } : {}),
-    });
-  }
+  applyActiveToggle(repo, id, body);
+
+  const visibilityError = applyVisibilityChange(repo, id, body);
+  if (visibilityError) return visibilityError;
+
+  applyNonBuiltInCustomSave(repo, id, body, existing);
   return Response.json({ server: repo.findById(id) });
 }
 

@@ -48,6 +48,38 @@ function selectSprint(sprints: SprintData[], sprintId: string | undefined): Spri
   return sprints[0] ?? null;
 }
 
+interface RunHeaderProps {
+  project: ProjectData;
+  sprints: SprintData[];
+  activeSprintId: string;
+}
+
+function RunHeader({ project, sprints, activeSprintId }: RunHeaderProps) {
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-4">
+      <div>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">{project.name}</h2>
+          <Badge variant={statusBadgeVariant(project.status)}>{project.status}</Badge>
+        </div>
+        {project.description && (
+          <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
+        )}
+        {project.projectPath && (
+          <p className="mt-1 font-mono text-xs text-muted-foreground">Path: {project.projectPath}</p>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {sprints.map((item) => (
+          <Badge key={item.id} variant={item.id === activeSprintId ? 'default' : 'outline'}>
+            Sprint {item.number}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function HarnessRunConsole({ projectId, sprintId }: HarnessRunConsoleProps) {
   const router = useRouter();
   const [data, setData] = useState<RunData | null>(null);
@@ -79,27 +111,7 @@ export function HarnessRunConsole({ projectId, sprintId }: HarnessRunConsoleProp
 
   return (
     <div className="flex min-h-full flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold">{data.project.name}</h2>
-            <Badge variant={statusBadgeVariant(data.project.status)}>{data.project.status}</Badge>
-          </div>
-          {data.project.description && (
-            <p className="mt-1 text-sm text-muted-foreground">{data.project.description}</p>
-          )}
-          {data.project.projectPath && (
-            <p className="mt-1 font-mono text-xs text-muted-foreground">Path: {data.project.projectPath}</p>
-          )}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {data.sprints.map((item) => (
-            <Badge key={item.id} variant={item.id === sprint.id ? 'default' : 'outline'}>
-              Sprint {item.number}
-            </Badge>
-          ))}
-        </div>
-      </div>
+      <RunHeader project={data.project} sprints={data.sprints} activeSprintId={sprint.id} />
       <ExecutionView
         projectId={projectId}
         sprintId={sprint.id}

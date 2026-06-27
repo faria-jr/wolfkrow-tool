@@ -113,6 +113,59 @@ function ErrorState({ message }: { message: string }) {
   return <Alert variant="destructive"><AlertTitle>Could not load server</AlertTitle><AlertDescription>{message}</AlertDescription></Alert>;
 }
 
+interface FormFieldsProps {
+  values: FormState;
+  customDisabled: boolean;
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
+}
+
+function McpFormFields({ values, customDisabled, update }: FormFieldsProps) {
+  return (
+    <>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2"><Label htmlFor="mcp-name">Name</Label><Input id="mcp-name" value={values.name} onChange={(event) => update('name', event.target.value)} disabled={customDisabled} /></div>
+        <div className="space-y-2"><Label htmlFor="mcp-command">Command</Label><Input id="mcp-command" value={values.command} onChange={(event) => update('command', event.target.value)} disabled={customDisabled} /></div>
+      </div>
+      <div className="space-y-2"><Label htmlFor="mcp-description">Description</Label><Input id="mcp-description" value={values.description} onChange={(event) => update('description', event.target.value)} disabled={customDisabled} /></div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2"><Label htmlFor="mcp-args">Args</Label><Textarea id="mcp-args" value={values.args} onChange={(event) => update('args', event.target.value)} disabled={customDisabled} className="font-mono text-sm" /></div>
+        <div className="space-y-2"><Label htmlFor="mcp-env">Env</Label><Textarea id="mcp-env" value={values.env} onChange={(event) => update('env', event.target.value)} disabled={customDisabled} className="font-mono text-sm" /></div>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2"><Label htmlFor="mcp-health">Health check</Label><Input id="mcp-health" value={values.healthCheck} onChange={(event) => update('healthCheck', event.target.value)} disabled={customDisabled} /></div>
+        <div className="space-y-2">
+          <Label>Visibility</Label>
+          <Select value={values.visibility} onValueChange={(value) => update('visibility', value as McpServerVisibility)}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="always">always</SelectItem><SelectItem value="on-demand">on-demand</SelectItem><SelectItem value="background">background</SelectItem></SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="flex items-center gap-3"><Switch id="mcp-active" checked={values.isActive} onCheckedChange={(checked) => update('isActive', checked)} /><Label htmlFor="mcp-active">Active</Label></div>
+    </>
+  );
+}
+
+interface FormActionsProps {
+  saving: boolean;
+  canSave: boolean;
+  isEdit: boolean;
+  onCancel: () => void;
+  onSubmit: () => void;
+}
+
+function McpFormActions({ saving, canSave, isEdit, onCancel, onSubmit }: FormActionsProps) {
+  return (
+    <div className="flex justify-end gap-2">
+      <Button variant="outline" onClick={onCancel} disabled={saving}>Cancel</Button>
+      <Button onClick={onSubmit} disabled={saving || !canSave}>
+        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+        {isEdit ? 'Save changes' : 'Create server'}
+      </Button>
+    </div>
+  );
+}
+
 export function McpServerEditScreen({ serverId }: Props) {
   const router = useRouter();
   const [values, setValues] = useState<FormState>(DEFAULTS);
@@ -157,33 +210,14 @@ export function McpServerEditScreen({ serverId }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2"><Label htmlFor="mcp-name">Name</Label><Input id="mcp-name" value={values.name} onChange={(event) => update('name', event.target.value)} disabled={customDisabled} /></div>
-        <div className="space-y-2"><Label htmlFor="mcp-command">Command</Label><Input id="mcp-command" value={values.command} onChange={(event) => update('command', event.target.value)} disabled={customDisabled} /></div>
-      </div>
-      <div className="space-y-2"><Label htmlFor="mcp-description">Description</Label><Input id="mcp-description" value={values.description} onChange={(event) => update('description', event.target.value)} disabled={customDisabled} /></div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2"><Label htmlFor="mcp-args">Args</Label><Textarea id="mcp-args" value={values.args} onChange={(event) => update('args', event.target.value)} disabled={customDisabled} className="font-mono text-sm" /></div>
-        <div className="space-y-2"><Label htmlFor="mcp-env">Env</Label><Textarea id="mcp-env" value={values.env} onChange={(event) => update('env', event.target.value)} disabled={customDisabled} className="font-mono text-sm" /></div>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2"><Label htmlFor="mcp-health">Health check</Label><Input id="mcp-health" value={values.healthCheck} onChange={(event) => update('healthCheck', event.target.value)} disabled={customDisabled} /></div>
-        <div className="space-y-2">
-          <Label>Visibility</Label>
-          <Select value={values.visibility} onValueChange={(value) => update('visibility', value as McpServerVisibility)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value="always">always</SelectItem><SelectItem value="on-demand">on-demand</SelectItem><SelectItem value="background">background</SelectItem></SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="flex items-center gap-3"><Switch id="mcp-active" checked={values.isActive} onCheckedChange={(checked) => update('isActive', checked)} /><Label htmlFor="mcp-active">Active</Label></div>
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={() => router.push('/mcp-servers')} disabled={saving}>Cancel</Button>
-        <Button onClick={() => void submit()} disabled={saving || !values.name.trim() || !values.command.trim()}>
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-          {serverId ? 'Save changes' : 'Create server'}
-        </Button>
-      </div>
+      <McpFormFields values={values} customDisabled={customDisabled} update={update} />
+      <McpFormActions
+        saving={saving}
+        canSave={Boolean(values.name.trim()) && Boolean(values.command.trim())}
+        isEdit={Boolean(serverId)}
+        onCancel={() => router.push('/mcp-servers')}
+        onSubmit={() => void submit()}
+      />
     </div>
   );
 }
