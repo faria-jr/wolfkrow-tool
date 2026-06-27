@@ -2,11 +2,12 @@
 
 import type { McpServerRecord, McpServerSource, McpServerVisibility } from '@wolfkrow/domain';
 import { Network } from 'lucide-react';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 
 import { ServerActions } from './mcp-server-actions';
 
 import { EmptyState } from '@/components/common/empty-state';
+import { Pagination } from '@/components/common/pagination';
 import { Badge } from '@/components/ui/badge';
 import {
   Select,
@@ -175,6 +176,8 @@ interface Props {
   onVisibilityChange: (id: string, visibility: McpServerVisibility) => void;
 }
 
+const PAGE_SIZE = 5;
+
 export function McpServerList({
   servers,
   onToggle,
@@ -184,6 +187,8 @@ export function McpServerList({
   onHealthCheck,
   onVisibilityChange,
 }: Props) {
+  const [currentPage, setCurrentPage] = useState(1);
+
   if (servers.length === 0)
     return (
       <EmptyState
@@ -192,33 +197,44 @@ export function McpServerList({
         icon={<Network className="h-6 w-6" />}
       />
     );
+
+  const totalPages = Math.ceil(servers.length / PAGE_SIZE);
+  const paginatedServers = servers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Source</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Visibility</TableHead>
-            <TableHead className="w-48" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {servers.map((s) => (
-            <McpServerRow
-              key={s.id}
-              server={s}
-              onToggle={onToggle}
-              onDelete={onDelete}
-              {...(onEdit ? { onEdit } : {})}
-              onRestart={onRestart}
-              onHealthCheck={onHealthCheck}
-              onVisibilityChange={onVisibilityChange}
-            />
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Visibility</TableHead>
+              <TableHead className="w-48" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedServers.map((s) => (
+              <McpServerRow
+                key={s.id}
+                server={s}
+                onToggle={onToggle}
+                onDelete={onDelete}
+                {...(onEdit ? { onEdit } : {})}
+                onRestart={onRestart}
+                onHealthCheck={onHealthCheck}
+                onVisibilityChange={onVisibilityChange}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
+    </>
   );
 }

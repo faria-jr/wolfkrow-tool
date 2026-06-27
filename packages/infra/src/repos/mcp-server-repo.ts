@@ -4,7 +4,7 @@ import type {
  McpServerRepo,
  McpServerVisibility,
 } from '@wolfkrow/domain';
-import { eq } from 'drizzle-orm';
+import { eq, or, isNull } from 'drizzle-orm';
 
 import { getDb } from '../db/client';
 import { mcpServers } from '../db/schema/mcp-servers';
@@ -35,7 +35,7 @@ export class DrizzleMcpServerRepo implements McpServerRepo {
 
  findAll(userId?: string): McpServerRecord[] {
  const rows = userId
- ? this.db.select().from(mcpServers).where(eq(mcpServers.userId, userId)).all()
+ ? this.db.select().from(mcpServers).where(or(eq(mcpServers.userId, userId), isNull(mcpServers.userId))).all()
  : this.db.select().from(mcpServers).all();
  return rows.map((r) => this.toRecord(r));
  }

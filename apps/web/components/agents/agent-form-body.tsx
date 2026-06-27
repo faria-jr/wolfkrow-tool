@@ -60,17 +60,15 @@ function SystemPromptField({ control }: Props) {
   );
 }
 
-function ConfigTabs({ control, providers }: Props & { providers?: ProviderDTO[] }) {
+function ConfigTabs({ control }: Props) {
   return (
-    <ScrollArea className="h-72 pr-4">
-      <Tabs defaultValue="model">
+    <ScrollArea className="h-72 pr-4 mt-4">
+      <Tabs defaultValue="tools">
         <TabsList className="mb-4">
-          <TabsTrigger value="model">Model</TabsTrigger>
           <TabsTrigger value="tools">Tools</TabsTrigger>
           <TabsTrigger value="thinking">Thinking</TabsTrigger>
           <TabsTrigger value="skills">Skills</TabsTrigger>
         </TabsList>
-        <TabsContent value="model"><ModelSection control={control} {...(providers !== undefined ? { providers } : {})} /></TabsContent>
         <TabsContent value="tools"><ToolsSection control={control} /></TabsContent>
         <TabsContent value="thinking"><ThinkingSection control={control} /></TabsContent>
         <TabsContent value="skills"><SkillsSection control={control} /></TabsContent>
@@ -86,10 +84,11 @@ export function AgentFormBody({ control }: Props) {
     staleTime: 60_000,
   });
   return (
-    <>
+    <div className="space-y-4">
       <NameField control={control} />
       <SystemPromptField control={control} />
-      <ConfigTabs control={control} {...(providers !== undefined ? { providers } : {})} />
-    </>
+      <ModelSection control={control} providers={providers} />
+      <ConfigTabs control={control} />
+    </div>
   );
 }

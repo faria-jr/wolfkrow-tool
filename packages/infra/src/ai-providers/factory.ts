@@ -1,4 +1,4 @@
-import type { PermissionResolver, ProviderConfig } from '@wolfkrow/domain';
+import { isClaudeCompatProviderId, type PermissionResolver, type ProviderConfig } from '@wolfkrow/domain';
 
 import type { ToolRegistry } from '../tools/tool-registry';
 
@@ -69,6 +69,13 @@ export class ProviderAIProviderFactory implements AIProviderFactory {
       // drop tool calls for claude-compat providers. When no registry is
       // configured the provider stays text-only (unchanged behaviour).
       return new ClaudeCompatProvider(apiKey, presetId, {
+        ...(this.toolRegistry ? { supportsTools: true, toolRegistry: this.toolRegistry } : {}),
+        ...(this.permissionResolver ? { permissionResolver: this.permissionResolver } : {}),
+      });
+    }
+
+    if (isClaudeCompatProviderId(normalized)) {
+      return new ClaudeCompatProvider(apiKey, normalized, {
         ...(this.toolRegistry ? { supportsTools: true, toolRegistry: this.toolRegistry } : {}),
         ...(this.permissionResolver ? { permissionResolver: this.permissionResolver } : {}),
       });

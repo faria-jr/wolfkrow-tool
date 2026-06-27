@@ -36,7 +36,7 @@ export async function PUT(request: Request, { params }: Params) {
 
   const repo = getRepos().skill;
   const existing = await repo.findById(id);
-  if (!existing || existing.userId !== session.userId) {
+  if (!existing || (existing.userId !== session.userId && existing.userId !== 'system')) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -58,7 +58,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { id } = await params;
   const repo = getRepos().skill;
   const existing = await repo.findById(id);
-  if (!existing || existing.userId !== session.userId) {
+  if (!existing || (existing.userId !== session.userId && existing.userId !== 'system')) {
     return Response.json({ error: 'Not found' }, { status: 404 });
   }
 

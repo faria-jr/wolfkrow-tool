@@ -77,6 +77,7 @@ export function ProviderList() {
       {confirmProvider && (
         <DeleteConfirmDialog
           providerName={confirmProvider.displayName}
+          isOverridden={Boolean(confirmProvider.isOverridden)}
           onCancel={() => setConfirmDeleteId(null)}
           onConfirm={() => deleteMut.mutate(confirmProvider.id)}
         />
@@ -122,13 +123,14 @@ function ProviderGrid({
     <div className="grid gap-3">
       {providers.map((p) => {
         const isBuiltIn = BUILT_IN_IDS.has(p.id);
+        const canDelete = !isBuiltIn || p.isOverridden;
         return (
           <ProviderCard
             key={p.id}
             provider={p}
             isBuiltIn={isBuiltIn}
             onEdit={() => onEdit(p)}
-            {...(isBuiltIn ? {} : { onDelete: () => onRequestDelete(p.id) })}
+            {...(canDelete ? { onDelete: () => onRequestDelete(p.id) } : {})}
           />
         );
       })}
@@ -138,19 +140,25 @@ function ProviderGrid({
 
 function DeleteConfirmDialog({
   providerName,
+  isOverridden,
   onCancel,
   onConfirm,
 }: {
   providerName: string;
+  isOverridden: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
   return (
     <ConfirmDialog
       open
-      title="Delete provider"
-      description={`Are you sure you want to delete ${providerName}? This cannot be undone.`}
-      confirmLabel="Delete"
+      title={isOverridden ? 'Restore built-in provider' : 'Delete provider'}
+      description={
+        isOverridden
+          ? `Are you sure you want to restore ${providerName} to its default settings? Your custom override will be removed.`
+          : `Are you sure you want to delete ${providerName}? This cannot be undone.`
+      }
+      confirmLabel={isOverridden ? 'Restore' : 'Delete'}
       onCancel={onCancel}
       onConfirm={onConfirm}
     />

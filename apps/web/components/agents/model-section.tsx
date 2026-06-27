@@ -137,9 +137,9 @@ export function ModelSection({ control, providers }: Props) {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-muted-foreground">Model</h3>
-      <ModelField control={control} {...(providers !== undefined ? { providers } : {})} />
       <EffortAndTurnsFields control={control} />
+      <ProviderField control={control} runtime={runtime} {...(providers !== undefined ? { providers } : {})} />
+      <ModelField control={control} {...(providers !== undefined ? { providers } : {})} />
       <FormField control={control} name="runtime" render={({ field }) => (
         <FormItem>
           <FormLabel>Runtime</FormLabel>
@@ -150,7 +150,6 @@ export function ModelSection({ control, providers }: Props) {
           <FormMessage />
         </FormItem>
       )} />
-      <ProviderField control={control} runtime={runtime} {...(providers !== undefined ? { providers } : {})} />
     </div>
   );
 }

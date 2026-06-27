@@ -1,7 +1,7 @@
 import type { SecretsAdapter } from '@wolfkrow/domain';
 import keytar from 'keytar';
 
-const SERVICE = 'wolfkrow-tool';
+const SERVICE = 'wolfkrow';
 
 export class KeytarSecretsAdapter implements SecretsAdapter {
   async get(key: string): Promise<string | null> {

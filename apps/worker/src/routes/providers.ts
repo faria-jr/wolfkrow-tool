@@ -1,3 +1,4 @@
+import { BUILT_IN_PROVIDERS } from '@wolfkrow/domain';
 import { DeleteProviderUseCase, ListProvidersUseCase, SaveProviderUseCase } from '@wolfkrow/use-cases';
 import { z } from 'zod';
 
@@ -26,6 +27,10 @@ function userId(req: { user?: { userId?: string } }): string {
 export async function providerRoutes(server: AuthFastifyInstance) {
   server.get('/providers', { preHandler: [server.authenticate] }, async (req) => {
     const repo = getRepos().providerConfig;
+    const customConfigs = await repo.findAll(userId(req));
+    const customIds = new Set(customConfigs.map((c) => c.id));
+    const builtInIds = new Set(BUILT_IN_PROVIDERS.map((p) => p.id));
+
     const uc = new ListProvidersUseCase(repo);
     const { providers } = await uc.execute({ userId: userId(req) });
     const secrets = getAdapters().secrets;
@@ -33,7 +38,14 @@ export async function providerRoutes(server: AuthFastifyInstance) {
       providers.map(async (p) => {
         const config = p.toJSON();
         const key = await secrets.get(config.apiKeyAccount);
-        return { ...config, hasApiKey: Boolean(key) };
+        const hasDbRecord = customIds.has(config.id);
+        const isBuiltInId = builtInIds.has(config.id);
+        return {
+          ...config,
+          hasApiKey: Boolean(key),
+          isOverridden: hasDbRecord && isBuiltInId,
+          isCustom: hasDbRecord && !isBuiltInId,
+        };
       }),
     );
     return results;

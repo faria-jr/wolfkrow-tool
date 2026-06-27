@@ -64,7 +64,10 @@ async function doCreatePipeline(e: React.FormEvent, values: CreateFormValues, p:
     const body: Record<string, unknown> = { name: values.name, description: values.description };
     if (values.projectPath) body.projectPath = values.projectPath;
     const res = await fetch('/api/pipeline/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error('Failed to create');
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to create');
+    }
     p.setName('');
     p.setDescription('');
     p.setProjectPath('');

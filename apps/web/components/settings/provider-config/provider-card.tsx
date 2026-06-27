@@ -11,6 +11,8 @@ export interface ProviderRow {
   models: readonly string[];
   supportsTools: boolean;
   hasApiKey: boolean;
+  isOverridden?: boolean;
+  isCustom?: boolean;
 }
 
 interface ProviderCardProps {
@@ -48,9 +50,14 @@ export function ProviderCard({ provider, isBuiltIn, onEdit, onDelete }: Provider
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={onEdit}>
-              {isBuiltIn ? 'Override' : 'Edit'}
+              {provider.isOverridden ? 'Edit Override' : isBuiltIn ? 'Override' : 'Edit'}
             </Button>
-            {!isBuiltIn && (
+            {provider.isOverridden && onDelete && (
+              <Button size="sm" variant="destructive" onClick={onDelete}>
+                Restore Default
+              </Button>
+            )}
+            {!isBuiltIn && onDelete && (
               <Button size="sm" variant="destructive" onClick={onDelete}>
                 Delete
               </Button>

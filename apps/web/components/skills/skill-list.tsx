@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react';
 
 import { ConfirmDialog } from '@/components/chat/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
+import { Pagination } from '@/components/common/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -40,8 +41,8 @@ function SkillRow({ skill, onEdit, onDuplicate, onDelete, disableDelete }: Skill
       <TableCell>
         <div className="flex gap-1">
           <Button size="icon" variant="ghost" onClick={() => onDuplicate(skill)} aria-label="Duplicate skill"><CopyIcon className="h-4 w-4" /></Button>
-          {!skill.isBuiltIn && <Button size="icon" variant="ghost" onClick={() => onEdit(skill)} aria-label="Edit skill"><PencilIcon className="h-4 w-4" /></Button>}
-          {!skill.isBuiltIn && <Button size="icon" variant="ghost" onClick={() => onDelete(skill)} disabled={disableDelete} aria-label="Delete skill"><TrashIcon className="h-4 w-4 text-destructive" /></Button>}
+          <Button size="icon" variant="ghost" onClick={() => onEdit(skill)} aria-label="Edit skill"><PencilIcon className="h-4 w-4" /></Button>
+          <Button size="icon" variant="ghost" onClick={() => onDelete(skill)} disabled={disableDelete} aria-label="Delete skill"><TrashIcon className="h-4 w-4 text-destructive" /></Button>
         </div>
       </TableCell>
     </TableRow>
@@ -55,9 +56,12 @@ interface SkillListProps {
   onDelete: (id: string) => Promise<void>;
 }
 
+const PAGE_SIZE = 5;
+
 export function SkillList({ skills, onEdit, onDuplicate, onDelete }: SkillListProps) {
   const [toDelete, setToDelete] = useState<SkillData | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const confirmDelete = useCallback(async () => {
     if (!toDelete?.id) return;
@@ -72,6 +76,9 @@ export function SkillList({ skills, onEdit, onDuplicate, onDelete }: SkillListPr
     return <EmptyState title="No skills yet" description="Create one to get started." icon={<Sparkles className="h-6 w-6" />} />;
   }
 
+  const totalPages = Math.ceil(skills.length / PAGE_SIZE);
+  const paginatedSkills = skills.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
   return (
     <>
       <div className="overflow-x-auto">
@@ -85,12 +92,17 @@ export function SkillList({ skills, onEdit, onDuplicate, onDelete }: SkillListPr
             </TableRow>
           </TableHeader>
           <TableBody>
-            {skills.map((s) => (
+            {paginatedSkills.map((s) => (
               <SkillRow key={s.id} skill={s} onEdit={onEdit} onDuplicate={onDuplicate} onDelete={setToDelete} disableDelete={deleting} />
             ))}
           </TableBody>
         </Table>
       </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
       {toDelete && (
         <ConfirmDialog
           open

@@ -50,7 +50,10 @@ async function doCreate(e: React.FormEvent, p: CreateParams) {
     if (p.form.projectPath) body['projectPath'] = p.form.projectPath;
     if (p.form.description) body['description'] = p.form.description;
     const res = await fetch('/api/harness/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error('Failed to create project');
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || 'Failed to create project');
+    }
     p.setForm(EMPTY_FORM);
     await p.load();
   } catch (err) {
