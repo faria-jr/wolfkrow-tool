@@ -224,13 +224,12 @@ function RecentRunsCard({ recent, error }: { recent: RecentRun[]; error: string 
 
 export function DashboardView() {
   const { kpis, recent, usage, error } = useDashboardData();
+  // EPIC 3.1 — no inline h1: the Topbar already shows "Dashboard" on /
+  // (segments.length === 0). Keeping a second title here created a
+  // double-header bar; the subtitle lives in the breadcrumb area now.
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Overview of runs, usage and quick actions.</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <QuickActions />
       </div>
       <KpiGrid kpis={kpis} />
