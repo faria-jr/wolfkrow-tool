@@ -31,8 +31,8 @@ import {
   Sparkles,
   TerminalSquare,
   Wand2,
+  Wrench,
   Workflow,
-  Zap,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -64,7 +64,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
     label: 'Automation',
     items: [
       { title: 'Scheduler', url: '/scheduler', icon: Calendar },
-      { title: 'Harness', url: '/harness', icon: Zap },
+      { title: 'Harness', url: '/harness', icon: Wrench },
       { title: 'Pipeline', url: '/pipeline', icon: Workflow },
       { title: 'Security Audit', url: '/audit', icon: ShieldAlert },
     ],

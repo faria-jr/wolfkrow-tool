@@ -6,9 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import type { AgentData } from './agent-form-modal';
-import { AgentFormModal } from './agent-form-modal';
 import { AgentList } from './agent-list';
-import type { AgentFormValues } from './schema';
 import { SyncAgentsModal } from './sync-agents-modal';
 
 import { ErrorState } from '@/components/common/error-state';
@@ -73,28 +71,6 @@ function useAgents() {
 }
 
 function useAgentMutations(loadAgents: () => Promise<void>) {
-  const [saving, setSaving] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-
-  // EPIC 1.1 — the modal is now used for "new agent" only; editing happens in
-  // the dedicated `/agents/[id]/edit` screen (see `AgentEditScreen`).
-  const submit = useCallback(async (values: AgentFormValues) => {
-    setSaving(true);
-    try {
-      const res = await apiFetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      toast.success('Agent created');
-      setModalOpen(false);
-      await loadAgents();
-    } catch {
-      toast.error('Failed to save agent');
-    } finally { setSaving(false); }
-  }, [loadAgents]);
-
   const duplicate = useCallback(async (agent: AgentData) => {
     if (!agent.id) return;
     try {
@@ -122,17 +98,16 @@ function useAgentMutations(loadAgents: () => Promise<void>) {
     }
   }, [loadAgents]);
 
-  return { saving, modalOpen, setModalOpen, submit, duplicate, remove };
+  return { duplicate, remove };
 }
 
 export function AgentsView() {
   const { agents, loading, error, loadAgents } = useAgents();
-  const { saving, modalOpen, setModalOpen, submit, duplicate, remove } = useAgentMutations(loadAgents);
+  const { duplicate, remove } = useAgentMutations(loadAgents);
   const router = useRouter();
   const [syncOpen, setSyncOpen] = useState(false);
 
-  const openNew = useCallback(() => { setModalOpen(true); }, [setModalOpen]);
-  // EPIC 1.1 — edit now navigates to a dedicated full-screen route.
+  const openNew = useCallback(() => { router.push('/agents/new'); }, [router]);
   const openEdit = useCallback((a: AgentData) => {
     if (!a.id) return;
     router.push(`/agents/${a.id}/edit`);
@@ -150,12 +125,6 @@ export function AgentsView() {
       ) : (
         <AgentList agents={agents} onEdit={openEdit} onDuplicate={duplicate} onDelete={remove} />
       )}
-      <AgentFormModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={submit}
-        loading={saving}
-      />
       <SyncAgentsModal open={syncOpen} onClose={() => setSyncOpen(false)} onSynced={() => { void loadAgents(); }} agentCount={agents.length} />
     </div>
   );
