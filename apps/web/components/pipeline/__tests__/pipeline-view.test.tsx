@@ -40,6 +40,20 @@ describe('PipelineView', () => {
     await waitFor(() => expect(screen.getByText('Proj')).toBeInTheDocument());
   });
 
+  it('sends projectPath when creating a pipeline project', async () => {
+    render(<PipelineView />);
+    await userEvent.type(screen.getByPlaceholderText('Project name'), 'New pipeline');
+    await userEvent.type(screen.getByPlaceholderText('Project path (e.g. /Users/me/my-repo)'), '/tmp/repo');
+    await userEvent.click(screen.getByRole('button', { name: 'New Pipeline' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/pipeline/projects', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ name: 'New pipeline', description: '', projectPath: '/tmp/repo' }),
+      }));
+    });
+  });
+
   it('shows right panel placeholder when no selection', async () => {
     render(<PipelineView />);
     expect(screen.getByText(/select a pipeline project/i)).toBeInTheDocument();

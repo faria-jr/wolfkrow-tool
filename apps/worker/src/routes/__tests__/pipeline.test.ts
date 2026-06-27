@@ -86,12 +86,13 @@ describe('pipeline POST /projects — create', () => {
   it('creates a project and returns its props', async () => {
     const res = await app.inject({
       method: 'POST', url: '/projects',
-      payload: { name: 'New pipeline', description: 'd' },
+      payload: { name: 'New pipeline', description: 'd', projectPath: process.cwd() },
     });
     expect(res.statusCode).toBe(200);
-    const body = res.json() as { name: string; userId: string };
+    const body = res.json() as { name: string; userId: string; projectPath: string };
     expect(body.name).toBe('New pipeline');
     expect(body.userId).toBe('u1');
+    expect(body.projectPath).toBe(process.cwd());
   });
 
   it('rejects a body missing name → 400', async () => {

@@ -18,6 +18,7 @@ export interface PipelineProjectProps {
   currentStage: PipelineStage;
   status: PipelineStatus;
   discoveryNotes: string | undefined;
+  projectPath: string | undefined;
   specPath: string | undefined;
   prdPath: string | undefined;
   approvalNotes: string | undefined;
@@ -29,7 +30,7 @@ export interface PipelineProjectProps {
   completedAt: Date | undefined;
 }
 
-export type PipelineProjectCreateInput = Pick<PipelineProjectProps, 'userId' | 'name'> & { description?: string };
+export type PipelineProjectCreateInput = Pick<PipelineProjectProps, 'userId' | 'name'> & { description?: string; projectPath?: string };
 
 const DEFAULT_METRICS: PipelineMetrics = { totalTokens: 0, totalCost: 0, phasesCompleted: 0, durationMs: 0 };
 
@@ -41,6 +42,7 @@ export class PipelineProject {
   readonly currentStage: PipelineStage;
   readonly status: PipelineStatus;
   readonly discoveryNotes: string | undefined;
+  readonly projectPath: string | undefined;
   readonly specPath: string | undefined;
   readonly prdPath: string | undefined;
   readonly approvalNotes: string | undefined;
@@ -59,6 +61,7 @@ export class PipelineProject {
     this.currentStage = props.currentStage;
     this.status = props.status;
     this.discoveryNotes = props.discoveryNotes;
+    this.projectPath = props.projectPath;
     this.specPath = props.specPath;
     this.prdPath = props.prdPath;
     this.approvalNotes = props.approvalNotes;
@@ -80,6 +83,7 @@ export class PipelineProject {
       currentStage: 'discovery',
       status: 'running',
       discoveryNotes: undefined,
+      projectPath: input.projectPath,
       specPath: undefined,
       prdPath: undefined,
       approvalNotes: undefined,
@@ -100,7 +104,7 @@ export class PipelineProject {
     return {
       id: this.id, userId: this.userId, name: this.name, description: this.description,
       currentStage: this.currentStage, status: this.status, discoveryNotes: this.discoveryNotes,
-      specPath: this.specPath, prdPath: this.prdPath, approvalNotes: this.approvalNotes,
+      projectPath: this.projectPath, specPath: this.specPath, prdPath: this.prdPath, approvalNotes: this.approvalNotes,
       specEdits: this.specEdits, harnessProjectId: this.harnessProjectId,
       metrics: this.metrics, createdAt: this.createdAt, updatedAt: this.updatedAt, completedAt: this.completedAt,
     };

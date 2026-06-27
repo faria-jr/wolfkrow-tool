@@ -35,10 +35,11 @@ describe('CreatePipelineProjectUseCase', () => {
   it('creates project in discovery stage, running status', async () => {
     const repo = new InMemoryProjectRepo();
     const uc = new CreatePipelineProjectUseCase(repo);
-    const { project } = await uc.execute('u1', { name: 'MyPipeline' });
+    const { project } = await uc.execute('u1', { name: 'MyPipeline', projectPath: '/tmp/repo' });
     expect(project.currentStage).toBe('discovery');
     expect(project.status).toBe('running');
     expect(project.name).toBe('MyPipeline');
+    expect(project.projectPath).toBe('/tmp/repo');
     expect(project.userId).toBe('u1');
   });
 });

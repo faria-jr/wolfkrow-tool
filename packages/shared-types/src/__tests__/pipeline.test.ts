@@ -131,15 +131,16 @@ describe('pipeline schemas', () => {
       expect(() => PipelineProjectSchema.parse(valid)).not.toThrow();
     });
     it('accepts optional notes/paths', () => {
-      expect(() =>
+      expect(
         PipelineProjectSchema.parse({
           ...valid,
           discoveryNotes: 'notes',
+          projectPath: '/tmp/repo',
           specPath: '/spec',
           prdPath: '/prd',
           approvalNotes: 'ok',
         }),
-      ).not.toThrow();
+      ).toHaveProperty('projectPath', '/tmp/repo');
     });
     it('rejects missing name', () => {
       const { name: _omit, ...rest } = valid;
@@ -148,13 +149,14 @@ describe('pipeline schemas', () => {
   });
 
   describe('CreatePipelineProjectInputSchema', () => {
-    it('accepts the input subset (name + description)', () => {
-      expect(() =>
+    it('accepts the input subset (name + description + projectPath)', () => {
+      expect(
         CreatePipelineProjectInputSchema.parse({
           name: 'Proj',
           description: 'desc',
+          projectPath: '/tmp/repo',
         }),
-      ).not.toThrow();
+      ).toHaveProperty('projectPath', '/tmp/repo');
     });
     it('rejects missing name', () => {
       expect(() => CreatePipelineProjectInputSchema.parse({})).toThrow();

@@ -21,6 +21,7 @@ interface ProjectData {
   specPath?: string;
   prdPath?: string;
   approvalNotes?: string;
+  projectPath?: string;
   metrics: { totalTokens: number; phasesCompleted: number };
   createdAt: string;
 }
@@ -53,16 +54,20 @@ function statusVariant(status: string): 'default' | 'secondary' | 'destructive' 
   return m[status] ?? 'outline';
 }
 
-interface CreatePipelineParams { setCreating: (b: boolean) => void; setError: (e: string | null) => void; setName: (s: string) => void; setDescription: (s: string) => void; loadProjects: () => Promise<void>; }
-async function doCreatePipeline(e: React.FormEvent, name: string, description: string, p: CreatePipelineParams) {
+interface CreateFormValues { name: string; description: string; projectPath: string; }
+interface CreatePipelineParams { setCreating: (b: boolean) => void; setError: (e: string | null) => void; setName: (s: string) => void; setDescription: (s: string) => void; setProjectPath: (s: string) => void; loadProjects: () => Promise<void>; }
+async function doCreatePipeline(e: React.FormEvent, values: CreateFormValues, p: CreatePipelineParams) {
   e.preventDefault();
   p.setCreating(true);
   p.setError(null);
   try {
-    const res = await fetch('/api/pipeline/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description }) });
+    const body: Record<string, unknown> = { name: values.name, description: values.description };
+    if (values.projectPath) body.projectPath = values.projectPath;
+    const res = await fetch('/api/pipeline/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!res.ok) throw new Error('Failed to create');
     p.setName('');
     p.setDescription('');
+    p.setProjectPath('');
     await p.loadProjects();
   } catch (err) {
     p.setError(err instanceof Error ? err.message : 'Error');
@@ -85,8 +90,8 @@ async function doApprove(projectId: string, phaseId: string, approved: boolean, 
   }
 }
 
-interface LeftPanelProps { name: string; setName: (v: string) => void; description: string; setDescription: (v: string) => void; creating: boolean; error: string | null; projects: ProjectData[]; selected: ProjectData | null; onSubmit: (e: React.FormEvent) => void; onSelect: (p: ProjectData) => void; onDelete: (id: string) => void; }
-function PipelineLeftPanel({ name, setName, description, setDescription, creating, error, projects, selected, onSubmit, onSelect, onDelete }: LeftPanelProps) {
+interface LeftPanelProps { name: string; setName: (v: string) => void; description: string; setDescription: (v: string) => void; projectPath: string; setProjectPath: (v: string) => void; creating: boolean; error: string | null; projects: ProjectData[]; selected: ProjectData | null; onSubmit: (e: React.FormEvent) => void; onSelect: (p: ProjectData) => void; onDelete: (id: string) => void; }
+function PipelineLeftPanel({ name, setName, description, setDescription, projectPath, setProjectPath, creating, error, projects, selected, onSubmit, onSelect, onDelete }: LeftPanelProps) {
   return (
     <div className="w-72 flex-shrink-0 space-y-4">
       <h2 className="text-lg font-semibold">Pipeline Projects</h2>
@@ -98,6 +103,10 @@ function PipelineLeftPanel({ name, setName, description, setDescription, creatin
         <div>
           <Label htmlFor="pipeline-desc" className="mb-1 block text-xs text-muted-foreground">Description</Label>
           <Textarea id="pipeline-desc" placeholder="Description (optional)" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} />
+        </div>
+        <div>
+          <Label htmlFor="pipeline-path" className="mb-1 block text-xs text-muted-foreground">Project path</Label>
+          <Input id="pipeline-path" placeholder="Project path (e.g. /Users/me/my-repo)" value={projectPath} onChange={(e) => setProjectPath(e.target.value)} />
         </div>
         <Button type="submit" disabled={creating} className="w-full">{creating ? 'Creating…' : 'New Pipeline'}</Button>
       </form>
@@ -207,6 +216,7 @@ export function PipelineView() {
   const [phases, setPhases] = useState<PhaseData[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [projectPath, setProjectPath] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -222,7 +232,7 @@ export function PipelineView() {
 
   useEffect(() => { void loadProjects(); }, [loadProjects]);
 
-  const handleCreate = (e: React.FormEvent) => void doCreatePipeline(e, name, description, { setCreating, setError, setName, setDescription, loadProjects });
+  const handleCreate = (e: React.FormEvent) => void doCreatePipeline(e, { name, description, projectPath }, { setCreating, setError, setName, setDescription, setProjectPath, loadProjects });
 
   const handleApprove = (id: string, phaseId: string, approved: boolean) =>
     void doApprove(id, phaseId, approved, { setError, setSelected, loadPhases, loadProjects });
@@ -241,6 +251,7 @@ export function PipelineView() {
   return (
     <div className="flex h-full gap-6 p-6">
       <PipelineLeftPanel name={name} setName={setName} description={description} setDescription={setDescription}
+        projectPath={projectPath} setProjectPath={setProjectPath}
         creating={creating} error={error} projects={projects} selected={selected}
         onSubmit={handleCreate} onSelect={(p) => { void handleSelect(p); }} onDelete={(id) => { void handleDelete(id); }} />
       <PipelineRightPanel selected={selected} phases={phases} currentStageIdx={selected ? stageIndex(selected.currentStage) : -1}

@@ -37,6 +37,7 @@ function makeRepos() {
 const createProjectBody = z.object({
   name: z.string().min(1).max(256),
   description: z.string().max(8192).optional(),
+  projectPath: z.string().max(4096).optional(),
 });
 const startPhaseBody = z.object({ stage: z.string().min(1).max(64) });
 const runPhaseBody = z.object({
@@ -216,6 +217,7 @@ function registerPipelineProjectRoutes(
     const { project } = await new CreatePipelineProjectUseCase(projectRepo).execute(uid(req), {
       name: body.name,
       ...(body.description !== undefined ? { description: body.description } : {}),
+      ...(body.projectPath !== undefined ? { projectPath: body.projectPath } : {}),
     });
     return project.toProps();
   });

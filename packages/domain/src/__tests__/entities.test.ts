@@ -374,9 +374,10 @@ describe('PipelineProject', () => {
   const base = { userId: 'u1', name: 'Pipeline 1', description: 'Test pipeline' };
 
   it('create starts at discovery/running', () => {
-    const p = PipelineProject.create(base);
+    const p = PipelineProject.create({ ...base, projectPath: '/tmp/repo' });
     expect(p.currentStage).toBe('discovery');
     expect(p.status).toBe('running');
+    expect(p.projectPath).toBe('/tmp/repo');
     expect(p.metrics.totalTokens).toBe(0);
   });
 

@@ -108,6 +108,7 @@ export const PipelineProjectSchema = z.object({
   currentStage: PipelineStageSchema,
   status: PipelineStatusSchema,
   discoveryNotes: LongStringSchema.optional(),
+  projectPath: z.string().max(4096).optional(),
   specPath: z.string().optional(),
   prdPath: z.string().optional(),
   approvalNotes: z.string().max(5000).optional(),
