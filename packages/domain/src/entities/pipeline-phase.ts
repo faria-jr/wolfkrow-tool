@@ -6,6 +6,7 @@ export type PhaseStatus = 'pending' | 'in_progress' | 'awaiting_user' | 'complet
 
 export interface PhaseMetrics {
   tokens: number;
+  cost: number;
   durationMs: number;
 }
 
@@ -52,7 +53,7 @@ export class PipelinePhase {
       artifactPath: undefined,
       startedAt: undefined,
       completedAt: undefined,
-      metrics: { tokens: 0, durationMs: 0 },
+      metrics: { tokens: 0, cost: 0, durationMs: 0 },
     });
   }
 
@@ -72,11 +73,15 @@ export class PipelinePhase {
     return PipelinePhase.fromProps({ ...this.toProps(), status: 'in_progress', startedAt: now });
   }
 
-  complete(artifactPath?: string, tokens = 0, now = new Date()): PipelinePhase {
+  complete(artifactPath?: string, tokens = 0, now = new Date(), cost = 0): PipelinePhase {
     return PipelinePhase.fromProps({
       ...this.toProps(), status: 'completed', completedAt: now,
       ...(artifactPath !== undefined ? { artifactPath } : {}),
-      metrics: { tokens, durationMs: now.getTime() - (this.startedAt?.getTime() ?? now.getTime()) },
+      metrics: {
+        tokens,
+        cost,
+        durationMs: now.getTime() - (this.startedAt?.getTime() ?? now.getTime()),
+      },
     });
   }
 

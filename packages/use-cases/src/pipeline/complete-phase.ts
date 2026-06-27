@@ -12,7 +12,14 @@ const NEXT_STAGE: Record<PipelineStage, PipelineStage | null> = {
   completed: null,
 };
 
-export interface CompletePhaseInput { phaseId: string; projectId: string; artifactPath?: string; tokens?: number; }
+export interface CompletePhaseInput {
+  phaseId: string;
+  projectId: string;
+  artifactPath?: string;
+  tokens?: number;
+  /** USD cents spent on this phase. Defaults to 0 for backwards compat. */
+  cost?: number;
+}
 export interface CompletePhaseOutput { phase: PipelinePhase; project: PipelineProject; }
 
 export class CompletePhaseUseCase {
@@ -26,7 +33,9 @@ export class CompletePhaseUseCase {
     if (!project) throw new NotFoundError('PipelineProject', input.projectId);
     if (!phase) throw new NotFoundError('PipelinePhase', input.phaseId);
 
-    const completed = await this.phaseRepo.save(phase.complete(input.artifactPath, input.tokens));
+    const completed = await this.phaseRepo.save(
+      phase.complete(input.artifactPath, input.tokens, undefined, input.cost ?? 0),
+    );
 
     const nextStage = NEXT_STAGE[phase.stage];
     const updatedProject = await this.projectRepo.save(

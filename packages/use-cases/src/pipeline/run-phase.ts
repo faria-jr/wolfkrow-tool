@@ -1,5 +1,5 @@
 import type { AIStreamPort, ArtifactWriter, PipelinePhase, PipelinePhaseRepo, PipelineProject, PipelineProjectRepo, PipelineStage, PipelineMessageRepo } from '@wolfkrow/domain';
-import { NotFoundError, PipelineMessage as PipelineMessageEntity } from '@wolfkrow/domain';
+import { NotFoundError, PipelineMessage as PipelineMessageEntity, defaultPricingCalculator } from '@wolfkrow/domain';
 
 const NEXT_STAGE: Record<PipelineStage, PipelineStage | null> = {
  discovery: 'spec_build',
@@ -72,9 +72,10 @@ export class RunPhaseUseCase {
  });
 
  const tokens = result.usage.inputTokens + result.usage.outputTokens;
+ const cost = defaultPricingCalculator.cost(input.model ?? 'claude-sonnet-4-6', result.usage).usdCents;
  const artifactPath = await this.persistExchange(project, phase, userContent, result);
 
- const completedPhase = await this.phaseRepo.save(phase.complete(artifactPath, tokens));
+ const completedPhase = await this.phaseRepo.save(phase.complete(artifactPath, tokens, undefined, cost));
 
  const nextStage = NEXT_STAGE[phase.stage];
  const updatedProject = await this.projectRepo.save(

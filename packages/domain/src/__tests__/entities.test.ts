@@ -433,7 +433,18 @@ describe('PipelinePhase', () => {
     expect(ph.status).toBe('completed');
     expect(ph.artifactPath).toBe('/path/artifact.md');
     expect(ph.metrics.tokens).toBe(300);
+    expect(ph.metrics.cost).toBe(0);
     expect(ph.metrics.durationMs).toBeGreaterThan(0);
+  });
+
+  it('complete accepts an optional cost (USD cents) in metrics', () => {
+    const started = new Date(Date.now() - 1000);
+    const now = new Date();
+    const ph = PipelinePhase.create(base)
+      .start(started)
+      .complete('/path/artifact.md', 300, now, 250);
+    expect(ph.metrics.cost).toBe(250);
+    expect(ph.metrics.tokens).toBe(300);
   });
 
   it('awaitUser and fail transitions', () => {

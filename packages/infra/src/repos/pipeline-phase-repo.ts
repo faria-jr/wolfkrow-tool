@@ -20,7 +20,7 @@ function toEntity(row: DbRow): PipelinePhase {
     artifactPath: row.artifactPath ?? undefined,
     startedAt: row.startedAt ?? undefined,
     completedAt: row.completedAt ?? undefined,
-    metrics: fromJson<PhaseMetrics>(row.metrics, { tokens: 0, durationMs: 0 }),
+    metrics: fromJson<PhaseMetrics>(row.metrics, { tokens: 0, cost: 0, durationMs: 0 }),
   });
 }
 

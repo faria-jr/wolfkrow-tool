@@ -127,6 +127,23 @@ describe('RunPhaseUseCase', () => {
     expect(result.phase.metrics.tokens).toBe(50);
   });
 
+  it('records computed USD cost in phase metrics', async () => {
+    const projectRepo = new InMemoryProjectRepo();
+    const phaseRepo = new InMemoryPhaseRepo();
+    const ai = makeAI('output', 1000, 500);
+
+    const project = makeProject('discovery');
+    const phase = makePhase(project.id, 'discovery');
+    await projectRepo.save(project);
+    await phaseRepo.save(phase);
+
+    const result = await new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
+      projectId: project.id, phaseId: phase.id,
+    });
+
+    expect(result.phase.metrics.cost).toBeGreaterThan(0);
+  });
+
   it('advances project stage from discovery to spec_build', async () => {
     const projectRepo = new InMemoryProjectRepo();
     const phaseRepo = new InMemoryPhaseRepo();
