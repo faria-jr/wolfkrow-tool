@@ -6,6 +6,7 @@ import type { DailySummaryData, MemoryData, MemorySearchResult, MemoryTabKey } f
 
 import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
+import { PageHeader } from '@/components/common/page-header';
 
 const SOURCE_COLOR: Record<string, string> = {
   user: 'bg-info/15 text-info',
@@ -175,10 +176,10 @@ interface MemoryViewBodyProps { state: MemoryViewState; }
 export function MemoryViewBody({ state }: MemoryViewBodyProps) {
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Memory</h1>
-        <p className="text-muted-foreground text-sm">Semantic memories extracted from conversations and stored for recall.</p>
-      </div>
+      <PageHeader
+        title="Memory"
+        description="Semantic memories extracted from conversations and stored for recall."
+      />
       <MemoryTabNav tab={state.tab} setTab={state.setTab} count={state.memories.length} />
       {state.tab === 'list' && (
         <MemoryListTab

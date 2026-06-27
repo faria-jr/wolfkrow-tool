@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
+import { PageHeader } from '@/components/common/page-header';
+
 interface EnrichSession {
   id: string;
   name: string;
@@ -198,10 +200,10 @@ export function EnrichView() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold">Enrich</h1>
-        <p className="text-muted-foreground text-sm">Validate and enrich knowledge sessions.</p>
-      </div>
+      <PageHeader
+        title="Enrich"
+        description="Validate and enrich knowledge sessions."
+      />
       <CreateSessionForm name={name} creating={creating} onChange={setName} onCreate={() => void handleCreate()} />
       {error && <p className="text-destructive text-sm">{error}</p>}
       <SessionList sessions={sessions} actionId={actionId} specContents={specContents} expandedSpec={expandedSpec} outputs={outputs}

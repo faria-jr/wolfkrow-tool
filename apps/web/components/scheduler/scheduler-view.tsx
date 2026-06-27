@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import { ConfirmDialog } from '@/components/chat/confirm-dialog';
 import { EmptyState } from '@/components/common/empty-state';
+import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -271,13 +272,15 @@ export function SchedulerView() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Scheduler</h1>
-          <p className="text-muted-foreground text-sm">Automate tasks with cron expressions.</p>
-        </div>
-        <Button variant="default" onClick={() => a.setShowForm((v) => !v)}>{a.showForm ? 'Cancel' : 'New Task'}</Button>
-      </div>
+      <PageHeader
+        title="Scheduler"
+        description="Automate tasks with cron expressions."
+        actions={
+          <Button variant="default" onClick={() => a.setShowForm((v) => !v)}>
+            {a.showForm ? 'Cancel' : 'New Task'}
+          </Button>
+        }
+      />
       {a.showForm && <TaskCreateForm creating={a.creating} error={a.error} onSubmit={a.handleCreate} />}
       <PendingReviewSection runs={pendingRuns} onReview={(id, v) => void handleReview(id, v)} />
       <SchedulerTaskList tasks={tasks} deletingId={a.deletingId} onToggle={a.handleToggle} onRequestDelete={a.requestDelete} onRun={a.handleRun} />
