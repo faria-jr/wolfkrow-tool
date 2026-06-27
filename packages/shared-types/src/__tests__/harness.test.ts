@@ -89,7 +89,15 @@ describe('harness schemas', () => {
         durationMs: 0,
         toolUses: 0,
         apiRequests: 0,
+        coderTokens: 0,
+        evaluatorTokens: 0,
       });
+    });
+
+    it('RoundMetricsSchema round-trips coder/evaluator split', () => {
+      const parsed = RoundMetricsSchema.parse({ coderTokens: 1200, evaluatorTokens: 400 });
+      expect(parsed.coderTokens).toBe(1200);
+      expect(parsed.evaluatorTokens).toBe(400);
     });
     it('rejects negative tokens', () => {
       expect(() => ProjectMetricsSchema.parse({ totalTokens: -1 })).toThrow();

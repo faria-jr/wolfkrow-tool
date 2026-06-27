@@ -81,6 +81,14 @@ export const RoundMetricsSchema = z
     durationMs: z.number().int().min(0).default(0),
     toolUses: z.number().int().min(0).default(0),
     apiRequests: z.number().int().min(0).default(0),
+    /**
+     * Token usage split by stage. Mirrors the domain `RoundMetrics`
+     * fields so the wire shape carries the Coder-vs-Evaluator
+     * breakdown the dashboard needs (LionClaw parity). Defaults
+     * to 0 so legacy payloads parse.
+     */
+    coderTokens: z.number().int().min(0).default(0),
+    evaluatorTokens: z.number().int().min(0).default(0),
   })
   .and(MetadataSchema);
 
