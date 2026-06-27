@@ -21,6 +21,12 @@ export interface SendMessageInput {
  model: string;
  system?: string;
  signal?: AbortSignal;
+ /**
+ * Where the model actually ran. Drives the cloud/local cost split in usage
+ * summaries. Defaults to 'cloud' so existing callers keep working; pass
+ * 'local' for self-hosted runtimes (Ollama, llama.cpp, on-prem vLLM).
+ */
+ runtime?: 'cloud' | 'local';
 }
 
 export type SendMessageOutput = AsyncIterable<AIStreamChunk>;
@@ -137,6 +143,7 @@ export class SendMessageUseCase implements UseCase<SendMessageInput, SendMessage
  cacheReadTokens: 0,
  cacheWriteTokens: 0,
  cost: cost.usdCents,
+ runtime: input.runtime ?? 'cloud',
  sessionId: session.id,
  ...(input.agentId !== undefined ? { agentId: input.agentId } : {}),
  timestamp: new Date(),

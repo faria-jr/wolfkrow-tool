@@ -34,6 +34,7 @@ export class DrizzleTokenUsageRepo implements UsageRepo {
  id: randomUUID(),
  userId: record.userId,
  source: record.source as TokenUsageSource,
+ runtime: record.runtime,
  model: record.model,
  inputTokens: record.inputTokens,
  outputTokens: record.outputTokens,
@@ -92,6 +93,7 @@ export class DrizzleTokenUsageRepo implements UsageRepo {
  cost: r.cost,
  sessionId: r.sessionId ?? undefined,
  agentId: r.agentId ?? undefined,
+ runtime: r.runtime,
  timestamp: r.timestamp,
  });
 }

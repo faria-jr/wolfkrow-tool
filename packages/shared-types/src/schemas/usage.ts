@@ -20,6 +20,19 @@ export const TokenUsageSourceSchema = z.enum([
 export type TokenUsageSource = z.infer<typeof TokenUsageSourceSchema>;
 
 /**
+ * Where the inference actually ran. Independent of `source` (which records
+ * the Wolfkrow feature that initiated the call) — a chat or harness call
+ * can hit either a hosted provider or a self-hosted Ollama-style endpoint.
+ * `cloud`  = hosted API billed by tokens (Anthropic, OpenAI, claude-compat,
+ * OpenRouter, Codex cloud).
+ * `local`  = self-hosted runtime (Ollama, local llama.cpp, on-prem vLLM)
+ * where token counts still feed cost tracking but the cost is often zero.
+ */
+export const RuntimeOriginSchema = z.enum(['cloud', 'local']);
+
+export type RuntimeOrigin = z.infer<typeof RuntimeOriginSchema>;
+
+/**
  * Token Usage Entry
  */
 export const TokenUsageSchema = z.object({
@@ -34,6 +47,7 @@ export const TokenUsageSchema = z.object({
   cost: z.number().min(0),
   sessionId: UuidSchema.optional(),
   agentId: UuidSchema.optional(),
+  runtime: RuntimeOriginSchema,
   metadata: MetadataSchema,
   timestamp: TimestampSchema,
 });
@@ -79,6 +93,7 @@ export const UsageSummarySchema = z.object({
   totalCostUSD: z.number().min(0),
   byModel: z.record(z.string(), UsageBreakdownEntrySchema),
   bySource: z.record(z.string(), UsageBreakdownEntrySchema),
+  byRuntime: z.record(RuntimeOriginSchema, UsageBreakdownEntrySchema),
   byDay: z.array(
     z.object({
       day: z

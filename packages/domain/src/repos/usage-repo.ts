@@ -20,6 +20,7 @@ export interface UsageRecord {
  cost: number; // USD cents
  sessionId: string | undefined;
  agentId: string | undefined;
+ runtime: 'cloud' | 'local';
  timestamp: Date;
 }
 
@@ -34,6 +35,7 @@ export interface UsageRecordInput {
  cost: number; // USD cents
  sessionId?: string;
  agentId?: string;
+ runtime: 'cloud' | 'local';
  timestamp: Date;
 }
 

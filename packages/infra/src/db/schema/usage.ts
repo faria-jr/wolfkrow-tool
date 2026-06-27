@@ -17,6 +17,9 @@ export const tokenUsage = sqliteTable(
     source: text('source', {
       enum: ['chat', 'agent', 'harness', 'pipeline', 'enrich', 'memory', 'voice', 'embedding'],
     }).notNull(),
+    runtime: text('runtime', { enum: ['cloud', 'local'] })
+      .notNull()
+      .default('cloud'),
     model: text('model').notNull(),
     inputTokens: integer('input_tokens').notNull(),
     outputTokens: integer('output_tokens').notNull(),
@@ -32,5 +35,6 @@ export const tokenUsage = sqliteTable(
     userIdIdx: index('token_usage_user_id_idx').on(t.userId),
     timestampIdx: index('token_usage_timestamp_idx').on(t.timestamp),
     sourceIdx: index('token_usage_source_idx').on(t.source),
+    runtimeIdx: index('token_usage_runtime_idx').on(t.runtime),
   }),
 );

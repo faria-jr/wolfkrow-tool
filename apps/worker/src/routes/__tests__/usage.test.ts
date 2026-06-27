@@ -52,6 +52,7 @@ beforeAll(async () => {
       cost: 1000,
       sessionId: undefined,
       agentId: undefined,
+      runtime: 'cloud',
       timestamp: yesterday,
     },
     {
@@ -66,6 +67,7 @@ beforeAll(async () => {
       cost: 2500,
       sessionId: undefined,
       agentId: undefined,
+      runtime: 'cloud',
       timestamp: today,
     },
   );

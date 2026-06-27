@@ -88,6 +88,7 @@ describe('FE-4 — api-client contracts', () => {
       totalCostUSD: 0.005,
       byModel: { 'claude-sonnet': { inputTokens: 100, outputTokens: 50, costUSD: 0.005 } },
       bySource: { chat: { inputTokens: 100, outputTokens: 50, costUSD: 0.005 } },
+      byRuntime: { cloud: { inputTokens: 100, outputTokens: 50, costUSD: 0.005 } },
       byDay: [{ day: '2026-06-25', inputTokens: 100, outputTokens: 50, costUSD: 0.005 }],
     };
 

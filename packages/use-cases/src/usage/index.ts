@@ -12,6 +12,7 @@ export interface RecordUsageInput {
   source: string;
   model: string;
   usage: TokenUsage;
+  runtime?: 'cloud' | 'local';
   sessionId?: string;
   agentId?: string;
 }
@@ -30,6 +31,7 @@ export class RecordUsageUseCase {
       cacheReadTokens: input.usage.cacheReadTokens ?? 0,
       cacheWriteTokens: input.usage.cacheWriteTokens ?? 0,
       cost: cost.usdCents,
+      runtime: input.runtime ?? 'cloud',
       ...(input.sessionId !== undefined ? { sessionId: input.sessionId } : {}),
       ...(input.agentId !== undefined ? { agentId: input.agentId } : {}),
       timestamp: new Date(),
@@ -59,6 +61,7 @@ export class ComputeUsageUseCase {
       totalCostUSD: agg.totalCostCents / 100,
       byModel: toUsdEntries(agg.byModel),
       bySource: toUsdEntries(agg.bySource),
+      byRuntime: toUsdEntries(agg.byRuntime),
       byDay: Object.entries(agg.byDayMap)
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([day, d]) => ({
@@ -79,6 +82,7 @@ export class ComputeUsageUseCase {
     totalCostCents: number;
     byModel: CentBuckets;
     bySource: CentBuckets;
+    byRuntime: CentBuckets;
     byDayMap: CentBuckets;
   } {
     let totalInputTokens = 0;
@@ -86,6 +90,7 @@ export class ComputeUsageUseCase {
     let totalCostCents = 0;
     const byModel: CentBuckets = {};
     const bySource: CentBuckets = {};
+    const byRuntime: CentBuckets = {};
     const byDayMap: CentBuckets = {};
 
     for (const r of records) {
@@ -103,6 +108,11 @@ export class ComputeUsageUseCase {
       src.outputTokens += r.outputTokens;
       src.costCents += r.cost;
 
+      const runtime = (byRuntime[r.runtime] ??= { inputTokens: 0, outputTokens: 0, costCents: 0 });
+      runtime.inputTokens += r.inputTokens;
+      runtime.outputTokens += r.outputTokens;
+      runtime.costCents += r.cost;
+
       const day = r.timestamp.toISOString().slice(0, 10);
       const d = (byDayMap[day] ??= { inputTokens: 0, outputTokens: 0, costCents: 0 });
       d.inputTokens += r.inputTokens;
@@ -110,7 +120,7 @@ export class ComputeUsageUseCase {
       d.costCents += r.cost;
     }
 
-    return { totalInputTokens, totalOutputTokens, totalCostCents, byModel, bySource, byDayMap };
+    return { totalInputTokens, totalOutputTokens, totalCostCents, byModel, bySource, byRuntime, byDayMap };
   }
 }
 

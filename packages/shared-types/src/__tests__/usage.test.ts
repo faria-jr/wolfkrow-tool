@@ -9,6 +9,7 @@ describe('UsageSummarySchema', () => {
     totalCostUSD: 0.5,
     byModel: { 'gpt-4o': { inputTokens: 100, outputTokens: 50, costUSD: 0.1 } },
     bySource: { chat: { inputTokens: 100, outputTokens: 50, costUSD: 0.1 } },
+    byRuntime: { cloud: { inputTokens: 100, outputTokens: 50, costUSD: 0.1 } },
     byDay: [
       { day: '2024-01-01', inputTokens: 100, outputTokens: 50, costUSD: 0.1 },
     ],
@@ -25,6 +26,7 @@ describe('UsageSummarySchema', () => {
       totalCostUSD: 0,
       byModel: {},
       bySource: {},
+      byRuntime: {},
       byDay: [],
     };
     expect(UsageSummarySchema.parse(empty)).toEqual(empty);

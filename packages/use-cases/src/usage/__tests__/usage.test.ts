@@ -22,6 +22,7 @@ class InMemoryUsageRepo implements UsageRepo {
       cost: record.cost,
       sessionId: record.sessionId,
       agentId: record.agentId,
+      runtime: record.runtime ?? 'cloud',
       timestamp: record.timestamp,
     });
   }
@@ -62,6 +63,7 @@ function record(overrides: Partial<UsageRecord> & { userId: string }): UsageReco
     cost: 1000, // $10.00
     sessionId: undefined,
     agentId: undefined,
+    runtime: 'cloud',
     timestamp: new Date(),
     ...overrides,
   };
@@ -97,6 +99,19 @@ describe('ComputeUsageUseCase', () => {
     expect(summary.byModel['claude']?.costUSD).toBe(20);
     expect(summary.bySource['chat']?.costUSD).toBe(10);
     expect(summary.bySource['agent']?.costUSD).toBe(20);
+  });
+
+  it('groups cost by runtime origin (cloud vs local)', () => {
+    repo.records.push(
+      record({ userId: 'u1', model: 'claude-opus', runtime: 'cloud', cost: 1000 }),
+      record({ userId: 'u1', model: 'llama3', runtime: 'local', cost: 200 }),
+      record({ userId: 'u1', model: 'qwen', runtime: 'local', cost: 300 }),
+    );
+    const summary = new ComputeUsageUseCase(repo).execute({ userId: 'u1' });
+    expect(summary.byRuntime['cloud']?.costUSD).toBe(10);
+    expect(summary.byRuntime['cloud']?.inputTokens).toBe(100);
+    expect(summary.byRuntime['local']?.costUSD).toBe(5);
+    expect(summary.byRuntime['local']?.outputTokens).toBe(100);
   });
 
   it('emits byDay as an array sorted by day with input/output/cost', () => {
