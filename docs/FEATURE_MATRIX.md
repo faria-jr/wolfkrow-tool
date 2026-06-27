@@ -5,6 +5,45 @@
 
 ---
 
+## v2 (2026-06-26) — `mvp_final_plan_v2.md`
+
+Status deltas vs reconciliation above. Cada linha referencia commit + EPIC do plano v2.
+
+| Item | Antes | Agora | Evidência |
+|---|---|---|---|
+| Chat sem agente — erro FK | ⛔ quebrado | ✅ corrigido | `chat_sessions.agent_id` nullable + SET NULL (`f386500`, EPIC 0.1) |
+| Chat sem agente — SDK GLM/Kimi/MiniMax/Qwen roteando errado | ⛔ quebrado | ✅ corrigido | `inferProvider` → `claude-compat:<id>` (`b8f0a8f`, EPIC 0.2) |
+| Provider override duplicando ao renomear | 🟡 | ✅ corrigido | `id` locked em edit mode (`75da3cd`, EPIC 0.3) |
+| Provider edit sem `apiKey` (campo vazio) | 🟡 | ✅ corrigido | `hasApiKey` flag + UX preserve (`f5e3ad8`, EPIC 0.4) |
+| MCP catch silencioso ("lista vazia" em falha real) | 🟡 | ✅ corrigido | error state separado (`a64beb6`, EPIC 0.5) |
+| Isolamento por usuário no worker | 🟡 | ✅ corrigido | owner-rewrite em `apps/worker/src/plugins/auth.ts:58` (`b87d3e1`, EPIC 0.6) |
+| Agents edit — modal sem markdown | 🟡 | ✅ tela dedicada + MarkdownEditor | `dfe1b57` (EPIC 1.1) |
+| Agents new — modal | 🟡 | ✅ tela dedicada | `fa3c1cc` (EPIC 1.1 polish) |
+| Skills edit — não-MarkdownEditor | 🟡 | ✅ MarkdownEditor + tela dedicada | `60c3f54` (EPIC 1.2) |
+| Rules edit — sem EDIT | 🟡 | ✅ tela dedicada + MarkdownEditor | `60c3f54` (EPIC 1.3) |
+| MCP edit — sem edit | 🟡 | ✅ tela dedicada | `32bc59d` (EPIC 1.4) |
+| Channel config — só Telegram funcional, sem tela | 🟡 | ✅ tabela com Telegram funcional + estrutura p/ novos | `89b00ed` (EPIC 1.6) |
+| Pipeline sem project path | 🟡 | ✅ campo project path com allowlist | `b986724` (EPIC 2.2) + migration 0010 |
+| Run consoles harness/pipeline — inline | 🟡 | ✅ full-screen RunConsole | `f2f5ffe` (pipeline) + `072187c` (harness) (EPIC 2.1) |
+| Dashboard KPIs ignoram chat + runtime split | 🟡 | ✅ usage summary + byRuntime + bySource | `c2d293b` (runtime split) + `43ab9cf` (dashboard) (EPIC 2.3a + 2.3d) |
+| Pipeline phase sem cost field | 🟡 | ✅ `PhaseMetrics.cost` + `RunPhaseUseCase` calcula via pricing | `f14c381` (EPIC 2.3b) |
+| Shared RoundMetrics sem coder/evaluator split | 🟡 | ✅ schema carrega coderTokens + evaluatorTokens | `b52532e` (EPIC 2.3c) |
+| Dashboard double-title (Topbar + inline h1) | 🟡 | ✅ só Topbar breadcrumb | `bd67edf` (EPIC 3.1a) |
+| Memory/Scheduler/Enrich com inline h1 inconsistente | 🟡 | ✅ PageHeader uniforme | `8892888` (EPIC 3.1b) |
+| Settings hub duplicando 8/10 destinos do sidebar | 🟡 | ✅ hub só orphan routes (Providers + Voice + shortcut Vault) | `3c4ba4c` (EPIC 3.2) |
+| Sidecar Design Studio UI — placeholder 22 linhas | ⛔ | ✅ UI funcional com daemon status + start/stop | `d2fde82` + proxy `33c5428` (EPIC 4.1) |
+
+**Não alterado em v2** (continua conforme reconciliação 2026-06-25): todas as features ✅ mantidas; nenhum item regrediu.
+
+**Débitos tracked em v2** (não bloqueantes):
+1. `packages/design-tools` package consolidation (LionClaw port, multi-dia)
+2. Infra coverage: `memory-tool.ts`, `skill-tool.ts`, `web-tool.ts` em 0%
+3. 11 lint errors pré-existentes (max-lines-per-function, arbitrary `max-w-[Nch]`)
+4. Smoke E2E Playwright specs existem (`apps/web/e2e/`) mas não foram executados headless nesta sessão
+5. `wolfkrow-audit` (4 auditores) não executado — fan-out pesado, fora do gate
+
+---
+
 ## Chat & Orquestração (15)
 
 | # | Funcionalidade | SPEC | Status | Commit/FIX |
