@@ -15,7 +15,7 @@ export interface DeleteDocumentOutput {
 export class DeleteDocumentUseCase implements UseCase<DeleteDocumentInput, DeleteDocumentOutput> {
   constructor(
     private readonly docRepo: KnowledgeDocRepo,
-    private readonly chunkRepo: KnowledgeChunkRepo,
+    private readonly chunkRepo: KnowledgeChunkRepo
   ) {}
 
   async execute(input: DeleteDocumentInput): Promise<DeleteDocumentOutput> {

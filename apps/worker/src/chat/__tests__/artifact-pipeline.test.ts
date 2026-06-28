@@ -5,7 +5,8 @@ import { createArtifactPipeline } from '../artifact-pipeline';
 vi.mock('@wolfkrow/infra', () => ({
   ArtifactDetector: class {
     detect(toolName: string, _input: unknown, result: { output: string | null }) {
-      if (toolName === 'excalidraw') return { toJSON: () => ({ type: 'excalidraw', payload: result.output }) };
+      if (toolName === 'excalidraw')
+        return { toJSON: () => ({ type: 'excalidraw', payload: result.output }) };
       return null;
     }
   },

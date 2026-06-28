@@ -16,6 +16,7 @@ O Wolfkrow Tool precisa armazenar secrets (API keys, OAuth tokens) com seguranç
 - Codex OAuth tokens
 
 Opções:
+
 1. **Plaintext em arquivos**: zero security
 2. **Encrypted files**: próprio crypto é arriscado
 3. **Environment variables**: visíveis em `ps aux`, logs, etc
@@ -36,15 +37,15 @@ export class KeytarSecretsAdapter implements SecretsAdapter {
   async get(key: string): Promise<string | null> {
     return keytar.getPassword(SERVICE_NAME, key);
   }
-  
+
   async set(key: string, value: string): Promise<void> {
     await keytar.setPassword(SERVICE_NAME, key, value);
   }
-  
+
   async delete(key: string): Promise<boolean> {
     return keytar.deletePassword(SERVICE_NAME, key);
   }
-  
+
   async list(): Promise<string[]> {
     const all = await keytar.findCredentials(SERVICE_NAME);
     return all.map((c) => c.account);
@@ -114,12 +115,12 @@ const anthropic = new Anthropic({ apiKey: anthropicKey });
 // Next.js Route Handler
 export async function GET(req: NextRequest) {
   const session = await requireSession();
-  
+
   // Worker has access to keychain
   const response = await fetch('http://localhost:4000/config/anthropic', {
-    headers: { 'Authorization': `Bearer ${session.token}` },
+    headers: { Authorization: `Bearer ${session.token}` },
   });
-  
+
   // Returns masked key only (sk-ant-...XXXX)
   const { maskedKey } = await response.json();
   return Response.json({ maskedKey });
@@ -132,7 +133,7 @@ export async function GET(req: NextRequest) {
 // apps/web/components/vault/SecretCard.tsx
 export function SecretCard({ name, maskedValue }: { name: string; maskedValue: string }) {
   const [show, setShow] = useState(false);
-  
+
   return (
     <Card>
       <CardHeader>
@@ -155,9 +156,9 @@ export function SecretCard({ name, maskedValue }: { name: string; maskedValue: s
 // packages/infra/src/secrets/keytar-adapter.ts
 async get(key: string): Promise<string | null> {
   const value = await keytar.getPassword(SERVICE_NAME, key);
-  
+
   logger.info({ key, accessed: true }, 'secret accessed');
-  
+
   // Audit log to DB
   await auditLog.record({
     action: 'secret.access',
@@ -165,7 +166,7 @@ async get(key: string): Promise<string | null> {
     timestamp: new Date(),
     userId: session.userId,
   });
-  
+
   return value;
 }
 ```

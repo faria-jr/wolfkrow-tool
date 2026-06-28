@@ -35,7 +35,7 @@ export interface UploadedAttachment {
 export function processUploadedFile(
   filename: string,
   mimeType: string,
-  buf: ArrayBuffer,
+  buf: ArrayBuffer
 ): UploadedAttachment {
   if (buf.byteLength > UPLOAD_MAX_BYTES) {
     throw new Error(`Arquivo excede o limite de 5 MB.`);

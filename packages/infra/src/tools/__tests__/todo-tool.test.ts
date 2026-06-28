@@ -80,7 +80,10 @@ describe('TodoTool', () => {
   it('todos are scoped per agentId', async () => {
     const tool = new TodoTool();
     await tool.execute({ operation: 'add', content: 'for agent1' }, ctx);
-    const otherCtx = { userId: 'u1', agentId: `other-${Date.now()}-${Math.random().toString(36).slice(2)}` };
+    const otherCtx = {
+      userId: 'u1',
+      agentId: `other-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    };
     const r = await tool.execute({ operation: 'list' }, otherCtx);
     expect(r.output).toBe('[]');
   });

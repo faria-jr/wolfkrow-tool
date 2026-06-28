@@ -66,12 +66,36 @@ async function createTaskHandler(req: FastifyRequest, reply: FastifyReply) {
 export async function schedulerRoutes(server: AuthFastifyInstance) {
   server.get('/tasks', { preHandler: [server.authenticate] }, listTasksHandler);
   server.post('/tasks', { preHandler: [server.authenticate] }, createTaskHandler);
-  server.patch<{ Params: { id: string } }>('/tasks/:id', { preHandler: [server.authenticate] }, updateTaskHandler);
-  server.delete<{ Params: { id: string } }>('/tasks/:id', { preHandler: [server.authenticate] }, deleteTaskHandler);
-  server.post<{ Params: { id: string } }>('/tasks/:id/run', { preHandler: [server.authenticate] }, runTaskHandler);
-  server.get<{ Params: { id: string } }>('/tasks/:id/runs', { preHandler: [server.authenticate] }, listTaskRunsHandler);
-  server.get('/runs/pending-review', { preHandler: [server.authenticate] }, listPendingReviewsHandler);
-  server.post<{ Params: { id: string } }>('/runs/:id/review', { preHandler: [server.authenticate] }, reviewRunHandler);
+  server.patch<{ Params: { id: string } }>(
+    '/tasks/:id',
+    { preHandler: [server.authenticate] },
+    updateTaskHandler
+  );
+  server.delete<{ Params: { id: string } }>(
+    '/tasks/:id',
+    { preHandler: [server.authenticate] },
+    deleteTaskHandler
+  );
+  server.post<{ Params: { id: string } }>(
+    '/tasks/:id/run',
+    { preHandler: [server.authenticate] },
+    runTaskHandler
+  );
+  server.get<{ Params: { id: string } }>(
+    '/tasks/:id/runs',
+    { preHandler: [server.authenticate] },
+    listTaskRunsHandler
+  );
+  server.get(
+    '/runs/pending-review',
+    { preHandler: [server.authenticate] },
+    listPendingReviewsHandler
+  );
+  server.post<{ Params: { id: string } }>(
+    '/runs/:id/review',
+    { preHandler: [server.authenticate] },
+    reviewRunHandler
+  );
 }
 
 async function listTasksHandler(req: FastifyRequest, reply: FastifyReply) {
@@ -81,7 +105,10 @@ async function listTasksHandler(req: FastifyRequest, reply: FastifyReply) {
   return reply.send({ tasks: tasks.map((t) => t.toProps()), count: tasks.length });
 }
 
-async function updateTaskHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+async function updateTaskHandler(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
   const userId = (req as unknown as { user: { userId: string } }).user.userId;
   const body = validate(updateTaskBody, req.body);
   const { taskRepo } = makeRepos();
@@ -98,14 +125,20 @@ async function updateTaskHandler(req: FastifyRequest<{ Params: { id: string } }>
   return reply.send({ task: result.task.toProps() });
 }
 
-async function deleteTaskHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+async function deleteTaskHandler(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
   const userId = (req as unknown as { user: { userId: string } }).user.userId;
   const { taskRepo } = makeRepos();
   await new DeleteScheduledTaskUseCase(taskRepo).execute({ taskId: req.params.id, userId });
   return reply.send({ deleted: true });
 }
 
-async function runTaskHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+async function runTaskHandler(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
   const { taskRepo, runRepo } = makeRepos();
   const executor = createAgentExecutor({ logger: req.server.log as unknown as Logger });
   const uc = new RunScheduledTaskUseCase(taskRepo, runRepo, executor);
@@ -113,7 +146,10 @@ async function runTaskHandler(req: FastifyRequest<{ Params: { id: string } }>, r
   return reply.code(202).send({ run: result.run.toProps() });
 }
 
-async function listTaskRunsHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+async function listTaskRunsHandler(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
   const { runRepo } = makeRepos();
   const runs = await runRepo.findByTaskId(req.params.id, 20);
   return reply.send({ runs: runs.map((r) => r.toProps()) });
@@ -126,11 +162,15 @@ async function listPendingReviewsHandler(req: FastifyRequest, reply: FastifyRepl
   return reply.send({ runs: runs.map((r) => r.toProps()), count: runs.length });
 }
 
-async function reviewRunHandler(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+async function reviewRunHandler(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
   const { runRepo } = makeRepos();
   const body = validate(reviewRunBody, req.body);
   const result = await new ReviewTaskRunUseCase(runRepo).execute({
-    runId: req.params.id, verdict: body.verdict,
+    runId: req.params.id,
+    verdict: body.verdict,
     ...(body.note !== undefined ? { note: body.note } : {}),
   });
   return reply.send({ run: result.run.toProps() });

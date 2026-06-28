@@ -55,7 +55,9 @@ interface TokenInputProps {
 function TokenInput({ id, label, value, onChange }: TokenInputProps) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-xs font-medium">{label}</label>
+      <label htmlFor={id} className="text-xs font-medium">
+        {label}
+      </label>
       <input
         id={id}
         aria-label={label}
@@ -64,7 +66,7 @@ function TokenInput({ id, label, value, onChange }: TokenInputProps) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="0"
-        className="rounded border border-input bg-background px-2 py-1 text-sm"
+        className="border-input bg-background rounded border px-2 py-1 text-sm"
       />
     </div>
   );
@@ -78,18 +80,22 @@ interface ModelSelectorProps {
 function ModelSelector({ value, onChange }: ModelSelectorProps) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor="pc-model" className="text-xs font-medium">Model</label>
+      <label htmlFor="pc-model" className="text-xs font-medium">
+        Model
+      </label>
       <select
         id="pc-model"
         aria-label="Model"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded border border-input bg-background px-2 py-1 text-sm"
+        className="border-input bg-background rounded border px-2 py-1 text-sm"
       >
         {GROUPED_MODELS.map((g) => (
           <optgroup key={g.providerId} label={g.providerId}>
             {g.models.map((m) => (
-              <option key={m} value={m}>{m}</option>
+              <option key={m} value={m}>
+                {m}
+              </option>
             ))}
           </optgroup>
         ))}
@@ -108,14 +114,14 @@ interface CostResultProps {
 
 function CostResult({ known, costUsd }: CostResultProps) {
   return (
-    <div className="mt-1 rounded bg-muted/50 p-3">
-      <p className="text-xs text-muted-foreground">Estimated cost</p>
+    <div className="bg-muted/50 mt-1 rounded p-3">
+      <p className="text-muted-foreground text-xs">Estimated cost</p>
       {known ? (
         <p data-testid="estimated-cost" className="text-xl font-bold">
           {formatCost(costUsd ?? 0)}
         </p>
       ) : (
-        <p data-testid="pricing-unknown" className="text-sm font-medium text-muted-foreground">
+        <p data-testid="pricing-unknown" className="text-muted-foreground text-sm font-medium">
           Pricing unknown for this model
         </p>
       )}
@@ -132,7 +138,12 @@ interface TokenFields {
 
 export function PricingCalculatorCard() {
   const [model, setModel] = useState('claude-sonnet-4-6');
-  const [tokens, setTokens] = useState<TokenFields>({ input: '', output: '', cacheRead: '', cacheWrite: '' });
+  const [tokens, setTokens] = useState<TokenFields>({
+    input: '',
+    output: '',
+    cacheRead: '',
+    cacheWrite: '',
+  });
 
   const known = useMemo(() => hasKnownPricing(model), [model]);
 
@@ -151,20 +162,41 @@ export function PricingCalculatorCard() {
   const set = (key: keyof TokenFields) => (v: string) => setTokens((t) => ({ ...t, [key]: v }));
 
   return (
-    <div className="rounded border border-border bg-card p-4">
+    <div className="border-border bg-card rounded border p-4">
       <h2 className="mb-1 text-sm font-semibold">Pricing Calculator</h2>
-      <p className="mb-3 text-xs text-muted-foreground">
-        Estimate the per-turn cost for any model in the registry. Numbers are computed live from the canonical pricing data.
+      <p className="text-muted-foreground mb-3 text-xs">
+        Estimate the per-turn cost for any model in the registry. Numbers are computed live from the
+        canonical pricing data.
       </p>
 
       <div className="flex flex-col gap-3">
         <ModelSelector value={model} onChange={setModel} />
 
         <div className="grid grid-cols-2 gap-3">
-          <TokenInput id="pc-input" label="Input tokens" value={tokens.input} onChange={set('input')} />
-          <TokenInput id="pc-output" label="Output tokens" value={tokens.output} onChange={set('output')} />
-          <TokenInput id="pc-cache-read" label="Cache read tokens" value={tokens.cacheRead} onChange={set('cacheRead')} />
-          <TokenInput id="pc-cache-write" label="Cache write tokens" value={tokens.cacheWrite} onChange={set('cacheWrite')} />
+          <TokenInput
+            id="pc-input"
+            label="Input tokens"
+            value={tokens.input}
+            onChange={set('input')}
+          />
+          <TokenInput
+            id="pc-output"
+            label="Output tokens"
+            value={tokens.output}
+            onChange={set('output')}
+          />
+          <TokenInput
+            id="pc-cache-read"
+            label="Cache read tokens"
+            value={tokens.cacheRead}
+            onChange={set('cacheRead')}
+          />
+          <TokenInput
+            id="pc-cache-write"
+            label="Cache write tokens"
+            value={tokens.cacheWrite}
+            onChange={set('cacheWrite')}
+          />
         </div>
 
         <CostResult known={known} costUsd={costUsd} />

@@ -13,7 +13,7 @@ export class AnthropicHyde implements HydePort {
   constructor(
     private readonly apiKey: string,
     private readonly model = 'claude-haiku-4-5',
-    private readonly endpoint = 'https://api.anthropic.com/v1/messages',
+    private readonly endpoint = 'https://api.anthropic.com/v1/messages'
   ) {}
 
   async generate(query: string): Promise<string | null> {

@@ -92,7 +92,7 @@ async function listSheets(args: Record<string, unknown>): Promise<McpToolResult>
   return text(
     await sheetsFetch(`/${encodeURIComponent(spreadsheetId)}?fields=sheets.properties`, {
       method: 'GET',
-    }),
+    })
   );
 }
 
@@ -121,7 +121,7 @@ async function appendRows(args: Record<string, unknown>): Promise<McpToolResult>
     await sheetsFetch(url, {
       method: 'POST',
       body: JSON.stringify({ values }),
-    }),
+    })
   );
 }
 

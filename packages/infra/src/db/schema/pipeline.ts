@@ -15,7 +15,16 @@ export const pipelineProjects = sqliteTable('pipeline_projects', {
   name: shortText('name').notNull(),
   description: text('description'),
   currentStage: text('current_stage', {
-    enum: ['discovery', 'spec_build', 'spec_validate', 'approval', 'design', 'design_lock', 'implementation', 'completed'],
+    enum: [
+      'discovery',
+      'spec_build',
+      'spec_validate',
+      'approval',
+      'design',
+      'design_lock',
+      'implementation',
+      'completed',
+    ],
   }).notNull(),
   status: text('status', {
     enum: ['running', 'paused', 'awaiting_approval', 'completed', 'failed', 'cancelled'],
@@ -39,7 +48,15 @@ export const pipelinePhases = sqliteTable('pipeline_phases', {
     .notNull()
     .references(() => pipelineProjects.id, { onDelete: 'cascade' }),
   stage: text('stage', {
-    enum: ['discovery', 'spec_build', 'spec_validate', 'approval', 'implementation'],
+    enum: [
+      'discovery',
+      'spec_build',
+      'spec_validate',
+      'approval',
+      'design',
+      'design_lock',
+      'implementation',
+    ],
   }).notNull(),
   status: text('status', {
     enum: ['pending', 'in_progress', 'awaiting_user', 'completed', 'failed', 'skipped'],

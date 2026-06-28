@@ -10,7 +10,9 @@ import type { SkillData } from './skill-list';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-interface Props { skillId: string; }
+interface Props {
+  skillId: string;
+}
 
 async function fetchSkill(skillId: string): Promise<SkillData> {
   const res = await fetch(`/api/skills/${skillId}`, { credentials: 'include' });
@@ -37,7 +39,7 @@ async function saveSkill(skillId: string, values: SkillEditorValues): Promise<vo
 
 function LoadingState() {
   return (
-    <div className="flex items-center gap-2 text-muted-foreground">
+    <div className="text-muted-foreground flex items-center gap-2">
       <Loader2 className="h-4 w-4 animate-spin" />
       Loading skill…
     </div>
@@ -72,7 +74,9 @@ export function SkillEditScreen({ skillId }: Props) {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [skillId]);
 
   const save = async (values: SkillEditorValues) => {

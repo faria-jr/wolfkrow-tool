@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto';
 
 export type EnrichStatus = 'pending' | 'validator' | 'enricher' | 'completed' | 'cancelled';
 
-export interface EnrichMetrics { tokens: number; durationMs: number; }
+export interface EnrichMetrics {
+  tokens: number;
+  durationMs: number;
+}
 
 export interface EnrichSessionProps {
   id: string;
@@ -68,10 +71,16 @@ export class EnrichSession {
 
   toProps(): EnrichSessionProps {
     return {
-      id: this.id, userId: this.userId, specPath: this.specPath, status: this.status,
-      validatorAgentId: this.validatorAgentId, enricherAgentId: this.enricherAgentId,
-      validatorMetrics: this.validatorMetrics, enricherMetrics: this.enricherMetrics,
-      startedAt: this.startedAt, completedAt: this.completedAt,
+      id: this.id,
+      userId: this.userId,
+      specPath: this.specPath,
+      status: this.status,
+      validatorAgentId: this.validatorAgentId,
+      enricherAgentId: this.enricherAgentId,
+      validatorMetrics: this.validatorMetrics,
+      enricherMetrics: this.enricherMetrics,
+      startedAt: this.startedAt,
+      completedAt: this.completedAt,
     };
   }
 
@@ -89,7 +98,9 @@ export class EnrichSession {
 
   completeEnricher(tokens: number, durationMs: number, now = new Date()): EnrichSession {
     return EnrichSession.fromProps({
-      ...this.toProps(), status: 'completed', completedAt: now,
+      ...this.toProps(),
+      status: 'completed',
+      completedAt: now,
       enricherMetrics: { tokens, durationMs },
     });
   }

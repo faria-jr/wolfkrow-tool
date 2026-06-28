@@ -1,5 +1,4 @@
-import type {
-  PlainPassword} from '@wolfkrow/domain';
+import type { PlainPassword } from '@wolfkrow/domain';
 import {
   type LockoutPolicy,
   type PasswordHasher,
@@ -27,7 +26,7 @@ export class LoginUseCase implements UseCase<LoginInput, LoginOutput> {
   constructor(
     private readonly userRepo: UserRepo,
     private readonly hasher: PasswordHasher,
-    private readonly lockout: LockoutPolicy,
+    private readonly lockout: LockoutPolicy
   ) {}
 
   async execute(input: LoginInput): Promise<LoginOutput> {

@@ -44,15 +44,15 @@ export class KeytarSecretsAdapter {
   async get(key: string): Promise<string | null> {
     return keytar.getPassword(SERVICE, key);
   }
-  
+
   async set(key: string, value: string): Promise<void> {
     await keytar.setPassword(SERVICE, key, value);
   }
-  
+
   async delete(key: string): Promise<boolean> {
     return keytar.deletePassword(SERVICE, key);
   }
-  
+
   async list(): Promise<string[]> {
     const all = await keytar.findCredentials(SERVICE);
     return all.map((c) => c.account);
@@ -70,16 +70,16 @@ export class KeytarSecretsAdapter {
 export class StoreSecret {
   constructor(
     @inject('SecretsAdapter') private secrets: SecretsAdapter,
-    @inject('SecretsMetadataRepo') private repo: SecretsMetadataRepo,
+    @inject('SecretsMetadataRepo') private repo: SecretsMetadataRepo
   ) {}
-  
+
   async execute(input: StoreSecretInput): Promise<void> {
     // 1. Validate
     StoreSecretInputSchema.parse(input);
-    
+
     // 2. Store in keytar
     await this.secrets.set(input.key, input.value);
-    
+
     // 3. Update metadata
     await this.repo.upsert({
       key: input.key,
@@ -102,30 +102,34 @@ export class StoreSecret {
 'use client';
 export function VaultPage() {
   const { data: secrets } = useSecrets();
-  
+
   return (
     <div className="space-y-4">
       <Alert>
         <Lock className="h-4 w-4" />
         <AlertTitle>Encrypted with OS Keychain</AlertTitle>
         <AlertDescription>
-          Secrets are stored using your operating system's secure storage.
-          On macOS: Keychain. On Windows: Credential Vault. On Linux: Secret Service.
+          Secrets are stored using your operating system's secure storage. On macOS: Keychain. On
+          Windows: Credential Vault. On Linux: Secret Service.
         </AlertDescription>
       </Alert>
-      
+
       <DataTable
         data={secrets}
         columns={[
           { accessorKey: 'displayName', header: 'Name' },
           { accessorKey: 'key', header: 'Key' },
           { accessorKey: 'category', header: 'Category' },
-          { accessorKey: 'lastAccessed', header: 'Last Accessed', cell: (s) => formatRelativeTime(s.lastAccessed) },
+          {
+            accessorKey: 'lastAccessed',
+            header: 'Last Accessed',
+            cell: (s) => formatRelativeTime(s.lastAccessed),
+          },
           { id: 'value', header: 'Value', cell: (s) => <SecretValue secret={s} /> },
           { id: 'actions', cell: (s) => <SecretActions secret={s} /> },
         ]}
       />
-      
+
       <Button onClick={() => setShowAddModal(true)}>Add Secret</Button>
     </div>
   );

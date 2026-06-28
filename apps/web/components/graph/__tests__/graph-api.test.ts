@@ -13,7 +13,11 @@ describe('graph-api', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('fetchGraph returns snapshot on ok', async () => {
-    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ nodes: [], edges: [] }) } as Response);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ nodes: [], edges: [] }),
+    } as Response);
     const result = await fetchGraph();
     expect(result).toEqual({ nodes: [], edges: [] });
   });
@@ -29,7 +33,11 @@ describe('graph-api', () => {
   });
 
   it('postIngest returns entity/edge counts', async () => {
-    fetchMock.mockResolvedValue({ ok: true, status: 200, json: async () => ({ entityCount: 3, edgeCount: 5 }) } as Response);
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ entityCount: 3, edgeCount: 5 }),
+    } as Response);
     expect(await postIngest('text')).toEqual({ entityCount: 3, edgeCount: 5 });
   });
 

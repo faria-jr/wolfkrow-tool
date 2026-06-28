@@ -111,7 +111,11 @@ export async function vaultRoutes(server: AuthFastifyInstance) {
     const userId = getUserId(req as { user?: { userId?: string } });
     const { key, value, displayName, category, description } = validate(storeBody, req.body);
     const { secret } = await storeUC.execute({
-      userId, key, value, displayName, category,
+      userId,
+      key,
+      value,
+      displayName,
+      category,
       ...(description !== undefined ? { description } : {}),
     });
     return reply.status(201).send({ secret: secret.toProps() });
@@ -149,7 +153,7 @@ function registerBackupRoutes(
   server: AuthFastifyInstance,
   listUC: ListSecretsUseCase,
   storeUC: StoreSecretUseCase,
-  getValueUC: GetSecretValueUseCase,
+  getValueUC: GetSecretValueUseCase
 ) {
   const auth = { onRequest: [server.authenticate] };
   server.post('/export', auth, async (req, reply) => {
@@ -159,7 +163,8 @@ function registerBackupRoutes(
     const exported: ExportedSecret[] = [];
     for (const s of secrets) {
       const { value } = await getValueUC.execute({ key: s.key });
-      if (value !== null) exported.push({ key: s.key, value, displayName: s.displayName, category: s.category });
+      if (value !== null)
+        exported.push({ key: s.key, value, displayName: s.displayName, category: s.category });
     }
     return reply.send({ payload: encryptVault(exported, passphrase) });
   });
@@ -168,12 +173,21 @@ function registerBackupRoutes(
     const userId = getUserId(req as { user?: { userId?: string } });
     const { passphrase, payload } = validate(importBody, req.body);
     let secrets: ExportedSecret[];
-    try { secrets = decryptVault(payload, passphrase); }
-    catch { return reply.status(400).send({ error: 'Invalid passphrase or corrupted backup' }); }
+    try {
+      secrets = decryptVault(payload, passphrase);
+    } catch {
+      return reply.status(400).send({ error: 'Invalid passphrase or corrupted backup' });
+    }
     let imported = 0;
     for (const s of secrets) {
       const parsed = SecretCategorySchema.safeParse(s.category);
-      await storeUC.execute({ userId, key: s.key, value: s.value, displayName: s.displayName, category: parsed.success ? parsed.data : 'other' });
+      await storeUC.execute({
+        userId,
+        key: s.key,
+        value: s.value,
+        displayName: s.displayName,
+        category: parsed.success ? parsed.data : 'other',
+      });
       imported++;
     }
     return reply.send({ imported });

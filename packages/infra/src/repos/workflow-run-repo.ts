@@ -16,7 +16,11 @@ function toEntity(row: DbRow): WorkflowRun {
     workflowName: row.workflowName,
     status: row.status,
     input: fromJson<Record<string, unknown>>(row.input, {}),
-    output: fromJson<Record<string, unknown>>(row.output, undefined as unknown as Record<string, unknown>) ?? undefined,
+    output:
+      fromJson<Record<string, unknown>>(
+        row.output,
+        undefined as unknown as Record<string, unknown>
+      ) ?? undefined,
     error: row.error ?? undefined,
     startedAt: row.startedAt ?? undefined,
     completedAt: row.completedAt ?? undefined,
@@ -41,20 +45,34 @@ export class DrizzleWorkflowRunRepo implements WorkflowRunRepo {
 
   async save(run: WorkflowRun): Promise<WorkflowRun> {
     const p = run.toProps();
-    this.db.insert(workflowRuns).values({
-      id: p.id, userId: p.userId, workflowName: p.workflowName, status: p.status,
-      input: asJsonField(p.input), output: asJsonField(p.output), error: p.error ?? null,
-      startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-      metrics: asJsonField(p.metrics),
-      metadata: {}, createdAt: p.createdAt,
-    }).onConflictDoUpdate({
-      target: workflowRuns.id,
-      set: {
-        status: p.status, output: asJsonField(p.output), error: p.error ?? null,
-        startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
+    this.db
+      .insert(workflowRuns)
+      .values({
+        id: p.id,
+        userId: p.userId,
+        workflowName: p.workflowName,
+        status: p.status,
+        input: asJsonField(p.input),
+        output: asJsonField(p.output),
+        error: p.error ?? null,
+        startedAt: p.startedAt ?? null,
+        completedAt: p.completedAt ?? null,
         metrics: asJsonField(p.metrics),
-      },
-    }).run();
+        metadata: {},
+        createdAt: p.createdAt,
+      })
+      .onConflictDoUpdate({
+        target: workflowRuns.id,
+        set: {
+          status: p.status,
+          output: asJsonField(p.output),
+          error: p.error ?? null,
+          startedAt: p.startedAt ?? null,
+          completedAt: p.completedAt ?? null,
+          metrics: asJsonField(p.metrics),
+        },
+      })
+      .run();
     return run;
   }
 }

@@ -15,21 +15,41 @@ import {
 
 class InMemoryTaskRepo implements ScheduledTaskRepo {
   readonly store = new Map<string, ScheduledTask>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByUserId(userId: string) { return [...this.store.values()].filter((t) => t.userId === userId); }
-  async findEnabledDueBy(now: Date) {
-    return [...this.store.values()].filter((t) => t.enabled && (t.nextRunAt == null || t.nextRunAt <= now));
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
   }
-  async save(task: ScheduledTask) { this.store.set(task.id, task); return task; }
-  async delete(id: string) { this.store.delete(id); }
+  async findByUserId(userId: string) {
+    return [...this.store.values()].filter((t) => t.userId === userId);
+  }
+  async findEnabledDueBy(now: Date) {
+    return [...this.store.values()].filter(
+      (t) => t.enabled && (t.nextRunAt == null || t.nextRunAt <= now)
+    );
+  }
+  async save(task: ScheduledTask) {
+    this.store.set(task.id, task);
+    return task;
+  }
+  async delete(id: string) {
+    this.store.delete(id);
+  }
 }
 
 class InMemoryRunRepo implements TaskRunRepo {
   readonly store = new Map<string, TaskRun>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByTaskId(taskId: string) { return [...this.store.values()].filter((r) => r.taskId === taskId); }
-  async findAwaitingReview(_userId: string) { return [...this.store.values()].filter((r) => r.status === 'awaiting_review'); }
-  async save(run: TaskRun) { this.store.set(run.id, run); return run; }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByTaskId(taskId: string) {
+    return [...this.store.values()].filter((r) => r.taskId === taskId);
+  }
+  async findAwaitingReview(_userId: string) {
+    return [...this.store.values()].filter((r) => r.status === 'awaiting_review');
+  }
+  async save(run: TaskRun) {
+    this.store.set(run.id, run);
+    return run;
+  }
 }
 
 // ── CreateScheduledTaskUseCase ────────────────────────────────────────────────
@@ -37,7 +57,9 @@ class InMemoryRunRepo implements TaskRunRepo {
 describe('CreateScheduledTaskUseCase', () => {
   let repo: InMemoryTaskRepo;
 
-  beforeEach(() => { repo = new InMemoryTaskRepo(); });
+  beforeEach(() => {
+    repo = new InMemoryTaskRepo();
+  });
 
   it('creates a scheduled task', async () => {
     const uc = new CreateScheduledTaskUseCase(repo);
@@ -55,8 +77,9 @@ describe('CreateScheduledTaskUseCase', () => {
 
   it('throws ValidationError for invalid cron', async () => {
     const uc = new CreateScheduledTaskUseCase(repo);
-    await expect(uc.execute({ userId: 'u1', name: 'X', cronExpression: 'not-valid', prompt: 'p' }))
-      .rejects.toThrow(ValidationError);
+    await expect(
+      uc.execute({ userId: 'u1', name: 'X', cronExpression: 'not-valid', prompt: 'p' })
+    ).rejects.toThrow(ValidationError);
   });
 });
 
@@ -67,24 +90,42 @@ describe('UpdateScheduledTaskUseCase', () => {
 
   beforeEach(async () => {
     repo = new InMemoryTaskRepo();
-    await repo.save(ScheduledTask.create({
-      userId: 'u1', name: 'Daily', cronExpression: '0 9 * * *', prompt: 'p',
-      timezone: 'UTC', enabled: true, description: undefined, agentId: undefined,
-      config: {}, tags: [], lastRunAt: undefined, nextRunAt: undefined,
-    }));
+    await repo.save(
+      ScheduledTask.create({
+        userId: 'u1',
+        name: 'Daily',
+        cronExpression: '0 9 * * *',
+        prompt: 'p',
+        timezone: 'UTC',
+        enabled: true,
+        description: undefined,
+        agentId: undefined,
+        config: {},
+        tags: [],
+        lastRunAt: undefined,
+        nextRunAt: undefined,
+      })
+    );
   });
 
   it('patches name and enabled', async () => {
     const uc = new UpdateScheduledTaskUseCase(repo);
     const task = [...repo.store.values()][0]!;
-    const result = await uc.execute({ taskId: task.id, userId: 'u1', name: 'Weekly', enabled: false });
+    const result = await uc.execute({
+      taskId: task.id,
+      userId: 'u1',
+      name: 'Weekly',
+      enabled: false,
+    });
     expect(result.task.name).toBe('Weekly');
     expect(result.task.enabled).toBe(false);
   });
 
   it('throws NotFoundError for unknown id', async () => {
     const uc = new UpdateScheduledTaskUseCase(repo);
-    await expect(uc.execute({ taskId: 'bad', userId: 'u1', name: 'X' })).rejects.toThrow(NotFoundError);
+    await expect(uc.execute({ taskId: 'bad', userId: 'u1', name: 'X' })).rejects.toThrow(
+      NotFoundError
+    );
   });
 });
 
@@ -95,9 +136,54 @@ describe('ListScheduledTasksUseCase', () => {
 
   beforeEach(async () => {
     repo = new InMemoryTaskRepo();
-    await repo.save(ScheduledTask.create({ userId: 'u1', name: 'A', cronExpression: '0 9 * * *', prompt: 'p', timezone: 'UTC', enabled: true, description: undefined, agentId: undefined, config: {}, tags: [], lastRunAt: undefined, nextRunAt: undefined }));
-    await repo.save(ScheduledTask.create({ userId: 'u1', name: 'B', cronExpression: '0 10 * * *', prompt: 'p', timezone: 'UTC', enabled: false, description: undefined, agentId: undefined, config: {}, tags: [], lastRunAt: undefined, nextRunAt: undefined }));
-    await repo.save(ScheduledTask.create({ userId: 'u2', name: 'C', cronExpression: '0 11 * * *', prompt: 'p', timezone: 'UTC', enabled: true, description: undefined, agentId: undefined, config: {}, tags: [], lastRunAt: undefined, nextRunAt: undefined }));
+    await repo.save(
+      ScheduledTask.create({
+        userId: 'u1',
+        name: 'A',
+        cronExpression: '0 9 * * *',
+        prompt: 'p',
+        timezone: 'UTC',
+        enabled: true,
+        description: undefined,
+        agentId: undefined,
+        config: {},
+        tags: [],
+        lastRunAt: undefined,
+        nextRunAt: undefined,
+      })
+    );
+    await repo.save(
+      ScheduledTask.create({
+        userId: 'u1',
+        name: 'B',
+        cronExpression: '0 10 * * *',
+        prompt: 'p',
+        timezone: 'UTC',
+        enabled: false,
+        description: undefined,
+        agentId: undefined,
+        config: {},
+        tags: [],
+        lastRunAt: undefined,
+        nextRunAt: undefined,
+      })
+    );
+    await repo.save(
+      ScheduledTask.create({
+        userId: 'u2',
+        name: 'C',
+        cronExpression: '0 11 * * *',
+        prompt: 'p',
+        timezone: 'UTC',
+        enabled: true,
+        description: undefined,
+        agentId: undefined,
+        config: {},
+        tags: [],
+        lastRunAt: undefined,
+        nextRunAt: undefined,
+      })
+    );
   });
 
   it('lists tasks for user', async () => {
@@ -114,7 +200,22 @@ describe('DeleteScheduledTaskUseCase', () => {
 
   beforeEach(async () => {
     repo = new InMemoryTaskRepo();
-    await repo.save(ScheduledTask.create({ userId: 'u1', name: 'A', cronExpression: '0 9 * * *', prompt: 'p', timezone: 'UTC', enabled: true, description: undefined, agentId: undefined, config: {}, tags: [], lastRunAt: undefined, nextRunAt: undefined }));
+    await repo.save(
+      ScheduledTask.create({
+        userId: 'u1',
+        name: 'A',
+        cronExpression: '0 9 * * *',
+        prompt: 'p',
+        timezone: 'UTC',
+        enabled: true,
+        description: undefined,
+        agentId: undefined,
+        config: {},
+        tags: [],
+        lastRunAt: undefined,
+        nextRunAt: undefined,
+      })
+    );
   });
 
   it('removes task', async () => {
@@ -136,12 +237,29 @@ describe('RunScheduledTaskUseCase', () => {
   let taskRepo: InMemoryTaskRepo;
   let runRepo: InMemoryRunRepo;
 
-  const mockExecutor = { execute: vi.fn().mockResolvedValue({ status: 'validated' as const, output: { content: 'ok' } }) };
+  const mockExecutor = {
+    execute: vi.fn().mockResolvedValue({ status: 'validated' as const, output: { content: 'ok' } }),
+  };
 
   beforeEach(async () => {
     taskRepo = new InMemoryTaskRepo();
     runRepo = new InMemoryRunRepo();
-    await taskRepo.save(ScheduledTask.create({ userId: 'u1', name: 'A', cronExpression: '0 9 * * *', prompt: 'go', timezone: 'UTC', enabled: true, description: undefined, agentId: undefined, config: {}, tags: [], lastRunAt: undefined, nextRunAt: undefined }));
+    await taskRepo.save(
+      ScheduledTask.create({
+        userId: 'u1',
+        name: 'A',
+        cronExpression: '0 9 * * *',
+        prompt: 'go',
+        timezone: 'UTC',
+        enabled: true,
+        description: undefined,
+        agentId: undefined,
+        config: {},
+        tags: [],
+        lastRunAt: undefined,
+        nextRunAt: undefined,
+      })
+    );
   });
 
   it('executes task and saves run as validated', async () => {
@@ -173,9 +291,28 @@ describe('ReviewTaskRunUseCase', () => {
   beforeEach(async () => {
     taskRepo = new InMemoryTaskRepo();
     runRepo = new InMemoryRunRepo();
-    await taskRepo.save(ScheduledTask.create({ userId: 'u1', name: 'A', cronExpression: '0 9 * * *', prompt: 'p', timezone: 'UTC', enabled: true, description: undefined, agentId: undefined, config: {}, tags: [], lastRunAt: undefined, nextRunAt: undefined }));
+    await taskRepo.save(
+      ScheduledTask.create({
+        userId: 'u1',
+        name: 'A',
+        cronExpression: '0 9 * * *',
+        prompt: 'p',
+        timezone: 'UTC',
+        enabled: true,
+        description: undefined,
+        agentId: undefined,
+        config: {},
+        tags: [],
+        lastRunAt: undefined,
+        nextRunAt: undefined,
+      })
+    );
     const task = [...taskRepo.store.values()][0]!;
-    await runRepo.save(TaskRun.create({ taskId: task.id }).start().complete('awaiting_review', { output: { content: 'x' } }));
+    await runRepo.save(
+      TaskRun.create({ taskId: task.id })
+        .start()
+        .complete('awaiting_review', { output: { content: 'x' } })
+    );
   });
 
   it('validates a run', async () => {
@@ -195,6 +332,8 @@ describe('ReviewTaskRunUseCase', () => {
 
   it('throws NotFoundError for unknown run', async () => {
     const uc = new ReviewTaskRunUseCase(runRepo);
-    await expect(uc.execute({ runId: 'none', verdict: 'validated' })).rejects.toThrow(NotFoundError);
+    await expect(uc.execute({ runId: 'none', verdict: 'validated' })).rejects.toThrow(
+      NotFoundError
+    );
   });
 });

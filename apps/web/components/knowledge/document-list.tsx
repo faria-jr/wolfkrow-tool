@@ -43,18 +43,24 @@ interface DocumentItemProps {
   onRequestDelete: (doc: DocumentProps) => void;
 }
 
-const DocumentItem = memo(function DocumentItem({ doc, deleting, onRequestDelete }: DocumentItemProps) {
+const DocumentItem = memo(function DocumentItem({
+  doc,
+  deleting,
+  onRequestDelete,
+}: DocumentItemProps) {
   return (
     <div className="flex items-center gap-3 px-4 py-3">
-      <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+      <FileText className="text-muted-foreground h-5 w-5 shrink-0" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{doc.filename}</p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           {formatBytes(doc.size)} · {doc.chunkCount} chunks
         </p>
-        {doc.error && <p className="text-xs text-destructive">{doc.error}</p>}
+        {doc.error && <p className="text-destructive text-xs">{doc.error}</p>}
       </div>
-      <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[doc.status])}>
+      <span
+        className={cn('rounded-full px-2 py-0.5 text-xs font-medium', STATUS_BADGE[doc.status])}
+      >
         {doc.status}
       </span>
       <Button
@@ -64,11 +70,7 @@ const DocumentItem = memo(function DocumentItem({ doc, deleting, onRequestDelete
         aria-label={`Delete ${doc.filename}`}
         onClick={() => onRequestDelete(doc)}
       >
-        {deleting ? (
-          <RefreshCw className="h-4 w-4 animate-spin" />
-        ) : (
-          <Trash2 className="h-4 w-4" />
-        )}
+        {deleting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
       </Button>
     </div>
   );
@@ -105,27 +107,30 @@ function useDocumentDelete(onDeleted: () => void): DeleteState {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingDoc, setPendingDoc] = useState<DocumentProps | null>(null);
 
-  const confirmDelete = useCallback(async (doc: DocumentProps) => {
-    setDeletingId(doc.id);
-    setPendingDoc(null);
-    try {
-      const res = await fetch(`/api/knowledge/documents/${doc.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: string } | null;
-        toast.error(data?.error ?? 'Failed to delete document');
-        return;
+  const confirmDelete = useCallback(
+    async (doc: DocumentProps) => {
+      setDeletingId(doc.id);
+      setPendingDoc(null);
+      try {
+        const res = await fetch(`/api/knowledge/documents/${doc.id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => null)) as { error?: string } | null;
+          toast.error(data?.error ?? 'Failed to delete document');
+          return;
+        }
+        toast.success('Document deleted');
+        onDeleted();
+      } catch {
+        toast.error('Failed to delete document');
+      } finally {
+        setDeletingId(null);
       }
-      toast.success('Document deleted');
-      onDeleted();
-    } catch {
-      toast.error('Failed to delete document');
-    } finally {
-      setDeletingId(null);
-    }
-  }, [onDeleted]);
+    },
+    [onDeleted]
+  );
 
   return {
     deletingId,
@@ -141,7 +146,7 @@ export function DocumentList({ documents, onDeleted }: Props) {
 
   if (documents.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+      <div className="text-muted-foreground flex flex-col items-center justify-center py-12">
         <FileText className="mb-3 h-10 w-10 opacity-40" />
         <p className="text-sm">No documents yet. Upload some files above.</p>
       </div>
@@ -159,9 +164,7 @@ export function DocumentList({ documents, onDeleted }: Props) {
         open={del.pendingDoc !== null}
         title="Delete document"
         description={
-          del.pendingDoc
-            ? `Delete "${del.pendingDoc.filename}"? This cannot be undone.`
-            : ''
+          del.pendingDoc ? `Delete "${del.pendingDoc.filename}"? This cannot be undone.` : ''
         }
         confirmLabel="Delete"
         onConfirm={() => del.pendingDoc && void del.confirmDelete(del.pendingDoc)}

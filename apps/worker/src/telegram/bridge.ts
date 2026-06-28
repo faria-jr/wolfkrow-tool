@@ -42,7 +42,7 @@ export class TelegramBridge {
     this.bot.onText(/\/start/, (msg) => {
       void this.bot?.sendMessage(
         msg.chat.id,
-        'Welcome to Wolfkrow! Use /pair <code> to connect your account.',
+        'Welcome to Wolfkrow! Use /pair <code> to connect your account.'
       );
     });
 
@@ -59,7 +59,10 @@ export class TelegramBridge {
       entry.telegramId = telegramId;
       this.userMap.set(telegramId, entry.wolfkrowUserId);
       logger.info({ telegramId, wolfkrowUserId: entry.wolfkrowUserId }, 'Telegram user paired');
-      await this.bot?.sendMessage(msg.chat.id, 'Paired successfully! You can now chat with Wolfkrow.');
+      await this.bot?.sendMessage(
+        msg.chat.id,
+        'Paired successfully! You can now chat with Wolfkrow.'
+      );
     });
 
     this.bot.on('message', async (msg) => {

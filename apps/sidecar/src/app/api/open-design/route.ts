@@ -30,7 +30,12 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const { action } = (await request.json().catch(() => ({}))) as { action?: string };
-    const path = action === 'start' ? '/api/open-design/start' : action === 'stop' ? '/api/open-design/stop' : null;
+    const path =
+      action === 'start'
+        ? '/api/open-design/start'
+        : action === 'stop'
+          ? '/api/open-design/stop'
+          : null;
     if (!path) return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     const res = await fetchWorker(path, { method: 'POST', body: '{}' });
     const body = await res.json().catch(() => ({}));

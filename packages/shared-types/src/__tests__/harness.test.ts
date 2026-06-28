@@ -20,12 +20,17 @@ const ts = '2024-01-01T00:00:00Z';
 
 describe('harness schemas', () => {
   describe('enums', () => {
-    it.each(['planning', 'ready', 'running', 'paused', 'completed', 'failed', 'cancelled'] as const)(
-      'HarnessProjectStatusSchema accepts %s',
-      (v) => {
-        expect(HarnessProjectStatusSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each([
+      'planning',
+      'ready',
+      'running',
+      'paused',
+      'completed',
+      'failed',
+      'cancelled',
+    ] as const)('HarnessProjectStatusSchema accepts %s', (v) => {
+      expect(HarnessProjectStatusSchema.parse(v)).toBe(v);
+    });
     it('HarnessProjectStatusSchema rejects invalid', () => {
       expect(() => HarnessProjectStatusSchema.parse('nope')).toThrow();
     });
@@ -34,18 +39,21 @@ describe('harness schemas', () => {
       'SprintStatusSchema accepts %s',
       (v) => {
         expect(SprintStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('SprintStatusSchema rejects invalid', () => {
       expect(() => SprintStatusSchema.parse('nope')).toThrow();
     });
 
-    it.each(['coder_running', 'evaluator_running', 'passed', 'failed', 'max_rounds_reached'] as const)(
-      'RoundStatusSchema accepts %s',
-      (v) => {
-        expect(RoundStatusSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each([
+      'coder_running',
+      'evaluator_running',
+      'passed',
+      'failed',
+      'max_rounds_reached',
+    ] as const)('RoundStatusSchema accepts %s', (v) => {
+      expect(RoundStatusSchema.parse(v)).toBe(v);
+    });
     it('RoundStatusSchema rejects invalid', () => {
       expect(() => RoundStatusSchema.parse('nope')).toThrow();
     });
@@ -61,9 +69,7 @@ describe('harness schemas', () => {
       });
     });
     it('rejects non-positive maxRoundsPerFeature', () => {
-      expect(() =>
-        HarnessConfigSchema.parse({ maxRoundsPerFeature: 0 }),
-      ).toThrow();
+      expect(() => HarnessConfigSchema.parse({ maxRoundsPerFeature: 0 })).toThrow();
     });
   });
 
@@ -118,9 +124,7 @@ describe('harness schemas', () => {
       expect(() => FeatureSchema.parse({ id: uuid })).toThrow();
     });
     it('rejects non-positive estimatedRounds', () => {
-      expect(() =>
-        FeatureSchema.parse({ id: uuid, name: 'f', estimatedRounds: 0 }),
-      ).toThrow();
+      expect(() => FeatureSchema.parse({ id: uuid, name: 'f', estimatedRounds: 0 })).toThrow();
     });
   });
 
@@ -179,9 +183,7 @@ describe('harness schemas', () => {
       expect(HarnessProjectSchema.parse(valid).sprints).toEqual([]);
     });
     it('rejects invalid status', () => {
-      expect(() =>
-        HarnessProjectSchema.parse({ ...valid, status: 'nope' }),
-      ).toThrow();
+      expect(() => HarnessProjectSchema.parse({ ...valid, status: 'nope' })).toThrow();
     });
   });
 
@@ -191,13 +193,11 @@ describe('harness schemas', () => {
       expect(() => CreateHarnessProjectInputSchema.parse(input)).not.toThrow();
     });
     it('rejects missing specPath', () => {
-      expect(() =>
-        CreateHarnessProjectInputSchema.parse({ name: 'Proj', config: {} }),
-      ).toThrow();
+      expect(() => CreateHarnessProjectInputSchema.parse({ name: 'Proj', config: {} })).toThrow();
     });
     it('rejects missing config (config is required in create input)', () => {
       expect(() =>
-        CreateHarnessProjectInputSchema.parse({ name: 'Proj', specPath: '/spec.md' }),
+        CreateHarnessProjectInputSchema.parse({ name: 'Proj', specPath: '/spec.md' })
       ).toThrow();
     });
   });

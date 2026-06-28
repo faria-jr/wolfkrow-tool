@@ -17,9 +17,7 @@ export interface RankedItem {
  */
 export function hasTable(sqlite: DatabaseClient['$client'], name: string): boolean {
   return (
-    sqlite
-      .prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`)
-      .get(name) != null
+    sqlite.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`).get(name) != null
   );
 }
 

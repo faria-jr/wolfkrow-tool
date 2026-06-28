@@ -17,7 +17,10 @@ test.describe('Auth flow', () => {
     await page.goto('/login');
     await page.getByRole('button', { name: /sign in|log in|continue/i }).click();
     // Should show a validation error
-    await expect(page.locator('[role="alert"], .error, [data-error]').first()).toBeVisible({ timeout: 3000 })
-      .catch(() => { /* input-level validation may not show an alert element */ });
+    await expect(page.locator('[role="alert"], .error, [data-error]').first())
+      .toBeVisible({ timeout: 3000 })
+      .catch(() => {
+        /* input-level validation may not show an alert element */
+      });
   });
 });

@@ -34,7 +34,7 @@ describe('createWorkerClient', () => {
     expect(result).toEqual({ ok: 1 });
     expect(fetchMock).toHaveBeenCalledWith(
       'http://localhost:4000/skills',
-      expect.objectContaining({ headers: expect.any(Headers) }),
+      expect.objectContaining({ headers: expect.any(Headers) })
     );
     const init = fetchMock.mock.calls[0]?.[1] as RequestInit;
     expect((init.headers as Headers).get('Authorization')).toBe('Bearer TKN');
@@ -58,7 +58,11 @@ describe('createWorkerClient', () => {
   });
 
   it('throws on a non-ok response, surfacing status + body', async () => {
-    vi.stubGlobal('fetch', async () => ({ ok: false, status: 401, json: async () => ({ error: 'no' }) }));
+    vi.stubGlobal('fetch', async () => ({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: 'no' }),
+    }));
     const client = createWorkerClient({ authToken: 'T', baseUrl: 'http://localhost:4000' });
     await expect(client.get('/x')).rejects.toThrow(/401/);
   });

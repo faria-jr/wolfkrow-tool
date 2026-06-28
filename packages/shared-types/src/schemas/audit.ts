@@ -4,12 +4,7 @@
 
 import { z } from 'zod';
 
-import {
-  MetadataSchema,
-  NonEmptyStringSchema,
-  TimestampSchema,
-  UuidSchema,
-} from './common';
+import { MetadataSchema, NonEmptyStringSchema, TimestampSchema, UuidSchema } from './common';
 
 export const AuditActionSchema = z.enum([
   'agent.create',

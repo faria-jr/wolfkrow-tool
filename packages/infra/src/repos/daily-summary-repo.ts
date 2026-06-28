@@ -26,14 +26,18 @@ export class DrizzleDailySummaryRepo implements DailySummaryRepo {
   constructor(private readonly db = getDb()) {}
 
   async findByUserIdAndDate(userId: string, date: string): Promise<DailySummary | null> {
-    const rows = this.db.select().from(dailySummaries)
+    const rows = this.db
+      .select()
+      .from(dailySummaries)
       .where(and(eq(dailySummaries.userId, userId), eq(dailySummaries.date, date)))
       .all();
     return rows[0] ? toEntity(rows[0]) : null;
   }
 
   async findByUserId(userId: string, limit?: number): Promise<DailySummary[]> {
-    const q = this.db.select().from(dailySummaries)
+    const q = this.db
+      .select()
+      .from(dailySummaries)
       .where(eq(dailySummaries.userId, userId))
       .orderBy(dailySummaries.date);
     const rows = limit ? q.limit(limit).all() : q.all();
@@ -42,28 +46,32 @@ export class DrizzleDailySummaryRepo implements DailySummaryRepo {
 
   async save(summary: DailySummary): Promise<DailySummary> {
     const p = summary.toProps();
-    this.db.insert(dailySummaries).values({
-      id: p.id,
-      userId: p.userId,
-      date: p.date,
-      content: p.content,
-      sessionCount: p.sessionCount,
-      messageCount: p.messageCount,
-      tokensUsed: p.tokensUsed,
-      cost: p.cost,
-      metadata: p.metadata,
-      createdAt: p.createdAt,
-    }).onConflictDoUpdate({
-      target: dailySummaries.id,
-      set: {
+    this.db
+      .insert(dailySummaries)
+      .values({
+        id: p.id,
+        userId: p.userId,
+        date: p.date,
         content: p.content,
         sessionCount: p.sessionCount,
         messageCount: p.messageCount,
         tokensUsed: p.tokensUsed,
         cost: p.cost,
         metadata: p.metadata,
-      },
-    }).run();
+        createdAt: p.createdAt,
+      })
+      .onConflictDoUpdate({
+        target: dailySummaries.id,
+        set: {
+          content: p.content,
+          sessionCount: p.sessionCount,
+          messageCount: p.messageCount,
+          tokensUsed: p.tokensUsed,
+          cost: p.cost,
+          metadata: p.metadata,
+        },
+      })
+      .run();
     return summary;
   }
 }

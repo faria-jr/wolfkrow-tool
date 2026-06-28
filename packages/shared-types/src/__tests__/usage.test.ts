@@ -10,9 +10,7 @@ describe('UsageSummarySchema', () => {
     byModel: { 'gpt-4o': { inputTokens: 100, outputTokens: 50, costUSD: 0.1 } },
     bySource: { chat: { inputTokens: 100, outputTokens: 50, costUSD: 0.1 } },
     byRuntime: { cloud: { inputTokens: 100, outputTokens: 50, costUSD: 0.1 } },
-    byDay: [
-      { day: '2024-01-01', inputTokens: 100, outputTokens: 50, costUSD: 0.1 },
-    ],
+    byDay: [{ day: '2024-01-01', inputTokens: 100, outputTokens: 50, costUSD: 0.1 }],
   };
 
   it('accepts a valid summary payload', () => {
@@ -33,9 +31,7 @@ describe('UsageSummarySchema', () => {
   });
 
   it('rejects negative token totals', () => {
-    expect(() =>
-      UsageSummarySchema.parse({ ...valid, totalInputTokens: -1 }),
-    ).toThrow();
+    expect(() => UsageSummarySchema.parse({ ...valid, totalInputTokens: -1 })).toThrow();
   });
 
   it('rejects a non-array byDay (Record shape is invalid)', () => {
@@ -43,7 +39,7 @@ describe('UsageSummarySchema', () => {
       UsageSummarySchema.parse({
         ...valid,
         byDay: { '2024-01-01': { inputTokens: 1, outputTokens: 1, costUSD: 0 } },
-      }),
+      })
     ).toThrow();
   });
 
@@ -52,7 +48,7 @@ describe('UsageSummarySchema', () => {
       UsageSummarySchema.parse({
         ...valid,
         byDay: [{ day: '01/01/2024', inputTokens: 1, outputTokens: 1, costUSD: 0 }],
-      }),
+      })
     ).toThrow();
   });
 
@@ -62,21 +58,21 @@ describe('UsageSummarySchema', () => {
       UsageSummarySchema.parse({
         ...valid,
         byDay: [{ day: '2024-13-45', inputTokens: 1, outputTokens: 1, costUSD: 0 }],
-      }),
+      })
     ).toThrow();
     // Feb 30 never exists.
     expect(() =>
       UsageSummarySchema.parse({
         ...valid,
         byDay: [{ day: '2024-02-30', inputTokens: 1, outputTokens: 1, costUSD: 0 }],
-      }),
+      })
     ).toThrow();
     // Feb 29 only exists in leap years — 2025 is not a leap year.
     expect(() =>
       UsageSummarySchema.parse({
         ...valid,
         byDay: [{ day: '2025-02-29', inputTokens: 1, outputTokens: 1, costUSD: 0 }],
-      }),
+      })
     ).toThrow();
   });
 
@@ -85,7 +81,7 @@ describe('UsageSummarySchema', () => {
       UsageSummarySchema.parse({
         ...valid,
         byDay: [{ day: '2024-02-29', inputTokens: 1, outputTokens: 1, costUSD: 0 }],
-      }),
+      })
     ).not.toThrow();
   });
 

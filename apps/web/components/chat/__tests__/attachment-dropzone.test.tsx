@@ -24,7 +24,9 @@ describe('AttachmentDropzone', () => {
     const file = makeFile('photo.png', 'image/png');
     await userEvent.upload(input, file);
     expect(onAttach).toHaveBeenCalledOnce();
-    const [arg] = onAttach.mock.calls[0] as [{ filename: string; mimeType: string; data: string }[]];
+    const [arg] = onAttach.mock.calls[0] as [
+      { filename: string; mimeType: string; data: string }[],
+    ];
     expect(arg[0]?.filename).toBe('photo.png');
     expect(arg[0]?.mimeType).toBe('image/png');
     expect(typeof arg[0]?.data).toBe('string');

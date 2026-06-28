@@ -17,7 +17,18 @@ describe('RulesEditor', () => {
     vi.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ rules: [{ id: 'r1', kind: 'behavior', title: 'Always polite', body: 'be nice', enabled: true, sortOrder: 0 }] }),
+      json: async () => ({
+        rules: [
+          {
+            id: 'r1',
+            kind: 'behavior',
+            title: 'Always polite',
+            body: 'be nice',
+            enabled: true,
+            sortOrder: 0,
+          },
+        ],
+      }),
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -64,7 +75,10 @@ describe('RulesEditor', () => {
     await userEvent.click(screen.getByLabelText('Duplicate rule'));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/rules', expect.objectContaining({ method: 'POST' }));
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/rules',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
   });
 });

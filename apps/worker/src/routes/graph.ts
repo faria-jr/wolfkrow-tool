@@ -23,8 +23,14 @@ function userIdOf(req: { user?: { userId?: string } }): string {
   return userId;
 }
 
-interface IngestBody { text?: string; sourceId?: string; sourceLabel?: string; }
-interface NeighborhoodQuery { depth?: string; }
+interface IngestBody {
+  text?: string;
+  sourceId?: string;
+  sourceLabel?: string;
+}
+interface NeighborhoodQuery {
+  depth?: string;
+}
 
 export async function graphRoutes(server: AuthFastifyInstance) {
   const auth = { onRequest: [server.authenticate] };
@@ -71,7 +77,7 @@ export async function graphRoutes(server: AuthFastifyInstance) {
       });
       if (!neighborhood) return reply.status(404).send({ error: 'Node not found' });
       return reply.send(neighborhood);
-    },
+    }
   );
 
   // DELETE /graph/:id — cascade edges, 404 if missing

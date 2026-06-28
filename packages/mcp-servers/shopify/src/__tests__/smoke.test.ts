@@ -1,7 +1,6 @@
 import { handleRpcMessage } from '@wolfkrow/mcp-shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-
 import { handlers } from '../index';
 
 afterEach(() => {
@@ -31,7 +30,7 @@ describe('shopify MCP server smoke tests', () => {
     const tools = (res?.result as { tools: { name: string }[] })?.tools ?? [];
     const names = tools.map((t) => t.name);
     expect(names).toEqual(
-      expect.arrayContaining(['list_products', 'get_product', 'count_products']),
+      expect.arrayContaining(['list_products', 'get_product', 'count_products'])
     );
   });
 
@@ -40,8 +39,13 @@ describe('shopify MCP server smoke tests', () => {
     process.env['SHOPIFY_ADMIN_TOKEN'] = 't';
     vi.stubGlobal('fetch', makeFetchOk({ products: [] }));
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'list_products', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: { name: 'list_products', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
@@ -54,8 +58,13 @@ describe('shopify MCP server smoke tests', () => {
     process.env['SHOPIFY_ADMIN_TOKEN'] = 't';
     vi.stubGlobal('fetch', makeFetchOk({ count: 42 }));
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'count_products', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 4,
+        method: 'tools/call',
+        params: { name: 'count_products', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
   });
@@ -64,16 +73,26 @@ describe('shopify MCP server smoke tests', () => {
     process.env['SHOPIFY_SHOP'] = 'store.myshopify.com';
     process.env['SHOPIFY_ADMIN_TOKEN'] = 't';
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'get_product', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'tools/call',
+        params: { name: 'get_product', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
 
   it('returns isError when env missing', async () => {
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'list_products', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 6,
+        method: 'tools/call',
+        params: { name: 'list_products', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
@@ -83,7 +102,7 @@ describe('shopify MCP server smoke tests', () => {
     process.env['SHOPIFY_ADMIN_TOKEN'] = 't';
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'nope', arguments: {} } },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });

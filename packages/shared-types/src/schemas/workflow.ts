@@ -4,12 +4,7 @@
 
 import { z } from 'zod';
 
-import {
-  MetadataSchema,
-  ShortStringSchema,
-  TimestampSchema,
-  UuidSchema,
-} from './common';
+import { MetadataSchema, ShortStringSchema, TimestampSchema, UuidSchema } from './common';
 
 export const WorkflowStatusSchema = z.enum([
   'pending',

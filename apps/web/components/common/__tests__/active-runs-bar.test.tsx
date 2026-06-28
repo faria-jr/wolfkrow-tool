@@ -13,14 +13,19 @@ function mockFetch(harness: unknown[], pipeline: unknown[]) {
   }) as unknown as typeof fetch;
 }
 
-beforeEach(() => { originalFetch = global.fetch; });
-afterEach(() => { global.fetch = originalFetch; vi.restoreAllMocks(); });
+beforeEach(() => {
+  originalFetch = global.fetch;
+});
+afterEach(() => {
+  global.fetch = originalFetch;
+  vi.restoreAllMocks();
+});
 
 describe('ActiveRunsBar (DEBT #13)', () => {
   it('renders nothing when there are no active runs', async () => {
     mockFetch(
       [{ id: 'h1', name: 'Done', status: 'completed' }],
-      [{ id: 'p1', name: 'Idle', status: 'paused' }],
+      [{ id: 'p1', name: 'Idle', status: 'paused' }]
     );
     const { container } = render(<ActiveRunsBar />);
     await new Promise((r) => setTimeout(r, 0));
@@ -30,7 +35,7 @@ describe('ActiveRunsBar (DEBT #13)', () => {
   it('lists running harness + pipeline projects with a click-through', async () => {
     mockFetch(
       [{ id: 'h1', name: 'Harness running', status: 'running' }],
-      [{ id: 'p1', name: 'Pipeline active', status: 'active' }],
+      [{ id: 'p1', name: 'Pipeline active', status: 'active' }]
     );
     render(<ActiveRunsBar />);
     await waitFor(() => expect(screen.getByText('Harness running')).toBeInTheDocument());

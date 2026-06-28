@@ -37,7 +37,9 @@ describe('useVad', () => {
   it('start sets up pipeline without throwing', async () => {
     const onSpeechStart = vi.fn();
     const { result } = renderHook(() => useVad({ onSpeechStart }));
-    await act(async () => { await result.current.start(); });
+    await act(async () => {
+      await result.current.start();
+    });
     expect(result.current.start).toBeDefined();
   });
 

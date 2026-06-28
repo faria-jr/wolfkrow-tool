@@ -33,6 +33,10 @@ describe('ToolRegistry', () => {
     const registry = new ToolRegistry([new BashTool()]);
     const defs = registry.toDefinitions(['bash']);
     expect(defs).toHaveLength(1);
-    expect(defs[0]).toMatchObject({ name: 'bash', description: expect.any(String), input_schema: expect.any(Object) });
+    expect(defs[0]).toMatchObject({
+      name: 'bash',
+      description: expect.any(String),
+      input_schema: expect.any(Object),
+    });
   });
 });

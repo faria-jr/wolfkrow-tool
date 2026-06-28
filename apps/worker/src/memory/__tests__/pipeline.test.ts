@@ -74,7 +74,7 @@ describe('MemoryPipeline (FIX-012)', () => {
     await pipeline.extractAndStore(
       'user-1',
       [{ role: 'user', content: 'Please remember that I prefer tabs over spaces.' }],
-      { minImportance: 80 },
+      { minImportance: 80 }
     );
 
     expect(repo.saved[0]?.importance).toBe(80);

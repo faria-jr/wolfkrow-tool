@@ -1,7 +1,7 @@
 export async function runInBatches<T, R>(
   items: T[],
   worker: (item: T) => Promise<R>,
-  concurrency: number,
+  concurrency: number
 ): Promise<R[]> {
   const results: R[] = [];
   let index = 0;

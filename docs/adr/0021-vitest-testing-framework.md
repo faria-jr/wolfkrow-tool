@@ -6,6 +6,7 @@
 ## Contexto
 
 Precisamos de test runner que:
+
 - Seja rápido (vitest é mais rápido que Jest)
 - TypeScript nativo (sem Babel config)
 - Compatível com Jest API (fácil migração)
@@ -25,7 +26,7 @@ import path from 'path';
 export default defineConfig({
   test: {
     globals: true,
-    environment: 'node',  // 'jsdom' para component tests
+    environment: 'node', // 'jsdom' para component tests
     setupFiles: ['./test-setup.ts'],
     coverage: {
       provider: 'v8',

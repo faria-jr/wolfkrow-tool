@@ -25,9 +25,9 @@ const PRIVATE_IPV4_PREFIXES: readonly RegExp[] = [
  * Pure (no I/O) — safe for the domain package.
  */
 export function normalizeIpv4(hostname: string): string | null {
-  const raw = hostname.trim()
-  if (!raw) return null
-  return raw.includes('.') ? normalizeDottedIpv4(raw) : normalizeSingleIpv4(raw)
+  const raw = hostname.trim();
+  if (!raw) return null;
+  return raw.includes('.') ? normalizeDottedIpv4(raw) : normalizeSingleIpv4(raw);
 }
 
 /**
@@ -35,28 +35,28 @@ export function normalizeIpv4(hostname: string): string | null {
  * Each octet may use a radix prefix (0x=hex, 0=octal, else decimal).
  */
 function normalizeDottedIpv4(raw: string): string | null {
-  const parts = raw.split('.')
-  if (parts.length < 1 || parts.length > 4) return null
+  const parts = raw.split('.');
+  if (parts.length < 1 || parts.length > 4) return null;
 
-  const octets: number[] = []
+  const octets: number[] = [];
   for (const part of parts) {
-    const oct = parseOctet(part)
-    if (oct === null) return null
-    octets.push(oct)
+    const oct = parseOctet(part);
+    if (oct === null) return null;
+    octets.push(oct);
   }
 
   // Pack octets into a 32-bit value: the last octet occupies the low bits,
   // earlier octets shift left. With <4 octets the trailing value absorbs the
   // remainder (e.g. `127.1` → 127<<24 | 1).
-  let value = 0n
+  let value = 0n;
   for (let i = 0; i < octets.length - 1; i++) {
-    value = (value << 8n) | BigInt(octets[i]!)
+    value = (value << 8n) | BigInt(octets[i]!);
   }
-  const last = BigInt(octets[octets.length - 1]!)
-  const remainingBits = BigInt((4 - (octets.length - 1)) * 8)
-  if (last >= 1n << remainingBits) return null
-  value = (value << remainingBits) | last
-  return bigintToDotted(value)
+  const last = BigInt(octets[octets.length - 1]!);
+  const remainingBits = BigInt((4 - (octets.length - 1)) * 8);
+  if (last >= 1n << remainingBits) return null;
+  value = (value << remainingBits) | last;
+  return bigintToDotted(value);
 }
 
 /**
@@ -64,19 +64,19 @@ function normalizeDottedIpv4(raw: string): string | null {
  * Bare octal single-ints (`0177`) are rejected as non-standard.
  */
 function normalizeSingleIpv4(raw: string): string | null {
-  if (/^0[0-9]+$/.test(raw)) return null
-  const isHex = raw.toLowerCase().startsWith('0x')
-  const radix = isHex ? 16 : 10
-  const digits = isHex ? raw.slice(2) : raw
-  if (digits === '') return null
+  if (/^0[0-9]+$/.test(raw)) return null;
+  const isHex = raw.toLowerCase().startsWith('0x');
+  const radix = isHex ? 16 : 10;
+  const digits = isHex ? raw.slice(2) : raw;
+  if (digits === '') return null;
   // Reject inputs whose digit stream is not fully numeric in the chosen radix.
   // `parseInt('12ab', 10)` would silently truncate to 12 — a contract violation
   // that could let a non-numeric suffix bypass canonicalization.
-  const validDigits = isHex ? /^[0-9a-fA-F]+$/ : /^[0-9]+$/
-  if (!validDigits.test(digits)) return null
-  const single = parseInt(digits, radix)
-  if (!Number.isFinite(single) || single < 0 || single > 0xffffffff) return null
-  return bigintToDotted(BigInt(single))
+  const validDigits = isHex ? /^[0-9a-fA-F]+$/ : /^[0-9]+$/;
+  if (!validDigits.test(digits)) return null;
+  const single = parseInt(digits, radix);
+  if (!Number.isFinite(single) || single < 0 || single > 0xffffffff) return null;
+  return bigintToDotted(BigInt(single));
 }
 
 /**
@@ -87,51 +87,49 @@ function normalizeSingleIpv4(raw: string): string | null {
  * Returns the numeric value (0-255) or null on parse failure / overflow.
  */
 function parseOctet(part: string): number | null {
-  if (part === '') return null
-  const lower = part.toLowerCase()
-  let radix = 10
-  let digits = part
+  if (part === '') return null;
+  const lower = part.toLowerCase();
+  let radix = 10;
+  let digits = part;
   if (lower.startsWith('0x')) {
-    radix = 16
-    digits = part.slice(2)
+    radix = 16;
+    digits = part.slice(2);
   } else if (part.length > 1 && part.startsWith('0')) {
-    radix = 8
-    digits = part.slice(1)
+    radix = 8;
+    digits = part.slice(1);
   }
-  if (digits === '') return null
-  if (!digits.match(/^[0-9a-fA-F]+$/)) return null
-  const value = parseInt(digits, radix)
-  if (!Number.isFinite(value) || value < 0 || value > 255) return null
-  return value
+  if (digits === '') return null;
+  if (!digits.match(/^[0-9a-fA-F]+$/)) return null;
+  const value = parseInt(digits, radix);
+  if (!Number.isFinite(value) || value < 0 || value > 255) return null;
+  return value;
 }
 
 function bigintToDotted(value: bigint): string | null {
-  if (value < 0n || value > 0xffffffffn) return null
-  const a = Number((value >> 24n) & 0xffn)
-  const b = Number((value >> 16n) & 0xffn)
-  const c = Number((value >> 8n) & 0xffn)
-  const d = Number(value & 0xffn)
-  return `${a}.${b}.${c}.${d}`
+  if (value < 0n || value > 0xffffffffn) return null;
+  const a = Number((value >> 24n) & 0xffn);
+  const b = Number((value >> 16n) & 0xffn);
+  const c = Number((value >> 8n) & 0xffn);
+  const d = Number(value & 0xffn);
+  return `${a}.${b}.${c}.${d}`;
 }
 
 function isPrivateIPv4(hostname: string): boolean {
-  if (hostname === 'localhost' || hostname === '0.0.0.0') return true
-  const canonical = normalizeIpv4(hostname)
-  const subject = canonical ?? hostname
-  return PRIVATE_IPV4_PREFIXES.some((re) => re.test(subject))
+  if (hostname === 'localhost' || hostname === '0.0.0.0') return true;
+  const canonical = normalizeIpv4(hostname);
+  const subject = canonical ?? hostname;
+  return PRIVATE_IPV4_PREFIXES.some((re) => re.test(subject));
 }
 
 function isLoopbackHost(hostname: string): boolean {
-  if (hostname === 'localhost') return true
-  const canonical = normalizeIpv4(hostname)
-  const subject = canonical ?? hostname
-  return subject.startsWith('127.')
+  if (hostname === 'localhost') return true;
+  const canonical = normalizeIpv4(hostname);
+  const subject = canonical ?? hostname;
+  return subject.startsWith('127.');
 }
 
 function stripIPv6Brackets(hostname: string): string {
-  return hostname.startsWith('[') && hostname.endsWith(']')
-    ? hostname.slice(1, -1)
-    : hostname;
+  return hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
 }
 
 function ipv6MappedToIPv4(hostname: string): string | null {
@@ -187,7 +185,7 @@ function isLoopbackAny(hostname: string): boolean {
  * (infra guard) re-applies the http/https distinction if needed.
  */
 export function isSsrfBlockedHost(hostname: string): boolean {
-  return isPrivateHost(hostname)
+  return isPrivateHost(hostname);
 }
 
 function validateBaseUrl(baseUrl: string): void {
@@ -201,7 +199,9 @@ function validateBaseUrl(baseUrl: string): void {
     throw new Error(`ProviderConfig: baseUrl must use http/https, got ${parsed.protocol}`);
   }
   if (parsed.protocol === 'http:' && !isLoopbackAny(parsed.hostname)) {
-    throw new Error('ProviderConfig: http baseUrl allowed only for localhost/loopback; use https otherwise');
+    throw new Error(
+      'ProviderConfig: http baseUrl allowed only for localhost/loopback; use https otherwise'
+    );
   }
   if (isPrivateHost(parsed.hostname) && !isLoopbackAny(parsed.hostname)) {
     throw new Error(`ProviderConfig: baseUrl points to private host ${parsed.hostname}`);
@@ -232,14 +232,32 @@ export class ProviderConfig {
     return new ProviderConfig(props);
   }
 
-  get id(): string { return this.props.id; }
-  get displayName(): string { return this.props.displayName; }
-  get protocol(): ProviderProtocol { return this.props.protocol; }
-  get baseUrl(): string { return this.props.baseUrl; }
-  get apiKeyAccount(): string { return this.props.apiKeyAccount; }
-  get models(): readonly string[] { return this.props.models; }
-  get supportsTools(): boolean { return this.props.supportsTools; }
-  get pricingUrl(): string | undefined { return this.props.pricingUrl; }
+  get id(): string {
+    return this.props.id;
+  }
+  get displayName(): string {
+    return this.props.displayName;
+  }
+  get protocol(): ProviderProtocol {
+    return this.props.protocol;
+  }
+  get baseUrl(): string {
+    return this.props.baseUrl;
+  }
+  get apiKeyAccount(): string {
+    return this.props.apiKeyAccount;
+  }
+  get models(): readonly string[] {
+    return this.props.models;
+  }
+  get supportsTools(): boolean {
+    return this.props.supportsTools;
+  }
+  get pricingUrl(): string | undefined {
+    return this.props.pricingUrl;
+  }
 
-  toJSON(): ProviderConfigProps { return { ...this.props }; }
+  toJSON(): ProviderConfigProps {
+    return { ...this.props };
+  }
 }

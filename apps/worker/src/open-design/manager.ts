@@ -49,12 +49,22 @@ export interface SpawnPlan {
   env: NodeJS.ProcessEnv;
 }
 
-export function buildOpenDesignSpawnPlan(opts: { webPort?: number; daemonPort?: number; dataDir?: string } = {}): SpawnPlan {
+export function buildOpenDesignSpawnPlan(
+  opts: { webPort?: number; daemonPort?: number; dataDir?: string } = {}
+): SpawnPlan {
   const webPort = opts.webPort ?? DEFAULT_WEB_PORT;
   const daemonPort = opts.daemonPort ?? DEFAULT_DAEMON_PORT;
   return {
     command: process.execPath,
-    args: [TOOLS_DEV_BIN, 'run', 'web', '--web-port', String(webPort), '--daemon-port', String(daemonPort)],
+    args: [
+      TOOLS_DEV_BIN,
+      'run',
+      'web',
+      '--web-port',
+      String(webPort),
+      '--daemon-port',
+      String(daemonPort),
+    ],
     cwd: VENDOR_DIR,
     env: { ...process.env, OD_DATA_DIR: opts.dataDir ?? DATA_DIR, OD_EMBED_HOST: 'wolfkrow' },
   };
@@ -73,7 +83,11 @@ export class OpenDesignSidecarManager extends EventEmitter {
   };
   private restartTimer: ReturnType<typeof setTimeout> | null = null;
   private spawnFn: (plan: SpawnPlan) => ChildProcess = (plan) =>
-    spawn(plan.command, plan.args, { cwd: plan.cwd, stdio: ['ignore', 'pipe', 'pipe'], env: plan.env });
+    spawn(plan.command, plan.args, {
+      cwd: plan.cwd,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: plan.env,
+    });
 
   /** Inject the spawn implementation (tests). */
   withSpawn(fn: (plan: SpawnPlan) => ChildProcess): this {
@@ -128,7 +142,13 @@ export class OpenDesignSidecarManager extends EventEmitter {
     proc.on('exit', (code) => {
       this.proc = null;
       const wasRunning = this.state.status === 'running';
-      this.setState({ status: 'crashed', pid: null, webUrl: null, daemonUrl: null, lastError: `exit ${code ?? '?'}` });
+      this.setState({
+        status: 'crashed',
+        pid: null,
+        webUrl: null,
+        daemonUrl: null,
+        lastError: `exit ${code ?? '?'}`,
+      });
       if (wasRunning) this.scheduleRestart();
     });
   }

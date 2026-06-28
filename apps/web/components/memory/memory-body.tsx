@@ -1,8 +1,12 @@
 'use client';
 
 import { MemoryDreamingTab } from './memory-dreaming-tab';
-import type { DailySummaryData, MemoryData, MemorySearchResult, MemoryTabKey } from './memory-types';
-
+import type {
+  DailySummaryData,
+  MemoryData,
+  MemorySearchResult,
+  MemoryTabKey,
+} from './memory-types';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
@@ -33,7 +37,11 @@ export interface MemoryViewState {
   compact: () => Promise<void>;
 }
 
-interface TabNavProps { tab: MemoryTabKey; setTab: (t: MemoryTabKey) => void; count: number; }
+interface TabNavProps {
+  tab: MemoryTabKey;
+  setTab: (t: MemoryTabKey) => void;
+  count: number;
+}
 export function MemoryTabNav({ tab, setTab, count }: TabNavProps) {
   return (
     <div className="flex gap-1 border-b">
@@ -43,18 +51,27 @@ export function MemoryTabNav({ tab, setTab, count }: TabNavProps) {
           onClick={() => setTab(t)}
           className={[
             'px-4 py-2 text-sm font-medium capitalize transition-colors',
-            tab === t ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-foreground',
+            tab === t
+              ? 'border-primary text-primary border-b-2'
+              : 'text-muted-foreground hover:text-foreground',
           ].join(' ')}
         >
           {t}
-          {t === 'list' && count > 0 && <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs">{count}</span>}
+          {t === 'list' && count > 0 && (
+            <span className="bg-muted ml-1.5 rounded-full px-1.5 py-0.5 text-xs">{count}</span>
+          )}
         </button>
       ))}
     </div>
   );
 }
 
-interface ListTabProps { memories: MemoryData[]; onDelete: (id: string) => void; onCompact: () => void; compacting: boolean; }
+interface ListTabProps {
+  memories: MemoryData[];
+  onDelete: (id: string) => void;
+  onCompact: () => void;
+  compacting: boolean;
+}
 export function MemoryListTab({ memories, onDelete, onCompact, compacting }: ListTabProps) {
   if (memories.length === 0)
     return (
@@ -71,7 +88,7 @@ export function MemoryListTab({ memories, onDelete, onCompact, compacting }: Lis
           onClick={onCompact}
           disabled={compacting}
           data-testid="compact-now"
-          className="rounded-md bg-warning px-3 py-1.5 text-sm font-medium text-warning-foreground hover:bg-warning/90 disabled:opacity-50"
+          className="bg-warning text-warning-foreground hover:bg-warning/90 rounded-md px-3 py-1.5 text-sm font-medium disabled:opacity-50"
           title="Create a daily summary of recent memories"
         >
           {compacting ? 'Compacting…' : 'Compact now'}
@@ -82,21 +99,44 @@ export function MemoryListTab({ memories, onDelete, onCompact, compacting }: Lis
           <div className="min-w-0 flex-1 space-y-1">
             <p className="text-sm">{m.content}</p>
             <div className="flex items-center gap-2 text-xs">
-              <span className={`rounded px-1.5 py-0.5 font-medium ${SOURCE_COLOR[m.source] ?? 'bg-muted text-muted-foreground'}`}>{m.source}</span>
+              <span
+                className={`rounded px-1.5 py-0.5 font-medium ${SOURCE_COLOR[m.source] ?? 'bg-muted text-muted-foreground'}`}
+              >
+                {m.source}
+              </span>
               <span className="text-muted-foreground">importance: {m.importance}</span>
               <span className="text-muted-foreground">accessed: {m.accessCount}×</span>
-              <span className="text-muted-foreground">{new Date(m.createdAt).toLocaleDateString()}</span>
+              <span className="text-muted-foreground">
+                {new Date(m.createdAt).toLocaleDateString()}
+              </span>
             </div>
           </div>
-          <button onClick={() => onDelete(m.id)} className="text-muted-foreground hover:text-destructive ml-4 text-xs transition-colors">delete</button>
+          <button
+            onClick={() => onDelete(m.id)}
+            className="text-muted-foreground hover:text-destructive ml-4 text-xs transition-colors"
+          >
+            delete
+          </button>
         </div>
       ))}
     </div>
   );
 }
 
-interface SearchTabProps { results: MemorySearchResult[]; query: string; onQueryChange: (q: string) => void; onSearch: () => void; searching: boolean; }
-export function MemorySearchTab({ results, query, onQueryChange, onSearch, searching }: SearchTabProps) {
+interface SearchTabProps {
+  results: MemorySearchResult[];
+  query: string;
+  onQueryChange: (q: string) => void;
+  onSearch: () => void;
+  searching: boolean;
+}
+export function MemorySearchTab({
+  results,
+  query,
+  onQueryChange,
+  onSearch,
+  searching,
+}: SearchTabProps) {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
@@ -104,21 +144,35 @@ export function MemorySearchTab({ results, query, onQueryChange, onSearch, searc
           type="text"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') onSearch(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') onSearch();
+          }}
           placeholder="Search memories…"
           className="border-input bg-background flex-1 rounded-md border px-3 py-2 text-sm outline-none"
         />
-        <button onClick={onSearch} disabled={searching} className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50">
+        <button
+          onClick={onSearch}
+          disabled={searching}
+          className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
+        >
           {searching ? 'Searching…' : 'Search'}
         </button>
       </div>
-      {results.length === 0 && !searching && query && <p className="text-muted-foreground text-sm">No results found.</p>}
+      {results.length === 0 && !searching && query && (
+        <p className="text-muted-foreground text-sm">No results found.</p>
+      )}
       <div className="space-y-3">
         {results.map((r, i) => (
           <div key={r.memory.id} className="bg-card rounded-lg border p-4">
             <div className="mb-1 flex items-center justify-between">
-              <span className="text-muted-foreground text-xs">#{i + 1} — distance: {r.distance.toFixed(4)}</span>
-              <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${SOURCE_COLOR[r.memory.source] ?? 'bg-muted text-muted-foreground'}`}>{r.memory.source}</span>
+              <span className="text-muted-foreground text-xs">
+                #{i + 1} — distance: {r.distance.toFixed(4)}
+              </span>
+              <span
+                className={`rounded px-1.5 py-0.5 text-xs font-medium ${SOURCE_COLOR[r.memory.source] ?? 'bg-muted text-muted-foreground'}`}
+              >
+                {r.memory.source}
+              </span>
             </div>
             <p className="text-sm">{r.memory.content}</p>
           </div>
@@ -128,7 +182,11 @@ export function MemorySearchTab({ results, query, onQueryChange, onSearch, searc
   );
 }
 
-interface SummariesTabProps { summaries: DailySummaryData[] | null; error: string | null; onReload: () => void; }
+interface SummariesTabProps {
+  summaries: DailySummaryData[] | null;
+  error: string | null;
+  onReload: () => void;
+}
 export function MemorySummariesTab({ summaries, error, onReload }: SummariesTabProps) {
   if (error) {
     return (
@@ -157,7 +215,7 @@ export function MemorySummariesTab({ summaries, error, onReload }: SummariesTabP
         <div key={s.id} className="bg-card rounded-lg border p-4">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="font-medium">{s.date}</h3>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2 text-xs">
               <span>{s.sessionCount} sessions</span>
               <span>·</span>
               <span>{s.tokensUsed} tokens</span>
@@ -165,14 +223,16 @@ export function MemorySummariesTab({ summaries, error, onReload }: SummariesTabP
               <span>${s.cost.toFixed(4)}</span>
             </div>
           </div>
-          <p className="text-sm whitespace-pre-wrap">{s.content}</p>
+          <p className="whitespace-pre-wrap text-sm">{s.content}</p>
         </div>
       ))}
     </div>
   );
 }
 
-interface MemoryViewBodyProps { state: MemoryViewState; }
+interface MemoryViewBodyProps {
+  state: MemoryViewState;
+}
 export function MemoryViewBody({ state }: MemoryViewBodyProps) {
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
@@ -184,8 +244,12 @@ export function MemoryViewBody({ state }: MemoryViewBodyProps) {
       {state.tab === 'list' && (
         <MemoryListTab
           memories={state.memories}
-          onDelete={(id) => { void state.deleteOne(id); }}
-          onCompact={() => { void state.compact(); }}
+          onDelete={(id) => {
+            void state.deleteOne(id);
+          }}
+          onCompact={() => {
+            void state.compact();
+          }}
           compacting={state.compactPending}
         />
       )}
@@ -194,7 +258,9 @@ export function MemoryViewBody({ state }: MemoryViewBodyProps) {
           results={state.results}
           query={state.query}
           onQueryChange={state.setQuery}
-          onSearch={() => { void state.search(); }}
+          onSearch={() => {
+            void state.search();
+          }}
           searching={state.searching}
         />
       )}
@@ -202,7 +268,9 @@ export function MemoryViewBody({ state }: MemoryViewBodyProps) {
         <MemorySummariesTab
           summaries={state.summaries}
           error={state.summariesError}
-          onReload={() => { void state.loadSummaries(); }}
+          onReload={() => {
+            void state.loadSummaries();
+          }}
         />
       )}
       {state.tab === 'dreaming' && <MemoryDreamingTab />}

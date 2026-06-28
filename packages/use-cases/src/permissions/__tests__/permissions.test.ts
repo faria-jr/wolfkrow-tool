@@ -29,7 +29,7 @@ class InMemoryAuditRepo implements AuditRepo {
           r.userId === filter.userId &&
           (!filter.action || r.action === filter.action) &&
           (!filter.resourceType || r.resourceType === filter.resourceType) &&
-          (!filter.since || r.timestamp >= filter.since),
+          (!filter.since || r.timestamp >= filter.since)
       )
       .slice(0, filter.limit ?? 200);
   }
@@ -83,8 +83,26 @@ describe('QueryAuditLogUseCase', () => {
 
   it('returns only rows matching the action filter', () => {
     repo.rows.push(
-      { id: '1', userId: 'u1', action: 'agent.create', resourceType: 'agent', resourceId: undefined, metadata: {}, ip: undefined, timestamp: new Date() },
-      { id: '2', userId: 'u1', action: 'skill.delete', resourceType: 'skill', resourceId: undefined, metadata: {}, ip: undefined, timestamp: new Date() },
+      {
+        id: '1',
+        userId: 'u1',
+        action: 'agent.create',
+        resourceType: 'agent',
+        resourceId: undefined,
+        metadata: {},
+        ip: undefined,
+        timestamp: new Date(),
+      },
+      {
+        id: '2',
+        userId: 'u1',
+        action: 'skill.delete',
+        resourceType: 'skill',
+        resourceId: undefined,
+        metadata: {},
+        ip: undefined,
+        timestamp: new Date(),
+      }
     );
     const result = new QueryAuditLogUseCase(repo).execute({ userId: 'u1', action: 'agent.create' });
     expect(result).toHaveLength(1);
@@ -93,7 +111,16 @@ describe('QueryAuditLogUseCase', () => {
 
   it('limits the number of returned rows', () => {
     for (let i = 0; i < 5; i++) {
-      repo.rows.push({ id: String(i), userId: 'u1', action: 'agent.create', resourceType: 'agent', resourceId: undefined, metadata: {}, ip: undefined, timestamp: new Date() });
+      repo.rows.push({
+        id: String(i),
+        userId: 'u1',
+        action: 'agent.create',
+        resourceType: 'agent',
+        resourceId: undefined,
+        metadata: {},
+        ip: undefined,
+        timestamp: new Date(),
+      });
     }
     const result = new QueryAuditLogUseCase(repo).execute({ userId: 'u1', limit: 2 });
     expect(result).toHaveLength(2);

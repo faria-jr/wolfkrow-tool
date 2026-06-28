@@ -9,7 +9,11 @@ export interface RawChunk {
   metadata: ChunkMetadata;
 }
 
-function makeMetadata(sourceType: ChunkSourceType, heading: string, position: number): ChunkMetadata {
+function makeMetadata(
+  sourceType: ChunkSourceType,
+  heading: string,
+  position: number
+): ChunkMetadata {
   const meta: ChunkMetadata = { sourceType, position };
   if (heading) meta.heading = heading;
   return meta;
@@ -17,7 +21,8 @@ function makeMetadata(sourceType: ChunkSourceType, heading: string, position: nu
 
 function flush(chunks: RawChunk[], content: string, heading: string, type: ChunkSourceType): void {
   const trimmed = content.trim();
-  if (trimmed) chunks.push({ content: trimmed, metadata: makeMetadata(type, heading, chunks.length) });
+  if (trimmed)
+    chunks.push({ content: trimmed, metadata: makeMetadata(type, heading, chunks.length) });
 }
 
 function resolveChunkType(nodeType: string): ChunkSourceType {
@@ -49,7 +54,13 @@ function appendContent(state: ChunkState, content: string, type: ChunkSourceType
 export function semanticChunk(text: string, maxSize = 1000): RawChunk[] {
   if (!text.trim()) return [];
 
-  const state: ChunkState = { current: '', currentHeading: '', currentType: 'paragraph', chunks: [], maxSize };
+  const state: ChunkState = {
+    current: '',
+    currentHeading: '',
+    currentType: 'paragraph',
+    chunks: [],
+    maxSize,
+  };
   const tree = remark().use(remarkGfm).parse(text);
 
   visit(tree, (node) => {
@@ -70,7 +81,8 @@ export function semanticChunk(text: string, maxSize = 1000): RawChunk[] {
     }
   });
 
-  if (state.current.trim()) flush(state.chunks, state.current, state.currentHeading, state.currentType);
+  if (state.current.trim())
+    flush(state.chunks, state.current, state.currentHeading, state.currentType);
 
   return state.chunks.map((c, i) => ({ ...c, metadata: { ...c.metadata, position: i } }));
 }

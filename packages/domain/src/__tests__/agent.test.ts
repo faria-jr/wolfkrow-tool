@@ -36,7 +36,12 @@ describe('Agent.create', () => {
   });
 
   it('supports claude-compat runtime with provider', () => {
-    const agent = Agent.create({ ...base, runtime: 'claude-compat', provider: 'zai', model: 'glm-4.7' });
+    const agent = Agent.create({
+      ...base,
+      runtime: 'claude-compat',
+      provider: 'zai',
+      model: 'glm-4.7',
+    });
     expect(agent.runtime).toBe('claude-compat');
     expect(agent.provider).toBe('zai');
     expect(agent.model).toBe('glm-4.7');
@@ -124,7 +129,11 @@ describe('Agent.buildPrompt', () => {
   });
 
   it('includes skills in prompt when provided', () => {
-    const agent = Agent.create({ ...base, skills: ['typescript', 'react'], systemPrompt: 'Review code.' });
+    const agent = Agent.create({
+      ...base,
+      skills: ['typescript', 'react'],
+      systemPrompt: 'Review code.',
+    });
     const prompt = agent.buildPrompt({});
     expect(prompt).toContain('typescript');
     expect(prompt).toContain('react');

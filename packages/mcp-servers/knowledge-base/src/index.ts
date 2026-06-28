@@ -40,7 +40,8 @@ const handlers: McpHandlers = {
   callTool: async (name, args) => {
     try {
       if (name === 'search_knowledge') {
-        const query = typeof args['query'] === 'string' ? args['query'] : String(args['query'] ?? '');
+        const query =
+          typeof args['query'] === 'string' ? args['query'] : String(args['query'] ?? '');
         const limit = typeof args['limit'] === 'number' ? args['limit'] : undefined;
         const body = limit !== undefined ? { query, limit } : { query };
         return text(await worker.post('/knowledge/search', body));

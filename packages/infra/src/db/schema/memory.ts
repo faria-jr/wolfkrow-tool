@@ -28,7 +28,7 @@ export const semanticMemories = sqliteTable(
   (t) => ({
     userIdIdx: index('semantic_memories_user_id_idx').on(t.userId),
     importanceIdx: index('semantic_memories_importance_idx').on(t.importance),
-  }),
+  })
 );
 
 export const dailySummaries = sqliteTable(
@@ -49,7 +49,7 @@ export const dailySummaries = sqliteTable(
   },
   (t) => ({
     userIdDateIdx: index('daily_summaries_user_id_date_idx').on(t.userId, t.date),
-  }),
+  })
 );
 
 export const compactionLog = sqliteTable(
@@ -72,5 +72,5 @@ export const compactionLog = sqliteTable(
   (t) => ({
     userIdIdx: index('compaction_log_user_id_idx').on(t.userId),
     sessionIdIdx: index('compaction_log_session_id_idx').on(t.sessionId),
-  }),
+  })
 );

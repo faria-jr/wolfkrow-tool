@@ -4,7 +4,7 @@ export class ToolCall {
   private constructor(
     readonly id: string,
     readonly name: string,
-    readonly input: Record<string, unknown>,
+    readonly input: Record<string, unknown>
   ) {}
 
   static create(id: string, name: string, input: Record<string, unknown>): ToolCall {

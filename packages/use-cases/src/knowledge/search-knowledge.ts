@@ -1,4 +1,10 @@
-import type { HydePort, KnowledgeChunk, KnowledgeChunkRepo, RerankerPort, EmbeddingPort } from '@wolfkrow/domain';
+import type {
+  HydePort,
+  KnowledgeChunk,
+  KnowledgeChunkRepo,
+  RerankerPort,
+  EmbeddingPort,
+} from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
@@ -29,12 +35,15 @@ export interface SearchKnowledgeOutput {
  *  - Reranker: second-stage rerank of the top candidate pool (e.g. Cohere).
  * Both default to disabled (undefined) so callers without keys get plain RRF.
  */
-export class SearchKnowledgeUseCase implements UseCase<SearchKnowledgeInput, SearchKnowledgeOutput> {
+export class SearchKnowledgeUseCase implements UseCase<
+  SearchKnowledgeInput,
+  SearchKnowledgeOutput
+> {
   constructor(
     private readonly chunkRepo: KnowledgeChunkRepo,
     private readonly embedder: EmbeddingPort,
     private readonly reranker?: RerankerPort,
-    private readonly hyde?: HydePort,
+    private readonly hyde?: HydePort
   ) {}
 
   async execute(input: SearchKnowledgeInput): Promise<SearchKnowledgeOutput> {
@@ -44,7 +53,12 @@ export class SearchKnowledgeUseCase implements UseCase<SearchKnowledgeInput, Sea
     const limit = input.limit ?? 10;
     const embedding = await this.embedder.embed(query);
     const effectiveEmbedding = await this.applyHyde(query, embedding);
-    const fused = await this.chunkRepo.hybridSearch(query, effectiveEmbedding, limit * 3, input.documentIds);
+    const fused = await this.chunkRepo.hybridSearch(
+      query,
+      effectiveEmbedding,
+      limit * 3,
+      input.documentIds
+    );
 
     const reranked = await this.rerank(query, fused, limit);
     if (reranked) return { results: reranked, query };
@@ -65,7 +79,11 @@ export class SearchKnowledgeUseCase implements UseCase<SearchKnowledgeInput, Sea
   }
 
   /** Reranker: optionally reorder the candidate pool by cross-encoder score. */
-  private async rerank(query: string, fused: ReadonlyArray<{ chunk: KnowledgeChunk }>, limit: number): Promise<SearchResult[] | null> {
+  private async rerank(
+    query: string,
+    fused: ReadonlyArray<{ chunk: KnowledgeChunk }>,
+    limit: number
+  ): Promise<SearchResult[] | null> {
     if (!this.reranker?.enabled || fused.length === 0) return null;
     const documents = fused.map((f) => f.chunk.content);
     const hits = await this.reranker.rerank(query, documents, limit);

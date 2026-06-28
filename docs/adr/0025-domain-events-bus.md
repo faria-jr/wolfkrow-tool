@@ -21,6 +21,7 @@ class SendMessage {
 ```
 
 Problemas:
+
 1. **Acoplamento**: SendMessage conhece todos os side effects
 2. **Testes quebram**: testar SendMessage requer mockar 4 deps
 3. **Side effects ocultos**: difícil saber o que acontece quando mensagem é enviada
@@ -47,16 +48,16 @@ export const MessageSentEventSchema = z.object({
 
 export class MessageSentEvent {
   static readonly TYPE = 'message.sent' as const;
-  
+
   constructor(
     public readonly sessionId: string,
     public readonly messageId: string,
     public readonly agentId: string,
     public readonly userId: string,
     public readonly content: string,
-    public readonly attachments: string[] = [],
+    public readonly attachments: string[] = []
   ) {}
-  
+
   toJSON() {
     return {
       type: MessageSentEvent.TYPE,
@@ -84,7 +85,7 @@ export interface EventBus {
   subscribe<T extends DomainEvent>(
     eventType: T['type'],
     handler: (event: T) => void | Promise<void>
-  ): () => void;  // returns unsubscribe function
+  ): () => void; // returns unsubscribe function
   subscribeAll(handler: (event: DomainEvent) => void | Promise<void>): () => void;
 }
 ```
@@ -94,7 +95,7 @@ export interface EventBus {
 export class InProcessEventBus implements EventBus {
   private handlers = new Map<string, Set<Function>>();
   private globalHandlers = new Set<Function>();
-  
+
   publish(event: DomainEvent): void {
     // Specific handlers
     const specific = this.handlers.get(event.type);
@@ -110,7 +111,7 @@ export class InProcessEventBus implements EventBus {
         }
       });
     }
-    
+
     // Global handlers
     this.globalHandlers.forEach((h) => {
       try {
@@ -123,21 +124,21 @@ export class InProcessEventBus implements EventBus {
       }
     });
   }
-  
+
   subscribe<T extends DomainEvent>(
     eventType: T['type'],
-    handler: (event: T) => void | Promise<void>,
+    handler: (event: T) => void | Promise<void>
   ): () => void {
     if (!this.handlers.has(eventType)) {
       this.handlers.set(eventType, new Set());
     }
     this.handlers.get(eventType)!.add(handler);
-    
+
     return () => {
       this.handlers.get(eventType)?.delete(handler);
     };
   }
-  
+
   subscribeAll(handler: (event: DomainEvent) => void | Promise<void>): () => void {
     this.globalHandlers.add(handler);
     return () => {
@@ -157,30 +158,32 @@ export class SendMessage {
     private sessionRepo: SessionRepo,
     private messageRepo: MessageRepo,
     private providers: AIProviderFactory,
-    private events: EventBus,  // ← Apenas EventBus, não conhece handlers
+    private events: EventBus // ← Apenas EventBus, não conhece handlers
   ) {}
-  
+
   async *execute(input: SendMessageInput): AsyncIterable<StreamChunk> {
     const agent = await this.agentRepo.findById(input.agentId);
     if (!agent) throw new AgentNotFoundError(input.agentId);
-    
+
     const session = await this.sessionRepo.getOrCreate(input.sessionId, agent);
     const userMessage = Message.createUser(input.content, input.attachments);
-    
+
     await this.messageRepo.save(session.id, userMessage);
-    
+
     // ← Publica evento (não conhece side effects)
-    this.events.publish(new MessageSentEvent(
-      session.id,
-      userMessage.id,
-      agent.id,
-      session.userId,
-      input.content,
-      input.attachments ?? [],
-    ));
-    
+    this.events.publish(
+      new MessageSentEvent(
+        session.id,
+        userMessage.id,
+        agent.id,
+        session.userId,
+        input.content,
+        input.attachments ?? []
+      )
+    );
+
     const provider = this.providers.forRuntime(agent.runtime);
-    
+
     for await (const chunk of provider.query(agent.buildPrompt(session, userMessage))) {
       yield chunk;
     }
@@ -195,9 +198,9 @@ export class SendMessage {
 export class TitleGenerationHandler {
   constructor(
     private sessionRepo: SessionRepo,
-    private titleGenerator: TitleGenerator,
+    private titleGenerator: TitleGenerator
   ) {}
-  
+
   register(bus: EventBus): () => void {
     return bus.subscribe('message.sent', async (event: MessageSentEvent) => {
       const session = await this.sessionRepo.findById(event.sessionId);
@@ -212,13 +215,17 @@ export class TitleGenerationHandler {
 // apps/worker/src/event-handlers/usage-tracking.handler.ts
 export class UsageTrackingHandler {
   constructor(private usageRepo: UsageRepo) {}
-  
+
   register(bus: EventBus): () => void {
     return bus.subscribe('message.sent', async (event: MessageSentEvent) => {
       // Debounced usage tracking
-      debounce(`usage-${event.sessionId}`, () => {
-        this.usageRepo.trackMessage(event.userId, event.agentId, event.content.length);
-      }, 5000);
+      debounce(
+        `usage-${event.sessionId}`,
+        () => {
+          this.usageRepo.trackMessage(event.userId, event.agentId, event.content.length);
+        },
+        5000
+      );
     });
   }
 }
@@ -261,18 +268,18 @@ container.get(MemoryUpdateHandler).register(bus);
 
 ## Eventos do Wolfkrow
 
-| Event | Quando | Handlers |
-|---|---|---|
-| `message.sent` | User envia mensagem | TitleGeneration, UsageTracking, MemoryUpdate |
-| `message.received` | Assistant responde | CompactionCheck, UsageTracking |
-| `agent.created` | Agent criado | Logging, DefaultSettings |
-| `agent.deleted` | Agent deletado | CascadeDelete |
-| `document.ingested` | Doc processado | IndexUpdate, Notification |
-| `pipeline.phase.started` | Phase inicia | Metrics, Logging |
-| `pipeline.phase.completed` | Phase completa | NextPhase, Metrics |
-| `harness.round.completed` | Round completa | Evaluator, Metrics |
-| `secret.accessed` | Secret lido | AuditLog |
-| `task.scheduled` | Cron task agendada | SchedulerEngine |
+| Event                      | Quando              | Handlers                                     |
+| -------------------------- | ------------------- | -------------------------------------------- |
+| `message.sent`             | User envia mensagem | TitleGeneration, UsageTracking, MemoryUpdate |
+| `message.received`         | Assistant responde  | CompactionCheck, UsageTracking               |
+| `agent.created`            | Agent criado        | Logging, DefaultSettings                     |
+| `agent.deleted`            | Agent deletado      | CascadeDelete                                |
+| `document.ingested`        | Doc processado      | IndexUpdate, Notification                    |
+| `pipeline.phase.started`   | Phase inicia        | Metrics, Logging                             |
+| `pipeline.phase.completed` | Phase completa      | NextPhase, Metrics                           |
+| `harness.round.completed`  | Round completa      | Evaluator, Metrics                           |
+| `secret.accessed`          | Secret lido         | AuditLog                                     |
+| `task.scheduled`           | Cron task agendada  | SchedulerEngine                              |
 
 ## Alternativas Consideradas
 

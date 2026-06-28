@@ -8,8 +8,8 @@
  */
 
 export interface SecretsAdapter {
- get(key: string): Promise<string | null>;
- set(key: string, value: string): Promise<void>;
- delete(key: string): Promise<boolean>;
- list(): Promise<string[]>;
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<boolean>;
+  list(): Promise<string[]>;
 }

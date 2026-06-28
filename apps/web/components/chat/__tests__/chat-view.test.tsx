@@ -99,7 +99,11 @@ describe('ChatView', () => {
   it('shows user message and streaming indicator after send', async () => {
     const user = userEvent.setup();
     vi.mocked(fetch).mockResolvedValue(
-      makeSSEResponse([sseEvent({ type: 'ack' }), sseEvent({ type: 'text', content: 'Hi!' }), sseEvent({ type: 'done' })]),
+      makeSSEResponse([
+        sseEvent({ type: 'ack' }),
+        sseEvent({ type: 'text', content: 'Hi!' }),
+        sseEvent({ type: 'done' }),
+      ])
     );
     render(<ChatView />);
     await user.type(screen.getByLabelText('Chat input'), 'hello');
@@ -109,7 +113,11 @@ describe('ChatView', () => {
 
   it('streams assistant response text', async () => {
     const user = userEvent.setup();
-    mockChatSse([sseEvent({ type: 'text', content: 'Hello' }), sseEvent({ type: 'text', content: ' world' }), sseEvent({ type: 'done' })]);
+    mockChatSse([
+      sseEvent({ type: 'text', content: 'Hello' }),
+      sseEvent({ type: 'text', content: ' world' }),
+      sseEvent({ type: 'done' }),
+    ]);
     render(<ChatView />);
     await user.type(screen.getByLabelText('Chat input'), 'hi');
     await user.click(screen.getByLabelText('Send'));
@@ -173,7 +181,9 @@ describe('ChatView', () => {
     render(<ChatView />);
     await user.type(screen.getByLabelText('Chat input'), 'my first message');
     await user.click(screen.getByLabelText('Send'));
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'my first message' })).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'my first message' })).toBeTruthy()
+    );
   });
 
   it('has a clear button (#10)', () => {
@@ -191,7 +201,7 @@ describe('ChatView', () => {
   it('confirming clear removes messages (#10)', async () => {
     const user = userEvent.setup();
     vi.mocked(fetch).mockResolvedValue(
-      makeSSEResponse([sseEvent({ type: 'text', content: 'Hi!' }), sseEvent({ type: 'done' })]),
+      makeSSEResponse([sseEvent({ type: 'text', content: 'Hi!' }), sseEvent({ type: 'done' })])
     );
     render(<ChatView />);
     await user.type(screen.getByLabelText('Chat input'), 'hello');
@@ -209,7 +219,7 @@ describe('ChatView', () => {
       const signal = (opts as RequestInit).signal;
       return new Promise<Response>((_resolve, reject) => {
         signal?.addEventListener('abort', () =>
-          reject(Object.assign(new Error('Aborted'), { name: 'AbortError' })),
+          reject(Object.assign(new Error('Aborted'), { name: 'AbortError' }))
         );
       });
     });
@@ -238,7 +248,12 @@ describe('ChatView', () => {
     const user = userEvent.setup();
     mockChatSse([
       sseEvent({ type: 'tool_call', id: 'tc-1', name: 'read_file', input: { path: '/foo.txt' } }),
-      sseEvent({ type: 'tool_result', callId: 'tc-1', output: 'file contents here', isError: false }),
+      sseEvent({
+        type: 'tool_result',
+        callId: 'tc-1',
+        output: 'file contents here',
+        isError: false,
+      }),
       sseEvent({ type: 'done' }),
     ]);
     render(<ChatView />);
@@ -252,10 +267,17 @@ describe('ChatView', () => {
     // Route by URL: /api/providers → [], /chat/permission → OK, /chat/send → SSE.
     const fetchMock = vi.fn(async (input: RequestInfo | URL, _init?: RequestInit) => {
       const url = String(input);
-      if (url.includes('/api/providers')) return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
+      if (url.includes('/api/providers'))
+        return new Response('[]', { status: 200, headers: { 'Content-Type': 'application/json' } });
       if (url.endsWith('/chat/permission')) return new Response('{}', { status: 200 });
       return makeSSEResponse([
-        sseEvent({ type: 'tool_permission', id: 'perm-1', name: 'Write', input: {}, prompt: 'Allow Write?' }),
+        sseEvent({
+          type: 'tool_permission',
+          id: 'perm-1',
+          name: 'Write',
+          input: {},
+          prompt: 'Allow Write?',
+        }),
         sseEvent({ type: 'done' }),
       ]);
     });

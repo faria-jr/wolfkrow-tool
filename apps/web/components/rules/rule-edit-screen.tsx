@@ -12,15 +12,25 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
-interface RuleEditScreenProps { ruleId?: string; }
+interface RuleEditScreenProps {
+  ruleId?: string;
+}
 
 async function fetchRule(ruleId: string): Promise<RuleData> {
   const res = await fetch('/api/rules', { credentials: 'include' });
   if (!res.ok) throw new Error(`Failed to load rule (HTTP ${res.status})`);
-  const rule = ((await res.json()) as { rules: RuleData[] }).rules.find((item) => item.id === ruleId);
+  const rule = ((await res.json()) as { rules: RuleData[] }).rules.find(
+    (item) => item.id === ruleId
+  );
   if (!rule) throw new Error('Rule not found');
   return rule;
 }
@@ -52,7 +62,7 @@ const DEFAULTS: RuleFormState = { kind: 'behavior', title: '', body: '', enabled
 
 function LoadingState() {
   return (
-    <div className="flex items-center gap-2 text-muted-foreground">
+    <div className="text-muted-foreground flex items-center gap-2">
       <Loader2 className="h-4 w-4 animate-spin" />
       Loading rule...
     </div>
@@ -80,23 +90,45 @@ function RuleFormFields({ values, kindLocked, update }: RuleFormFieldsProps) {
       <div className="grid gap-4 md:grid-cols-[1fr_220px]">
         <div className="space-y-2">
           <Label htmlFor="rule-title">Title</Label>
-          <Input id="rule-title" value={values.title} onChange={(event) => update('title', event.target.value)} />
+          <Input
+            id="rule-title"
+            value={values.title}
+            onChange={(event) => update('title', event.target.value)}
+          />
         </div>
         <div className="space-y-2">
           <Label>Type</Label>
-          <Select value={values.kind} onValueChange={(value) => update('kind', value as RuleKind)} disabled={kindLocked}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+          <Select
+            value={values.kind}
+            onValueChange={(value) => update('kind', value as RuleKind)}
+            disabled={kindLocked}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
-              {RULE_KINDS.map((kind) => <SelectItem key={kind} value={kind}>{RULE_KIND_LABELS[kind]}</SelectItem>)}
+              {RULE_KINDS.map((kind) => (
+                <SelectItem key={kind} value={kind}>
+                  {RULE_KIND_LABELS[kind]}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <Switch id="rule-enabled" checked={values.enabled} onCheckedChange={(checked) => update('enabled', checked)} />
+        <Switch
+          id="rule-enabled"
+          checked={values.enabled}
+          onCheckedChange={(checked) => update('enabled', checked)}
+        />
         <Label htmlFor="rule-enabled">Enabled</Label>
       </div>
-      <MarkdownEditor value={values.body} onChange={(value) => update('body', value)} label="Rule body" />
+      <MarkdownEditor
+        value={values.body}
+        onChange={(value) => update('body', value)}
+        label="Rule body"
+      />
     </>
   );
 }
@@ -112,9 +144,15 @@ interface RuleFormActionsProps {
 function RuleFormActions({ saving, canSave, isEdit, onCancel, onSubmit }: RuleFormActionsProps) {
   return (
     <div className="flex justify-end gap-2">
-      <Button variant="outline" onClick={onCancel} disabled={saving}>Cancel</Button>
+      <Button variant="outline" onClick={onCancel} disabled={saving}>
+        Cancel
+      </Button>
       <Button onClick={onSubmit} disabled={saving || !canSave}>
-        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+        {saving ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Save className="mr-2 h-4 w-4" />
+        )}
         {isEdit ? 'Save changes' : 'Create rule'}
       </Button>
     </div>
@@ -132,21 +170,30 @@ function useRuleForm(ruleId: string | undefined) {
     void (async () => {
       try {
         const rule = await fetchRule(ruleId);
-        if (!cancelled) setValues({ kind: rule.kind, title: rule.title, body: rule.body, enabled: rule.enabled });
+        if (!cancelled)
+          setValues({ kind: rule.kind, title: rule.title, body: rule.body, enabled: rule.enabled });
       } catch (err) {
         if (!cancelled) setLoadError(err instanceof Error ? err.message : 'Failed to load rule');
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [ruleId]);
-  const update: <K extends keyof RuleFormState>(key: K, value: RuleFormState[K]) => void =
-    (key, value) => setValues((current) => ({ ...current, [key]: value }));
+  const update: <K extends keyof RuleFormState>(key: K, value: RuleFormState[K]) => void = (
+    key,
+    value
+  ) => setValues((current) => ({ ...current, [key]: value }));
   return { values, loading, loadError, saving, setSaving, update };
 }
 
-async function submitRule(values: RuleFormState, ruleId: string | undefined, setSaving: (v: boolean) => void) {
+async function submitRule(
+  values: RuleFormState,
+  ruleId: string | undefined,
+  setSaving: (v: boolean) => void
+) {
   setSaving(true);
   try {
     await saveRule(values, ruleId);
@@ -173,7 +220,9 @@ export function RuleEditScreen({ ruleId }: RuleEditScreenProps) {
         canSave={Boolean(values.title.trim()) && Boolean(values.body.trim())}
         isEdit={Boolean(ruleId)}
         onCancel={() => router.push('/rules')}
-        onSubmit={() => { void submitRule(values, ruleId, setSaving).then(() => router.push('/rules')); }}
+        onSubmit={() => {
+          void submitRule(values, ruleId, setSaving).then(() => router.push('/rules'));
+        }}
       />
     </div>
   );

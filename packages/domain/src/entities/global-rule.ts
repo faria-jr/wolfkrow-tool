@@ -69,7 +69,9 @@ export class GlobalRule {
     return new GlobalRule({ ...this.toProps(), enabled: !this.enabled, updatedAt: new Date() });
   }
 
-  withUpdate(patch: Partial<Pick<GlobalRuleProps, 'title' | 'body' | 'enabled' | 'sortOrder'>>): GlobalRule {
+  withUpdate(
+    patch: Partial<Pick<GlobalRuleProps, 'title' | 'body' | 'enabled' | 'sortOrder'>>
+  ): GlobalRule {
     return new GlobalRule({ ...this.toProps(), ...patch, updatedAt: new Date() });
   }
 

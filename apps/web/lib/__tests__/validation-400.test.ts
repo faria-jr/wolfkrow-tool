@@ -42,11 +42,7 @@ import { validateBody } from '../validation';
  * Assert that `validateBody` returns a 400 Response for `bad` and the parsed
  * value for `good`.
  */
-function expectRejectsAndAccepts<T>(
-  schema: ZodType<T>,
-  bad: unknown,
-  good: unknown,
-): void {
+function expectRejectsAndAccepts<T>(schema: ZodType<T>, bad: unknown, good: unknown): void {
   const badResult = validateBody(schema, bad);
   expect(badResult).toBeInstanceOf(Response);
   if (badResult instanceof Response) {
@@ -63,7 +59,10 @@ describe('P1-1b request schema boundary matrix', () => {
   });
 
   it('auth setup: rejects mismatched confirmPassword', () => {
-    const res = validateBody(SetupRequestBodySchema, { password: 'secret1', confirmPassword: 'nope' });
+    const res = validateBody(SetupRequestBodySchema, {
+      password: 'secret1',
+      confirmPassword: 'nope',
+    });
     expect(res).toBeInstanceOf(Response);
     if (res instanceof Response) expect(res.status).toBe(400);
   });
@@ -73,17 +72,17 @@ describe('P1-1b request schema boundary matrix', () => {
     expectRejectsAndAccepts(
       VerifyTotpRequestBodySchema,
       { userId: 'not-a-uuid', code: '123456' },
-      { userId: '550e8400-e29b-41d4-a716-446655440000', code: '123456' },
+      { userId: '550e8400-e29b-41d4-a716-446655440000', code: '123456' }
     );
     expectRejectsAndAccepts(
       EnableTotpRequestBodySchema,
       { secret: 's' },
-      { secret: 'BASE32SECRET', code: '123456' },
+      { secret: 'BASE32SECRET', code: '123456' }
     );
     expectRejectsAndAccepts(
       DisableTotpRequestBodySchema,
       {},
-      { password: 'secret1', code: '123456' },
+      { password: 'secret1', code: '123456' }
     );
   });
 
@@ -93,7 +92,7 @@ describe('P1-1b request schema boundary matrix', () => {
     expectRejectsAndAccepts(
       AgentSyncRequestBodySchema,
       { targetRuntime: 'bogus' },
-      { targetRuntime: 'cloud' },
+      { targetRuntime: 'cloud' }
     );
     expectRejectsAndAccepts(UpdateAgentInputSchema, { name: 123 }, { name: 'Updated' });
   });
@@ -111,25 +110,21 @@ describe('P1-1b request schema boundary matrix', () => {
     expectRejectsAndAccepts(
       CreateMcpServerRequestBodySchema,
       { name: 'x' },
-      { name: 'srv', command: 'run' },
+      { name: 'srv', command: 'run' }
     );
-    expectRejectsAndAccepts(
-      UpdateMcpServerRequestBodySchema,
-      {},
-      { isActive: true },
-    );
+    expectRejectsAndAccepts(UpdateMcpServerRequestBodySchema, {}, { isActive: true });
   });
 
   it('scheduler: task create/run-review/update reject invalid, accept valid', () => {
     expectRejectsAndAccepts(
       CreateScheduledTaskRequestBodySchema,
       { name: 't' },
-      { name: 't', cronExpression: '0 * * * *', prompt: 'go' },
+      { name: 't', cronExpression: '0 * * * *', prompt: 'go' }
     );
     expectRejectsAndAccepts(
       ReviewTaskRunRequestBodySchema,
       { verdict: 'maybe' },
-      { verdict: 'validated' },
+      { verdict: 'validated' }
     );
   });
 
@@ -137,7 +132,7 @@ describe('P1-1b request schema boundary matrix', () => {
     expectRejectsAndAccepts(
       CreateSkillRequestBodySchema,
       { tags: 'not-array' },
-      { name: 's', description: 'd', content: 'c' },
+      { name: 's', description: 'd', content: 'c' }
     );
     expectRejectsAndAccepts(UpdateSkillRequestBodySchema, { name: 1 }, { name: 's' });
   });

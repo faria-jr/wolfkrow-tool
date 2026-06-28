@@ -29,9 +29,9 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   const session = await requireSession();
   const input = SendMessageInputSchema.parse(await req.json());
-  
+
   const encoder = new TextEncoder();
-  
+
   return new Response(
     new ReadableStream({
       async start(controller) {
@@ -40,9 +40,7 @@ export async function POST(req: NextRequest) {
             ...input,
             userId: session.userId,
           })) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`)
-            );
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
           }
           controller.close();
         } catch (error) {
@@ -57,7 +55,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
         'X-Accel-Buffering': 'no',
       },
     }
@@ -74,13 +72,13 @@ import { useChatStreamStore } from '@web/lib/presentation/stores/chat-stream.sto
 
 export function useChatStream(sessionId: string | null) {
   const eventSourceRef = useRef<EventSource | null>(null);
-  
+
   useEffect(() => {
     if (!sessionId) return;
-    
+
     const es = new EventSource(`/api/chat/stream/${sessionId}`);
     eventSourceRef.current = es;
-    
+
     es.onmessage = (e) => {
       try {
         const chunk = ChatStreamChunkSchema.parse(JSON.parse(e.data));
@@ -89,11 +87,11 @@ export function useChatStream(sessionId: string | null) {
         console.error('Invalid SSE chunk:', error);
       }
     };
-    
+
     es.onerror = () => {
       // Reconnect logic with exponential backoff
     };
-    
+
     return () => {
       es.close();
       useChatStreamStore.getState().clear();
@@ -151,18 +149,18 @@ Next.js Route Handler faz **proxy SSE** do Worker para o browser.
 export function useReconnect(es: EventSource, onReconnect: () => void) {
   useEffect(() => {
     let reconnectAttempts = 0;
-    
+
     const handleError = () => {
       es.close();
-      
+
       const delay = Math.min(1000 * 2 ** reconnectAttempts, 30000);
       reconnectAttempts++;
-      
+
       setTimeout(() => {
         onReconnect();
       }, delay);
     };
-    
+
     es.addEventListener('error', handleError);
     return () => es.removeEventListener('error', handleError);
   }, [es, onReconnect]);
@@ -185,14 +183,14 @@ req.signal.addEventListener('abort', () => {
 
 ## Múltiplos Tipos de Stream
 
-| Tipo | Endpoint | Schema | Update interval |
-|---|---|---|---|
-| Chat | `/api/chat/send` | ChatStreamChunk | Real-time |
-| Pipeline | `/api/pipeline/{id}/stream` | PipelineStreamChunk | 100-500ms |
-| Harness | `/api/harness/{id}/stream` | HarnessStreamChunk | 500ms-1s |
-| Logs | `/api/logs/stream` | LogEntry | 100ms |
-| Dreaming | `/api/dreaming/stream` | DreamingEvent | 5-30s |
-| Knowledge ingest | `/api/knowledge/{id}/stream` | IngestProgress | 1s |
+| Tipo             | Endpoint                     | Schema              | Update interval |
+| ---------------- | ---------------------------- | ------------------- | --------------- |
+| Chat             | `/api/chat/send`             | ChatStreamChunk     | Real-time       |
+| Pipeline         | `/api/pipeline/{id}/stream`  | PipelineStreamChunk | 100-500ms       |
+| Harness          | `/api/harness/{id}/stream`   | HarnessStreamChunk  | 500ms-1s        |
+| Logs             | `/api/logs/stream`           | LogEntry            | 100ms           |
+| Dreaming         | `/api/dreaming/stream`       | DreamingEvent       | 5-30s           |
+| Knowledge ingest | `/api/knowledge/{id}/stream` | IngestProgress      | 1s              |
 
 ## Event Types Padronizados
 

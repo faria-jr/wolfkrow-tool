@@ -19,10 +19,7 @@ import { ZodError, type ZodType } from 'zod';
  * Returns the parsed value on success, or a `Response` (status 400) on failure.
  * Callers MUST check `instanceof Response` before using the value.
  */
-export function validateBody<T>(
-  schema: ZodType<T>,
-  input: unknown,
-): T | Response {
+export function validateBody<T>(schema: ZodType<T>, input: unknown): T | Response {
   try {
     return schema.parse(input);
   } catch (error) {
@@ -33,7 +30,7 @@ export function validateBody<T>(
       }));
       return Response.json(
         { error: 'Validation error', code: 'VALIDATION_ERROR', details },
-        { status: 400 },
+        { status: 400 }
       );
     }
     throw error;

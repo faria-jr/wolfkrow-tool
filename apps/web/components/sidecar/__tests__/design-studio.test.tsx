@@ -23,14 +23,16 @@ describe('DesignStudio', () => {
 
   it('renders studio status and start button initially', async () => {
     render(<DesignStudio />);
-    expect(await screen.findByText(/Click Start to launch/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Click Start Engine to launch/i)).toBeInTheDocument();
   });
 
   it('starts the studio on Start click', async () => {
     render(<DesignStudio />);
-    const start = await screen.findByRole('button', { name: 'Start' });
+    const start = await screen.findByRole('button', { name: /Start Engine/i });
     await userEvent.click(start);
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith('/api/open-design?action=start', { method: 'POST' }));
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/open-design?action=start', { method: 'POST' })
+    );
   });
 
   it('iframes the engine webUrl when running', async () => {

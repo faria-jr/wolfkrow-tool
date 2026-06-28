@@ -50,7 +50,10 @@ function runDetection(o: DetectionOpts): void {
     o.analyser.getFloatTimeDomainData(o.data);
     const rms = Math.sqrt(o.data.reduce((sum, v) => sum + v * v, 0) / o.data.length);
     if (rms > o.energyThreshold) {
-      if (o.silenceTimerRef.current) { clearTimeout(o.silenceTimerRef.current); o.silenceTimerRef.current = null; }
+      if (o.silenceTimerRef.current) {
+        clearTimeout(o.silenceTimerRef.current);
+        o.silenceTimerRef.current = null;
+      }
       if (!o.isSpeakingRef.current) {
         o.isSpeakingRef.current = true;
         o.setIsSpeaking(true);
@@ -98,12 +101,25 @@ export function useVad(options: UseVadOptions = {}): UseVadReturn {
     contextRef.current = ctx;
     analyserRef.current = analyser;
     runDetection({
-      analyser, data, energyThreshold, silenceThresholdMs,
-      isSpeakingRef, silenceTimerRef, rafRef, onSpeechStart, onSpeechEnd, setIsSpeaking,
+      analyser,
+      data,
+      energyThreshold,
+      silenceThresholdMs,
+      isSpeakingRef,
+      silenceTimerRef,
+      rafRef,
+      onSpeechStart,
+      onSpeechEnd,
+      setIsSpeaking,
     });
   }, [energyThreshold, silenceThresholdMs, onSpeechStart, onSpeechEnd]);
 
-  useEffect(() => () => { stop(); }, [stop]);
+  useEffect(
+    () => () => {
+      stop();
+    },
+    [stop]
+  );
 
   return { isSpeaking, start, stop };
 }

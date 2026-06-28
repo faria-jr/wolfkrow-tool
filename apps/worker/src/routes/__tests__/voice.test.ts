@@ -49,7 +49,8 @@ describe('voice POST /synthesize', () => {
     fakeKeychain.getSecret.mockResolvedValueOnce('sk-elevenlabs');
     fakeTts.synthesize.mockResolvedValueOnce(Buffer.from([9, 9]));
     const res = await app.inject({
-      method: 'POST', url: '/synthesize',
+      method: 'POST',
+      url: '/synthesize',
       payload: { text: 'hello', voice: 'v1', model: 'm1' },
     });
     expect(res.statusCode).toBe(200);
@@ -85,7 +86,9 @@ describe('voice POST /synthesize/stream', () => {
       yield Buffer.from([2]);
     };
     const res = await app.inject({
-      method: 'POST', url: '/synthesize/stream', payload: { text: 'hi', voice: 'v1' },
+      method: 'POST',
+      url: '/synthesize/stream',
+      payload: { text: 'hi', voice: 'v1' },
     });
     expect(res.statusCode).toBe(200);
     // The route streams via reply.raw (chunked) — both buffered chunks arrive.
@@ -97,7 +100,9 @@ describe('voice POST /synthesize/stream', () => {
     fakeTts.streamSynthesize = undefined;
     fakeTts.synthesize.mockResolvedValueOnce(Buffer.from([7, 7, 7]));
     const res = await app.inject({
-      method: 'POST', url: '/synthesize/stream', payload: { text: 'hi' },
+      method: 'POST',
+      url: '/synthesize/stream',
+      payload: { text: 'hi' },
     });
     expect(res.statusCode).toBe(200);
     expect(res.body.length).toBe(3);
@@ -105,7 +110,11 @@ describe('voice POST /synthesize/stream', () => {
 
   it('returns 503 when the provider key is not configured', async () => {
     fakeKeychain.getSecret.mockResolvedValueOnce(null);
-    const res = await app.inject({ method: 'POST', url: '/synthesize/stream', payload: { text: 'hi' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/synthesize/stream',
+      payload: { text: 'hi' },
+    });
     expect(res.statusCode).toBe(503);
   });
 

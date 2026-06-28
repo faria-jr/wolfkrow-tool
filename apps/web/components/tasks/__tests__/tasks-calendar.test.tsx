@@ -4,8 +4,24 @@ import { describe, expect, it } from 'vitest';
 import { TasksCalendar } from '../tasks-calendar';
 
 const mockTasks = [
-  { id: '1', title: 'Task with due date', status: 'todo', priority: 'high', category: 'work', tags: [], dueDate: '2024-06-15T10:00:00Z' },
-  { id: '2', title: 'No date task', status: 'todo', priority: 'low', category: 'work', tags: [], dueDate: null },
+  {
+    id: '1',
+    title: 'Task with due date',
+    status: 'todo',
+    priority: 'high',
+    category: 'work',
+    tags: [],
+    dueDate: '2024-06-15T10:00:00Z',
+  },
+  {
+    id: '2',
+    title: 'No date task',
+    status: 'todo',
+    priority: 'low',
+    category: 'work',
+    tags: [],
+    dueDate: null,
+  },
 ];
 
 describe('TasksCalendar', () => {

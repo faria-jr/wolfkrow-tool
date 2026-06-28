@@ -25,6 +25,6 @@ export async function profilerRoutes(server: AuthFastifyInstance) {
         fileCount: profile.fileCount,
         summary: profile.toSummary(),
       });
-    },
+    }
   );
 }

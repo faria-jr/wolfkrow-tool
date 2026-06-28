@@ -33,7 +33,7 @@ describe('AddMcpServerModal', () => {
     await userEvent.click(screen.getByRole('button', { name: /^add$/i }));
     expect(fetch).toHaveBeenCalledWith(
       '/api/mcp-servers',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({ method: 'POST' })
     );
     expect(onDone).toHaveBeenCalled();
   });

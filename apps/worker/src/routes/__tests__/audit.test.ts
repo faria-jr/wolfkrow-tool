@@ -2,17 +2,47 @@ import Fastify from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 vi.mock('../../container', () => {
-  const existingScan = { id: 'scan-1', userId: 'u1', projectPath: '/p', status: 'completed', summary: {}, startedAt: new Date(), completedAt: new Date(), error: null };
+  const existingScan = {
+    id: 'scan-1',
+    userId: 'u1',
+    projectPath: '/p',
+    status: 'completed',
+    summary: {},
+    startedAt: new Date(),
+    completedAt: new Date(),
+    error: null,
+  };
   return {
     getAdapters: vi.fn().mockReturnValue({
       aiFactory: { createFromConfig: vi.fn() },
       secrets: { get: vi.fn().mockResolvedValue(null) },
-      securityAuditRunner: { run: vi.fn().mockResolvedValue({ scanId: 'scan-1', findings: [], summary: { total: 0, bySeverity: { info: 0, warning: 0, major: 0, critical: 0, blocker: 0 }, byDimension: { secrets: 0, auth: 0, isolation: 0, duplication: 0, logic: 0, standards: 0, owasp: 0, general: 0 } } }) },
+      securityAuditRunner: {
+        run: vi.fn().mockResolvedValue({
+          scanId: 'scan-1',
+          findings: [],
+          summary: {
+            total: 0,
+            bySeverity: { info: 0, warning: 0, major: 0, critical: 0, blocker: 0 },
+            byDimension: {
+              secrets: 0,
+              auth: 0,
+              isolation: 0,
+              duplication: 0,
+              logic: 0,
+              standards: 0,
+              owasp: 0,
+              general: 0,
+            },
+          },
+        }),
+      },
     }),
     getRepos: vi.fn().mockReturnValue({
       securityScan: {
         create: vi.fn().mockReturnValue({ ...existingScan, status: 'pending', completedAt: null }),
-        findById: vi.fn().mockImplementation((id: string) => id === 'scan-1' ? existingScan : null),
+        findById: vi
+          .fn()
+          .mockImplementation((id: string) => (id === 'scan-1' ? existingScan : null)),
         listByUser: vi.fn().mockReturnValue([]),
         update: vi.fn(),
       },
@@ -32,7 +62,20 @@ vi.mock('@wolfkrow/infra', async (importOriginal) => {
       run = vi.fn().mockResolvedValue({
         scanId: 'scan-1',
         findings: [],
-        summary: { total: 0, bySeverity: { info: 0, warning: 0, major: 0, critical: 0, blocker: 0 }, byDimension: { secrets: 0, auth: 0, isolation: 0, duplication: 0, logic: 0, standards: 0, owasp: 0, general: 0 } },
+        summary: {
+          total: 0,
+          bySeverity: { info: 0, warning: 0, major: 0, critical: 0, blocker: 0 },
+          byDimension: {
+            secrets: 0,
+            auth: 0,
+            isolation: 0,
+            duplication: 0,
+            logic: 0,
+            standards: 0,
+            owasp: 0,
+            general: 0,
+          },
+        },
       });
     },
   };
@@ -153,7 +196,9 @@ describe('audit routes — error mapping', () => {
     runnerRun.mockRejectedValueOnce(new Error('scanner exploded'));
 
     const res = await app.inject({
-      method: 'POST', url: '/audit/run', payload: { projectPath: '/tmp/p' },
+      method: 'POST',
+      url: '/audit/run',
+      payload: { projectPath: '/tmp/p' },
     });
     expect(res.statusCode).toBe(500);
     const body = res.json() as { error: string; scanId: string };
@@ -168,7 +213,9 @@ describe('audit routes — error mapping', () => {
     vi.mocked(listAllProviders).mockResolvedValueOnce([]);
 
     const res = await app.inject({
-      method: 'POST', url: '/audit/run', payload: { projectPath: '/tmp/p' },
+      method: 'POST',
+      url: '/audit/run',
+      payload: { projectPath: '/tmp/p' },
     });
     expect(res.statusCode).toBe(500);
   });

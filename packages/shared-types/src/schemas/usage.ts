@@ -108,15 +108,13 @@ export const UsageSummarySchema = z.object({
           // JS Date rolls overflow (e.g. Feb 30 → Mar 1) instead of producing
           // NaN, so verify the constructed date matches the input components.
           return (
-            date.getUTCFullYear() === y &&
-            date.getUTCMonth() === m - 1 &&
-            date.getUTCDate() === d
+            date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d
           );
         }, 'invalid calendar date'),
       inputTokens: z.number().int().min(0),
       outputTokens: z.number().int().min(0),
       costUSD: z.number().min(0),
-    }),
+    })
   ),
 });
 

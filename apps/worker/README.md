@@ -106,17 +106,17 @@ pnpm --filter @wolfkrow/worker test:cov      # com coverage
 
 Validada por Zod em [`src/config.ts`](src/config.ts):
 
-| Var | Default | Descrição |
-|---|---|---|
-| `PORT` | `4000` | Porta HTTP |
-| `HOST` | `127.0.0.1` | Bind |
-| `WORKER_SECRET` | dev default | Secret interno (≥32 chars; **obrigatório em prod**, lança se ausente) |
-| `JWKS_URL` | `http://localhost:3000/.well-known/jwks.json` | JWKS do web (validar JWT) |
-| `WORKER_POLL_INTERVAL_MS` | `60000` | Intervalo de poll (scheduler) |
-| `LOG_LEVEL` | `info` | `trace\|debug\|info\|warn\|error\|fatal` |
-| `WOLFKROW_DB_PATH` | `.wolfkrow/data/wolfkrow.db` | SQLite (mesmo path do web) |
-| `VOYAGE_API_KEY` | — | Embeddings (Knowledge/RAG) |
-| `NODE_ENV` | `development` | `development\|test\|production` |
+| Var                       | Default                                       | Descrição                                                             |
+| ------------------------- | --------------------------------------------- | --------------------------------------------------------------------- |
+| `PORT`                    | `4000`                                        | Porta HTTP                                                            |
+| `HOST`                    | `127.0.0.1`                                   | Bind                                                                  |
+| `WORKER_SECRET`           | dev default                                   | Secret interno (≥32 chars; **obrigatório em prod**, lança se ausente) |
+| `JWKS_URL`                | `http://localhost:3000/.well-known/jwks.json` | JWKS do web (validar JWT)                                             |
+| `WORKER_POLL_INTERVAL_MS` | `60000`                                       | Intervalo de poll (scheduler)                                         |
+| `LOG_LEVEL`               | `info`                                        | `trace\|debug\|info\|warn\|error\|fatal`                              |
+| `WOLFKROW_DB_PATH`        | `.wolfkrow/data/wolfkrow.db`                  | SQLite (mesmo path do web)                                            |
+| `VOYAGE_API_KEY`          | —                                             | Embeddings (Knowledge/RAG)                                            |
+| `NODE_ENV`                | `development`                                 | `development\|test\|production`                                       |
 
 Variáveis de runtime (tokens Telegram, chaves voice/STT/TTS, providers AI) são lidas do **Vault** (keytar), não do env.
 
@@ -145,26 +145,26 @@ apps/worker/src/
 
 Registradas em `server.ts` (prefixos):
 
-| Prefixo | Domínio |
-|---|---|
-| `/health` | Health check |
-| `/api` | Knowledge (ingest/search) + Memory |
-| `/chat` | Chat streaming (SSE) + sessões |
-| `/scheduler` | Tarefas cron |
-| `/harness` | Sprints/rounds |
-| `/pipeline` | BuildPlan multi-fase |
-| `/enrich` | Validator→Enricher + WorkflowRun |
-| `/voice` | STT/TTS |
-| `/mcp` | Lifecycle MCP servers |
-| `/pty` | Terminal interativo (WebSocket) |
-| `/telegram` | Bridge Telegram |
-| `/vault` | Segredos (keytar) |
-| `/usage` | Analytics de tokens |
-| `/logs` | Live-tail |
-| `/rules` | Regras globais |
-| `/permissions` | Whitelist/blacklist + audit |
-| `/tasks` | Tasks (kanban CRUD) |
-| `/graph` | Knowledge graph (ingest + neighborhood) |
+| Prefixo        | Domínio                                 |
+| -------------- | --------------------------------------- |
+| `/health`      | Health check                            |
+| `/api`         | Knowledge (ingest/search) + Memory      |
+| `/chat`        | Chat streaming (SSE) + sessões          |
+| `/scheduler`   | Tarefas cron                            |
+| `/harness`     | Sprints/rounds                          |
+| `/pipeline`    | BuildPlan multi-fase                    |
+| `/enrich`      | Validator→Enricher + WorkflowRun        |
+| `/voice`       | STT/TTS                                 |
+| `/mcp`         | Lifecycle MCP servers                   |
+| `/pty`         | Terminal interativo (WebSocket)         |
+| `/telegram`    | Bridge Telegram                         |
+| `/vault`       | Segredos (keytar)                       |
+| `/usage`       | Analytics de tokens                     |
+| `/logs`        | Live-tail                               |
+| `/rules`       | Regras globais                          |
+| `/permissions` | Whitelist/blacklist + audit             |
+| `/tasks`       | Tasks (kanban CRUD)                     |
+| `/graph`       | Knowledge graph (ingest + neighborhood) |
 
 ---
 

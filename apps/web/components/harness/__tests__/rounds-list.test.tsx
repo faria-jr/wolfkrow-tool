@@ -4,14 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RoundsList } from '../rounds-list';
 
-function makeRound(overrides: Partial<{
-  id: string;
-  roundNumber: number;
-  coderOutput: string | null;
-  evaluatorFeedback: string | null;
-  passed: boolean;
-  tokens: number;
-}> = {}): Record<string, unknown> {
+function makeRound(
+  overrides: Partial<{
+    id: string;
+    roundNumber: number;
+    coderOutput: string | null;
+    evaluatorFeedback: string | null;
+    passed: boolean;
+    tokens: number;
+  }> = {}
+): Record<string, unknown> {
   return {
     id: 'round-1',
     sprintId: 'sprint-1',
@@ -49,7 +51,7 @@ describe('RoundsList (M5.3 integration)', () => {
     await waitFor(() => expect(screen.getByText(/No rounds yet/)).toBeInTheDocument());
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/harness/sprints/sprint-1/rounds',
-      expect.objectContaining({ credentials: 'include' }),
+      expect.objectContaining({ credentials: 'include' })
     );
   });
 
@@ -69,7 +71,9 @@ describe('RoundsList (M5.3 integration)', () => {
     fetchMock.mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => [makeRound({ id: 'r1', roundNumber: 1, passed: false, evaluatorFeedback: 'fix the bug' })],
+      json: async () => [
+        makeRound({ id: 'r1', roundNumber: 1, passed: false, evaluatorFeedback: 'fix the bug' }),
+      ],
     });
     render(<RoundsList sprintId="sprint-1" />);
     await waitFor(() => expect(screen.getByText('Round 1')).toBeInTheDocument());

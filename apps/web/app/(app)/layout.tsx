@@ -18,7 +18,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <SidebarProvider defaultOpen>
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:shadow"
+        className="focus:bg-background sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:px-4 focus:py-2 focus:shadow"
       >
         Skip to content
       </a>
@@ -31,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             column; this div is the flex-1 overflow boundary so each page's
             PageShell/PageContent scrolls internally instead of the window.
             (SidebarInset itself renders the single <main> landmark.) */}
-        <div id="main-content" tabIndex={-1} className="flex-1 min-h-0 overflow-hidden">
+        <div id="main-content" tabIndex={-1} className="min-h-0 flex-1 overflow-hidden">
           {children}
         </div>
         {/* DEBT #13 — global active-runs strip (hidden when no runs in flight). */}

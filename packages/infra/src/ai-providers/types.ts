@@ -9,69 +9,69 @@ import type { ProviderConfig } from '@wolfkrow/domain';
 export type ChatRole = 'system' | 'user' | 'assistant';
 
 export interface ChatMessage {
- role: ChatRole;
- content: string;
+  role: ChatRole;
+  content: string;
 }
 
 export interface ImagePart {
- mimeType: string; // 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
- data: string; // base64-encoded
+  mimeType: string; // 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp'
+  data: string; // base64-encoded
 }
 
 export interface CompletionOptions {
- model: string;
- /** Multi-turn. Use [{role:'user', content}] p/ prompt único. */
- messages: ChatMessage[];
- /** System prompt separado (concatenado à frente pelo provider). */
- system?: string;
- maxTokens?: number;
- temperature?: number;
- /** Abortar streaming (botão Stop) — repassado ao SDK. */
- signal?: AbortSignal;
- /** vision blocks injected into the last user message. */
- imageParts?: ImagePart[];
+  model: string;
+  /** Multi-turn. Use [{role:'user', content}] p/ prompt único. */
+  messages: ChatMessage[];
+  /** System prompt separado (concatenado à frente pelo provider). */
+  system?: string;
+  maxTokens?: number;
+  temperature?: number;
+  /** Abortar streaming (botão Stop) — repassado ao SDK. */
+  signal?: AbortSignal;
+  /** vision blocks injected into the last user message. */
+  imageParts?: ImagePart[];
 }
 
 /** Chunk incremental de stream. delta vazio + done=true encerra com usage. */
 export interface ToolPermissionEvent {
- callId: string;
- name: string;
- input: Record<string, unknown>;
- prompt: string;
+  callId: string;
+  name: string;
+  input: Record<string, unknown>;
+  prompt: string;
 }
 
 export interface StreamChunk {
- delta: string;
- inputTokens?: number;
- outputTokens?: number;
- done?: boolean;
- /** Emitted when AI requests a tool call. */
- toolCall?: { id: string; name: string; input: Record<string, unknown> };
- /** Emitted after a tool has been executed. */
- toolResult?: { callId: string; output: string; isError: boolean };
- /** emitted when a destructive tool needs user approval (PermissionResult 'ask'). */
- toolPermission?: ToolPermissionEvent;
+  delta: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  done?: boolean;
+  /** Emitted when AI requests a tool call. */
+  toolCall?: { id: string; name: string; input: Record<string, unknown> };
+  /** Emitted after a tool has been executed. */
+  toolResult?: { callId: string; output: string; isError: boolean };
+  /** emitted when a destructive tool needs user approval (PermissionResult 'ask'). */
+  toolPermission?: ToolPermissionEvent;
 }
 
 export interface CompletionResult {
- content: string;
- usage: {
- inputTokens: number;
- outputTokens: number;
- };
- stopReason?: string;
+  content: string;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+  };
+  stopReason?: string;
 }
 
 export interface AIProvider {
- /** Stream de resposta. Último chunk carrega usage (done=true). */
- query(options: CompletionOptions): AsyncIterable<StreamChunk>;
- /** Não-streaming: acumula `query()` e retorna conteúdo completo. */
- complete(options: CompletionOptions): Promise<CompletionResult>;
- /** Estimativa de tokens (heurística ou API nativa do provider). */
- countTokens(messages: ChatMessage[], model: string): Promise<number>;
+  /** Stream de resposta. Último chunk carrega usage (done=true). */
+  query(options: CompletionOptions): AsyncIterable<StreamChunk>;
+  /** Não-streaming: acumula `query()` e retorna conteúdo completo. */
+  complete(options: CompletionOptions): Promise<CompletionResult>;
+  /** Estimativa de tokens (heurística ou API nativa do provider). */
+  countTokens(messages: ChatMessage[], model: string): Promise<number>;
 }
 
 export interface AIProviderFactory {
- create(provider: string, apiKey: string): AIProvider;
- createFromConfig(cfg: ProviderConfig, apiKey: string): AIProvider;
+  create(provider: string, apiKey: string): AIProvider;
+  createFromConfig(cfg: ProviderConfig, apiKey: string): AIProvider;
 }

@@ -33,7 +33,13 @@ describe('RepoProfile', () => {
   });
 
   it('toSummary returns empty-repo placeholder when no languages', () => {
-    const p = RepoProfile.create({ root: '/empty', languages: [], frameworks: [], roles: {}, fileCount: 0 });
+    const p = RepoProfile.create({
+      root: '/empty',
+      languages: [],
+      frameworks: [],
+      roles: {},
+      fileCount: 0,
+    });
     const summary = p.toSummary();
     expect(summary.length).toBeGreaterThan(0);
   });

@@ -1,7 +1,6 @@
 import { handleRpcMessage } from '@wolfkrow/mcp-shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-
 import { handlers } from '../index';
 
 afterEach(() => {
@@ -29,9 +28,7 @@ describe('google-sheets MCP server smoke tests', () => {
     const res = await handleRpcMessage({ jsonrpc: '2.0', id: 2, method: 'tools/list' }, handlers);
     const tools = (res?.result as { tools: { name: string }[] })?.tools ?? [];
     const names = tools.map((t) => t.name);
-    expect(names).toEqual(
-      expect.arrayContaining(['list_sheets', 'read_sheet', 'append_rows']),
-    );
+    expect(names).toEqual(expect.arrayContaining(['list_sheets', 'read_sheet', 'append_rows']));
   });
 
   it('read_sheet calls Sheets values endpoint', async () => {
@@ -47,7 +44,7 @@ describe('google-sheets MCP server smoke tests', () => {
           arguments: { spreadsheetId: 'sid', range: 'Sheet1!A1:D10' },
         },
       },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
@@ -75,7 +72,7 @@ describe('google-sheets MCP server smoke tests', () => {
           },
         },
       },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     const call = vi.mocked(fetch).mock.calls[0];
@@ -86,16 +83,26 @@ describe('google-sheets MCP server smoke tests', () => {
   it('requires spreadsheetId and range for read_sheet', async () => {
     process.env['GOOGLE_SHEETS_TOKEN'] = 't';
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'read_sheet', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'tools/call',
+        params: { name: 'read_sheet', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
 
   it('returns isError when token missing', async () => {
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'list_sheets', arguments: { spreadsheetId: 'x' } } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 6,
+        method: 'tools/call',
+        params: { name: 'list_sheets', arguments: { spreadsheetId: 'x' } },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
@@ -103,7 +110,7 @@ describe('google-sheets MCP server smoke tests', () => {
   it('unknown tool returns isError', async () => {
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'nope', arguments: {} } },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });

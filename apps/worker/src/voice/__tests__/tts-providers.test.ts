@@ -43,14 +43,19 @@ describe('CartesiaTtsProvider', () => {
       captured = JSON.parse(String(init!.body)) as typeof captured;
       return new Response(new Uint8Array([0]), { status: 200 });
     });
-    await new CartesiaTtsProvider('sk').synthesize('hi', { voice: 'custom-voice', model: 'other-model' });
+    await new CartesiaTtsProvider('sk').synthesize('hi', {
+      voice: 'custom-voice',
+      model: 'other-model',
+    });
     expect(captured!.voice.id).toBe('custom-voice');
     expect(captured!.model_id).toBe('other-model');
   });
 
   it('throws on a non-ok response', async () => {
     mockFetch(async () => new Response('err', { status: 500 }));
-    await expect(new CartesiaTtsProvider('sk').synthesize('x')).rejects.toThrow(/Cartesia error 500/);
+    await expect(new CartesiaTtsProvider('sk').synthesize('x')).rejects.toThrow(
+      /Cartesia error 500/
+    );
   });
 
   it('streamSynthesize yields the full audio buffer', async () => {
@@ -93,7 +98,9 @@ describe('ElevenLabsTtsProvider', () => {
 
   it('throws on a non-ok synthesize response', async () => {
     mockFetch(async () => new Response('e', { status: 401 }));
-    await expect(new ElevenLabsTtsProvider('sk').synthesize('x')).rejects.toThrow(/ElevenLabs error 401/);
+    await expect(new ElevenLabsTtsProvider('sk').synthesize('x')).rejects.toThrow(
+      /ElevenLabs error 401/
+    );
   });
 
   it('streamSynthesize yields chunks from the response body', async () => {

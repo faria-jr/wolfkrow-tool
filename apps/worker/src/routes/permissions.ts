@@ -2,7 +2,6 @@
  * Permissions + Audit routes — S.3.
  */
 
-
 import {
   ResolvePermissionUseCase,
   RecordAuditEntryUseCase,

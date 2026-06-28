@@ -6,6 +6,7 @@
 ## Contexto
 
 O Wolfkrow Tool precisa de database local para 40+ tables com:
+
 - ACID transactions
 - Type-safe queries
 - Vector search (embeddings)
@@ -14,6 +15,7 @@ O Wolfkrow Tool precisa de database local para 40+ tables com:
 - Zero ops (no server to manage)
 
 Opções:
+
 1. **better-sqlite3** (síncrono, rápido, embedded)
 2. **node-sqlite3** (async, callback-based)
 3. **PostgreSQL** (server, requires install)
@@ -89,7 +91,7 @@ export const knowledgeChunks = sqliteTable('knowledge_chunks', {
   id: text('id').primaryKey(),
   documentId: text('document_id').notNull(),
   content: text('content').notNull(),
-  embedding: vec_f32('embedding', { dimensions: 1024 }),  // Voyage embeddings (voyage-3) — ver ADR-0028
+  embedding: vec_f32('embedding', { dimensions: 1024 }), // Voyage embeddings (voyage-3) — ver ADR-0028
   metadata: text('metadata', { mode: 'json' }).$type<Record<string, unknown>>(),
 });
 
@@ -139,10 +141,10 @@ import { resolveWolfkrowHome } from '@wolfkrow/infra/paths';
 async function backup() {
   const dbPath = `${resolveWolfkrowHome()}/data/wolfkrow.db`;
   const backupPath = `${dbPath}.backup-${Date.now()}`;
-  
+
   // SQLite-safe backup (uses backup API)
   await db.backup(backupPath);
-  
+
   // Compress + upload (opt-in)
   if (process.env.WOLFKROW_BACKUP_CLOUD) {
     await uploadToCloud(backupPath);
@@ -153,6 +155,7 @@ async function backup() {
 ## Performance
 
 Benchmarks (1M rows, indexed query):
+
 - **Read**: <1ms
 - **Write**: ~5ms (with WAL)
 - **Vector search (10k chunks)**: ~50ms

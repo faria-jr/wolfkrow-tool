@@ -59,7 +59,11 @@ describe('sidecar POST /stop', () => {
 
 describe('sidecar GET /status', () => {
   it('returns the current state', async () => {
-    fakeManager.getState.mockReturnValueOnce({ running: false, pid: null, startedAt: null } as never);
+    fakeManager.getState.mockReturnValueOnce({
+      running: false,
+      pid: null,
+      startedAt: null,
+    } as never);
     const res = await app.inject({ method: 'GET', url: '/status' });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { state: { running: boolean } };

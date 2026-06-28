@@ -12,7 +12,6 @@ import { ScheduledTask, TaskRun } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-
 const { tasks, runs, fakeScheduledTaskRepo, fakeTaskRunRepo } = vi.hoisted(() => {
   const tasks = new Map<string, ScheduledTask>();
   const runs = new Map<string, TaskRun>();
@@ -126,16 +125,27 @@ describe('scheduler POST /tasks — create', () => {
   });
 
   it('rejects a body missing required fields → 400', async () => {
-    const res = await app.inject({ method: 'POST', url: '/tasks', headers: BEARER, payload: { name: 'x' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/tasks',
+      headers: BEARER,
+      payload: { name: 'x' },
+    });
     expect(res.statusCode).toBe(400);
   });
 
   it('accepts all optional fields (description, agentId, tags)', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/tasks', headers: BEARER,
+      method: 'POST',
+      url: '/tasks',
+      headers: BEARER,
       payload: {
-        name: 'Full task', cronExpression: '0 0 * * *', prompt: 'p',
-        description: 'd', agentId: 'agent-1', tags: ['ops'],
+        name: 'Full task',
+        cronExpression: '0 0 * * *',
+        prompt: 'p',
+        description: 'd',
+        agentId: 'agent-1',
+        tags: ['ops'],
       },
     });
     expect(res.statusCode).toBe(201);
@@ -162,10 +172,16 @@ describe('scheduler PATCH /tasks/:id — update', () => {
   it('updates all optional fields (description, cron, prompt, tags)', async () => {
     const existing = [...tasks.values()].find((t) => t.name === 'Full task')!;
     const res = await app.inject({
-      method: 'PATCH', url: `/tasks/${existing.id}`, headers: BEARER,
+      method: 'PATCH',
+      url: `/tasks/${existing.id}`,
+      headers: BEARER,
       payload: {
-        name: 'Renamed', description: 'new desc', cronExpression: '0 12 * * *',
-        prompt: 'new prompt', enabled: true, tags: ['x'],
+        name: 'Renamed',
+        description: 'new desc',
+        cronExpression: '0 12 * * *',
+        prompt: 'new prompt',
+        enabled: true,
+        tags: ['x'],
       },
     });
     expect(res.statusCode).toBe(200);
@@ -178,7 +194,11 @@ describe('scheduler PATCH /tasks/:id — update', () => {
 describe('scheduler DELETE /tasks/:id', () => {
   it('deletes a task and returns ok', async () => {
     const existing = [...tasks.values()].find((t) => t.name === 'Weekly review')!;
-    const res = await app.inject({ method: 'DELETE', url: `/tasks/${existing.id}`, headers: BEARER });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/tasks/${existing.id}`,
+      headers: BEARER,
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ deleted: true });
     expect(tasks.has(existing.id)).toBe(false);
@@ -188,7 +208,11 @@ describe('scheduler DELETE /tasks/:id', () => {
 describe('scheduler POST /tasks/:id/run', () => {
   it('triggers a run and returns 202 with a run', async () => {
     const existing = [...tasks.values()].find((t) => t.name === 'Daily summary')!;
-    const res = await app.inject({ method: 'POST', url: `/tasks/${existing.id}/run`, headers: BEARER });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/tasks/${existing.id}/run`,
+      headers: BEARER,
+    });
     expect(res.statusCode).toBe(202);
     const body = res.json() as { run: { status: string } };
     expect(body.run).toBeDefined();
@@ -198,7 +222,11 @@ describe('scheduler POST /tasks/:id/run', () => {
 describe('scheduler GET /tasks/:id/runs + pending-review + review', () => {
   it('lists runs for a task', async () => {
     const existing = [...tasks.values()].find((t) => t.name === 'Daily summary')!;
-    const res = await app.inject({ method: 'GET', url: `/tasks/${existing.id}/runs`, headers: BEARER });
+    const res = await app.inject({
+      method: 'GET',
+      url: `/tasks/${existing.id}/runs`,
+      headers: BEARER,
+    });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { runs: unknown[] };
     expect(Array.isArray(body.runs)).toBe(true);
@@ -239,20 +267,31 @@ describe('scheduler GET /tasks/:id/runs + pending-review + review', () => {
 
   it('rejects an invalid verdict → 400', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/runs/whatever/review', headers: BEARER, payload: { verdict: 'bogus' },
+      method: 'POST',
+      url: '/runs/whatever/review',
+      headers: BEARER,
+      payload: { verdict: 'bogus' },
     });
     expect(res.statusCode).toBe(400);
   });
 
   it('reviews a run with verdict rejected + note (covers note branch)', async () => {
     const run = TaskRun.create({
-      taskId: 'some-task', userId: 'u1', prompt: 'p', status: 'awaiting_review',
-      startedAt: new Date(), completedAt: undefined, reviewedAt: undefined,
-      result: { status: 'completed', output: 'done' }, error: undefined,
+      taskId: 'some-task',
+      userId: 'u1',
+      prompt: 'p',
+      status: 'awaiting_review',
+      startedAt: new Date(),
+      completedAt: undefined,
+      reviewedAt: undefined,
+      result: { status: 'completed', output: 'done' },
+      error: undefined,
     } as never);
     runs.set(run.id, run);
     const res = await app.inject({
-      method: 'POST', url: `/runs/${run.id}/review`, headers: BEARER,
+      method: 'POST',
+      url: `/runs/${run.id}/review`,
+      headers: BEARER,
       payload: { verdict: 'rejected', note: 'bad output' },
     });
     expect(res.statusCode).toBe(200);

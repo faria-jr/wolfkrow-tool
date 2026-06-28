@@ -24,11 +24,16 @@ export class TodoTool implements ToolExecutor {
     const key = ctx.agentId ?? ctx.userId;
     const todos = store.get(key) ?? [];
     switch (op) {
-      case 'list': return this.handleList(callId, key, todos);
-      case 'add': return this.handleAdd(input, callId, key, todos);
-      case 'complete': return this.handleComplete(input, callId, key, todos);
-      case 'remove': return this.handleRemove(input, callId, key, todos);
-      default: return ToolResult.error(callId, `Unknown operation: ${op}`);
+      case 'list':
+        return this.handleList(callId, key, todos);
+      case 'add':
+        return this.handleAdd(input, callId, key, todos);
+      case 'complete':
+        return this.handleComplete(input, callId, key, todos);
+      case 'remove':
+        return this.handleRemove(input, callId, key, todos);
+      default:
+        return ToolResult.error(callId, `Unknown operation: ${op}`);
     }
   }
 
@@ -37,7 +42,12 @@ export class TodoTool implements ToolExecutor {
     return ToolResult.ok(callId, JSON.stringify(todos, null, 2));
   }
 
-  private handleAdd(input: Record<string, unknown>, callId: string, key: string, todos: TodoItem[]): ToolResult {
+  private handleAdd(
+    input: Record<string, unknown>,
+    callId: string,
+    key: string,
+    todos: TodoItem[]
+  ): ToolResult {
     const content = String(input['content'] ?? '');
     if (!content) return ToolResult.error(callId, 'content is required');
     const item: TodoItem = { id: `td-${Date.now()}`, content, done: false };
@@ -46,7 +56,12 @@ export class TodoTool implements ToolExecutor {
     return ToolResult.ok(callId, JSON.stringify(item));
   }
 
-  private handleComplete(input: Record<string, unknown>, callId: string, key: string, todos: TodoItem[]): ToolResult {
+  private handleComplete(
+    input: Record<string, unknown>,
+    callId: string,
+    key: string,
+    todos: TodoItem[]
+  ): ToolResult {
     const id = String(input['id'] ?? '');
     const item = todos.find((t) => t.id === id);
     if (!item) return ToolResult.error(callId, `Todo ${id} not found`);
@@ -55,7 +70,12 @@ export class TodoTool implements ToolExecutor {
     return ToolResult.ok(callId, JSON.stringify(item));
   }
 
-  private handleRemove(input: Record<string, unknown>, callId: string, key: string, todos: TodoItem[]): ToolResult {
+  private handleRemove(
+    input: Record<string, unknown>,
+    callId: string,
+    key: string,
+    todos: TodoItem[]
+  ): ToolResult {
     const id = String(input['id'] ?? '');
     const idx = todos.findIndex((t) => t.id === id);
     if (idx === -1) return ToolResult.error(callId, `Todo ${id} not found`);

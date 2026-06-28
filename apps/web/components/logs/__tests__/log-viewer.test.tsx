@@ -9,7 +9,9 @@ class FakeEventSource {
   static instances: FakeEventSource[] = [];
   onmessage: ((ev: { data: string }) => void) | null = null;
   close = vi.fn();
-  constructor(public url: string) { FakeEventSource.instances.push(this); }
+  constructor(public url: string) {
+    FakeEventSource.instances.push(this);
+  }
 }
 
 describe('LogViewer', () => {
@@ -33,7 +35,9 @@ describe('LogViewer', () => {
     const es = FakeEventSource.instances[0]!;
     // the EventSource callback fires a state update — wrap in act()
     await act(async () => {
-      es.onmessage!({ data: JSON.stringify({ level: 'info', time: 1700000000000, msg: 'hello world' }) });
+      es.onmessage!({
+        data: JSON.stringify({ level: 'info', time: 1700000000000, msg: 'hello world' }),
+      });
     });
     expect(screen.getByText('hello world')).toBeInTheDocument();
   });

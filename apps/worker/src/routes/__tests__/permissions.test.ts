@@ -23,23 +23,38 @@ const { entries, fakeAuditRepo, fakeToolPermission, decisionStore } = vi.hoisted
     insert: (entry: Record<string, unknown>) => {
       entries.push(entry);
     },
-    findMany: (filter: { userId?: string; action?: string; resourceType?: string; since?: Date; limit?: number }) =>
+    findMany: (filter: {
+      userId?: string;
+      action?: string;
+      resourceType?: string;
+      since?: Date;
+      limit?: number;
+    }) =>
       entries
-        .filter((e) => (!filter.userId || e.userId === filter.userId))
-        .filter((e) => (!filter.action || e.action === filter.action))
-        .filter((e) => (!filter.resourceType || e.resourceType === filter.resourceType))
-        .filter((e) => (!filter.since || (e.timestamp as Date) >= filter.since!))
+        .filter((e) => !filter.userId || e.userId === filter.userId)
+        .filter((e) => !filter.action || e.action === filter.action)
+        .filter((e) => !filter.resourceType || e.resourceType === filter.resourceType)
+        .filter((e) => !filter.since || (e.timestamp as Date) >= filter.since!)
         .slice(0, filter.limit ?? 50)
-        .map((e) => ({ ...e, timestamp: e.timestamp instanceof Date ? (e.timestamp as Date).toISOString() : e.timestamp })),
+        .map((e) => ({
+          ...e,
+          timestamp:
+            e.timestamp instanceof Date ? (e.timestamp as Date).toISOString() : e.timestamp,
+        })),
   };
 
   // Per-user in-memory decision store: userId -> array of { agentId, tool, decision }.
   // Lets the PUT/DELETE + cross-user isolation tests assert real state changes
   // without touching the DB.
-  const decisionStore = new Map<string, Array<{ agentId: string; tool: string; decision: string }>>();
+  const decisionStore = new Map<
+    string,
+    Array<{ agentId: string; tool: string; decision: string }>
+  >();
   const fakeToolPermission = {
     listForUser: (userId: string, agentId?: string) => {
-      const rows = (decisionStore.get(userId) ?? []).filter((r) => !agentId || r.agentId === agentId);
+      const rows = (decisionStore.get(userId) ?? []).filter(
+        (r) => !agentId || r.agentId === agentId
+      );
       return rows.map((r) => ({ userId, ...r }));
     },
   };
@@ -63,7 +78,7 @@ vi.mock('../../chat/permission-store', () => ({
   },
   clearDecision: (userId: string, agentId: string, tool: string) => {
     const rows = (decisionStore.get(userId) ?? []).filter(
-      (r) => !(r.agentId === agentId && r.tool === tool),
+      (r) => !(r.agentId === agentId && r.tool === tool)
     );
     decisionStore.set(userId, rows);
   },
@@ -136,7 +151,11 @@ describe('permissions POST /resolve', () => {
   });
 
   it('rejects a body missing tool → 400', async () => {
-    const res = await app.inject({ method: 'POST', url: '/resolve', payload: { allowedTools: ['bash'] } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/resolve',
+      payload: { allowedTools: ['bash'] },
+    });
     expect(res.statusCode).toBe(400);
   });
 });
@@ -155,7 +174,8 @@ describe('permissions POST /audit — record', () => {
 
   it('records with metadata (covers metadata spread branch)', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/audit',
+      method: 'POST',
+      url: '/audit',
       payload: { action: 'export', resourceType: 'vault', metadata: { count: 3 } },
     });
     expect(res.statusCode).toBe(200);
@@ -163,7 +183,9 @@ describe('permissions POST /audit — record', () => {
 
   it('rejects a body missing action → 400', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/audit', payload: { resourceType: 'session' },
+      method: 'POST',
+      url: '/audit',
+      payload: { resourceType: 'session' },
     });
     expect(res.statusCode).toBe(400);
   });
@@ -191,7 +213,8 @@ describe('permissions GET /audit — query', () => {
   it('filters by a valid since datetime + resourceType (covers since branch)', async () => {
     const since = new Date(Date.now() - 60_000).toISOString();
     const res = await app.inject({
-      method: 'GET', url: `/audit?since=${encodeURIComponent(since)}&resourceType=vault`,
+      method: 'GET',
+      url: `/audit?since=${encodeURIComponent(since)}&resourceType=vault`,
     });
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.json().entries)).toBe(true);
@@ -215,9 +238,7 @@ describe('permissions routes — authentication required', () => {
 
   beforeAll(async () => {
     decisionStore.clear();
-    authedApp = await buildAppWithRealAuth(
-      (server) => permissionsRoutes(server),
-    );
+    authedApp = await buildAppWithRealAuth((server) => permissionsRoutes(server));
   });
   afterAll(async () => {
     await authedApp.close();
@@ -262,9 +283,7 @@ describe('permissions routes — authentication required', () => {
     expect(res.json()).toEqual({ ok: true });
     // State actually changed in the (mocked) store.
     expect(
-      (decisionStore.get('u1') ?? []).some(
-        (r) => r.tool === 'fs' && r.decision === 'deny',
-      ),
+      (decisionStore.get('u1') ?? []).some((r) => r.tool === 'fs' && r.decision === 'deny')
     ).toBe(true);
   });
 

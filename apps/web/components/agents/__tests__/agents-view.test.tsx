@@ -20,7 +20,9 @@ describe('AgentsView', () => {
   let push: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    fetchMock = mockFetch([{ id: 'a1', name: 'Alpha', model: 'm', runtime: 'cloud', isActive: true }]);
+    fetchMock = mockFetch([
+      { id: 'a1', name: 'Alpha', model: 'm', runtime: 'cloud', isActive: true },
+    ]);
     vi.stubGlobal('fetch', fetchMock);
     push = vi.fn();
     vi.mocked(useRouter).mockReturnValue({ push } as unknown as ReturnType<typeof useRouter>);

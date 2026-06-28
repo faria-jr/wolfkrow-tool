@@ -38,7 +38,9 @@ async function loginAndGetStorage(): Promise<void> {
   try {
     const context = await browser.newContext({ baseURL: BASE_URL });
     const page = await context.newPage();
-    const res = await page.request.post('/api/auth/login', { data: { password: TEST_USER.password } });
+    const res = await page.request.post('/api/auth/login', {
+      data: { password: TEST_USER.password },
+    });
     if (!res.ok()) {
       throw new Error(`Login failed (${res.status()}): ${await res.text()}`);
     }

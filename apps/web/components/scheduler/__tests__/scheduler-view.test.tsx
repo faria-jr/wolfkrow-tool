@@ -8,8 +8,16 @@ import { SchedulerView } from '../scheduler-view';
 
 function makeTask() {
   return {
-    id: 't1', name: 'Daily Briefing', description: 'd', cronExpression: '0 9 * * *', timezone: 'UTC',
-    prompt: 'summarize news', agentId: undefined, enabled: true, tags: [], createdAt: '2024-01-01',
+    id: 't1',
+    name: 'Daily Briefing',
+    description: 'd',
+    cronExpression: '0 9 * * *',
+    timezone: 'UTC',
+    prompt: 'summarize news',
+    agentId: undefined,
+    enabled: true,
+    tags: [],
+    createdAt: '2024-01-01',
   };
 }
 

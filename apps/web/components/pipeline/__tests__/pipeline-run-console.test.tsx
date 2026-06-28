@@ -4,8 +4,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PipelineRunConsole } from '../pipeline-run-console';
 
 vi.mock('../phase-stream-view', () => ({
-  PhaseStreamView: ({ projectId, phaseId, stage }: { projectId: string; phaseId: string; stage: string }) => (
-    <div>Phase console {projectId} {phaseId} {stage}</div>
+  PhaseStreamView: ({
+    projectId,
+    phaseId,
+    stage,
+  }: {
+    projectId: string;
+    phaseId: string;
+    stage: string;
+  }) => (
+    <div>
+      Phase console {projectId} {phaseId} {stage}
+    </div>
   ),
 }));
 
@@ -35,15 +45,18 @@ function makePhase() {
 
 describe('PipelineRunConsole', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn((url: string, init?: RequestInit) => {
-      if (url.endsWith('/phases') && init?.method === 'POST') {
-        return Promise.resolve({ ok: true, json: async () => makePhase() } as Response);
-      }
-      if (url.endsWith('/phases')) {
-        return Promise.resolve({ ok: true, json: async () => [] } as Response);
-      }
-      return Promise.resolve({ ok: true, json: async () => makeProject() } as Response);
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        if (url.endsWith('/phases') && init?.method === 'POST') {
+          return Promise.resolve({ ok: true, json: async () => makePhase() } as Response);
+        }
+        if (url.endsWith('/phases')) {
+          return Promise.resolve({ ok: true, json: async () => [] } as Response);
+        }
+        return Promise.resolve({ ok: true, json: async () => makeProject() } as Response);
+      })
+    );
   });
 
   afterEach(() => vi.unstubAllGlobals());

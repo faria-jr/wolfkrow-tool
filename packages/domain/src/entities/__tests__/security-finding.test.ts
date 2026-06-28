@@ -63,11 +63,15 @@ describe('SecurityFinding', () => {
   });
 
   it('throws on invalid severity', () => {
-    expect(() => SecurityFinding.create({ ...baseProps, severity: 'nope' as never })).toThrow(/invalid severity/);
+    expect(() => SecurityFinding.create({ ...baseProps, severity: 'nope' as never })).toThrow(
+      /invalid severity/
+    );
   });
 
   it('throws on invalid dimension', () => {
-    expect(() => SecurityFinding.create({ ...baseProps, dimension: 'nope' as never })).toThrow(/invalid dimension/);
+    expect(() => SecurityFinding.create({ ...baseProps, dimension: 'nope' as never })).toThrow(
+      /invalid dimension/
+    );
   });
 
   it('accepts all documented severities', () => {

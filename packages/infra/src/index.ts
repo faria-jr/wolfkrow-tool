@@ -45,10 +45,7 @@ export type {
   SecurityAuditResult,
   ParsedFinding,
 } from './services/security-audit-runner';
-export {
-  DrizzleSecurityScanRepo,
-  DrizzleSecurityFindingRepo,
-} from './repos/security-audit-repo';
+export { DrizzleSecurityScanRepo, DrizzleSecurityFindingRepo } from './repos/security-audit-repo';
 export type { SecurityScanRecord } from './repos/security-audit-repo';
 
 export { MgraphEngine, sanitizeFilename, validateVaultPath } from './services/mgraph-engine';

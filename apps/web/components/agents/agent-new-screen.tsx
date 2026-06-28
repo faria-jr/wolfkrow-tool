@@ -53,12 +53,21 @@ export function AgentNewScreen() {
     <Form {...form}>
       <form onSubmit={onSubmit} className="space-y-6">
         <AgentFormBody control={form.control} />
-        <div className="flex justify-end gap-2 border-t border-border pt-4">
-          <Button type="button" variant="outline" onClick={() => router.push('/agents')} disabled={saving}>
+        <div className="border-border flex justify-end gap-2 border-t pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push('/agents')}
+            disabled={saving}
+          >
             Cancel
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {saving ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
             {saving ? 'Creating…' : 'Create agent'}
           </Button>
         </div>

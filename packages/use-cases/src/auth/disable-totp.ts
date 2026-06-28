@@ -1,4 +1,10 @@
-import type { LockoutPolicy, PasswordHasher, PlainPassword, TotpVerifier, UserRepo } from '@wolfkrow/domain';
+import type {
+  LockoutPolicy,
+  PasswordHasher,
+  PlainPassword,
+  TotpVerifier,
+  UserRepo,
+} from '@wolfkrow/domain';
 import { NotFoundError, UnauthorizedError } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
@@ -19,7 +25,7 @@ export class DisableTotpUseCase implements UseCase<DisableTotpInput, DisableTotp
     private readonly userRepo: UserRepo,
     private readonly hasher: PasswordHasher,
     private readonly totp: TotpVerifier,
-    private readonly lockout: LockoutPolicy,
+    private readonly lockout: LockoutPolicy
   ) {}
 
   async execute(input: DisableTotpInput): Promise<DisableTotpOutput> {

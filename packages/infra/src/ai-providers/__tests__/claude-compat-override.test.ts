@@ -12,7 +12,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { ClaudeCompatProvider } from '../claude-compat';
 
-const { ctorConfigs } = vi.hoisted(() => ({ ctorConfigs: [] as Array<{ apiKey?: string; baseURL?: string }> }));
+const { ctorConfigs } = vi.hoisted(() => ({
+  ctorConfigs: [] as Array<{ apiKey?: string; baseURL?: string }>,
+}));
 
 vi.mock('@anthropic-ai/sdk', () => ({
   default: class MockAnthropic {
@@ -30,15 +32,30 @@ describe('EPIC 4.3 — provider threads preset baseURL + apiKey to the SDK', () 
     new ClaudeCompatProvider('key-moonshot', 'moonshot');
     new ClaudeCompatProvider('key-qwen', 'qwen');
 
-    expect(ctorConfigs).toContainEqual({ apiKey: 'key-zai', baseURL: 'https://api.z.ai/api/anthropic' });
-    expect(ctorConfigs).toContainEqual({ apiKey: 'key-minimax', baseURL: 'https://api.minimax.io/anthropic' });
-    expect(ctorConfigs).toContainEqual({ apiKey: 'key-moonshot', baseURL: 'https://api.moonshot.cn/anthropic' });
-    expect(ctorConfigs).toContainEqual({ apiKey: 'key-qwen', baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/anthropic' });
+    expect(ctorConfigs).toContainEqual({
+      apiKey: 'key-zai',
+      baseURL: 'https://api.z.ai/api/anthropic',
+    });
+    expect(ctorConfigs).toContainEqual({
+      apiKey: 'key-minimax',
+      baseURL: 'https://api.minimax.io/anthropic',
+    });
+    expect(ctorConfigs).toContainEqual({
+      apiKey: 'key-moonshot',
+      baseURL: 'https://api.moonshot.cn/anthropic',
+    });
+    expect(ctorConfigs).toContainEqual({
+      apiKey: 'key-qwen',
+      baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/anthropic',
+    });
   });
 
   it('also accepts an explicit baseUrl override (custom provider)', () => {
     ctorConfigs.length = 0;
     new ClaudeCompatProvider('custom-key', { baseUrl: 'https://custom.example/anthropic' });
-    expect(ctorConfigs).toContainEqual({ apiKey: 'custom-key', baseURL: 'https://custom.example/anthropic' });
+    expect(ctorConfigs).toContainEqual({
+      apiKey: 'custom-key',
+      baseURL: 'https://custom.example/anthropic',
+    });
   });
 });

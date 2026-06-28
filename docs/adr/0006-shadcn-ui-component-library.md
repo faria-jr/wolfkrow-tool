@@ -13,6 +13,7 @@ O LionClaw v3 tem UI components implementados ad-hoc com Tailwind inline:
 - 50+ outros componentes com classes Tailwind duplicadas
 
 Problemas:
+
 1. **Inconsistência visual**: espaçamentos, cores, typography variam
 2. **Refactor caro**: mudar design = editar 50+ arquivos
 3. **Acessibilidade**: ARIA attributes adicionados manualmente (muitos faltando)
@@ -28,6 +29,7 @@ pnpm dlx shadcn@latest add button card input label dialog sheet tabs
 ```
 
 Componentes são **copiados para o projeto** (`apps/web/components/ui/`), não instalados como npm dep. Isso permite:
+
 - Customização total
 - Zero vendor lock-in
 - Tree-shaking perfeito
@@ -60,6 +62,7 @@ Componentes são **copiados para o projeto** (`apps/web/components/ui/`), não i
 ## Componentes a Instalar
 
 ### Core (Dia 1)
+
 - `button`, `card`, `input`, `label`, `textarea`
 - `dialog`, `sheet`, `popover`, `dropdown-menu`
 - `tabs`, `accordion`, `collapsible`
@@ -76,6 +79,7 @@ Componentes são **copiados para o projeto** (`apps/web/components/ui/`), não i
 - `alert-dialog`
 
 ### Advanced (Dia 2-3)
+
 - `command` (cmdk-based search/command palette)
 - `data-table` (TanStack Table wrapper)
 - `calendar` (react-day-picker)
@@ -92,12 +96,13 @@ Componentes são **copiados para o projeto** (`apps/web/components/ui/`), não i
 ## Customização via Design Tokens
 
 ### `apps/web/app/globals.css`
+
 ```css
 @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
-    --primary: 24 95% 53%;  /* amber-500 */
+    --primary: 24 95% 53%; /* amber-500 */
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
     --muted: 240 4.8% 95.9%;
@@ -107,7 +112,7 @@ Componentes são **copiados para o projeto** (`apps/web/components/ui/`), não i
     --ring: 24 95% 53%;
     --radius: 0.5rem;
   }
-  
+
   .dark {
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
@@ -119,6 +124,7 @@ Componentes são **copiados para o projeto** (`apps/web/components/ui/`), não i
 ```
 
 ### `apps/web/components.json`
+
 ```json
 {
   "$schema": "https://ui.shadcn.com/schema.json",
@@ -143,45 +149,51 @@ Componentes são **copiados para o projeto** (`apps/web/components/ui/`), não i
 Alguns componentes não têm equivalente em shadcn e precisam ser criados:
 
 ### `VoiceOrb`
+
 Visualizador de voice conversation (orb animado com Web Audio analyser).
 
 ### `GraphCanvas`
+
 Knowledge graph (D3 force layout) — `react-flow` ou custom.
 
 ### `Terminal`
+
 xterm.js wrapper para CodeBurn PTY.
 
 ### `StreamIndicator`
+
 Live SSE indicator (animated dot).
 
 ### `MarkdownEditor`
+
 Markdown com frontmatter parser + preview.
 
 ### `VoiceRecorder`
+
 Web Audio API capture + waveform visualization.
 
 ## Refactor Targets
 
 ### Forms (maior impacto)
 
-| Componente atual | Linhas | Target |
-|---|---|---|
-| AgentFormModal | 1765 | 400 (shadcn Form) |
-| ExternalProvidersPanel | 1097 | 300 (shadcn Form) |
-| OrchestratorSelector | 633 | 200 (RadioGroup + Card) |
-| NewPipelineModal | 597 | 200 (Dialog + Form) |
-| TaskFormModal | 422 | 200 (Dialog + Form) |
-| SyncAgentsModal | 672 | 300 (Dialog + DataTable) |
+| Componente atual       | Linhas | Target                   |
+| ---------------------- | ------ | ------------------------ |
+| AgentFormModal         | 1765   | 400 (shadcn Form)        |
+| ExternalProvidersPanel | 1097   | 300 (shadcn Form)        |
+| OrchestratorSelector   | 633    | 200 (RadioGroup + Card)  |
+| NewPipelineModal       | 597    | 200 (Dialog + Form)      |
+| TaskFormModal          | 422    | 200 (Dialog + Form)      |
+| SyncAgentsModal        | 672    | 300 (Dialog + DataTable) |
 
 ### Visualizadores
 
-| Componente atual | Linhas | Target |
-|---|---|---|
-| PipelineMetricsReport | 1647 | 600 (DataTable + Charts) |
-| SprintExecutionView | 1643 | 500 (Tabs + Cards + Stream) |
-| ArchitectureReviewArtifactView | 858 | 300 (ScrollArea + Code + Badge) |
-| AuditFinalSummaryView | 600+ | 250 (Accordion) |
-| KnowledgePage | 1564 | 500 (Tabs + DataTable + Upload) |
+| Componente atual               | Linhas | Target                          |
+| ------------------------------ | ------ | ------------------------------- |
+| PipelineMetricsReport          | 1647   | 600 (DataTable + Charts)        |
+| SprintExecutionView            | 1643   | 500 (Tabs + Cards + Stream)     |
+| ArchitectureReviewArtifactView | 858    | 300 (ScrollArea + Code + Badge) |
+| AuditFinalSummaryView          | 600+   | 250 (Accordion)                 |
+| KnowledgePage                  | 1564   | 500 (Tabs + DataTable + Upload) |
 
 **Total reduction**: ~12.000 linhas → ~4.500 linhas (~62%).
 

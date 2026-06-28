@@ -19,7 +19,9 @@ function parseElements(value: unknown): unknown[] | null {
   }
 }
 
-function parseContentObject(value: unknown): { elements: unknown[]; appState: Record<string, unknown> } | null {
+function parseContentObject(
+  value: unknown
+): { elements: unknown[]; appState: Record<string, unknown> } | null {
   if (typeof value !== 'string') return null;
   try {
     const parsed: unknown = JSON.parse(value);
@@ -27,22 +29,26 @@ function parseContentObject(value: unknown): { elements: unknown[]; appState: Re
     const obj = parsed as Record<string, unknown>;
     const elements = parseElements(obj['elements']);
     if (!elements) return null;
-    const appState = obj['appState'] && typeof obj['appState'] === 'object'
-      ? (obj['appState'] as Record<string, unknown>)
-      : {};
+    const appState =
+      obj['appState'] && typeof obj['appState'] === 'object'
+        ? (obj['appState'] as Record<string, unknown>)
+        : {};
     return { elements, appState };
   } catch {
     return null;
   }
 }
 
-type ElementsExtractor = (input: Record<string, unknown>) => { elements: unknown[]; appState: Record<string, unknown> } | null;
+type ElementsExtractor = (
+  input: Record<string, unknown>
+) => { elements: unknown[]; appState: Record<string, unknown> } | null;
 
 const extractFromArrayElements: ElementsExtractor = (input) => {
   if (!Array.isArray(input['elements'])) return null;
-  const appState = input['appState'] && typeof input['appState'] === 'object'
-    ? (input['appState'] as Record<string, unknown>)
-    : {};
+  const appState =
+    input['appState'] && typeof input['appState'] === 'object'
+      ? (input['appState'] as Record<string, unknown>)
+      : {};
   return { elements: input['elements'] as unknown[], appState };
 };
 
@@ -77,7 +83,8 @@ export function extractElements(input: Record<string, unknown>): {
   for (const extract of extractors) {
     const result = extract(input);
     if (result && result.elements.length > 0) {
-      const title = (typeof input['title'] === 'string' ? input['title'] : undefined) ??
+      const title =
+        (typeof input['title'] === 'string' ? input['title'] : undefined) ??
         (typeof input['name'] === 'string' ? input['name'] : undefined) ??
         'Excalidraw';
       return { elements: result.elements, appState: result.appState, title };
@@ -86,17 +93,24 @@ export function extractElements(input: Record<string, unknown>): {
   return null;
 }
 
-export function buildExcalidrawFile(elements: unknown[], appState: Record<string, unknown>): string {
-  return JSON.stringify({
-    type: 'excalidraw',
-    version: 2,
-    source: 'wolfkrow',
-    elements,
-    appState: {
-      gridSize: null,
-      viewBackgroundColor: '#ffffff',
-      ...appState,
+export function buildExcalidrawFile(
+  elements: unknown[],
+  appState: Record<string, unknown>
+): string {
+  return JSON.stringify(
+    {
+      type: 'excalidraw',
+      version: 2,
+      source: 'wolfkrow',
+      elements,
+      appState: {
+        gridSize: null,
+        viewBackgroundColor: '#ffffff',
+        ...appState,
+      },
+      files: {},
     },
-    files: {},
-  }, null, 2);
+    null,
+    2
+  );
 }

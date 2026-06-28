@@ -12,6 +12,7 @@
 Conversa por voz em tempo real com Voice Activity Detection (VAD) no client, Speech-to-Text (STT) e Text-to-Speech (TTS) no Worker. Suporta barge-in (user interrompe assistant).
 
 ### Objetivos
+
 - VAD client-side (Web Audio API)
 - Barge-in support
 - STT: Whisper local OU OpenAI API
@@ -57,33 +58,33 @@ export function useVAD() {
   const audioContextRef = useRef<AudioContext>();
   const analyserRef = useRef<AnalyserNode>();
   const streamRef = useRef<MediaStream>();
-  
+
   useEffect(() => {
     const start = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      
+
       const audioContext = new AudioContext();
       audioContextRef.current = audioContext;
-      
+
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       analyser.fftSize = 2048;
       analyser.smoothingTimeConstant = 0.8;
       analyserRef.current = analyser;
-      
+
       source.connect(analyser);
-      
+
       // Poll for voice activity
       const buffer = new Float32Array(analyser.fftSize);
       let silenceFrames = 0;
       const SILENCE_THRESHOLD = 0.01;
       const SILENCE_FRAMES_REQUIRED = 30; // ~500ms @ 60fps
-      
+
       const check = () => {
         analyser.getFloatTimeDomainData(buffer);
         const rms = Math.sqrt(buffer.reduce((sum, x) => sum + x * x, 0) / buffer.length);
-        
+
         if (rms > SILENCE_THRESHOLD) {
           if (!isSpeaking) setIsSpeaking(true);
           silenceFrames = 0;
@@ -94,21 +95,21 @@ export function useVAD() {
             onSilenceEnd?.(); // Trigger STT
           }
         }
-        
+
         requestAnimationFrame(check);
       };
-      
+
       check();
     };
-    
+
     start();
-    
+
     return () => {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       audioContextRef.current?.close();
     };
   }, []);
-  
+
   return { isSpeaking };
 }
 ```
@@ -129,26 +130,30 @@ import { join } from 'path';
 export class WhisperLocal {
   constructor(
     private binaryPath: string,
-    private modelPath: string,
+    private modelPath: string
   ) {}
-  
+
   async transcribe(audioBuffer: Buffer): Promise<string> {
     const tmpFile = join(tmpdir(), `whisper-${Date.now()}.webm`);
     await fs.writeFile(tmpFile, audioBuffer);
-    
+
     return new Promise((resolve, reject) => {
       const proc = spawn(this.binaryPath, [
-        '-m', this.modelPath,
-        '-f', tmpFile,
+        '-m',
+        this.modelPath,
+        '-f',
+        tmpFile,
         '--output-txt',
-        '--language', 'auto',
-        '--threads', '4',
+        '--language',
+        'auto',
+        '--threads',
+        '4',
       ]);
-      
+
       let output = '';
-      proc.stdout.on('data', (data) => output += data.toString());
+      proc.stdout.on('data', (data) => (output += data.toString()));
       proc.stderr.on('data', (data) => logger.debug({ data: data.toString() }, 'whisper'));
-      
+
       proc.on('close', (code) => {
         fs.unlink(tmpFile).catch(() => {});
         if (code === 0) resolve(output.trim());
@@ -167,18 +172,18 @@ import OpenAI from 'openai';
 
 export class OpenAIWhisper {
   constructor(private apiKey: string) {}
-  
+
   async transcribe(audioBuffer: Buffer): Promise<string> {
     const openai = new OpenAI({ apiKey: this.apiKey });
-    
+
     const file = new File([audioBuffer], 'audio.webm', { type: 'audio/webm' });
-    
+
     const transcription = await openai.audio.transcriptions.create({
       file,
       model: 'whisper-1',
       language: 'pt', // Or 'auto'
     });
-    
+
     return transcription.text;
   }
 }
@@ -197,18 +202,18 @@ import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 export class ElevenLabsTTS {
   constructor(
     private apiKey: string,
-    private voiceId: string,
+    private voiceId: string
   ) {}
-  
+
   async *synthesize(text: string): AsyncIterable<Buffer> {
     const client = new ElevenLabsClient({ apiKey: this.apiKey });
-    
+
     const audioStream = await client.textToSpeech.convertAsStream(this.voiceId, {
       text,
       modelId: 'eleven_turbo_v2_5',
       outputFormat: 'mp3_44100_128',
     });
-    
+
     for await (const chunk of audioStream) {
       yield Buffer.from(chunk);
     }
@@ -224,19 +229,21 @@ import WebSocket from 'ws';
 
 export class CartesiaTTS {
   private ws?: WebSocket;
-  
+
   constructor(
     private apiKey: string,
-    private voiceId: string,
+    private voiceId: string
   ) {}
-  
+
   async *synthesize(text: string): AsyncIterable<Buffer> {
     // Cartesia uses WebSocket for streaming
-    this.ws = new WebSocket(`wss://api.cartesia.ai/tts/websocket?api_key=${this.apiKey}&cartesia_version=2024-06-10`);
-    
+    this.ws = new WebSocket(
+      `wss://api.cartesia.ai/tts/websocket?api_key=${this.apiKey}&cartesia_version=2024-06-10`
+    );
+
     const queue: Buffer[] = [];
     let resolveNext: ((chunk: Buffer | null) => void) | null = null;
-    
+
     this.ws.on('message', (data: Buffer) => {
       if (resolveNext) {
         resolveNext(data);
@@ -245,20 +252,22 @@ export class CartesiaTTS {
         queue.push(data);
       }
     });
-    
+
     await new Promise<void>((resolve) => this.ws!.once('open', resolve));
-    
-    this.ws.send(JSON.stringify({
-      model_id: 'sonic-english',
-      transcript: text,
-      voice: { mode: 'id', id: this.voiceId },
-      output_format: { container: 'raw', encoding: 'pcm_s16le', sample_rate: 24000 },
-      stream: true,
-    }));
-    
+
+    this.ws.send(
+      JSON.stringify({
+        model_id: 'sonic-english',
+        transcript: text,
+        voice: { mode: 'id', id: this.voiceId },
+        output_format: { container: 'raw', encoding: 'pcm_s16le', sample_rate: 24000 },
+        stream: true,
+      })
+    );
+
     while (true) {
       let chunk: Buffer | null = null;
-      
+
       if (queue.length > 0) {
         chunk = queue.shift()!;
       } else {
@@ -266,13 +275,13 @@ export class CartesiaTTS {
           resolveNext = resolve;
         });
       }
-      
+
       if (chunk === null) break; // EOF
-      
+
       yield chunk;
     }
   }
-  
+
   close() {
     this.ws?.close();
   }
@@ -288,13 +297,13 @@ export class CartesiaTTS {
 'use client';
 export function useBargeIn(isPlaying: boolean, onBargeIn: () => void) {
   const { isSpeaking } = useVAD();
-  
+
   useEffect(() => {
     if (isPlaying && isSpeaking) {
       onBargeIn(); // Stop TTS playback
     }
   }, [isPlaying, isSpeaking]);
-  
+
   return { isSpeaking };
 }
 ```
@@ -309,7 +318,7 @@ export function useBargeIn(isPlaying: boolean, onBargeIn: () => void) {
 'use client';
 export function VoiceOrb({ state, audioLevel }: { state: VoiceState; audioLevel: number }) {
   return (
-    <div className="relative w-32 h-32">
+    <div className="relative h-32 w-32">
       <motion.div
         className={cn(
           'absolute inset-0 rounded-full',
@@ -317,12 +326,15 @@ export function VoiceOrb({ state, audioLevel }: { state: VoiceState; audioLevel:
           state === 'listening' && 'bg-blue-500',
           state === 'speaking' && 'bg-green-500',
           state === 'thinking' && 'bg-amber-500',
-          state === 'error' && 'bg-red-500',
+          state === 'error' && 'bg-red-500'
         )}
         animate={{
-          scale: state === 'listening' && audioLevel > 0.01
-            ? 1 + audioLevel * 2
-            : state === 'speaking' ? [1, 1.1, 1] : 1,
+          scale:
+            state === 'listening' && audioLevel > 0.01
+              ? 1 + audioLevel * 2
+              : state === 'speaking'
+                ? [1, 1.1, 1]
+                : 1,
         }}
         transition={{
           duration: 0.3,
@@ -365,6 +377,7 @@ export const voiceSessions = sqliteTable('voice_sessions', {
 ## 8. Testes
 
 ### Unit
+
 - VAD threshold detection
 - Whisper transcription
 - ElevenLabs streaming
@@ -372,11 +385,13 @@ export const voiceSessions = sqliteTable('voice_sessions', {
 - Barge-in detection
 
 ### Integration
+
 - Full voice flow: speak → STT → chat → TTS → playback
 - Barge-in interrupts TTS
 - Network drop recovery
 
 ### E2E
+
 - User clicks mic → speaks → sees transcription
 - Assistant responds with voice
 - User interrupts with voice

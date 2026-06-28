@@ -4,7 +4,9 @@ import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
 import { workerFetch } from '@/lib/worker-fetch';
 
-interface Params { params: Promise<{ id: string }>; }
+interface Params {
+  params: Promise<{ id: string }>;
+}
 
 export async function POST(_request: Request, { params }: Params) {
   const cookieStore = await cookies();

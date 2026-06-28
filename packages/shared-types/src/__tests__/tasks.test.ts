@@ -19,7 +19,7 @@ describe('tasks schemas', () => {
       'TaskStatusSchema accepts %s',
       (v) => {
         expect(TaskStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('TaskStatusSchema rejects invalid', () => {
       expect(() => TaskStatusSchema.parse('nope')).toThrow();
@@ -29,18 +29,15 @@ describe('tasks schemas', () => {
       'TaskCategorySchema accepts %s',
       (v) => {
         expect(TaskCategorySchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('TaskCategorySchema rejects invalid', () => {
       expect(() => TaskCategorySchema.parse('nope')).toThrow();
     });
 
-    it.each(['low', 'medium', 'high', 'urgent'] as const)(
-      'TaskPrioritySchema accepts %s',
-      (v) => {
-        expect(TaskPrioritySchema.parse(v)).toBe(v);
-      },
-    );
+    it.each(['low', 'medium', 'high', 'urgent'] as const)('TaskPrioritySchema accepts %s', (v) => {
+      expect(TaskPrioritySchema.parse(v)).toBe(v);
+    });
     it('TaskPrioritySchema rejects invalid', () => {
       expect(() => TaskPrioritySchema.parse('nope')).toThrow();
     });
@@ -69,7 +66,7 @@ describe('tasks schemas', () => {
           description: 'desc',
           dueDate: ts,
           completedAt: ts,
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects missing title', () => {
@@ -115,7 +112,7 @@ describe('tasks schemas', () => {
           category: 'work',
           priority: 'high',
           period: 'last30',
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects invalid status', () => {

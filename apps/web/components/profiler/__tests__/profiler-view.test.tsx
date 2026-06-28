@@ -27,7 +27,7 @@ describe('ProfilerView', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => jsonResponse(SAMPLE_PROFILE)),
+      vi.fn(async () => jsonResponse(SAMPLE_PROFILE))
     );
   });
 
@@ -71,14 +71,14 @@ describe('ProfilerView', () => {
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ dir: '/tmp/repo' }),
-      }),
+      })
     );
   });
 
   it('shows an error state when the request fails', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => jsonResponse({ error: 'boom' }, 500)),
+      vi.fn(async () => jsonResponse({ error: 'boom' }, 500))
     );
     const user = userEvent.setup();
     render(<ProfilerView />);

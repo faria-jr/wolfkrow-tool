@@ -39,26 +39,32 @@ export function LockedDesignViewer({ odProjectId }: { odProjectId: string }) {
     }
   }, [odProjectId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm">Locked design</CardTitle>
-        <Button size="sm" variant="outline" onClick={load} disabled={loading}>{loading ? 'Loading…' : 'Refresh'}</Button>
+        <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+          {loading ? 'Loading…' : 'Refresh'}
+        </Button>
       </CardHeader>
       <CardContent>
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="text-destructive text-sm">{error}</p>}
         {!error && snapshot?.html && (
           <iframe
             title="Locked design preview"
             srcDoc={snapshot.html}
-            className="h-96 w-full rounded border border-border bg-background"
+            className="border-border bg-background h-96 w-full rounded border"
             sandbox="allow-scripts"
           />
         )}
         {!error && snapshot && !snapshot.html && (
-          <p className="text-sm text-muted-foreground">No design artifact found for this project yet.</p>
+          <p className="text-muted-foreground text-sm">
+            No design artifact found for this project yet.
+          </p>
         )}
       </CardContent>
     </Card>

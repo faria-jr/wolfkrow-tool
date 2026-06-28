@@ -20,7 +20,11 @@ export const Default: Story = {
 };
 
 export const WithIcon: Story = {
-  args: { title: 'Agents', description: 'Configure AI personas', icon: <Bot className="h-6 w-6" /> },
+  args: {
+    title: 'Agents',
+    description: 'Configure AI personas',
+    icon: <Bot className="h-6 w-6" />,
+  },
 };
 
 export const WithActions: Story = {

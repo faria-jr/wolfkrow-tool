@@ -24,7 +24,8 @@ async function resolveProvider(providerId: string | undefined, userId?: string):
   const id = providerId ?? 'anthropic';
   const cfg = getProviderById(all, id) ?? getProviderById(all, 'anthropic');
   if (!cfg) throw new Error('No provider config available');
-  const apiKey = (await getAdapters().secrets.get(cfg.apiKeyAccount)) ?? (await getProviderApiKey(id));
+  const apiKey =
+    (await getAdapters().secrets.get(cfg.apiKeyAccount)) ?? (await getProviderApiKey(id));
   return aiFactory.createFromConfig(cfg, apiKey);
 }
 
@@ -97,6 +98,10 @@ export async function auditRoutes(server: AuthFastifyInstance) {
   const auth = { preHandler: [server.authenticate] };
   server.post('/audit/run', auth, runAuditHandler);
   server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId', auth, getScanHandler);
-  server.get<{ Params: { scanId: string } }>('/audit/scans/:scanId/findings', auth, getFindingsHandler);
+  server.get<{ Params: { scanId: string } }>(
+    '/audit/scans/:scanId/findings',
+    auth,
+    getFindingsHandler
+  );
   server.get('/audit/scans', auth, listScansHandler);
 }

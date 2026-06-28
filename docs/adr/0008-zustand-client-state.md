@@ -16,6 +16,7 @@ O LionClaw v3 já usa Zustand mas com stores monolíticas:
 - `auth-store.ts`
 
 Problemas:
+
 1. **God stores**: 1 store por domínio enorme
 2. **Sem code-splitting**: tudo em 1 bundle
 3. **Sem devtools optimization**: re-renders desnecessários
@@ -24,6 +25,7 @@ Problemas:
 ## Decisão
 
 **Zustand** para client state, com:
+
 - **Stores segregadas** (não monolíticas)
 - **Persist middleware** para estado persistente
 - **DevTools** para debug
@@ -41,7 +43,7 @@ interface ChatStreamState {
   isStreaming: boolean;
   currentSessionId: string | null;
   chunks: ChatStreamChunk[];
-  
+
   start: (sessionId: string) => void;
   appendChunk: (chunk: ChatStreamChunk) => void;
   stop: () => void;
@@ -55,7 +57,7 @@ export const useChatStreamStore = create<ChatStreamState>()(
         isStreaming: false,
         currentSessionId: null,
         chunks: [],
-        
+
         start: (sessionId) => set({ isStreaming: true, currentSessionId: sessionId, chunks: [] }),
         appendChunk: (chunk) => set((state) => ({ chunks: [...state.chunks, chunk] })),
         stop: () => set({ isStreaming: false }),
@@ -147,12 +149,12 @@ const createChatStore = (set, get) => ({
 
 ## Server State vs Client State
 
-| Tipo | Onde mora | Quando usar |
-|---|---|---|
-| **Server state** | TanStack Query (cache, revalidation) | Data fetched from server (agents list, sessions) |
-| **Client state** | Zustand | UI state (modals, toasts), session-only data (SSE chunks) |
-| **Persistent state** | localStorage (via Zustand persist) | User preferences (theme, sidebar collapsed) |
-| **Form state** | react-hook-form | Form values (transient) |
+| Tipo                 | Onde mora                            | Quando usar                                               |
+| -------------------- | ------------------------------------ | --------------------------------------------------------- |
+| **Server state**     | TanStack Query (cache, revalidation) | Data fetched from server (agents list, sessions)          |
+| **Client state**     | Zustand                              | UI state (modals, toasts), session-only data (SSE chunks) |
+| **Persistent state** | localStorage (via Zustand persist)   | User preferences (theme, sidebar collapsed)               |
+| **Form state**       | react-hook-form                      | Form values (transient)                                   |
 
 ## Alternativas Consideradas
 

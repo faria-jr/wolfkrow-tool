@@ -1,4 +1,4 @@
-import type { ScheduledTaskRepo , ScheduledTask } from '@wolfkrow/domain';
+import type { ScheduledTaskRepo, ScheduledTask } from '@wolfkrow/domain';
 import { CronExpression, NotFoundError } from '@wolfkrow/domain';
 
 export interface UpdateScheduledTaskInput {

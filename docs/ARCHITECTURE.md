@@ -124,6 +124,7 @@ Wolfkrow Tool é um **sistema distribuído single-machine** composto por 3 proce
 ### 2.1 Presentation Layer (`apps/web/`)
 
 **Responsabilidades**:
+
 - Renderizar UI (Server + Client Components)
 - Capturar input do user
 - Chamar APIs (Server Actions, fetch, SSE, WebSocket)
@@ -131,6 +132,7 @@ Wolfkrow Tool é um **sistema distribuído single-machine** composto por 3 proce
 - Server state cache (TanStack Query)
 
 **Tecnologias**:
+
 - Next.js 15 (App Router)
 - React 19
 - shadcn/ui (49+ componentes)
@@ -141,6 +143,7 @@ Wolfkrow Tool é um **sistema distribuído single-machine** composto por 3 proce
 - Client Components para interactivity
 
 **Estrutura**:
+
 ```
 apps/web/
 ├── app/
@@ -172,18 +175,21 @@ apps/web/
 ### 2.2 Application Layer (`packages/use-cases/`)
 
 **Responsabilidades**:
+
 - Orquestrar domain entities para resolver use cases
 - Transações (multi-step operations)
 - Validação de input (Zod)
 - Publicação de domain events
 
 **Tecnologias**:
+
 - TypeScript strict
 - Zod (validation)
 - Inversify (DI container)
 - EventEmitter (domain events)
 
 **Exemplo**:
+
 ```typescript
 // packages/use-cases/src/chat/SendMessage.ts
 @injectable()
@@ -193,28 +199,28 @@ export class SendMessage {
     @inject('SessionRepo') private sessionRepo: SessionRepo,
     @inject('MessageRepo') private messageRepo: MessageRepo,
     @inject('AIProviderFactory') private providers: AIProviderFactory,
-    @inject('EventBus') private events: EventBus,
+    @inject('EventBus') private events: EventBus
   ) {}
 
   async execute(input: SendMessageInput): AsyncIterable<StreamChunk> {
     const agent = await this.agentRepo.findById(input.agentId);
     if (!agent) throw new AgentNotFoundError(input.agentId);
-    
+
     const session = await this.sessionRepo.getOrCreate(input.sessionId, agent);
     const userMessage = Message.createUser(input.content, input.attachments);
     await this.messageRepo.save(session.id, userMessage);
     this.events.publish(new MessageSentEvent(session.id, userMessage.id));
-    
+
     const provider = this.providers.forRuntime(agent.runtime);
     const prompt = agent.buildPrompt(session, userMessage);
-    
+
     for await (const chunk of provider.query(prompt, { stream: true })) {
       if (chunk.type === 'text') {
         // Accumulate in session
       }
       yield chunk;
     }
-    
+
     await this.sessionRepo.update(session.id, { lastActivity: new Date() });
   }
 }
@@ -223,6 +229,7 @@ export class SendMessage {
 ### 2.3 Domain Layer (`packages/domain/`)
 
 **Responsabilidades**:
+
 - Pure business entities
 - Value objects (imutáveis)
 - Domain services (pure logic)
@@ -230,15 +237,18 @@ export class SendMessage {
 - Repository interfaces (ports)
 
 **Tecnologias**:
+
 - TypeScript strict
 - Zero dependências externas (exceto Zod para validação leve)
 
 **Regras**:
+
 - Não importa nada de infra ou presentation
 - Não conhece SQLite, HTTP, React, etc
 - Lógica pura (testes sem mocks)
 
 **Estrutura**:
+
 ```
 packages/domain/src/
 ├── entities/
@@ -269,6 +279,7 @@ packages/domain/src/
 ### 2.4 Infrastructure Layer (`packages/infra/`)
 
 **Responsabilidades**:
+
 - Implementar repository interfaces (Drizzle adapters)
 - AI providers (Strategy pattern)
 - External services (Telegram, ElevenLabs, Google, etc)
@@ -276,6 +287,7 @@ packages/domain/src/
 - Migrations
 
 **Tecnologias**:
+
 - Drizzle ORM
 - better-sqlite3 + sqlite-vec
 - @anthropic-ai/claude-agent-sdk
@@ -286,6 +298,7 @@ packages/domain/src/
 - pino
 
 **Estrutura**:
+
 ```
 packages/infra/src/
 ├── db/
@@ -326,12 +339,14 @@ packages/infra/src/
 ### 3.1 Browser ↔ Next.js
 
 **REST** (HTTP/1.1 ou HTTP/2):
+
 ```typescript
 // Browser → Next.js
-fetch('/api/agents', { method: 'POST', body: JSON.stringify(agent) })
+fetch('/api/agents', { method: 'POST', body: JSON.stringify(agent) });
 ```
 
 **Server Actions** (React 19):
+
 ```typescript
 'use server';
 export async function createAgent(input: CreateAgentInput) {
@@ -342,6 +357,7 @@ export async function createAgent(input: CreateAgentInput) {
 ```
 
 **SSE** (Server-Sent Events):
+
 ```typescript
 // Browser
 const eventSource = new EventSource('/api/chat/stream/session-123');
@@ -352,21 +368,25 @@ eventSource.onmessage = (e) => {
 ```
 
 **WebSocket**:
+
 ```typescript
 // Browser
 const ws = new WebSocket('ws://localhost:3000/api/pty/session-123');
-ws.onmessage = (e) => { /* terminal data */ };
+ws.onmessage = (e) => {
+  /* terminal data */
+};
 ws.send(JSON.stringify({ type: 'input', data: 'ls\n' }));
 ```
 
 ### 3.2 Next.js ↔ Worker
 
 **HTTP proxy** (Next.js Route Handler):
+
 ```typescript
 // apps/web/app/api/chat/send/route.ts
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  
+
   return new Response(
     new ReadableStream({
       async start(controller) {
@@ -388,6 +408,7 @@ export async function POST(req: NextRequest) {
 ```
 
 **Worker server**:
+
 ```typescript
 // apps/worker/src/server.ts
 import { createServer } from 'http';
@@ -492,24 +513,24 @@ httpServer.listen(4000);
 
 **40+ tabelas** distribuídas em domínios:
 
-| Domínio | Tabelas |
-|---|---|
-| Auth | users, totp_secrets, sessions, audit_log |
-| Chat | chat_sessions, chat_messages, chat_attachments |
-| Agents | agents, agent_sync_history |
-| Skills | skills |
-| MCPs | mcp_servers, mcp_tool_registry |
-| Scheduler | scheduled_tasks, task_runs, task_activities |
-| Knowledge | knowledge_documents, knowledge_chunks, knowledge_benchmarks |
-| Memory | semantic_memories, daily_summaries, compaction_log |
-| Harness | harness_projects, harness_sprints, harness_rounds |
-| Pipeline | pipeline_projects, pipeline_phases, pipeline_messages, pipeline_artifacts |
-| Workflow | workflow_runs |
-| Enrich | enrich_sessions, enrich_messages |
-| Vault | secrets_metadata (keytar para values) |
-| Settings | settings, channels |
-| Tasks | tasks, task_executions |
-| Usage | token_usage |
+| Domínio   | Tabelas                                                                   |
+| --------- | ------------------------------------------------------------------------- |
+| Auth      | users, totp_secrets, sessions, audit_log                                  |
+| Chat      | chat_sessions, chat_messages, chat_attachments                            |
+| Agents    | agents, agent_sync_history                                                |
+| Skills    | skills                                                                    |
+| MCPs      | mcp_servers, mcp_tool_registry                                            |
+| Scheduler | scheduled_tasks, task_runs, task_activities                               |
+| Knowledge | knowledge_documents, knowledge_chunks, knowledge_benchmarks               |
+| Memory    | semantic_memories, daily_summaries, compaction_log                        |
+| Harness   | harness_projects, harness_sprints, harness_rounds                         |
+| Pipeline  | pipeline_projects, pipeline_phases, pipeline_messages, pipeline_artifacts |
+| Workflow  | workflow_runs                                                             |
+| Enrich    | enrich_sessions, enrich_messages                                          |
+| Vault     | secrets_metadata (keytar para values)                                     |
+| Settings  | settings, channels                                                        |
+| Tasks     | tasks, task_executions                                                    |
+| Usage     | token_usage                                                               |
 
 ### 5.2 Drizzle Schema Example
 
@@ -520,7 +541,9 @@ import { sql } from 'drizzle-orm';
 
 export const agents = sqliteTable('agents', {
   id: text('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
   name: text('name').notNull(),
   description: text('description'),
   model: text('model').notNull(),
@@ -556,18 +579,18 @@ export const agentSyncHistory = sqliteTable('agent_sync_history', {
 
 ### 6.1 Threat Model
 
-| Threat | Mitigation |
-|---|---|
-| XSS no chat | React escapa por default; dangerouslySetInnerHTML proibido (ESLint) |
-| CSRF | SameSite=Strict cookies + CSRF tokens em Server Actions |
-| SQL Injection | Drizzle ORM com prepared statements |
-| Path Traversal | Validação de paths em upload; sandbox em `.wolfkrow/` |
-| Secrets em logs | Pino redact; keytar nunca loga value |
-| Browser cache de secrets | httpOnly + Secure cookies; nunca localStorage |
-| Auth bypass | Middleware auth gate em todas routes (exceto /login) |
-| Rate limit | Middleware rate limit (10 req/min login, 60 req/min API) |
-| MCP injection | Permission guard por agent; tool whitelist |
-| Destructive actions | Confirm dialog obrigatório (rm, send, publish) |
+| Threat                   | Mitigation                                                          |
+| ------------------------ | ------------------------------------------------------------------- |
+| XSS no chat              | React escapa por default; dangerouslySetInnerHTML proibido (ESLint) |
+| CSRF                     | SameSite=Strict cookies + CSRF tokens em Server Actions             |
+| SQL Injection            | Drizzle ORM com prepared statements                                 |
+| Path Traversal           | Validação de paths em upload; sandbox em `.wolfkrow/`               |
+| Secrets em logs          | Pino redact; keytar nunca loga value                                |
+| Browser cache de secrets | httpOnly + Secure cookies; nunca localStorage                       |
+| Auth bypass              | Middleware auth gate em todas routes (exceto /login)                |
+| Rate limit               | Middleware rate limit (10 req/min login, 60 req/min API)            |
+| MCP injection            | Permission guard por agent; tool whitelist                          |
+| Destructive actions      | Confirm dialog obrigatório (rm, send, publish)                      |
 
 ### 6.2 Permission Guard
 
@@ -584,7 +607,8 @@ export type PermissionResult =
 ```
 
 Regras:
-- Safe tools (Read, Grep, Glob, Web*): allow
+
+- Safe tools (Read, Grep, Glob, Web\*): allow
 - Write/Edit em allowed paths: allow
 - Destructive (rm, sudo, send email, git push): ask
 - Unknown: deny
@@ -618,11 +642,11 @@ Regras:
 
 ### 8.1 Modos
 
-| Modo | Descrição | Use case |
-|---|---|---|
-| **Dev** | `pnpm dev` → Next dev + Worker | Desenvolvimento |
-| **Production (PWA)** | `pnpm build && pnpm start` | Self-hosted em produção |
-| **Binary (Electron wrapper)** | `pnpm dist:mac` | DMG/NSIS para distribuição |
+| Modo                          | Descrição                      | Use case                   |
+| ----------------------------- | ------------------------------ | -------------------------- |
+| **Dev**                       | `pnpm dev` → Next dev + Worker | Desenvolvimento            |
+| **Production (PWA)**          | `pnpm build && pnpm start`     | Self-hosted em produção    |
+| **Binary (Electron wrapper)** | `pnpm dist:mac`                | DMG/NSIS para distribuição |
 
 ### 8.2 Build Pipeline
 
@@ -685,19 +709,19 @@ Ver [`IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md) para o roadmap faseado.
 
 ## Apêndice A — Glossário
 
-| Termo | Definição |
-|---|---|
-| **Squad** | Categoria de agent (harness, workflow, enrich, custom) |
-| **Sprint** | Unidade de trabalho no Harness (1+ features) |
-| **Round** | Iteração Coder→Evaluator dentro de uma feature |
-| **MCP** | Model Context Protocol (stdio JSON-RPC) |
-| **SPEC** | Specification (Markdown estruturado) |
-| **PRD** | Product Requirements Document |
-| **ADR** | Architecture Decision Record |
-| **RSC** | React Server Component |
-| **SSE** | Server-Sent Events (HTTP streaming) |
-| **TTFT** | Time To First Token |
-| **PTY** | Pseudo-Terminal |
+| Termo      | Definição                                              |
+| ---------- | ------------------------------------------------------ |
+| **Squad**  | Categoria de agent (harness, workflow, enrich, custom) |
+| **Sprint** | Unidade de trabalho no Harness (1+ features)           |
+| **Round**  | Iteração Coder→Evaluator dentro de uma feature         |
+| **MCP**    | Model Context Protocol (stdio JSON-RPC)                |
+| **SPEC**   | Specification (Markdown estruturado)                   |
+| **PRD**    | Product Requirements Document                          |
+| **ADR**    | Architecture Decision Record                           |
+| **RSC**    | React Server Component                                 |
+| **SSE**    | Server-Sent Events (HTTP streaming)                    |
+| **TTFT**   | Time To First Token                                    |
+| **PTY**    | Pseudo-Terminal                                        |
 
 ## Apêndice B — Links Externos
 

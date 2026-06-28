@@ -46,7 +46,8 @@ export function formatRelativeTime(date: Date | string | number): string {
   if (diffInSeconds < 3600) return formatter.format(-Math.floor(diffInSeconds / 60), 'minute');
   if (diffInSeconds < 86400) return formatter.format(-Math.floor(diffInSeconds / 3600), 'hour');
   if (diffInSeconds < 2592000) return formatter.format(-Math.floor(diffInSeconds / 86400), 'day');
-  if (diffInSeconds < 31536000) return formatter.format(-Math.floor(diffInSeconds / 2592000), 'month');
+  if (diffInSeconds < 31536000)
+    return formatter.format(-Math.floor(diffInSeconds / 2592000), 'month');
   return formatter.format(-Math.floor(diffInSeconds / 31536000), 'year');
 }
 

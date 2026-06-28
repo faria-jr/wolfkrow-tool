@@ -15,6 +15,7 @@ O LionClaw v3 tem problemas arquiteturais significativos:
 - Mudanças em 1 lugar quebram 5 outros
 
 Precisamos de uma arquitetura que:
+
 1. Isole regras de negócio de frameworks
 2. Permita testes sem dependências externas
 3. Facilite mudanças (ex: trocar SQLite por Postgres)
@@ -118,6 +119,7 @@ container.bind<SendMessage>('SendMessage').to(SendMessage);
 ## Estrutura Detalhada
 
 ### `packages/domain/`
+
 ```
 src/
 ├── entities/
@@ -143,6 +145,7 @@ src/
 ```
 
 ### `packages/use-cases/`
+
 ```
 src/
 ├── chat/
@@ -159,6 +162,7 @@ src/
 ```
 
 ### `packages/infra/`
+
 ```
 src/
 ├── db/
@@ -173,6 +177,7 @@ src/
 ```
 
 ### `apps/web/`
+
 ```
 app/
 ├── (auth)/

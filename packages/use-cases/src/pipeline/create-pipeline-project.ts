@@ -7,12 +7,21 @@ import { PipelineProject as PipelineProjectEntity } from '@wolfkrow/domain';
  * as a separate parameter to `execute`, so a client cannot spoof another user's
  * identity by sending `userId` in the request body.
  */
-export interface CreatePipelineProjectInput { name: string; description?: string; projectPath?: string; }
-export interface CreatePipelineProjectOutput { project: PipelineProject; }
+export interface CreatePipelineProjectInput {
+  name: string;
+  description?: string;
+  projectPath?: string;
+}
+export interface CreatePipelineProjectOutput {
+  project: PipelineProject;
+}
 
 export class CreatePipelineProjectUseCase {
   constructor(private readonly repo: PipelineProjectRepo) {}
-  async execute(userId: string, input: CreatePipelineProjectInput): Promise<CreatePipelineProjectOutput> {
+  async execute(
+    userId: string,
+    input: CreatePipelineProjectInput
+  ): Promise<CreatePipelineProjectOutput> {
     const project = await this.repo.save(PipelineProjectEntity.create({ userId, ...input }));
     return { project };
   }

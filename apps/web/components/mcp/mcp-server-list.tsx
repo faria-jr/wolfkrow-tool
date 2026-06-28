@@ -16,7 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 export type McpServerData = Omit<McpServerRecord, 'createdAt' | 'updatedAt'> & {
   createdAt: string;
@@ -69,7 +76,9 @@ function sourceVariant(source: McpServerSource): 'secondary' | 'outline' | 'defa
   return 'default';
 }
 
-function healthBadgeVariant(snapshot: McpHealthSnapshot | undefined): 'default' | 'secondary' | 'destructive' {
+function healthBadgeVariant(
+  snapshot: McpHealthSnapshot | undefined
+): 'default' | 'secondary' | 'destructive' {
   if (!snapshot) return 'secondary';
   if (snapshot.healthy) return 'default';
   return 'destructive';
@@ -90,7 +99,7 @@ function ServerBadges({ server }: ServerBadgesProps) {
       </Badge>
       <Badge variant={healthBadgeVariant(server.health)}>{healthLabel(server.health)}</Badge>
       {server.description && (
-        <span className="text-xs text-muted-foreground">{server.description}</span>
+        <span className="text-muted-foreground text-xs">{server.description}</span>
       )}
     </div>
   );
@@ -99,14 +108,14 @@ function ServerBadges({ server }: ServerBadgesProps) {
 function ServerVisibilitySelect({ server, onVisibilityChange }: ServerVisibilitySelectProps) {
   return (
     <div className="flex items-center gap-2">
-      <label htmlFor={`visibility-${server.id}`} className="text-xs text-muted-foreground">
+      <label htmlFor={`visibility-${server.id}`} className="text-muted-foreground text-xs">
         Visibility:
       </label>
       <Select
         value={server.visibility}
         onValueChange={(v) => onVisibilityChange(server.id, v as McpServerVisibility)}
       >
-        <SelectTrigger id={`visibility-${server.id}`} className="h-7 w-full sm:w-48 text-xs">
+        <SelectTrigger id={`visibility-${server.id}`} className="h-7 w-full text-xs sm:w-48">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -133,7 +142,7 @@ const McpServerRow = memo(function McpServerRow({
       <TableCell>
         <div className="space-y-1">
           <div className="font-medium">{server.name}</div>
-          <p className="max-w-md truncate font-mono text-xs text-muted-foreground">
+          <p className="text-muted-foreground max-w-md truncate font-mono text-xs">
             {server.command} {server.args.join(' ')}
           </p>
         </div>
@@ -147,7 +156,7 @@ const McpServerRow = memo(function McpServerRow({
       <TableCell>
         <ServerVisibilitySelect server={server} onVisibilityChange={onVisibilityChange} />
         {server.health?.lastError && (
-          <p className="rounded bg-destructive/10 px-2 py-1 text-xs text-destructive">
+          <p className="bg-destructive/10 text-destructive rounded px-2 py-1 text-xs">
             {server.health.lastError}
           </p>
         )}
@@ -178,7 +187,7 @@ interface Props {
 
 const PAGE_SIZE = 5;
 
-export function McpServerList({
+function McpServerTable({
   servers,
   onToggle,
   onDelete,
@@ -187,9 +196,41 @@ export function McpServerList({
   onHealthCheck,
   onVisibilityChange,
 }: Props) {
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Source</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Visibility</TableHead>
+            <TableHead className="w-48" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {servers.map((s) => (
+            <McpServerRow
+              key={s.id}
+              server={s}
+              onToggle={onToggle}
+              onDelete={onDelete}
+              {...(onEdit ? { onEdit } : {})}
+              onRestart={onRestart}
+              onHealthCheck={onHealthCheck}
+              onVisibilityChange={onVisibilityChange}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+export function McpServerList(props: Props) {
   const [currentPage, setCurrentPage] = useState(1);
 
-  if (servers.length === 0)
+  if (props.servers.length === 0) {
     return (
       <EmptyState
         title="No MCP servers configured"
@@ -197,44 +238,15 @@ export function McpServerList({
         icon={<Network className="h-6 w-6" />}
       />
     );
+  }
 
-  const totalPages = Math.ceil(servers.length / PAGE_SIZE);
-  const paginatedServers = servers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const totalPages = Math.ceil(props.servers.length / PAGE_SIZE);
+  const servers = props.servers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
     <>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Source</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Visibility</TableHead>
-              <TableHead className="w-48" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedServers.map((s) => (
-              <McpServerRow
-                key={s.id}
-                server={s}
-                onToggle={onToggle}
-                onDelete={onDelete}
-                {...(onEdit ? { onEdit } : {})}
-                onRestart={onRestart}
-                onHealthCheck={onHealthCheck}
-                onVisibilityChange={onVisibilityChange}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
+      <McpServerTable {...props} servers={servers} />
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
     </>
   );
 }

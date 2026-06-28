@@ -17,22 +17,32 @@ const ts = '2024-01-01T00:00:00Z';
 
 describe('pipeline schemas', () => {
   describe('enums', () => {
-    it.each(['discovery', 'spec_build', 'spec_validate', 'approval', 'implementation', 'completed'] as const)(
-      'PipelineStageSchema accepts %s',
-      (v) => {
-        expect(PipelineStageSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each([
+      'discovery',
+      'spec_build',
+      'spec_validate',
+      'approval',
+      'design',
+      'design_lock',
+      'implementation',
+      'completed',
+    ] as const)('PipelineStageSchema accepts %s', (v) => {
+      expect(PipelineStageSchema.parse(v)).toBe(v);
+    });
     it('PipelineStageSchema rejects invalid', () => {
       expect(() => PipelineStageSchema.parse('nope')).toThrow();
     });
 
-    it.each(['running', 'paused', 'awaiting_approval', 'completed', 'failed', 'cancelled'] as const)(
-      'PipelineStatusSchema accepts %s',
-      (v) => {
-        expect(PipelineStatusSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each([
+      'running',
+      'paused',
+      'awaiting_approval',
+      'completed',
+      'failed',
+      'cancelled',
+    ] as const)('PipelineStatusSchema accepts %s', (v) => {
+      expect(PipelineStatusSchema.parse(v)).toBe(v);
+    });
     it('PipelineStatusSchema rejects invalid', () => {
       expect(() => PipelineStatusSchema.parse('nope')).toThrow();
     });
@@ -41,7 +51,7 @@ describe('pipeline schemas', () => {
       'PhaseStatusSchema accepts %s',
       (v) => {
         expect(PhaseStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('PhaseStatusSchema rejects invalid', () => {
       expect(() => PhaseStatusSchema.parse('nope')).toThrow();
@@ -85,7 +95,7 @@ describe('pipeline schemas', () => {
           artifactPath: '/art',
           startedAt: ts,
           completedAt: ts,
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects invalid stage', () => {
@@ -139,7 +149,7 @@ describe('pipeline schemas', () => {
           specPath: '/spec',
           prdPath: '/prd',
           approvalNotes: 'ok',
-        }),
+        })
       ).toHaveProperty('projectPath', '/tmp/repo');
     });
     it('rejects missing name', () => {
@@ -155,7 +165,7 @@ describe('pipeline schemas', () => {
           name: 'Proj',
           description: 'desc',
           projectPath: '/tmp/repo',
-        }),
+        })
       ).toHaveProperty('projectPath', '/tmp/repo');
     });
     it('rejects missing name', () => {

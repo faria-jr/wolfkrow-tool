@@ -15,7 +15,14 @@ export default function NewMcpServerPage() {
         title="New MCP server"
         description="Register a custom MCP server command and runtime settings."
         icon={<Network className="h-6 w-6" />}
-        actions={<Button asChild variant="outline"><Link href="/mcp-servers"><ArrowLeft className="mr-2 h-4 w-4" />Back to MCP servers</Link></Button>}
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/mcp-servers">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to MCP servers
+            </Link>
+          </Button>
+        }
       />
       <PageContent>
         <McpServerEditScreen />

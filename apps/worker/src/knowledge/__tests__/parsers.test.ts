@@ -58,7 +58,11 @@ describe('parseByMimeType — dispatch', () => {
   });
 
   it('falls back to raw utf-8 for an unknown mime type', async () => {
-    const doc = await parseByMimeType(Buffer.from('raw-bytes'), 'application/octet-stream', 'bin.dat');
+    const doc = await parseByMimeType(
+      Buffer.from('raw-bytes'),
+      'application/octet-stream',
+      'bin.dat'
+    );
     expect(doc.text).toBe('raw-bytes');
     expect(doc.title).toBe('bin.dat');
   });

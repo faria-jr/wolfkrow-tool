@@ -21,7 +21,7 @@ export interface DisplayMessage {
 
 const markdownComponents = {
   pre: ({ children }: { children?: React.ReactNode }) => (
-    <pre className="bg-muted my-2 overflow-x-auto rounded-md p-3 text-xs font-mono">{children}</pre>
+    <pre className="bg-muted my-2 overflow-x-auto rounded-md p-3 font-mono text-xs">{children}</pre>
   ),
 };
 
@@ -30,9 +30,15 @@ function ImageArtifact({ artifact }: { artifact: ArtifactPayload }) {
   const mime = artifact.data['mimeType'];
   if (typeof b64 !== 'string' || typeof mime !== 'string') return null;
   return (
-    <div className="mt-2 rounded-md border bg-card p-2">
-      {artifact.title && <div className="mb-1 text-xs font-medium text-muted-foreground">{artifact.title}</div>}
-      <img src={`data:${mime};base64,${b64}`} alt={artifact.title ?? 'Generated image'} className="max-w-full rounded" />
+    <div className="bg-card mt-2 rounded-md border p-2">
+      {artifact.title && (
+        <div className="text-muted-foreground mb-1 text-xs font-medium">{artifact.title}</div>
+      )}
+      <img
+        src={`data:${mime};base64,${b64}`}
+        alt={artifact.title ?? 'Generated image'}
+        className="max-w-full rounded"
+      />
     </div>
   );
 }
@@ -42,8 +48,10 @@ function AudioArtifact({ artifact }: { artifact: ArtifactPayload }) {
   if (typeof b64 !== 'string') return null;
   const mime = artifact.data['mimeType'] ?? 'audio/mpeg';
   return (
-    <div className="mt-2 rounded-md border bg-card p-2">
-      {artifact.title && <div className="mb-1 text-xs font-medium text-muted-foreground">{artifact.title}</div>}
+    <div className="bg-card mt-2 rounded-md border p-2">
+      {artifact.title && (
+        <div className="text-muted-foreground mb-1 text-xs font-medium">{artifact.title}</div>
+      )}
       <audio controls src={`data:${mime};base64,${b64}`} className="w-full" />
     </div>
   );
@@ -53,13 +61,15 @@ function McpAppArtifact({ artifact }: { artifact: ArtifactPayload }) {
   const file = artifact.data['excalidrawFile'];
   if (typeof file !== 'string') return null;
   return (
-    <div className="mt-2 rounded-md border bg-card p-2">
-      {artifact.title && <div className="mb-1 text-xs font-medium text-muted-foreground">{artifact.title}</div>}
+    <div className="bg-card mt-2 rounded-md border p-2">
+      {artifact.title && (
+        <div className="text-muted-foreground mb-1 text-xs font-medium">{artifact.title}</div>
+      )}
       <a
         href={`https://excalidraw.com/#json=${btoa(file)}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+        className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium"
       >
         Open in Excalidraw
       </a>
@@ -74,13 +84,17 @@ function ArtifactInline({ artifact }: { artifact: ArtifactPayload }) {
   return null;
 }
 
-interface Props { message: DisplayMessage; }
+interface Props {
+  message: DisplayMessage;
+}
 
 function ChatMessageImpl({ message }: Props) {
   const isUser = message.role === 'user';
   return (
     <div data-role={message.role} className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-lg rounded-2xl px-4 py-2.5 text-sm ${isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
+      <div
+        className={`max-w-lg rounded-2xl px-4 py-2.5 text-sm ${isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}
+      >
         {isUser ? (
           <p className="whitespace-pre-wrap">{message.content}</p>
         ) : (
@@ -88,8 +102,12 @@ function ChatMessageImpl({ message }: Props) {
             {message.content}
           </ReactMarkdown>
         )}
-        {message.toolCalls?.map((tc) => <ToolCallInline key={tc.id} toolCall={tc} />)}
-        {message.artifacts?.map((a) => <ArtifactInline key={a.id} artifact={a} />)}
+        {message.toolCalls?.map((tc) => (
+          <ToolCallInline key={tc.id} toolCall={tc} />
+        ))}
+        {message.artifacts?.map((a) => (
+          <ArtifactInline key={a.id} artifact={a} />
+        ))}
       </div>
     </div>
   );

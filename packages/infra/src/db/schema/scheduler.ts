@@ -31,7 +31,7 @@ export const scheduledTasks = sqliteTable(
   (t) => ({
     userIdIdx: index('scheduled_tasks_user_id_idx').on(t.userId),
     enabledNextRunIdx: index('scheduled_tasks_enabled_next_run_idx').on(t.enabled, t.nextRunAt),
-  }),
+  })
 );
 
 export const taskRuns = sqliteTable(
@@ -60,5 +60,5 @@ export const taskRuns = sqliteTable(
   (t) => ({
     taskIdIdx: index('task_runs_task_id_idx').on(t.taskId),
     statusIdx: index('task_runs_status_idx').on(t.status),
-  }),
+  })
 );

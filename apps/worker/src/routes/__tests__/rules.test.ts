@@ -12,7 +12,6 @@ import { GlobalRule } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-
 // rules.ts reads getRepos().globalRule at MODULE TOP-LEVEL, so the fake must be
 // initialized before the mock factory runs. vi.hoisted lifts the store + repo
 // so they exist when rules.ts is evaluated.
@@ -20,7 +19,8 @@ const { rules, fakeRuleRepo } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rules = new Map<string, any>();
   const fakeRuleRepo = {
-    findAll: async (userId: string) => [...rules.values()].filter((r: { userId: string }) => r.userId === userId),
+    findAll: async (userId: string) =>
+      [...rules.values()].filter((r: { userId: string }) => r.userId === userId),
     findById: async (id: string) => rules.get(id) ?? null,
     save: async (rule: { id: string }) => {
       rules.set(rule.id, rule);
@@ -45,7 +45,10 @@ let app: FastifyInstance;
 beforeAll(async () => {
   rules.clear();
   const seeded = GlobalRule.create({
-    userId: 'u1', kind: 'behavior', title: 'Be concise', body: 'Keep replies short.',
+    userId: 'u1',
+    kind: 'behavior',
+    title: 'Be concise',
+    body: 'Keep replies short.',
   });
   rules.set(seeded.id, seeded);
   app = Fastify();
@@ -84,7 +87,9 @@ describe('rules POST / — create', () => {
 
   it('rejects an invalid kind → 400', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/',      payload: { kind: 'bogus', title: 't', body: 'b' },
+      method: 'POST',
+      url: '/',
+      payload: { kind: 'bogus', title: 't', body: 'b' },
     });
     expect(res.statusCode).toBe(400);
   });
@@ -137,7 +142,8 @@ describe('rules POST /build-prompt', () => {
 
   it('accepts skillDescriptions + empty body (default branches)', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/build-prompt',
+      method: 'POST',
+      url: '/build-prompt',
       payload: { skillDescriptions: ['skill-a', 'skill-b'] },
     });
     expect(res.statusCode).toBe(200);
@@ -153,7 +159,8 @@ describe('rules PATCH /:id — additional update branches', () => {
   it('updates enabled + sortOrder', async () => {
     const existing = [...rules.values()].find((r) => r.title === 'Be brief')!;
     const res = await app.inject({
-      method: 'PATCH', url: `/${existing.id}`,
+      method: 'PATCH',
+      url: `/${existing.id}`,
       payload: { enabled: false, sortOrder: 5 },
     });
     expect(res.statusCode).toBe(200);
@@ -196,7 +203,8 @@ describe('rules routes — authentication required (default-user leak fix)', () 
   it('POST / without credentials → 401', async () => {
     const a = await buildRealAuthApp();
     const res = await a.inject({
-      method: 'POST', url: '/',
+      method: 'POST',
+      url: '/',
       payload: { kind: 'soul', title: 't', body: 'b' },
     });
     expect(res.statusCode).toBe(401);
@@ -206,7 +214,8 @@ describe('rules routes — authentication required (default-user leak fix)', () 
   it('GET / WITH credentials → 200 (real user, not default)', async () => {
     const a = await buildRealAuthApp();
     const res = await a.inject({
-      method: 'GET', url: '/',
+      method: 'GET',
+      url: '/',
       headers: { authorization: 'Bearer test-token' },
     });
     expect(res.statusCode).toBe(200);

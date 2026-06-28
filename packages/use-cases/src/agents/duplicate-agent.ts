@@ -3,8 +3,14 @@ import { NotFoundError } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
-export interface DuplicateAgentInput { id: string; userId: string; newName: string; }
-export interface DuplicateAgentOutput { agent: Agent; }
+export interface DuplicateAgentInput {
+  id: string;
+  userId: string;
+  newName: string;
+}
+export interface DuplicateAgentOutput {
+  agent: Agent;
+}
 
 export class DuplicateAgentUseCase implements UseCase<DuplicateAgentInput, DuplicateAgentOutput> {
   constructor(private readonly repo: AgentRepo) {}

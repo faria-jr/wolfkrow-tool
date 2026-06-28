@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     const out = await new UnlockSessionUseCase(
       getRepos().user,
       getAdapters().hasher,
-      new LockoutPolicy(),
+      new LockoutPolicy()
     ).execute({ password });
     await setSessionCookie(out.userId);
     audit.log({ userId: out.userId, action: 'unlock', ip, userAgent: ua });

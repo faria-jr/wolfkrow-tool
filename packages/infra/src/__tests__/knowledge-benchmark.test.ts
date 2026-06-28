@@ -101,25 +101,29 @@ describe('Knowledge Benchmark — cosine similarity retrieval', () => {
     testDocumentId = randomUUID();
 
     // Seed minimal user + document so FK constraints are satisfied
-    db.insert(users).values({
-      id: testUserId,
-      email: 'bench@test.local',
-      passwordHash: 'x',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }).run();
+    db.insert(users)
+      .values({
+        id: testUserId,
+        email: 'bench@test.local',
+        passwordHash: 'x',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .run();
 
-    db.insert(knowledgeDocuments).values({
-      id: testDocumentId,
-      userId: testUserId,
-      filename: 'bench.txt',
-      mimeType: 'text/plain',
-      size: 0,
-      status: 'ready',
-      chunkCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }).run();
+    db.insert(knowledgeDocuments)
+      .values({
+        id: testDocumentId,
+        userId: testUserId,
+        filename: 'bench.txt',
+        mimeType: 'text/plain',
+        size: 0,
+        status: 'ready',
+        chunkCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .run();
 
     repo = new DrizzleKnowledgeChunkRepo(db);
   });
@@ -138,10 +142,26 @@ describe('Knowledge Benchmark — cosine similarity retrieval', () => {
     const embedding0 = spikeVector(DIM, 0);
     const embedding1 = spikeVector(DIM, 1);
 
-    db.insert(knowledgeChunks).values([
-      { id: randomUUID(), documentId: testDocumentId, content: 'chunk zero', embedding: embedding0, position: 0, createdAt: new Date() },
-      { id: randomUUID(), documentId: testDocumentId, content: 'chunk one',  embedding: embedding1, position: 1, createdAt: new Date() },
-    ]).run();
+    db.insert(knowledgeChunks)
+      .values([
+        {
+          id: randomUUID(),
+          documentId: testDocumentId,
+          content: 'chunk zero',
+          embedding: embedding0,
+          position: 0,
+          createdAt: new Date(),
+        },
+        {
+          id: randomUUID(),
+          documentId: testDocumentId,
+          content: 'chunk one',
+          embedding: embedding1,
+          position: 1,
+          createdAt: new Date(),
+        },
+      ])
+      .run();
 
     const results = await repo.vectorSearch(embedding0, 1);
     expect(results).toHaveLength(1);
@@ -154,10 +174,26 @@ describe('Knowledge Benchmark — cosine similarity retrieval', () => {
     const embedding0 = spikeVector(DIM, 0);
     const embedding1 = spikeVector(DIM, 1);
 
-    db.insert(knowledgeChunks).values([
-      { id: randomUUID(), documentId: testDocumentId, content: 'chunk zero', embedding: embedding0, position: 0, createdAt: new Date() },
-      { id: randomUUID(), documentId: testDocumentId, content: 'chunk one',  embedding: embedding1, position: 1, createdAt: new Date() },
-    ]).run();
+    db.insert(knowledgeChunks)
+      .values([
+        {
+          id: randomUUID(),
+          documentId: testDocumentId,
+          content: 'chunk zero',
+          embedding: embedding0,
+          position: 0,
+          createdAt: new Date(),
+        },
+        {
+          id: randomUUID(),
+          documentId: testDocumentId,
+          content: 'chunk one',
+          embedding: embedding1,
+          position: 1,
+          createdAt: new Date(),
+        },
+      ])
+      .run();
 
     const results = await repo.vectorSearch(embedding1, 1);
     expect(results).toHaveLength(1);
@@ -169,14 +205,16 @@ describe('Knowledge Benchmark — cosine similarity retrieval', () => {
     const db = getDb(testDbPath);
     const emb = randomUnitVector(DIM);
 
-    db.insert(knowledgeChunks).values({
-      id: randomUUID(),
-      documentId: testDocumentId,
-      content: 'perfect match',
-      embedding: emb,
-      position: 0,
-      createdAt: new Date(),
-    }).run();
+    db.insert(knowledgeChunks)
+      .values({
+        id: randomUUID(),
+        documentId: testDocumentId,
+        content: 'perfect match',
+        embedding: emb,
+        position: 0,
+        createdAt: new Date(),
+      })
+      .run();
 
     const results = await repo.vectorSearch(emb, 1);
     expect(results[0]!.distance).toBeCloseTo(0, 10);
@@ -188,16 +226,18 @@ describe('Knowledge Benchmark — cosine similarity retrieval', () => {
     const N = 5;
     const embeddings = Array.from({ length: N }, (_, i) => spikeVector(DIM, i));
 
-    db.insert(knowledgeChunks).values(
-      embeddings.map((emb, i) => ({
-        id: randomUUID(),
-        documentId: testDocumentId,
-        content: `chunk-${i}`,
-        embedding: emb,
-        position: i,
-        createdAt: new Date(),
-      }))
-    ).run();
+    db.insert(knowledgeChunks)
+      .values(
+        embeddings.map((emb, i) => ({
+          id: randomUUID(),
+          documentId: testDocumentId,
+          content: `chunk-${i}`,
+          embedding: emb,
+          position: i,
+          createdAt: new Date(),
+        }))
+      )
+      .run();
 
     let hits = 0;
     for (let i = 0; i < N; i++) {
@@ -249,25 +289,29 @@ describe('vec0 vector search (T24 Opção A)', () => {
     const testUserId = randomUUID();
     testDocumentId = randomUUID();
 
-    db.insert(users).values({
-      id: testUserId,
-      email: 'vec0@test.local',
-      passwordHash: 'x',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }).run();
+    db.insert(users)
+      .values({
+        id: testUserId,
+        email: 'vec0@test.local',
+        passwordHash: 'x',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .run();
 
-    db.insert(knowledgeDocuments).values({
-      id: testDocumentId,
-      userId: testUserId,
-      filename: 'vec0.txt',
-      mimeType: 'text/plain',
-      size: 0,
-      status: 'ready',
-      chunkCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }).run();
+    db.insert(knowledgeDocuments)
+      .values({
+        id: testDocumentId,
+        userId: testUserId,
+        filename: 'vec0.txt',
+        mimeType: 'text/plain',
+        size: 0,
+        status: 'ready',
+        chunkCount: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .run();
 
     repo = new DrizzleKnowledgeChunkRepo(db);
   });
@@ -282,9 +326,9 @@ describe('vec0 vector search (T24 Opção A)', () => {
 
   it.skipIf(!isVecLoaded())('vec0 table created on DB init', () => {
     const sqlite = getDb(testDbPath).$client;
-    const row = sqlite.prepare(
-      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='knowledge_chunks_vec'",
-    ).get();
+    const row = sqlite
+      .prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='knowledge_chunks_vec'")
+      .get();
     expect(row).toBeTruthy();
   });
 
@@ -303,7 +347,9 @@ describe('vec0 vector search (T24 Opção A)', () => {
     await repo.saveMany([chunk]);
 
     const sqlite = getDb(testDbPath).$client;
-    const row = sqlite.prepare('SELECT chunk_id FROM knowledge_chunks_vec WHERE chunk_id = ?').get(chunk.toProps().id);
+    const row = sqlite
+      .prepare('SELECT chunk_id FROM knowledge_chunks_vec WHERE chunk_id = ?')
+      .get(chunk.toProps().id);
     expect(row).toBeTruthy();
   });
 
@@ -314,8 +360,24 @@ describe('vec0 vector search (T24 Opção A)', () => {
     const id1 = randomUUID();
 
     await repo.saveMany([
-      KnowledgeChunk.fromProps({ id: id0, documentId: testDocumentId, content: 'vec0-chunk-zero', embedding: emb0, metadata: { sourceType: 'raw', position: 0 }, position: 0, createdAt: new Date() }),
-      KnowledgeChunk.fromProps({ id: id1, documentId: testDocumentId, content: 'vec0-chunk-one', embedding: emb1, metadata: { sourceType: 'raw', position: 1 }, position: 1, createdAt: new Date() }),
+      KnowledgeChunk.fromProps({
+        id: id0,
+        documentId: testDocumentId,
+        content: 'vec0-chunk-zero',
+        embedding: emb0,
+        metadata: { sourceType: 'raw', position: 0 },
+        position: 0,
+        createdAt: new Date(),
+      }),
+      KnowledgeChunk.fromProps({
+        id: id1,
+        documentId: testDocumentId,
+        content: 'vec0-chunk-one',
+        embedding: emb1,
+        metadata: { sourceType: 'raw', position: 1 },
+        position: 1,
+        createdAt: new Date(),
+      }),
     ]);
 
     const results = await repo.vectorSearch(emb0, 1);
@@ -340,32 +402,37 @@ describe('vec0 vector search (T24 Opção A)', () => {
     await repo.deleteByDocumentId(testDocumentId);
 
     const sqlite = getDb(testDbPath).$client;
-    const row = sqlite.prepare('SELECT chunk_id FROM knowledge_chunks_vec WHERE chunk_id = ?').get(chunk.toProps().id);
+    const row = sqlite
+      .prepare('SELECT chunk_id FROM knowledge_chunks_vec WHERE chunk_id = ?')
+      .get(chunk.toProps().id);
     expect(row).toBeUndefined();
   });
 
-  it.skipIf(!isVecLoaded())('vec0 search over 100 1024-dim chunks completes in under 100 ms', async () => {
-    const CHUNKS = 100;
-    const queryEmb = randomUnitVector(VEC_DIM);
+  it.skipIf(!isVecLoaded())(
+    'vec0 search over 100 1024-dim chunks completes in under 100 ms',
+    async () => {
+      const CHUNKS = 100;
+      const queryEmb = randomUnitVector(VEC_DIM);
 
-    const chunks = Array.from({ length: CHUNKS }, (_, i) =>
-      KnowledgeChunk.fromProps({
-        id: randomUUID(),
-        documentId: testDocumentId,
-        content: `perf-${i}`,
-        embedding: randomUnitVector(VEC_DIM),
-        metadata: { sourceType: 'raw', position: i },
-        position: i,
-        createdAt: new Date(),
-      }),
-    );
+      const chunks = Array.from({ length: CHUNKS }, (_, i) =>
+        KnowledgeChunk.fromProps({
+          id: randomUUID(),
+          documentId: testDocumentId,
+          content: `perf-${i}`,
+          embedding: randomUnitVector(VEC_DIM),
+          metadata: { sourceType: 'raw', position: i },
+          position: i,
+          createdAt: new Date(),
+        })
+      );
 
-    await repo.saveMany(chunks);
+      await repo.saveMany(chunks);
 
-    const t0 = performance.now();
-    await repo.vectorSearch(queryEmb, 5);
-    const elapsed = performance.now() - t0;
+      const t0 = performance.now();
+      await repo.vectorSearch(queryEmb, 5);
+      const elapsed = performance.now() - t0;
 
-    expect(elapsed).toBeLessThan(100);
-  });
+      expect(elapsed).toBeLessThan(100);
+    }
+  );
 });

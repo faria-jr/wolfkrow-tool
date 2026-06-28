@@ -4,7 +4,10 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-const completeSpy = vi.fn().mockResolvedValue({ content: '[{"name":"Sprint 1","description":"d","features":[]}]', usage: { inputTokens: 10, outputTokens: 5 } });
+const completeSpy = vi.fn().mockResolvedValue({
+  content: '[{"name":"Sprint 1","description":"d","features":[]}]',
+  usage: { inputTokens: 10, outputTokens: 5 },
+});
 const createFromConfigSpy = vi.fn().mockReturnValue({ complete: completeSpy });
 
 vi.mock('../lib/keychain', () => ({
@@ -30,7 +33,9 @@ describe('makePlanner — repoSummary injection (RM7.3)', () => {
     createFromConfigSpy.mockClear();
 
     const adapters = getAdapters();
-    (adapters.aiFactory as unknown as { createFromConfig: typeof createFromConfigSpy }).createFromConfig = createFromConfigSpy;
+    (
+      adapters.aiFactory as unknown as { createFromConfig: typeof createFromConfigSpy }
+    ).createFromConfig = createFromConfigSpy;
     (adapters.secrets as unknown as { get: () => Promise<string> }).get = async () => 'sk-mock';
   });
 
@@ -39,8 +44,15 @@ describe('makePlanner — repoSummary injection (RM7.3)', () => {
   });
 
   it('includes repoSummary in user message when provided', async () => {
-    const agents = await getHarnessAgents({ plannerModel: 'claude-haiku-4-5-20251001', coderModel: 'x', maxRoundsPerFeature: 3 });
-    await agents.planner.plan('# My Spec', { plannerModel: 'claude-haiku-4-5-20251001', repoSummary: '5 files | Languages: typescript' });
+    const agents = await getHarnessAgents({
+      plannerModel: 'claude-haiku-4-5-20251001',
+      coderModel: 'x',
+      maxRoundsPerFeature: 3,
+    });
+    await agents.planner.plan('# My Spec', {
+      plannerModel: 'claude-haiku-4-5-20251001',
+      repoSummary: '5 files | Languages: typescript',
+    });
 
     expect(completeSpy).toHaveBeenCalledOnce();
     const call = completeSpy.mock.calls[0]![0] as { messages: Array<{ content: string }> };
@@ -49,7 +61,11 @@ describe('makePlanner — repoSummary injection (RM7.3)', () => {
   });
 
   it('does NOT include repo context section when repoSummary is absent', async () => {
-    const agents = await getHarnessAgents({ plannerModel: 'claude-haiku-4-5-20251001', coderModel: 'x', maxRoundsPerFeature: 3 });
+    const agents = await getHarnessAgents({
+      plannerModel: 'claude-haiku-4-5-20251001',
+      coderModel: 'x',
+      maxRoundsPerFeature: 3,
+    });
     await agents.planner.plan('# My Spec', { plannerModel: 'claude-haiku-4-5-20251001' });
 
     const call = completeSpy.mock.calls[0]![0] as { messages: Array<{ content: string }> };

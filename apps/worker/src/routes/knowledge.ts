@@ -57,67 +57,97 @@ async function handleKnowledgeUpload(req: FastifyRequest, reply: FastifyReply, t
 
   const parsed = await parseByMimeType(buffer, data.mimetype, data.filename);
   const chunks = parsed.text.includes('#') ? semanticChunk(parsed.text) : rawChunk(parsed.text);
-  if (chunks.length === 0) return reply.code(422).send({ error: 'No content could be extracted from file' });
+  if (chunks.length === 0)
+    return reply.code(422).send({ error: 'No content could be extracted from file' });
 
   const { docRepo, chunkRepo } = makeRepos();
   const result = await new IngestDocumentUseCase(docRepo, chunkRepo, makeEmbedder()).execute({
-    userId, filename: data.filename, mimeType: data.mimetype, size: buffer.byteLength, chunks,
+    userId,
+    filename: data.filename,
+    mimeType: data.mimetype,
+    size: buffer.byteLength,
+    chunks,
   });
   return reply.send({ document: result.document.toProps() });
+}
+
+async function listDocumentsHandler(req: FastifyRequest, reply: FastifyReply) {
+  const userId = (req as unknown as { user: { userId: string } }).user.userId;
+  const { docRepo } = makeRepos();
+  const uc = new ListDocumentsUseCase(docRepo);
+  const result = await uc.execute({ userId });
+  return reply.send({ documents: result.documents.map((d) => d.toProps()) });
+}
+
+async function deleteDocumentHandler(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
+  const userId = (req as unknown as { user: { userId: string } }).user.userId;
+  const { docRepo, chunkRepo } = makeRepos();
+  const uc = new DeleteDocumentUseCase(docRepo, chunkRepo);
+  await uc.execute({ documentId: req.params.id, userId });
+  return reply.send({ deleted: true });
+}
+
+async function searchKnowledgeHandler(
+  req: FastifyRequest<{ Body: unknown }>,
+  reply: FastifyReply
+) {
+  const { query, limit, documentIds } = validate(SearchQuerySchema, req.body);
+
+  const { chunkRepo } = makeRepos();
+  const adapters = getAdapters();
+  const uc = new SearchKnowledgeUseCase(
+    chunkRepo,
+    makeEmbedder(),
+    adapters.reranker,
+    adapters.hyde
+  );
+  const result = await uc.execute({
+    userId: (req as unknown as { user: { userId: string } }).user.userId,
+    query,
+    ...(limit !== undefined ? { limit } : {}),
+    ...(documentIds !== undefined ? { documentIds } : {}),
+  });
+
+  return reply.send({
+    results: result.results.map((r) => ({
+      chunkId: r.chunk.id,
+      documentId: r.documentId,
+      content: r.chunk.content,
+      score: r.score,
+      metadata: r.chunk.metadata,
+    })),
+    query: result.query,
+  });
 }
 
 export async function knowledgeRoutes(app: AuthFastifyInstance) {
   const tmpDir = join(tmpdir(), 'wolfkrow-uploads');
   await mkdir(tmpDir, { recursive: true });
 
-  app.post('/knowledge/upload', {
-    onRequest: [app.authenticate],
-  }, async (req, reply) => handleKnowledgeUpload(req, reply, tmpDir));
+  app.post(
+    '/knowledge/upload',
+    { onRequest: [app.authenticate] },
+    async (req, reply) => handleKnowledgeUpload(req, reply, tmpDir)
+  );
 
-  app.get('/knowledge/documents', {
-    onRequest: [app.authenticate],
-  }, async (req, reply) => {
-    const userId = (req as unknown as { user: { userId: string } }).user.userId;
-    const { docRepo } = makeRepos();
-    const uc = new ListDocumentsUseCase(docRepo);
-    const result = await uc.execute({ userId });
-    return reply.send({ documents: result.documents.map((d) => d.toProps()) });
-  });
+  app.get(
+    '/knowledge/documents',
+    { onRequest: [app.authenticate] },
+    listDocumentsHandler
+  );
 
-  app.delete<{ Params: { id: string } }>('/knowledge/documents/:id', {
-    onRequest: [app.authenticate],
-  }, async (req, reply) => {
-    const userId = (req as unknown as { user: { userId: string } }).user.userId;
-    const { docRepo, chunkRepo } = makeRepos();
-    const uc = new DeleteDocumentUseCase(docRepo, chunkRepo);
-    await uc.execute({ documentId: req.params.id, userId });
-    return reply.send({ deleted: true });
-  });
+  app.delete<{ Params: { id: string } }>(
+    '/knowledge/documents/:id',
+    { onRequest: [app.authenticate] },
+    deleteDocumentHandler
+  );
 
-  app.post<{ Body: unknown }>('/knowledge/search', {
-    onRequest: [app.authenticate],
-  }, async (req, reply) => {
-    const { query, limit, documentIds } = validate(SearchQuerySchema, req.body);
-
-    const { chunkRepo } = makeRepos();
-    const adapters = getAdapters();
-    const uc = new SearchKnowledgeUseCase(chunkRepo, makeEmbedder(), adapters.reranker, adapters.hyde);
-    const result = await uc.execute({
-      userId: (req as unknown as { user: { userId: string } }).user.userId,
-      query,
-      ...(limit !== undefined ? { limit } : {}),
-      ...(documentIds !== undefined ? { documentIds } : {}),
-    });
-
-    return reply.send({
-      results: result.results.map((r) => ({
-        chunkId: r.chunk.id,
-        documentId: r.documentId,
-        content: r.chunk.content,
-        score: r.score,
-        metadata: r.chunk.metadata,
-      })),
-      query: result.query,
-    });
-  });
+  app.post<{ Body: unknown }>(
+    '/knowledge/search',
+    { onRequest: [app.authenticate] },
+    searchKnowledgeHandler
+  );
 }

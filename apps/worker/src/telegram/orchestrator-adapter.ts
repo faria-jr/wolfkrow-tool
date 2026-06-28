@@ -2,7 +2,6 @@ import { DEFAULT_AGENT_MODEL } from '@wolfkrow/shared-types';
 
 import type { OrchestratorService } from '../orchestrator';
 
-
 import type { TelegramChatAdapter } from './bridge';
 
 const DEFAULT_MODEL = DEFAULT_AGENT_MODEL;

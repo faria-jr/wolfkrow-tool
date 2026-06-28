@@ -82,7 +82,11 @@ describe('OnboardingForm', () => {
 
   it('saves provider+key to vault and shows completion', async () => {
     mockFetch
-      .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({ userId: 'u1' }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({ userId: 'u1' }),
+      } as Response)
       .mockResolvedValueOnce({ ok: true, status: 201, json: async () => ({}) } as Response);
 
     render(<OnboardingForm />);
@@ -94,7 +98,10 @@ describe('OnboardingForm', () => {
     await userEvent.type(screen.getByPlaceholderText(/api key/i), 'sk-test-key');
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/vault', expect.objectContaining({ method: 'POST' }));
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/vault',
+      expect.objectContaining({ method: 'POST' })
+    );
     expect(await screen.findByText(/you're all set/i)).toBeInTheDocument();
   });
 
@@ -131,7 +138,9 @@ describe('OnboardingForm', () => {
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
 
     const select = await screen.findByRole('combobox');
-    const options = Array.from((select as HTMLSelectElement).options).map((o) => o.textContent ?? '');
+    const options = Array.from((select as HTMLSelectElement).options).map(
+      (o) => o.textContent ?? ''
+    );
 
     expect(options).toContain('Z.ai (GLM)');
     expect(options).toContain('MiniMax TokenPlan');

@@ -41,7 +41,7 @@ function deriveSource(name: string, catalog: CatalogIndex): McpServerSource {
 function applyHealthSnapshot(
   servers: McpServerData[],
   id: string,
-  snapshot: McpHealthSnapshot,
+  snapshot: McpHealthSnapshot
 ): McpServerData[] {
   return servers.map((s) => (s.id === id ? { ...s, health: snapshot } : s));
 }
@@ -57,7 +57,7 @@ interface ServerActions {
 async function patchThenReload(
   id: string,
   body: unknown,
-  reload: () => Promise<void>,
+  reload: () => Promise<void>
 ): Promise<Response> {
   const res = await apiFetch(`${API}/${id}`, {
     method: 'PATCH',
@@ -91,21 +91,26 @@ async function restartServer(id: string, reload: () => Promise<void>) {
 
 function useServerActions(
   reload: () => Promise<void>,
-  setServers: (updater: (prev: McpServerData[]) => McpServerData[]) => void,
+  setServers: (updater: (prev: McpServerData[]) => McpServerData[]) => void
 ): ServerActions {
   const toggle = useCallback(
     (id: string, isActive: boolean) =>
       runWithToast(
         async () => patchThenReload(id, { isActive }, reload),
         `Server ${isActive ? 'enabled' : 'toggled'}`,
-        'Failed to toggle server',
+        'Failed to toggle server'
       ),
-    [reload],
+    [reload]
   );
 
   const remove = useCallback(
-    (id: string) => runWithToast(async () => removeServer(id, reload), 'Server removed', 'Failed to remove server'),
-    [reload],
+    (id: string) =>
+      runWithToast(
+        async () => removeServer(id, reload),
+        'Server removed',
+        'Failed to remove server'
+      ),
+    [reload]
   );
 
   const setVisibility = useCallback(
@@ -113,14 +118,19 @@ function useServerActions(
       runWithToast(
         async () => patchThenReload(id, { visibility }, reload),
         'Server visibility updated',
-        'Failed to update visibility',
+        'Failed to update visibility'
       ),
-    [reload],
+    [reload]
   );
 
   const restart = useCallback(
-    (id: string) => runWithToast(async () => restartServer(id, reload), 'Server restarted', 'Failed to restart server'),
-    [reload],
+    (id: string) =>
+      runWithToast(
+        async () => restartServer(id, reload),
+        'Server restarted',
+        'Failed to restart server'
+      ),
+    [reload]
   );
 
   const checkHealth = useCallback(
@@ -131,7 +141,7 @@ function useServerActions(
       const snapshot: McpHealthSnapshot = { ...body, checkedAt: Date.now() };
       setServers((prev) => applyHealthSnapshot(prev, id, snapshot));
     },
-    [setServers],
+    [setServers]
   );
 
   return { toggle, remove, setVisibility, restart, checkHealth };
@@ -155,10 +165,14 @@ function useMcpServers() {
       setServers(data.servers.map((s) => ({ ...s, source: deriveSource(s.name, idx) })));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load MCP servers'));
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }, [catalog]);
 
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
   return { servers, loading, error, reload, setServers };
 }
 

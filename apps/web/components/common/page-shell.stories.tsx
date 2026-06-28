@@ -17,9 +17,15 @@ type Story = StoryObj<typeof meta>;
 function Sample() {
   return (
     <PageShell>
-      <PageHeader title="Agents" description="Configure AI personas" icon={<Bot className="h-6 w-6" />} />
+      <PageHeader
+        title="Agents"
+        description="Configure AI personas"
+        icon={<Bot className="h-6 w-6" />}
+      />
       <PageContent>
-        <p className="text-sm text-muted-foreground">Page content lives in a canonical scroll region.</p>
+        <p className="text-muted-foreground text-sm">
+          Page content lives in a canonical scroll region.
+        </p>
       </PageContent>
     </PageShell>
   );
@@ -32,7 +38,9 @@ export const Narrow: Story = {
     <PageShell variant="narrow">
       <PageHeader title="Settings" description="Narrow, centered content (max-w-content)." />
       <PageContent>
-        <p className="text-sm text-muted-foreground">Narrow variant centers content with a max width.</p>
+        <p className="text-muted-foreground text-sm">
+          Narrow variant centers content with a max width.
+        </p>
       </PageContent>
     </PageShell>
   ),
@@ -41,7 +49,7 @@ export const Narrow: Story = {
 export const Flush: Story = {
   render: () => (
     <PageShell variant="flush">
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-full items-center justify-center text-sm">
         Flush variant — full-bleed, no padding (chat / terminal / graph).
       </div>
     </PageShell>

@@ -65,7 +65,9 @@ describe('claude-compat-presets', () => {
     });
 
     it('throws for unknown provider', () => {
-      expect(() => getClaudeCompatPreset('unknown')).toThrow('Unknown Claude-compat provider: unknown');
+      expect(() => getClaudeCompatPreset('unknown')).toThrow(
+        'Unknown Claude-compat provider: unknown'
+      );
     });
   });
 

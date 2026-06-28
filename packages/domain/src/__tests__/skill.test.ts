@@ -99,7 +99,14 @@ describe('Skill entity', () => {
 
     it('throws ValidationError for empty name', () => {
       expect(() =>
-        Skill.create({ userId: 'u', name: '', description: 'x', content: 'y', tags: [], isBuiltIn: false }),
+        Skill.create({
+          userId: 'u',
+          name: '',
+          description: 'x',
+          content: 'y',
+          tags: [],
+          isBuiltIn: false,
+        })
       ).toThrow(ValidationError);
     });
   });

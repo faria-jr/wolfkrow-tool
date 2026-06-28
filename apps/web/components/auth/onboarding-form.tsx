@@ -8,9 +8,15 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
 const step1Schema = z
@@ -55,7 +61,10 @@ export function OnboardingForm() {
       body: JSON.stringify({ password, confirmPassword: password, displayName }),
     });
     const data = (await res.json()) as Record<string, string>;
-    if (!res.ok) { setSubmitError(data.error ?? 'Setup failed'); return; }
+    if (!res.ok) {
+      setSubmitError(data.error ?? 'Setup failed');
+      return;
+    }
     setStep(2);
   }
 
@@ -75,20 +84,45 @@ interface ProviderFormFieldsProps {
   onApiKeyChange: (v: string) => void;
 }
 
-function ProviderFormFields({ provider, apiKey, onProviderChange, onApiKeyChange }: ProviderFormFieldsProps) {
+function ProviderFormFields({
+  provider,
+  apiKey,
+  onProviderChange,
+  onApiKeyChange,
+}: ProviderFormFieldsProps) {
   const selected = PROVIDERS.find((p) => p.value === provider) ?? PROVIDERS[0];
   return (
     <div className="space-y-3">
       <div>
-        <label className="text-sm font-medium" htmlFor="provider-select">Provider</label>
-        <select id="provider-select" value={provider} onChange={(e) => onProviderChange(e.target.value)} className="border-input bg-background mt-1 block w-full rounded-md border px-3 py-2 text-sm">
-          {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+        <label className="text-sm font-medium" htmlFor="provider-select">
+          Provider
+        </label>
+        <select
+          id="provider-select"
+          value={provider}
+          onChange={(e) => onProviderChange(e.target.value)}
+          className="border-input bg-background mt-1 block w-full rounded-md border px-3 py-2 text-sm"
+        >
+          {PROVIDERS.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
         </select>
       </div>
       {selected && !selected.isLocal && (
         <div>
-          <label className="text-sm font-medium" htmlFor="api-key-input">API Key</label>
-          <Input id="api-key-input" type="password" placeholder={`API key for ${selected.label}`} value={apiKey} onChange={(e) => onApiKeyChange(e.target.value)} className="mt-1" />
+          <label className="text-sm font-medium" htmlFor="api-key-input">
+            API Key
+          </label>
+          <Input
+            id="api-key-input"
+            type="password"
+            placeholder={`API key for ${selected.label}`}
+            value={apiKey}
+            onChange={(e) => onApiKeyChange(e.target.value)}
+            className="mt-1"
+          />
         </div>
       )}
     </div>
@@ -126,15 +160,39 @@ function ProviderStep({ onDone }: { onDone: () => void }) {
     <div className="space-y-4">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">Set up your AI provider</h2>
-        <p className="text-muted-foreground text-sm">Connect an API key to start chatting. You can change this later in Vault.</p>
+        <p className="text-muted-foreground text-sm">
+          Connect an API key to start chatting. You can change this later in Vault.
+        </p>
       </div>
-      <ProviderFormFields provider={provider} apiKey={apiKey} onProviderChange={setProvider} onApiKeyChange={setApiKey} />
-      {error && <p className="text-destructive text-sm" role="alert">{error}</p>}
+      <ProviderFormFields
+        provider={provider}
+        apiKey={apiKey}
+        onProviderChange={setProvider}
+        onApiKeyChange={setApiKey}
+      />
+      {error && (
+        <p className="text-destructive text-sm" role="alert">
+          {error}
+        </p>
+      )}
       <div className="flex gap-3">
-        <Button onClick={() => void handleSave()} disabled={saving || (provider !== 'ollama' && !apiKey.trim())} className="flex-1">
-          {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : 'Save'}
+        <Button
+          onClick={() => void handleSave()}
+          disabled={saving || (provider !== 'ollama' && !apiKey.trim())}
+          className="flex-1"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving…
+            </>
+          ) : (
+            'Save'
+          )}
         </Button>
-        <Button variant="outline" onClick={onDone}>Skip</Button>
+        <Button variant="outline" onClick={onDone}>
+          Skip
+        </Button>
       </div>
     </div>
   );
@@ -150,38 +208,70 @@ function PasswordSetupForm({ form, error, onSubmit }: SetupFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField control={form.control} name="password" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Password</FormLabel>
-            <FormControl>
-              <Input {...field} type="password" placeholder="Min 8 chars, letter + number" autoComplete="new-password" autoFocus />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-        <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Confirm Password</FormLabel>
-            <FormControl>
-              <Input {...field} type="password" placeholder="Repeat password" autoComplete="new-password" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-        <FormField control={form.control} name="displayName" render={({ field }) => (
-          <FormItem>
-            <FormLabel>Display Name (optional)</FormLabel>
-            <FormControl>
-              <Input {...field} type="text" placeholder="Your name" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )} />
-        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="password"
+                  placeholder="Min 8 chars, letter + number"
+                  autoComplete="new-password"
+                  autoFocus
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="confirmPassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Password</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="password"
+                  placeholder="Repeat password"
+                  autoComplete="new-password"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="displayName"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Display Name (optional)</FormLabel>
+              <FormControl>
+                <Input {...field} type="text" placeholder="Your name" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {error && (
+          <p className="text-destructive text-sm" role="alert">
+            {error}
+          </p>
+        )}
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting
-            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account…</>
-            : 'Create account'}
+          {form.formState.isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account…
+            </>
+          ) : (
+            'Create account'
+          )}
         </Button>
       </form>
     </Form>
@@ -191,12 +281,16 @@ function PasswordSetupForm({ form, error, onSubmit }: SetupFormProps) {
 function CompletionStep({ onContinue }: { onContinue: () => void }) {
   return (
     <div className="space-y-6 text-center">
-      <CheckCircle2 className="mx-auto h-12 w-12 text-success" />
+      <CheckCircle2 className="text-success mx-auto h-12 w-12" />
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">You&apos;re all set!</h2>
-        <p className="text-sm text-muted-foreground">Your account has been created. Welcome to Wolfkrow.</p>
+        <p className="text-muted-foreground text-sm">
+          Your account has been created. Welcome to Wolfkrow.
+        </p>
       </div>
-      <Button className="w-full" onClick={onContinue}>Go to app</Button>
+      <Button className="w-full" onClick={onContinue}>
+        Go to app
+      </Button>
     </div>
   );
 }

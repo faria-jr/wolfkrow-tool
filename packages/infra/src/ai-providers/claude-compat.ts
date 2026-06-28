@@ -62,11 +62,14 @@ export class ClaudeCompatProvider implements AIProvider {
   constructor(
     apiKey: string,
     source: string | { baseUrl: string },
-    opts: ClaudeCompatOptions = {},
+    opts: ClaudeCompatOptions = {}
   ) {
-    const baseUrl = typeof source === 'string'
-      ? (source.startsWith('http') ? source : getClaudeCompatPreset(source).baseUrl)
-      : source.baseUrl;
+    const baseUrl =
+      typeof source === 'string'
+        ? source.startsWith('http')
+          ? source
+          : getClaudeCompatPreset(source).baseUrl
+        : source.baseUrl;
     this.client = new Anthropic({ apiKey, baseURL: baseUrl });
     this.resolvedBaseUrl = baseUrl;
     this.toolRegistry = opts.toolRegistry;
@@ -147,20 +150,39 @@ export class ClaudeCompatProvider implements AIProvider {
   private async *processToolUseBlocks(
     toolUseBlocks: Map<string, ToolUseBlock>,
     signal: AbortSignal | undefined,
-    toolResults: Anthropic.Messages.ToolResultBlockParam[],
+    toolResults: Anthropic.Messages.ToolResultBlockParam[]
   ): AsyncGenerator<StreamChunk> {
     for (const block of toolUseBlocks.values()) {
       const input = parseJson(block.partialJson);
       yield { delta: '', toolCall: { id: block.id, name: block.name, input } };
       // P1-6: don't start a new tool after the user aborted.
       if (signal?.aborted) {
-        yield { delta: '', toolResult: { callId: block.id, output: 'aborted by user', isError: true } };
+        yield {
+          delta: '',
+          toolResult: { callId: block.id, output: 'aborted by user', isError: true },
+        };
         continue;
       }
-      const { result: toolResult, permissionChunk } = await this.executeWithPermission(block, input, signal);
+      const { result: toolResult, permissionChunk } = await this.executeWithPermission(
+        block,
+        input,
+        signal
+      );
       if (permissionChunk) yield permissionChunk;
-      yield { delta: '', toolResult: { callId: toolResult.callId, output: toolResult.output, isError: toolResult.isError } };
-      toolResults.push({ type: 'tool_result', tool_use_id: block.id, content: toolResult.output, is_error: toolResult.isError });
+      yield {
+        delta: '',
+        toolResult: {
+          callId: toolResult.callId,
+          output: toolResult.output,
+          isError: toolResult.isError,
+        },
+      };
+      toolResults.push({
+        type: 'tool_result',
+        tool_use_id: block.id,
+        content: toolResult.output,
+        is_error: toolResult.isError,
+      });
     }
   }
 
@@ -168,7 +190,7 @@ export class ClaudeCompatProvider implements AIProvider {
     options: CompletionOptions,
     toolDefs: Anthropic.Messages.Tool[],
     messages?: Anthropic.Messages.MessageParam[],
-    system?: string,
+    system?: string
   ): ReturnType<Anthropic['messages']['stream']> {
     const messageParams = messages ?? toMessageParams(options);
     if (!messages && options.imageParts?.length) {
@@ -184,7 +206,7 @@ export class ClaudeCompatProvider implements AIProvider {
         messages: messageParams,
         ...(toolDefs.length > 0 ? { tools: toolDefs } : {}),
       },
-      { signal: options.signal },
+      { signal: options.signal }
     );
   }
 
@@ -200,7 +222,7 @@ export class ClaudeCompatProvider implements AIProvider {
   private async executeTool(
     block: ToolUseBlock,
     input: Record<string, unknown>,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<ToolResult> {
     const executor = this.toolRegistry?.get(block.name);
     if (!executor) return ToolResult.error(block.id, `Tool "${block.name}" not found`);
@@ -222,17 +244,21 @@ export class ClaudeCompatProvider implements AIProvider {
   private executeWithPermission(
     block: ToolUseBlock,
     input: Record<string, unknown>,
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<{ result: ToolResult; permissionChunk?: StreamChunk }> {
     return executeWithPermissionGate(
       {
         ...(this.agent !== undefined ? { agent: this.agent } : {}),
-        ...(this.permissionResolver !== undefined ? { permissionResolver: this.permissionResolver } : {}),
-        ...(this.requestPermission !== undefined ? { requestPermission: this.requestPermission } : {}),
+        ...(this.permissionResolver !== undefined
+          ? { permissionResolver: this.permissionResolver }
+          : {}),
+        ...(this.requestPermission !== undefined
+          ? { requestPermission: this.requestPermission }
+          : {}),
       },
       { id: block.id, name: block.name },
       input,
-      () => this.executeTool(block, input, signal),
+      () => this.executeTool(block, input, signal)
     );
   }
 
@@ -240,10 +266,11 @@ export class ClaudeCompatProvider implements AIProvider {
     messages: Anthropic.Messages.MessageParam[],
     options: CompletionOptions,
     system: string | undefined,
-    toolDefs: Anthropic.Messages.Tool[],
+    toolDefs: Anthropic.Messages.Tool[]
   ): AsyncGenerator<StreamChunk, TurnResult> {
     const stream = this.buildStream(options, toolDefs, messages, system);
-    const { toolUseBlocks, usage, stopReason, assistantContent } = yield* processStreamEvents(stream);
+    const { toolUseBlocks, usage, stopReason, assistantContent } =
+      yield* processStreamEvents(stream);
     return {
       inputTokens: usage.input_tokens,
       outputTokens: usage.output_tokens,
@@ -265,4 +292,3 @@ export class ClaudeCompatProvider implements AIProvider {
 function terminalChunk(inputTokens: number, outputTokens: number): StreamChunk {
   return { delta: '', done: true, inputTokens, outputTokens };
 }
-

@@ -28,22 +28,27 @@ import Database from 'better-sqlite3';
 const { values: args } = parseArgs({
   args: process.argv.slice(2),
   options: {
-    from:     { type: 'string'  },
-    to:       { type: 'string'  },
-    'dry-run':{ type: 'boolean', default: false },
+    from: { type: 'string' },
+    to: { type: 'string' },
+    'dry-run': { type: 'boolean', default: false },
     rollback: { type: 'boolean', default: false },
-    tables:   { type: 'string'  },
-    verbose:  { type: 'boolean', default: false },
+    tables: { type: 'string' },
+    verbose: { type: 'boolean', default: false },
   },
   strict: false,
 });
 
-const DRY_RUN  = args['dry-run'] as boolean;
+const DRY_RUN = args['dry-run'] as boolean;
 const ROLLBACK = args['rollback'] as boolean;
-const VERBOSE  = args['verbose'] as boolean;
+const VERBOSE = args['verbose'] as boolean;
 const FROM_PATH = args['from'] as string | undefined;
-const TO_PATH  = (args['to'] as string | undefined) ?? process.env['WOLFKROW_DB_PATH'] ?? '.wolfkrow/data/wolfkrow.db';
-const TABLES_FILTER = args['tables'] ? (args['tables'] as string).split(',').map((s) => s.trim()) : null;
+const TO_PATH =
+  (args['to'] as string | undefined) ??
+  process.env['WOLFKROW_DB_PATH'] ??
+  '.wolfkrow/data/wolfkrow.db';
+const TABLES_FILTER = args['tables']
+  ? (args['tables'] as string).split(',').map((s) => s.trim())
+  : null;
 
 // ---------------------------------------------------------------------------
 // Report types
@@ -170,10 +175,18 @@ const TABLE_MAPPINGS: TableMapping[] = [
 // Helpers
 // ---------------------------------------------------------------------------
 
-function log(msg: string) { console.log(msg); }
-function verbose(msg: string) { if (VERBOSE) console.log(`  [verbose] ${msg}`); }
-function warn(msg: string)  { console.warn(`  ⚠️  ${msg}`); }
-function error(msg: string) { console.error(`  ❌  ${msg}`); }
+function log(msg: string) {
+  console.log(msg);
+}
+function verbose(msg: string) {
+  if (VERBOSE) console.log(`  [verbose] ${msg}`);
+}
+function warn(msg: string) {
+  console.warn(`  ⚠️  ${msg}`);
+}
+function error(msg: string) {
+  console.error(`  ❌  ${msg}`);
+}
 
 function backupPath(dbPath: string): string {
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
@@ -204,7 +217,7 @@ function migrateTable(
   src: Database.Database,
   dst: Database.Database,
   mapping: TableMapping,
-  dryRun: boolean,
+  dryRun: boolean
 ): TableReport {
   const report: TableReport = {
     table: mapping.dst,
@@ -259,7 +272,9 @@ function migrateTable(
       });
 
       if (dryRun) {
-        verbose(`DRY-RUN: would insert ${mapping.dst} pk=${targetCols[0] ? String(values[0]) : '?'}`);
+        verbose(
+          `DRY-RUN: would insert ${mapping.dst} pk=${targetCols[0] ? String(values[0]) : '?'}`
+        );
         report.migrated++;
       } else {
         const info = stmt!.run(...values) as Database.RunResult;
@@ -318,7 +333,7 @@ async function main() {
   }
 
   const absFrom = path.resolve(FROM_PATH.replace(/^~/, process.env['HOME'] ?? '~'));
-  const absTo   = path.resolve(TO_PATH);
+  const absTo = path.resolve(TO_PATH);
 
   if (!fs.existsSync(absFrom)) {
     error(`LionClaw database not found: ${absFrom}`);
@@ -356,7 +371,9 @@ async function main() {
     log(`  Migrating: ${mapping.src} → ${mapping.dst}`);
     const rep = migrateTable(src, dst, mapping, DRY_RUN);
     tableReports.push(rep);
-    log(`    total=${rep.total} migrated=${rep.migrated} skipped=${rep.skipped} errors=${rep.errors.length}`);
+    log(
+      `    total=${rep.total} migrated=${rep.migrated} skipped=${rep.skipped} errors=${rep.errors.length}`
+    );
     if (rep.errors.length > 0 && VERBOSE) {
       for (const e of rep.errors.slice(0, 5)) warn(e);
     }
@@ -371,7 +388,7 @@ async function main() {
 
   const finishedAt = new Date();
   const totalMigrated = tableReports.reduce((s, r) => s + r.migrated, 0);
-  const totalErrors   = tableReports.reduce((s, r) => s + r.errors.length, 0);
+  const totalErrors = tableReports.reduce((s, r) => s + r.errors.length, 0);
 
   const report: MigrationReport = {
     dryRun: DRY_RUN,
@@ -386,7 +403,7 @@ async function main() {
 
   const reportPath = path.join(
     path.dirname(absTo),
-    `migration-report-${finishedAt.toISOString().replace(/[:.]/g, '-')}.json`,
+    `migration-report-${finishedAt.toISOString().replace(/[:.]/g, '-')}.json`
   );
 
   if (!DRY_RUN) {

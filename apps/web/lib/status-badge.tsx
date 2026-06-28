@@ -12,8 +12,26 @@ import { Badge } from '@/components/ui/badge';
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
 const SUCCESS = new Set(['completed', 'done', 'active', 'passed', 'ready', 'approved']);
-const RUNNING = new Set(['running', 'in_progress', 'in-progress', 'planning', 'starting', 'streaming', 'pending', 'queued', 'working']);
-const FAILURE = new Set(['failed', 'cancelled', 'canceled', 'rejected', 'error', 'crashed', 'blocked']);
+const RUNNING = new Set([
+  'running',
+  'in_progress',
+  'in-progress',
+  'planning',
+  'starting',
+  'streaming',
+  'pending',
+  'queued',
+  'working',
+]);
+const FAILURE = new Set([
+  'failed',
+  'cancelled',
+  'canceled',
+  'rejected',
+  'error',
+  'crashed',
+  'blocked',
+]);
 
 export function statusBadgeVariant(status: string): BadgeVariant {
   const key = status.toLowerCase();
@@ -31,6 +49,8 @@ export interface StatusBadgeProps {
 /** Badge that derives its variant from the status string. */
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
-    <Badge variant={statusBadgeVariant(status)} className={className}>{status}</Badge>
+    <Badge variant={statusBadgeVariant(status)} className={className}>
+      {status}
+    </Badge>
   );
 }

@@ -10,7 +10,8 @@ export async function GET(req: Request) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const url = new URL(req.url);
-  const res = await fetch(`${WORKER}/harness/projects?userId=${session.userId}${url.search ? `&${url.searchParams.toString()}` : ''}`);
+  const query = url.searchParams.toString();
+  const res = await fetch(`${WORKER}/harness/projects${query ? `?${query}` : ''}`);
   return Response.json(await res.json(), { status: res.status });
 }
 
@@ -19,11 +20,11 @@ export async function POST(req: Request) {
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json() as Record<string, unknown>;
+  const body = (await req.json()) as Record<string, unknown>;
   const res = await fetch(`${WORKER}/harness/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...body, userId: session.userId }),
+    body: JSON.stringify(body),
   });
   return Response.json(await res.json(), { status: res.status });
 }

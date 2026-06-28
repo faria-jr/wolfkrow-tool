@@ -15,7 +15,12 @@ export interface DesignSnapshot {
   artifactPath: string | null;
 }
 
-const HTML_CANDIDATES = ['index.html', 'artifact/index.html', 'public/index.html', 'src/index.html'];
+const HTML_CANDIDATES = [
+  'index.html',
+  'artifact/index.html',
+  'public/index.html',
+  'src/index.html',
+];
 
 function filePath(entry: FileEntry): string {
   return typeof entry.path === 'string' ? entry.path : '';
@@ -34,7 +39,7 @@ export function findHtmlArtifact(files: readonly FileEntry[]): string | null {
 /** Locate + read the design HTML artifact for an OD project (null if none yet). */
 export async function captureDesignArtifact(
   client: OpenDesignClient,
-  odProjectId: string,
+  odProjectId: string
 ): Promise<DesignSnapshot> {
   const files = await client.getProjectFiles(odProjectId);
   const artifactPath = findHtmlArtifact(files);

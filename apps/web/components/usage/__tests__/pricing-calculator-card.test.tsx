@@ -31,9 +31,7 @@ describe('PricingCalculatorCard', () => {
     fireEvent.change(output, { target: { value: '500' } });
 
     const usage = { inputTokens: 1000, outputTokens: 500 };
-    const expectedUsd = defaultPricingCalculator
-      .cost('claude-sonnet-4-6', usage)
-      .toUSD();
+    const expectedUsd = defaultPricingCalculator.cost('claude-sonnet-4-6', usage).toUSD();
     const expectedText = formatCost(expectedUsd);
 
     expect(screen.getByTestId('estimated-cost')).toHaveTextContent(expectedText);
@@ -55,10 +53,13 @@ describe('PricingCalculatorCard', () => {
     fireEvent.change(cacheRead, { target: { value: '1000' } });
     fireEvent.change(cacheWrite, { target: { value: '500' } });
 
-    const usage = { inputTokens: 2000, outputTokens: 300, cacheReadTokens: 1000, cacheWriteTokens: 500 };
-    const expectedUsd = defaultPricingCalculator
-      .cost('claude-sonnet-4-6', usage)
-      .toUSD();
+    const usage = {
+      inputTokens: 2000,
+      outputTokens: 300,
+      cacheReadTokens: 1000,
+      cacheWriteTokens: 500,
+    };
+    const expectedUsd = defaultPricingCalculator.cost('claude-sonnet-4-6', usage).toUSD();
 
     expect(screen.getByTestId('estimated-cost')).toHaveTextContent(formatCost(expectedUsd));
   });

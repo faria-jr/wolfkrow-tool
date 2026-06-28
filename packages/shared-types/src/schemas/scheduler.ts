@@ -16,7 +16,13 @@ export const ScheduleStatusSchema = z.enum(['pending', 'running', 'completed', '
 
 export type ScheduleStatus = z.infer<typeof ScheduleStatusSchema>;
 
-export const RunReviewStatusSchema = z.enum(['pending', 'running', 'awaiting_review', 'validated', 'rejected']);
+export const RunReviewStatusSchema = z.enum([
+  'pending',
+  'running',
+  'awaiting_review',
+  'validated',
+  'rejected',
+]);
 
 export type RunReviewStatus = z.infer<typeof RunReviewStatusSchema>;
 
@@ -110,9 +116,7 @@ export const CreateScheduledTaskRequestBodySchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
-export type CreateScheduledTaskRequestBody = z.infer<
-  typeof CreateScheduledTaskRequestBodySchema
->;
+export type CreateScheduledTaskRequestBody = z.infer<typeof CreateScheduledTaskRequestBodySchema>;
 
 /**
  * Update scheduled-task request body (web PATCH /api/scheduler/tasks/[id]).
@@ -131,6 +135,4 @@ export const UpdateScheduledTaskRequestBodySchema = z.object({
   tags: z.array(z.string()).optional(),
 });
 
-export type UpdateScheduledTaskRequestBody = z.infer<
-  typeof UpdateScheduledTaskRequestBodySchema
->;
+export type UpdateScheduledTaskRequestBody = z.infer<typeof UpdateScheduledTaskRequestBodySchema>;

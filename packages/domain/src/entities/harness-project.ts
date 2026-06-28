@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
 
-export type HarnessProjectStatus = 'planning' | 'ready' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
+export type HarnessProjectStatus =
+  | 'planning'
+  | 'ready'
+  | 'running'
+  | 'paused'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 export interface HarnessConfig {
   maxRoundsPerFeature: number;
@@ -34,7 +41,10 @@ export interface HarnessProjectProps {
   completedAt: Date | undefined;
 }
 
-export type HarnessProjectCreateInput = Omit<HarnessProjectProps, 'id' | 'status' | 'metrics' | 'createdAt' | 'updatedAt' | 'completedAt'>;
+export type HarnessProjectCreateInput = Omit<
+  HarnessProjectProps,
+  'id' | 'status' | 'metrics' | 'createdAt' | 'updatedAt' | 'completedAt'
+>;
 
 const DEFAULT_CONFIG: HarnessConfig = {
   maxRoundsPerFeature: 5,
@@ -43,8 +53,12 @@ const DEFAULT_CONFIG: HarnessConfig = {
 };
 
 const DEFAULT_METRICS: ProjectMetrics = {
-  totalTokens: 0, totalCost: 0, roundCount: 0,
-  featuresPassed: 0, featuresTotal: 0, totalDurationMs: 0,
+  totalTokens: 0,
+  totalCost: 0,
+  roundCount: 0,
+  featuresPassed: 0,
+  featuresTotal: 0,
+  totalDurationMs: 0,
 };
 
 export class HarnessProject {
@@ -100,17 +114,26 @@ export class HarnessProject {
 
   toProps(): HarnessProjectProps {
     return {
-      id: this.id, userId: this.userId, name: this.name, description: this.description,
-      specPath: this.specPath, status: this.status,
-      config: this.config, metrics: this.metrics,
-      createdAt: this.createdAt, updatedAt: this.updatedAt, completedAt: this.completedAt,
+      id: this.id,
+      userId: this.userId,
+      name: this.name,
+      description: this.description,
+      specPath: this.specPath,
+      status: this.status,
+      config: this.config,
+      metrics: this.metrics,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      completedAt: this.completedAt,
       ...(this.projectPath !== undefined ? { projectPath: this.projectPath } : {}),
     };
   }
 
   withStatus(status: HarnessProjectStatus, completedAt?: Date): HarnessProject {
     return HarnessProject.fromProps({
-      ...this.toProps(), status, updatedAt: new Date(),
+      ...this.toProps(),
+      status,
+      updatedAt: new Date(),
       ...(completedAt !== undefined ? { completedAt } : {}),
     });
   }

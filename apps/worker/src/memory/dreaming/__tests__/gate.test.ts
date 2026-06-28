@@ -1,4 +1,9 @@
-import type { CompactionLog, CompactionLogRepo, DailySummary, DailySummaryRepo } from '@wolfkrow/domain';
+import type {
+  CompactionLog,
+  CompactionLogRepo,
+  DailySummary,
+  DailySummaryRepo,
+} from '@wolfkrow/domain';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DreamingGate } from '../gate';
@@ -48,7 +53,10 @@ describe('DreamingGate (FIX-013)', () => {
 
   it('does not fire while activity keeps resetting the timer', async () => {
     const repo = fakeSummaryRepo();
-    const gate = new DreamingGate(repo, fakeCompactionRepo(), { userId: 'u1', idleThresholdMs: 5_000 });
+    const gate = new DreamingGate(repo, fakeCompactionRepo(), {
+      userId: 'u1',
+      idleThresholdMs: 5_000,
+    });
 
     gate.start();
     await vi.advanceTimersByTimeAsync(3_000);
@@ -63,7 +71,10 @@ describe('DreamingGate (FIX-013)', () => {
 
   it('stop() cancels the pending timer', async () => {
     const repo = fakeSummaryRepo();
-    const gate = new DreamingGate(repo, fakeCompactionRepo(), { userId: 'u1', idleThresholdMs: 5_000 });
+    const gate = new DreamingGate(repo, fakeCompactionRepo(), {
+      userId: 'u1',
+      idleThresholdMs: 5_000,
+    });
 
     gate.start();
     gate.stop();
@@ -73,7 +84,10 @@ describe('DreamingGate (FIX-013)', () => {
   });
 
   it('getStatus reports active while started and idle after stop', () => {
-    const gate = new DreamingGate(fakeSummaryRepo(), fakeCompactionRepo(), { userId: 'u1', idleThresholdMs: 5_000 });
+    const gate = new DreamingGate(fakeSummaryRepo(), fakeCompactionRepo(), {
+      userId: 'u1',
+      idleThresholdMs: 5_000,
+    });
 
     expect(gate.getStatus().active).toBe(false);
     gate.start();

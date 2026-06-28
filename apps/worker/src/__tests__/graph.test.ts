@@ -121,7 +121,7 @@ describe('IngestGraphUseCase.execute', () => {
 
     const allEdges = graph.listEdges('u1');
     const incident = allEdges.filter(
-      (e) => e.sourceNodeId === res.documentNode.id || e.targetNodeId === res.documentNode.id,
+      (e) => e.sourceNodeId === res.documentNode.id || e.targetNodeId === res.documentNode.id
     );
     const mentions = incident.filter((e) => e.relation === 'mentions');
     expect(mentions.length).toBe(res.entityNodes.length);

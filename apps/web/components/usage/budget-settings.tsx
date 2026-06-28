@@ -14,70 +14,90 @@ const STORAGE_KEY = 'wolfkrow:budget_usd';
 const DEFAULT_BUDGET = 50;
 
 function readStoredBudget(): number {
- try {
- const raw = localStorage.getItem(STORAGE_KEY);
- const parsed = Number(raw ?? DEFAULT_BUDGET);
- return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_BUDGET;
- } catch {
- return DEFAULT_BUDGET;
- }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = Number(raw ?? DEFAULT_BUDGET);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_BUDGET;
+  } catch {
+    return DEFAULT_BUDGET;
+  }
 }
 
 interface BudgetFormProps {
- inputValue: string;
- isValid: boolean;
- saved: boolean;
- onInput: (v: string) => void;
- onSave: () => void;
+  inputValue: string;
+  isValid: boolean;
+  saved: boolean;
+  onInput: (v: string) => void;
+  onSave: () => void;
 }
 
 function BudgetForm({ inputValue, isValid, saved, onInput, onSave }: BudgetFormProps) {
- return (
- <div className="flex items-center gap-2">
- <label htmlFor="budget-input" className="text-sm">Monthly budget (USD)</label>
- <input id="budget-input" type="number" min={1} step={1} value={inputValue}
- onChange={(e) => onInput(e.target.value)}
- className="w-24 rounded border border-input bg-background px-2 py-1 text-sm" />
- <button type="button" onClick={onSave} disabled={!isValid}
- className="rounded bg-primary px-3 py-1 text-sm text-primary-foreground disabled:opacity-50">
- Save
- </button>
- {saved && <span className="text-xs text-success">Saved!</span>}
- </div>
- );
+  return (
+    <div className="flex items-center gap-2">
+      <label htmlFor="budget-input" className="text-sm">
+        Monthly budget (USD)
+      </label>
+      <input
+        id="budget-input"
+        type="number"
+        min={1}
+        step={1}
+        value={inputValue}
+        onChange={(e) => onInput(e.target.value)}
+        className="border-input bg-background w-24 rounded border px-2 py-1 text-sm"
+      />
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={!isValid}
+        className="bg-primary text-primary-foreground rounded px-3 py-1 text-sm disabled:opacity-50"
+      >
+        Save
+      </button>
+      {saved && <span className="text-success text-xs">Saved!</span>}
+    </div>
+  );
 }
 
 export function BudgetSettings() {
- const [inputValue, setInputValue] = useState<string>(String(DEFAULT_BUDGET));
- const [currentBudget, setCurrentBudget] = useState<number>(DEFAULT_BUDGET);
- const [saved, setSaved] = useState(false);
+  const [inputValue, setInputValue] = useState<string>(String(DEFAULT_BUDGET));
+  const [currentBudget, setCurrentBudget] = useState<number>(DEFAULT_BUDGET);
+  const [saved, setSaved] = useState(false);
 
- useEffect(() => {
- const stored = readStoredBudget();
- setCurrentBudget(stored);
- setInputValue(String(stored));
- }, []);
+  useEffect(() => {
+    const stored = readStoredBudget();
+    setCurrentBudget(stored);
+    setInputValue(String(stored));
+  }, []);
 
- const parsedValue = Number(inputValue);
- const isValid = Number.isFinite(parsedValue) && parsedValue > 0;
+  const parsedValue = Number(inputValue);
+  const isValid = Number.isFinite(parsedValue) && parsedValue > 0;
 
- function handleSave() {
- if (!isValid) return;
- localStorage.setItem(STORAGE_KEY, String(parsedValue));
- setCurrentBudget(parsedValue);
- window.dispatchEvent(new CustomEvent('wolfkrow:budget-changed'));
- setSaved(true);
- setTimeout(() => setSaved(false), 2000);
- }
+  function handleSave() {
+    if (!isValid) return;
+    localStorage.setItem(STORAGE_KEY, String(parsedValue));
+    setCurrentBudget(parsedValue);
+    window.dispatchEvent(new CustomEvent('wolfkrow:budget-changed'));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
 
- return (
- <div className="rounded border border-border bg-card p-4">
- <h2 className="mb-1 text-sm font-semibold">Budget Settings</h2>
- <p className="mb-3 text-xs text-muted-foreground">
- Current budget: <span className="font-medium">${currentBudget}</span> / month
- </p>
- <BudgetForm inputValue={inputValue} isValid={isValid} saved={saved}
- onInput={(v) => { setSaved(false); setInputValue(v); }} onSave={handleSave} />
- </div>
- );
+  return (
+    <div className="border-border bg-card rounded border p-4">
+      <h2 className="mb-1 text-sm font-semibold">Budget Settings</h2>
+      <p className="text-muted-foreground mb-3 text-xs">
+        Current budget: <span className="font-medium">${currentBudget}</span> / month
+      </p>
+      <BudgetForm
+        inputValue={inputValue}
+        isValid={isValid}
+        saved={saved}
+        onInput={(v) => {
+          setSaved(false);
+          setInputValue(v);
+        }}
+        onSave={handleSave}
+      />
+    </div>
+  );
 }

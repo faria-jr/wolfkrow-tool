@@ -65,7 +65,10 @@ describe('FilesystemTool', () => {
   });
 
   it('writes creates nested directories', async () => {
-    const r = await tool.execute({ operation: 'write', path: 'sub/dir/nested.txt', content: 'data' }, ctx());
+    const r = await tool.execute(
+      { operation: 'write', path: 'sub/dir/nested.txt', content: 'data' },
+      ctx()
+    );
     expect(r.isError).toBe(false);
     const content = await fs.readFile(path.join(tmpDir, 'sub/dir/nested.txt'), 'utf-8');
     expect(content).toBe('data');
@@ -102,7 +105,10 @@ describe('FilesystemTool', () => {
   });
 
   it('grep rejects path traversal in searchPath', async () => {
-    const r = await tool.execute({ operation: 'grep', pattern: 'foo', searchPath: '../../etc' }, ctx());
+    const r = await tool.execute(
+      { operation: 'grep', pattern: 'foo', searchPath: '../../etc' },
+      ctx()
+    );
     expect(r.isError).toBe(true);
     expect(r.output).toMatch(/not allowed/i);
   });

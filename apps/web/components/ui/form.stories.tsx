@@ -27,7 +27,7 @@ export const Layout: Story = {
       <FormItem>
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" placeholder="you@example.com" />
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           Enter the email address associated with your account.
         </p>
       </FormItem>

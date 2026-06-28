@@ -28,5 +28,5 @@ export const skills = sqliteTable(
   (t) => ({
     userIdIdx: index('skills_user_id_idx').on(t.userId),
     isBuiltInIdx: index('skills_is_built_in_idx').on(t.isBuiltIn),
-  }),
+  })
 );

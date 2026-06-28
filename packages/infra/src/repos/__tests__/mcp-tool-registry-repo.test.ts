@@ -16,7 +16,16 @@ describe('DrizzleMcpToolRegistryRepo (FIX-027)', () => {
   });
 
   it('upsertMany updates when an existing tool matches by name', () => {
-    const existing = [{ id: 't1', mcpServerId: 'srv-1', name: 'search', description: null, inputSchema: null, lastSynced: new Date() }];
+    const existing = [
+      {
+        id: 't1',
+        mcpServerId: 'srv-1',
+        name: 'search',
+        description: null,
+        inputSchema: null,
+        lastSynced: new Date(),
+      },
+    ];
     const { db, chain } = mockDb(existing);
     const repo = new DrizzleMcpToolRegistryRepo(db as never);
 
@@ -26,7 +35,16 @@ describe('DrizzleMcpToolRegistryRepo (FIX-027)', () => {
   });
 
   it('findByServerId maps rows to McpToolRecord', () => {
-    const rows = [{ id: 't1', mcpServerId: 'srv-1', name: 'search', description: 'q', inputSchema: { x: 1 }, lastSynced: new Date(0) }];
+    const rows = [
+      {
+        id: 't1',
+        mcpServerId: 'srv-1',
+        name: 'search',
+        description: 'q',
+        inputSchema: { x: 1 },
+        lastSynced: new Date(0),
+      },
+    ];
     const { db } = mockDb(rows);
     const repo = new DrizzleMcpToolRegistryRepo(db as never);
 

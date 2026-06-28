@@ -24,7 +24,7 @@ export async function executeWithPermissionGate(
   deps: PermissionGateDeps,
   block: { id: string; name: string },
   input: Record<string, unknown>,
-  execute: () => Promise<ToolResult>,
+  execute: () => Promise<ToolResult>
 ): Promise<PermissionGateResult> {
   if (!deps.agent || !deps.permissionResolver) {
     return { result: await execute() };
@@ -44,7 +44,10 @@ export async function executeWithPermissionGate(
     permissionChunk = { delta: '', toolPermission: event };
     const approved = deps.requestPermission ? await deps.requestPermission(event) : false;
     if (!approved) {
-      return { result: ToolResult.error(block.id, `Tool "${block.name}" not approved by user`), permissionChunk };
+      return {
+        result: ToolResult.error(block.id, `Tool "${block.name}" not approved by user`),
+        permissionChunk,
+      };
     }
   }
   return { result: await execute(), ...(permissionChunk ? { permissionChunk } : {}) };

@@ -69,7 +69,9 @@ describe('chat POST /permission — resolve a pending tool-permission request', 
     // Park a pending permission so resolveToolPermission finds it.
     const pending = requestToolPermission('call-1', { userId: 'u', agentId: 'a', tool: 'Bash:rm' });
     const res = await app.inject({
-      method: 'POST', url: '/permission', headers: BEARER,
+      method: 'POST',
+      url: '/permission',
+      headers: BEARER,
       payload: { callId: 'call-1', approved: true },
     });
     expect(res.statusCode).toBe(200);
@@ -80,7 +82,9 @@ describe('chat POST /permission — resolve a pending tool-permission request', 
 
   it('returns 404 when no pending permission exists for callId', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/permission', headers: BEARER,
+      method: 'POST',
+      url: '/permission',
+      headers: BEARER,
       payload: { callId: 'unknown', approved: false },
     });
     expect(res.statusCode).toBe(404);
@@ -88,7 +92,10 @@ describe('chat POST /permission — resolve a pending tool-permission request', 
 
   it('rejects a body missing callId → 400', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/permission', headers: BEARER, payload: { approved: true },
+      method: 'POST',
+      url: '/permission',
+      headers: BEARER,
+      payload: { approved: true },
     });
     expect(res.statusCode).toBe(400);
   });
@@ -97,7 +104,10 @@ describe('chat POST /permission — resolve a pending tool-permission request', 
 describe('chat POST /send — validation before the SSE stream opens', () => {
   it('rejects an empty message → 400 (no stream opened)', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/send', headers: BEARER, payload: { message: '' },
+      method: 'POST',
+      url: '/send',
+      headers: BEARER,
+      payload: { message: '' },
     });
     expect(res.statusCode).toBe(400);
   });
@@ -112,7 +122,10 @@ describe('chat POST /sessions/:id/compact — short history (no AI)', () => {
   it('returns compacted:false when the session is under the token threshold', async () => {
     // fakeMessageRepo.findBySessionId returns [] → under threshold → no AI call.
     const res = await app.inject({
-      method: 'POST', url: '/sessions/sess-1/compact', headers: BEARER, payload: {},
+      method: 'POST',
+      url: '/sessions/sess-1/compact',
+      headers: BEARER,
+      payload: {},
     });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { compacted: boolean };

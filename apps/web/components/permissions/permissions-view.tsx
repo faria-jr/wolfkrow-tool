@@ -1,6 +1,5 @@
 'use client';
 
-
 import { ShieldCheck } from 'lucide-react';
 import { type Dispatch, type SetStateAction, useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -10,7 +9,13 @@ import { ErrorState } from '@/components/common/error-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 /** A stored durable decision for a (agent, tool) pair. Absent row = "ask". */
 interface StoredDecision {
@@ -63,7 +68,11 @@ async function loadPermissions(): Promise<{ agents: AgentData[]; decisions: Deci
   return { agents: agentsJson.agents ?? [], decisions: toDecisionMap(decJson.decisions) };
 }
 
-function applyDecision(decisions: DecisionMap, key: string, value: 'allow' | 'deny' | undefined): DecisionMap {
+function applyDecision(
+  decisions: DecisionMap,
+  key: string,
+  value: 'allow' | 'deny' | undefined
+): DecisionMap {
   const next = { ...decisions };
   if (value === undefined) delete next[key];
   else next[key] = value;
@@ -75,7 +84,13 @@ interface LoadState {
   decisions: DecisionMap;
 }
 
-function usePermissionsLoad(): readonly [LoadState, boolean, string | null, Dispatch<SetStateAction<LoadState>>, () => Promise<void>] {
+function usePermissionsLoad(): readonly [
+  LoadState,
+  boolean,
+  string | null,
+  Dispatch<SetStateAction<LoadState>>,
+  () => Promise<void>,
+] {
   const [state, setState] = useState<LoadState>({ agents: [], decisions: {} });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,7 +141,12 @@ function AgentToolbar({ agents, selectedAgent, onSelect }: AgentToolbarProps) {
       {agents.map((a) => {
         const id = a.id ?? a.name;
         return (
-          <Button key={id} variant={id === selectedAgent ? 'default' : 'outline'} size="sm" onClick={() => onSelect(id)}>
+          <Button
+            key={id}
+            variant={id === selectedAgent ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onSelect(id)}
+          >
             {a.name}
           </Button>
         );
@@ -148,11 +168,17 @@ function ToolRow({ agentId, tool, stored, disabled, onChange }: ToolRowProps) {
   return (
     <li className="flex items-center justify-between gap-4 py-2">
       <div className="min-w-0">
-        <p className="font-mono text-sm truncate">{tool}</p>
-        <div className="text-xs text-muted-foreground">{badgeFor(value)}</div>
+        <p className="truncate font-mono text-sm">{tool}</p>
+        <div className="text-muted-foreground text-xs">{badgeFor(value)}</div>
       </div>
-      <Select value={value} onValueChange={(next) => onChange(agentId, tool, next as UiDecision)} disabled={disabled}>
-        <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+      <Select
+        value={value}
+        onValueChange={(next) => onChange(agentId, tool, next as UiDecision)}
+        disabled={disabled}
+      >
+        <SelectTrigger className="w-32">
+          <SelectValue />
+        </SelectTrigger>
         <SelectContent>
           <SelectItem value="ask">Ask</SelectItem>
           <SelectItem value="allow">Allow</SelectItem>
@@ -177,9 +203,9 @@ function AgentToolsCard({ agent, decisions, mutating, onChange }: AgentToolsCard
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+          <ShieldCheck className="text-muted-foreground h-4 w-4" />
           {agent.name}
-          <span className="text-sm font-normal text-muted-foreground">
+          <span className="text-muted-foreground text-sm font-normal">
             ({tools.length} tool{tools.length === 1 ? '' : 's'})
           </span>
         </CardTitle>
@@ -191,7 +217,7 @@ function AgentToolsCard({ agent, decisions, mutating, onChange }: AgentToolsCard
             description="There are no per-tool permissions to manage."
           />
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-border divide-y">
             {tools.map((tool) => (
               <ToolRow
                 key={tool}
@@ -204,7 +230,7 @@ function AgentToolsCard({ agent, decisions, mutating, onChange }: AgentToolsCard
             ))}
           </ul>
         )}
-        <p className="mt-4 text-xs text-muted-foreground">
+        <p className="text-muted-foreground mt-4 text-xs">
           <span className="font-medium">Ask</span> = no stored decision (runtime will prompt).
           <span className="font-medium"> Allow</span>/<span className="font-medium">Deny</span> are
           persisted and survive worker restarts.
@@ -223,30 +249,56 @@ interface PermissionsContentProps {
   onChange: (agentId: string, tool: string, next: UiDecision) => void;
 }
 
-function PermissionsContent({ agents, decisions, selectedAgent, mutating, onSelect, onChange }: PermissionsContentProps) {
+function PermissionsContent({
+  agents,
+  decisions,
+  selectedAgent,
+  mutating,
+  onSelect,
+  onChange,
+}: PermissionsContentProps) {
   const current = agents.find((a) => (a.id ?? a.name) === selectedAgent) ?? null;
   return (
     <div className="space-y-4">
       <AgentToolbar agents={agents} selectedAgent={selectedAgent} onSelect={onSelect} />
       {current ? (
-        <AgentToolsCard agent={current} decisions={decisions} mutating={mutating} onChange={onChange} />
+        <AgentToolsCard
+          agent={current}
+          decisions={decisions}
+          mutating={mutating}
+          onChange={onChange}
+        />
       ) : (
-        <p className="text-sm text-muted-foreground">Select an agent to manage its tools.</p>
+        <p className="text-muted-foreground text-sm">Select an agent to manage its tools.</p>
       )}
     </div>
   );
 }
 
 function LoadingView() {
-  return <p className="text-sm text-muted-foreground p-4">Loading permissions…</p>;
+  return <p className="text-muted-foreground p-4 text-sm">Loading permissions…</p>;
 }
 
 function ErrorView({ error, onRetry }: { error: string; onRetry: () => void }) {
-  return <ErrorState title="Failed to load permissions" description={error} retryLabel="Retry" onRetry={onRetry} className="m-4" />;
+  return (
+    <ErrorState
+      title="Failed to load permissions"
+      description={error}
+      retryLabel="Retry"
+      onRetry={onRetry}
+      className="m-4"
+    />
+  );
 }
 
 function EmptyAgentsView() {
-  return <EmptyState title="No agents configured" description="Create an agent first to manage its tool permissions." className="m-4" />;
+  return (
+    <EmptyState
+      title="No agents configured"
+      description="Create an agent first to manage its tool permissions."
+      className="m-4"
+    />
+  );
 }
 
 export function PermissionsView() {
@@ -263,15 +315,21 @@ export function PermissionsView() {
     async (agentId: string, tool: string, next: UiDecision) => {
       const key = decisionKey(agentId, tool);
       const prev = state.decisions[key];
-      setState((cur) => ({ ...cur, decisions: applyDecision(cur.decisions, key, next === 'ask' ? undefined : next) }));
+      setState((cur) => ({
+        ...cur,
+        decisions: applyDecision(cur.decisions, key, next === 'ask' ? undefined : next),
+      }));
       setMutating(key);
       try {
         const res = await apiFetch(DECISIONS_API, {
           method: next === 'ask' ? 'DELETE' : 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(next === 'ask' ? { agentId, tool } : { agentId, tool, decision: next }),
+          body: JSON.stringify(
+            next === 'ask' ? { agentId, tool } : { agentId, tool, decision: next }
+          ),
         });
-        if (!res.ok) throw new Error(next === 'ask' ? 'Failed to reset decision' : 'Failed to save decision');
+        if (!res.ok)
+          throw new Error(next === 'ask' ? 'Failed to reset decision' : 'Failed to save decision');
         toast.success(next === 'ask' ? 'Permission reset to Ask' : `Permission set to ${next}`);
       } catch {
         setState((cur) => ({ ...cur, decisions: applyDecision(cur.decisions, key, prev) }));
@@ -280,7 +338,7 @@ export function PermissionsView() {
         setMutating(null);
       }
     },
-    [state.decisions, setState],
+    [state.decisions, setState]
   );
 
   if (loading) return <LoadingView />;

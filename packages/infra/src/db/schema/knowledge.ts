@@ -30,7 +30,7 @@ export const knowledgeDocuments = sqliteTable(
   (t) => ({
     userIdIdx: index('knowledge_documents_user_id_idx').on(t.userId),
     statusIdx: index('knowledge_documents_status_idx').on(t.status),
-  }),
+  })
 );
 
 export const knowledgeChunks = sqliteTable(
@@ -48,5 +48,5 @@ export const knowledgeChunks = sqliteTable(
   },
   (t) => ({
     documentIdIdx: index('knowledge_chunks_document_id_idx').on(t.documentId),
-  }),
+  })
 );

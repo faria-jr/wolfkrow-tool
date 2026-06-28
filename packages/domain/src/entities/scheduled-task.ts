@@ -68,19 +68,48 @@ export class ScheduledTask {
 
   toProps(): ScheduledTaskProps {
     return {
-      id: this.id, userId: this.userId, name: this.name, description: this.description,
-      cronExpression: this.cronExpression, timezone: this.timezone, prompt: this.prompt,
-      agentId: this.agentId, enabled: this.enabled, lastRunAt: this.lastRunAt,
-      nextRunAt: this.nextRunAt, config: this.config, tags: this.tags,
-      createdAt: this.createdAt, updatedAt: this.updatedAt,
+      id: this.id,
+      userId: this.userId,
+      name: this.name,
+      description: this.description,
+      cronExpression: this.cronExpression,
+      timezone: this.timezone,
+      prompt: this.prompt,
+      agentId: this.agentId,
+      enabled: this.enabled,
+      lastRunAt: this.lastRunAt,
+      nextRunAt: this.nextRunAt,
+      config: this.config,
+      tags: this.tags,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
     };
   }
 
-  withUpdate(patch: Partial<Pick<ScheduledTaskProps, 'name' | 'description' | 'cronExpression' | 'prompt' | 'agentId' | 'enabled' | 'tags' | 'config'>>): ScheduledTask {
+  withUpdate(
+    patch: Partial<
+      Pick<
+        ScheduledTaskProps,
+        | 'name'
+        | 'description'
+        | 'cronExpression'
+        | 'prompt'
+        | 'agentId'
+        | 'enabled'
+        | 'tags'
+        | 'config'
+      >
+    >
+  ): ScheduledTask {
     return ScheduledTask.fromProps({ ...this.toProps(), ...patch, updatedAt: new Date() });
   }
 
   withNextRun(nextRunAt: Date, lastRunAt: Date): ScheduledTask {
-    return ScheduledTask.fromProps({ ...this.toProps(), nextRunAt, lastRunAt, updatedAt: new Date() });
+    return ScheduledTask.fromProps({
+      ...this.toProps(),
+      nextRunAt,
+      lastRunAt,
+      updatedAt: new Date(),
+    });
   }
 }

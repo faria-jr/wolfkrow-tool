@@ -38,7 +38,12 @@ export interface DesignContract {
     direction: string;
     designSystem?: string;
     density: string;
-    tokens: { colors: Record<string, string>; typography: Record<string, string>; spacing: Record<string, string>; radii: Record<string, string> };
+    tokens: {
+      colors: Record<string, string>;
+      typography: Record<string, string>;
+      spacing: Record<string, string>;
+      radii: Record<string, string>;
+    };
   };
   navigation: { primary: DesignNavItem[]; secondary?: DesignNavItem[] };
   screens: DesignScreen[];
@@ -46,7 +51,8 @@ export interface DesignContract {
   deltas?: DesignDelta[];
 }
 
-const CONTRACT_SCRIPT_RE = /<script[^>]*id=["']lionclaw-design-contract["'][^>]*>([\s\S]*?)<\/script>/i;
+const CONTRACT_SCRIPT_RE =
+  /<script[^>]*id=["']lionclaw-design-contract["'][^>]*>([\s\S]*?)<\/script>/i;
 const TOKEN_KEYS = ['colors', 'typography', 'spacing', 'radii'] as const;
 
 function isRecord(x: unknown): x is Record<string, unknown> {
@@ -66,7 +72,9 @@ export function parseContractFromHtml(html: string): unknown | null {
 
 function tokenIssues(tokens: unknown): string[] {
   if (!isRecord(tokens)) return ['visual.tokens is missing'];
-  return TOKEN_KEYS.flatMap((k) => (isRecord(tokens[k]) ? [] : [`visual.tokens.${k} must be an object`]));
+  return TOKEN_KEYS.flatMap((k) =>
+    isRecord(tokens[k]) ? [] : [`visual.tokens.${k} must be an object`]
+  );
 }
 
 function visualIssues(visual: unknown): string[] {
@@ -78,9 +86,16 @@ function visualIssues(visual: unknown): string[] {
   return issues;
 }
 
-function itemStringFields(item: unknown, index: number, path: string, fields: readonly string[]): string[] {
+function itemStringFields(
+  item: unknown,
+  index: number,
+  path: string,
+  fields: readonly string[]
+): string[] {
   if (!isRecord(item)) return [`${path}[${index}] must be an object`];
-  return fields.flatMap((f) => (typeof item[f] === 'string' ? [] : [`${path}[${index}].${f} must be a string`]));
+  return fields.flatMap((f) =>
+    typeof item[f] === 'string' ? [] : [`${path}[${index}].${f} must be a string`]
+  );
 }
 
 /** Per-field checks for navigation items, screens, components (DEBT #4.2 parity). */
@@ -89,18 +104,24 @@ function collectionItemIssues(x: Record<string, unknown>): string[] {
   const navigation = x['navigation'];
   if (isRecord(navigation) && Array.isArray(navigation['primary'])) {
     navigation['primary'].forEach((item, i) => {
-      issues.push(...itemStringFields(item, i, 'navigation.primary', ['id', 'label', 'targetScreenId']));
-      if (isRecord(item) && !Array.isArray(item['userStoryIds'])) issues.push(`navigation.primary[${i}].userStoryIds must be an array`);
+      issues.push(
+        ...itemStringFields(item, i, 'navigation.primary', ['id', 'label', 'targetScreenId'])
+      );
+      if (isRecord(item) && !Array.isArray(item['userStoryIds']))
+        issues.push(`navigation.primary[${i}].userStoryIds must be an array`);
     });
   }
   if (Array.isArray(x['screens'])) {
     x['screens'].forEach((screen, i) => {
       issues.push(...itemStringFields(screen, i, 'screens', ['id', 'title', 'route']));
-      if (isRecord(screen) && !Array.isArray(screen['userStoryIds'])) issues.push(`screens[${i}].userStoryIds must be an array`);
+      if (isRecord(screen) && !Array.isArray(screen['userStoryIds']))
+        issues.push(`screens[${i}].userStoryIds must be an array`);
     });
   }
   if (Array.isArray(x['components'])) {
-    x['components'].forEach((comp, i) => issues.push(...itemStringFields(comp, i, 'components', ['id', 'name', 'type'])));
+    x['components'].forEach((comp, i) =>
+      issues.push(...itemStringFields(comp, i, 'components', ['id', 'name', 'type']))
+    );
   }
   return issues;
 }
@@ -109,7 +130,8 @@ function collectionIssues(x: Record<string, unknown>): string[] {
   const issues: string[] = [];
   if (x['version'] !== '1.0') issues.push('version must be "1.0"');
   const navigation = x['navigation'];
-  if (!isRecord(navigation) || !Array.isArray(navigation['primary'])) issues.push('navigation.primary must be an array');
+  if (!isRecord(navigation) || !Array.isArray(navigation['primary']))
+    issues.push('navigation.primary must be an array');
   if (!Array.isArray(x['screens'])) issues.push('screens must be an array');
   if (!Array.isArray(x['components'])) issues.push('components must be an array');
   return [...issues, ...collectionItemIssues(x)];
@@ -127,7 +149,9 @@ export function isValidDesignContract(x: unknown): x is DesignContract {
 }
 
 /** Type guard result carrying the validated contract (null + issues otherwise). */
-export function validateContract(parsed: unknown): { contract: DesignContract; problems: [] } | { contract: null; problems: string[] } {
+export function validateContract(
+  parsed: unknown
+): { contract: DesignContract; problems: [] } | { contract: null; problems: string[] } {
   const problems = collectDesignContractIssues(parsed);
   if (problems.length > 0) return { contract: null, problems };
   return { contract: parsed as DesignContract, problems: [] };

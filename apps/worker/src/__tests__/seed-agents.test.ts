@@ -68,7 +68,9 @@ describe('loadSeedAgents', () => {
       const result = SeedAgentSchema.safeParse(agent);
       expect(result.success).toBe(true);
       if (!result.success) {
-        throw new Error(`Agent "${agent.name}" failed schema validation: ${JSON.stringify(result.error.issues)}`);
+        throw new Error(
+          `Agent "${agent.name}" failed schema validation: ${JSON.stringify(result.error.issues)}`
+        );
       }
     }
   });

@@ -17,7 +17,7 @@ export class DreamingGateRegistry {
 
   constructor(
     private readonly factory: DreamingGateFactory,
-    private readonly logger?: Logger,
+    private readonly logger?: Logger
   ) {}
 
   recordActivity(userId: string): void {

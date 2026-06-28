@@ -66,8 +66,20 @@ function deriveKpis(harness: HarnessProject[], pipeline: PipelineProject[]): Das
 
 function toRecentRuns(harness: HarnessProject[], pipeline: PipelineProject[]): RecentRun[] {
   return [
-    ...harness.map((p) => ({ id: p.id, name: p.name, status: p.status, href: '/harness', createdAt: p.createdAt })),
-    ...pipeline.map((p) => ({ id: p.id, name: p.name, status: p.status, href: '/pipeline', createdAt: p.createdAt })),
+    ...harness.map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      href: '/harness',
+      createdAt: p.createdAt,
+    })),
+    ...pipeline.map((p) => ({
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      href: '/pipeline',
+      createdAt: p.createdAt,
+    })),
   ]
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 6);
@@ -106,18 +118,23 @@ function useDashboardData(): DashboardData {
         error: null,
       });
     } catch (err) {
-      setData((d) => ({ ...d, error: err instanceof Error ? err.message : 'Failed to load dashboard' }));
+      setData((d) => ({
+        ...d,
+        error: err instanceof Error ? err.message : 'Failed to load dashboard',
+      }));
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
   return data;
 }
 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border bg-card px-4 py-3">
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="bg-card rounded-lg border px-4 py-3">
+      <p className="text-muted-foreground text-xs">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
     </div>
   );
@@ -144,13 +161,15 @@ function RecentRunRow({ run }: { run: RecentRun }) {
   return (
     <Link
       href={run.href}
-      className="flex items-center justify-between rounded border bg-card px-3 py-2 text-sm hover:bg-muted"
+      className="bg-card hover:bg-muted flex items-center justify-between rounded border px-3 py-2 text-sm"
     >
       <div className="min-w-0">
         <p className="truncate font-medium">{run.name}</p>
-        <p className="text-xs text-muted-foreground">{new Date(run.createdAt).toLocaleString()}</p>
+        <p className="text-muted-foreground text-xs">{new Date(run.createdAt).toLocaleString()}</p>
       </div>
-      <Badge variant={statusBadgeVariant(run.status)} className="ml-2 shrink-0 text-xs">{run.status}</Badge>
+      <Badge variant={statusBadgeVariant(run.status)} className="ml-2 shrink-0 text-xs">
+        {run.status}
+      </Badge>
     </Link>
   );
 }
@@ -178,14 +197,14 @@ function RuntimeSplitCard({ usage }: { usage: UsageSummary | null }) {
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded border bg-card px-3 py-2">
-            <p className="text-xs text-muted-foreground">Cloud cost</p>
+          <div className="bg-card rounded border px-3 py-2">
+            <p className="text-muted-foreground text-xs">Cloud cost</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {cloud ? `$${cloud.costUSD.toFixed(4)}` : '—'}
             </p>
           </div>
-          <div className="rounded border bg-card px-3 py-2">
-            <p className="text-xs text-muted-foreground">Local cost</p>
+          <div className="bg-card rounded border px-3 py-2">
+            <p className="text-muted-foreground text-xs">Local cost</p>
             <p className="mt-1 text-lg font-semibold tabular-nums">
               {local ? `$${local.costUSD.toFixed(4)}` : '—'}
             </p>
@@ -212,11 +231,15 @@ function RecentRunsCard({ recent, error }: { recent: RecentRun[]; error: string 
         <CardTitle className="text-sm">Recent runs</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && <p className="text-destructive text-sm">{error}</p>}
         {!error && recent.length === 0 && (
-          <p className="text-sm text-muted-foreground">No runs yet. Start a harness or pipeline to see activity here.</p>
+          <p className="text-muted-foreground text-sm">
+            No runs yet. Start a harness or pipeline to see activity here.
+          </p>
         )}
-        {recent.map((run) => <RecentRunRow key={run.id} run={run} />)}
+        {recent.map((run) => (
+          <RecentRunRow key={run.id} run={run} />
+        ))}
       </CardContent>
     </Card>
   );

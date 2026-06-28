@@ -37,7 +37,9 @@ describe('Artifact', () => {
   });
 
   it('throws when data missing', () => {
-    expect(() => Artifact.create({ ...baseProps, data: undefined as unknown as never })).toThrow(/data must be an object/);
+    expect(() => Artifact.create({ ...baseProps, data: undefined as unknown as never })).toThrow(
+      /data must be an object/
+    );
   });
 
   it('toJSON returns a shallow copy', () => {

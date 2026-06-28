@@ -36,7 +36,9 @@ vi.mock('keytar', () => ({
   },
 }));
 
-function createExecutor(options: AgentExecutorOptions = {}): ReturnType<typeof createAgentExecutor> {
+function createExecutor(
+  options: AgentExecutorOptions = {}
+): ReturnType<typeof createAgentExecutor> {
   return createAgentExecutor({
     providerFactory: createTestAIProviderFactory(mockProvider),
     keytarService: 'test-wolfkrow',
@@ -113,7 +115,12 @@ describe('AgentExecutor', () => {
     const completeSpy = vi.spyOn(mockProvider, 'complete');
     // An enabled rule with a prompt section the builder will concatenate.
     fakeRepos.globalRule.findAll = async () => [
-      { enabled: true, kind: 'behavior', sortOrder: 0, toPromptSection: () => 'Always cite sources.' },
+      {
+        enabled: true,
+        kind: 'behavior',
+        sortOrder: 0,
+        toPromptSection: () => 'Always cite sources.',
+      },
     ];
 
     const executor = createExecutor();

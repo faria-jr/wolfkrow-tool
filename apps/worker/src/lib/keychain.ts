@@ -17,7 +17,10 @@ const ACCOUNT_MAP: Record<string, string> = {
   openrouter: 'openrouter-api-key',
 };
 
-export async function getProviderApiKey(provider: string, service = KEYTAR_SERVICE): Promise<string> {
+export async function getProviderApiKey(
+  provider: string,
+  service = KEYTAR_SERVICE
+): Promise<string> {
   if (provider === 'mock') return '';
   if (provider === 'ollama') return 'ollama';
   const normalized = provider.toLowerCase();

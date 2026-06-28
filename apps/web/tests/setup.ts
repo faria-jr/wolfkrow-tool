@@ -57,8 +57,12 @@ class ResizeObserverMock {
 vi.stubGlobal('ResizeObserver', ResizeObserverMock);
 
 // jsdom throws "Not implemented" for HTMLMediaElement.play — stub it.
-window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined) as unknown as typeof window.HTMLMediaElement.prototype.play;
-window.HTMLMediaElement.prototype.pause = vi.fn() as unknown as typeof window.HTMLMediaElement.prototype.pause;
+window.HTMLMediaElement.prototype.play = vi
+  .fn()
+  .mockResolvedValue(undefined) as unknown as typeof window.HTMLMediaElement.prototype.play;
+window.HTMLMediaElement.prototype.pause =
+  vi.fn() as unknown as typeof window.HTMLMediaElement.prototype.pause;
 
 // jsdom does not implement scrollIntoView (used by LogViewer auto-scroll).
-window.HTMLElement.prototype.scrollIntoView = vi.fn() as unknown as typeof window.HTMLElement.prototype.scrollIntoView;
+window.HTMLElement.prototype.scrollIntoView =
+  vi.fn() as unknown as typeof window.HTMLElement.prototype.scrollIntoView;

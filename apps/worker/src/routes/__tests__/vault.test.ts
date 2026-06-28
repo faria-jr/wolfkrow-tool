@@ -11,7 +11,6 @@ import { Secret } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-
 // In-memory secret store + secrets adapter fakes.
 const store = new Map<string, Secret>();
 
@@ -145,7 +144,7 @@ describe('vault DELETE /:key', () => {
   it('deletes a secret and returns ok', async () => {
     store.set(
       'TEMP_KEY',
-      Secret.create({ userId: 'u1', key: 'TEMP_KEY', displayName: 't', category: 'other' }),
+      Secret.create({ userId: 'u1', key: 'TEMP_KEY', displayName: 't', category: 'other' })
     );
     const res = await app.inject({ method: 'DELETE', url: '/TEMP_KEY' });
     expect(res.statusCode).toBe(200);
@@ -234,7 +233,8 @@ describe('vault routes — authentication required (default-user leak fix)', () 
   it('POST / without credentials → 401', async () => {
     const a = await buildRealAuthApp();
     const res = await a.inject({
-      method: 'POST', url: '/',
+      method: 'POST',
+      url: '/',
       payload: { key: 'k', value: 'v', displayName: 'd', category: 'ai' },
     });
     expect(res.statusCode).toBe(401);
@@ -251,7 +251,8 @@ describe('vault routes — authentication required (default-user leak fix)', () 
   it('GET / WITH credentials → 200 (real user, not default)', async () => {
     const a = await buildRealAuthApp();
     const res = await a.inject({
-      method: 'GET', url: '/',
+      method: 'GET',
+      url: '/',
       headers: { authorization: 'Bearer test-token' },
     });
     expect(res.statusCode).toBe(200);

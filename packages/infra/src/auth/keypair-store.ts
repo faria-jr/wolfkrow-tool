@@ -9,7 +9,6 @@
 import { exportJWK, type JWK } from 'jose';
 import keytar from 'keytar';
 
-
 import { generateKeyPair, importJWK } from './jwt';
 
 const SERVICE = 'wolfkrow';
@@ -29,7 +28,7 @@ interface SerializedPair {
 /** Carrega o keypair do keychain; gera+persiste na 1ª vez. Idempotente. */
 export async function loadOrCreateKeyPair(
   service = SERVICE,
-  account = ACCOUNT,
+  account = ACCOUNT
 ): Promise<StoredKeyPair> {
   const stored = await keytar.getPassword(service, account);
   if (stored) {
@@ -47,10 +46,7 @@ async function hydrate(parsed: SerializedPair): Promise<StoredKeyPair> {
   return { publicKey, privateKey, publicJwk: parsed.publicJwk };
 }
 
-async function generateAndStore(
-  service: string,
-  account: string,
-): Promise<StoredKeyPair> {
+async function generateAndStore(service: string, account: string): Promise<StoredKeyPair> {
   const { publicKey, privateKey } = await generateKeyPair();
   const publicJwk = await exportJWK(publicKey);
   const privateJwk = await exportJWK(privateKey);

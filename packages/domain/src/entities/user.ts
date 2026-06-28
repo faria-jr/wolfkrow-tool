@@ -71,9 +71,7 @@ export class User {
 
   recordFailedAttempt(policy: LockoutPolicy, now: Date = new Date()): User {
     const attempts = this.failedAttempts + 1;
-    const lockedUntil = policy.shouldLock(attempts)
-      ? policy.lockUntil(now)
-      : this.lockedUntil;
+    const lockedUntil = policy.shouldLock(attempts) ? policy.lockUntil(now) : this.lockedUntil;
     return User.fromProps({ ...this.toProps(), failedAttempts: attempts, lockedUntil });
   }
 

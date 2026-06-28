@@ -27,7 +27,9 @@ A auditoria (item #5 e #6 da seção 2 do `AUDIT_REPORT_LIONCLAW_WOLFKROW.md`) c
 ## Rationale
 
 ### 1. Higgsfield exige fluxo OAuth browser-based que o Wolfkrow não tem
+
 O `higgsfield-auth.ts` depende de:
+
 - Janela Electron ou browser headless para abrir a tela de consentimento.
 - Captura de callback `localhost:<port>` que entrega o token.
 - Snapshot de sessão baseado em cookies/arquivos do `mcp-remote-client`.
@@ -35,6 +37,7 @@ O `higgsfield-auth.ts` depende de:
 O Wolfkrow worker roda em **Node puro dentro do processo Electron** (ADR-0014: `apps/worker/` em Node 24, separado do renderer). Não há mecanismo de browser OAuth sem construir wrapper Electron-only, o que conflita com o PWA-first (ADR-0019) e quebra o caminho "self-hosted single-user".
 
 Para reproduzir isso no Wolfkrow seria necessário:
+
 - Criar rota web `/oauth/callback/higgsfield` no apps/web + fluxo no Vault UI.
 - Implementar persistência de tokens com refresh em keytar.
 - Spawnar `mcp-remote-client` headless ou abrir Electron BrowserWindow só pra isso.
@@ -42,7 +45,9 @@ Para reproduzir isso no Wolfkrow seria necessário:
 Isso é ~2-3 dias de trabalho + UI + testes manuais do fluxo OAuth. Justificável em v2 quando o Vault UI estiver maduro.
 
 ### 2. Blotato tem base de usuários estreita + rate limits agressivos
+
 Blotato é um agregador de posting social. Requer:
+
 - API key paga (Blotato Pro) — não é free-tier amigável.
 - Cada chamada conta créditos do usuário; rate-limit HTTP 429 é frequente.
 - Caso de uso é narrow (social media managers) vs o público do Wolfkrow (devs/researchers).
@@ -50,12 +55,14 @@ Blotato é um agregador de posting social. Requer:
 Comparado com `nano-banana` (MCP já implementado em M3.3) que cobre geração de imagens para o caso geral, e ElevenLabs (M3.3) para TTS, **não há gap funcional crítico** deixado por Blotato.
 
 ### 3. Custo de manutenção supera o benefício
+
 - Wrapper Blotato: 91 linhas, ok.
 - Wrapper Higgsfield: 410 linhas + UI + OAuth round-trip + edge cases de refresh.
 - Toda vez que mcp-remote ou os providers upstream mudarem o contrato, o wrapper quebra.
 - Sem feedback real de uso que justifique o investimento.
 
 ### 4. Risco de billing acidental
+
 Diferente dos MCPs `on-demand` do Wolfkrow (que só executam quando o usuário chama explicitamente), os seed remotos do LionClaw sobem desativados mas prontos. Para um usuário que **ativa Higgsfield sem querer**, qualquer chamada do agente pode custar créditos reais. Para o público self-hosted de baixo custo do Wolfkrow, o risco é desproporcional ao valor.
 
 ## Alternatives Considered
@@ -72,12 +79,14 @@ Diferente dos MCPs `on-demand` do Wolfkrow (que só executam quando o usuário c
 ## Consequences
 
 ### Positivas
+
 - Escopo v1 fica focado nos 15 MCPs já implementados (M3.3), cobrindo needs reais.
 - Zero risco de billing acidental.
 - Worker continua subindo limpo sem dependência de `mcp-remote`/`npx`.
 - Decisão transparente em ADR para que qualquer usuário insatisfeito saiba onde propor.
 
 ### Negativas / Riscos
+
 - Usuários vindos do LionClaw que usavam Higgsfield perdem a integração. Mitigação: README e changelog deixam claro "v2 roadmap".
 - Pressupõe que `nano-banana` é substituto aceitável para image gen. Se não for, plano B é portar Higgsfield pontualmente em v2.
 
@@ -92,6 +101,7 @@ Diferente dos MCPs `on-demand` do Wolfkrow (que só executam quando o usuário c
 ## Trigger para reverter (revogar este ADR)
 
 Reabrir este ADR se:
+
 1. ≥ 3 usuários LionClaw pedirem Higgsfield explicitamente no Wolfkrow.
 2. OU LionClaw abandonar Higgsfield/Blotato (torna o gap irrelevante).
 3. OU Wolfkrow ganhar Vault UI OAuth flow reutilizável que reduza o esforço para < 0.5 dia por integração.

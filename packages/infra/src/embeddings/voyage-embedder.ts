@@ -7,7 +7,7 @@ export class VoyageEmbedder implements EmbeddingPort {
 
   constructor(
     private readonly apiKey: string,
-    private readonly model: string = 'voyage-3',
+    private readonly model: string = 'voyage-3'
   ) {}
 
   async embed(text: string): Promise<number[]> {

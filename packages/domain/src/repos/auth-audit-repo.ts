@@ -7,12 +7,12 @@
  */
 
 export interface AuthAuditEntry {
- userId: string | undefined;
- action: string;
- ip: string | undefined;
- userAgent: string | undefined;
+  userId: string | undefined;
+  action: string;
+  ip: string | undefined;
+  userAgent: string | undefined;
 }
 
 export interface AuthAuditRepo {
- log(entry: AuthAuditEntry): void;
+  log(entry: AuthAuditEntry): void;
 }

@@ -6,6 +6,7 @@
 ## Contexto
 
 Mutations no LionClaw v3:
+
 1. Chamam IPC handler (string channel, untyped)
 2. Payload sem validação runtime
 3. Sem optimistic update
@@ -29,15 +30,15 @@ import { requireSession } from '@web/lib/auth/session';
 export async function createAgent(input: CreateAgentInput) {
   const session = await requireSession();
   const useCase = container.get(CreateAgent);
-  
+
   const agent = await useCase.execute({
     ...input,
     userId: session.userId,
   });
-  
+
   revalidatePath('/agents');
   revalidateTag('agents');
-  
+
   return agent;
 }
 
@@ -57,7 +58,7 @@ import { createAgent } from '@/app/(app)/agents/actions';
 
 export function CreateAgentButton() {
   const [pending, startTransition] = useTransition();
-  
+
   return (
     <Button
       disabled={pending}
@@ -103,12 +104,14 @@ export function CreateAgentButton() {
 ## Quando Usar
 
 ### ✅ Server Actions
+
 - Forms simples (create, update, delete)
 - Mutations com 1-2 steps
 - Sem streaming response
 - Revalidation automática desejada
 
 ### ✅ Route Handlers (REST)
+
 - Streaming responses (SSE, file upload/download)
 - Webhooks externos
 - API pública (futura)
@@ -129,10 +132,10 @@ startTransition(async () => {
 ### 2. useOptimistic para UI Instantâneo
 
 ```tsx
-const [optimisticAgents, addOptimistic] = useOptimistic(
-  agents,
-  (state, newAgent: Agent) => [...state, { ...newAgent, id: 'temp' }]
-);
+const [optimisticAgents, addOptimistic] = useOptimistic(agents, (state, newAgent: Agent) => [
+  ...state,
+  { ...newAgent, id: 'temp' },
+]);
 
 startTransition(async () => {
   addOptimistic(newAgent);
@@ -170,7 +173,7 @@ export function AgentForm() {
     resolver: zodResolver(CreateAgentInputSchema),
     defaultValues: { name: '', model: 'sonnet', effort: 'medium' },
   });
-  
+
   async function onSubmit(data: CreateAgentInput) {
     const result = await createAgent(data);
     if (result.success) {
@@ -180,12 +183,10 @@ export function AgentForm() {
       toast.error(result.error);
     }
   }
-  
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        {/* fields */}
-      </form>
+      <form onSubmit={form.handleSubmit(onSubmit)}>{/* fields */}</form>
     </Form>
   );
 }
@@ -196,13 +197,11 @@ export function AgentForm() {
 ```typescript
 'use server';
 
-export type ActionResult<T> = 
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type ActionResult<T> = { success: true; data: T } | { success: false; error: string };
 
 export async function createAgent(input: CreateAgentInput): Promise<ActionResult<Agent>> {
   const session = await requireSession();
-  
+
   try {
     const agent = await container.get(CreateAgent).execute({ ...input, userId: session.userId });
     revalidatePath('/agents');

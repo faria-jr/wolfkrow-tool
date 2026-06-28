@@ -2,11 +2,14 @@ import { readFileSync, statSync } from 'node:fs';
 
 export function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
-    ? value as Record<string, unknown>
+    ? (value as Record<string, unknown>)
     : null;
 }
 
-export function firstString(record: Record<string, unknown> | null, keys: string[]): string | undefined {
+export function firstString(
+  record: Record<string, unknown> | null,
+  keys: string[]
+): string | undefined {
   if (!record) return undefined;
   for (const key of keys) {
     const value = record[key];
@@ -15,7 +18,9 @@ export function firstString(record: Record<string, unknown> | null, keys: string
   return undefined;
 }
 
-export function findAudioInContent(content: string): { audioPath: string; mimeType: string } | null {
+export function findAudioInContent(
+  content: string
+): { audioPath: string; mimeType: string } | null {
   const audioMatch = content.match(/ARQUIVO_AUDIO:\s*((?:\/|[A-Za-z]:\\).+?)(?:\n|$)/);
   if (!audioMatch?.[1]) return null;
   const audioPath = audioMatch[1].trim();

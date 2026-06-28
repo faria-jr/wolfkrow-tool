@@ -10,7 +10,18 @@ describe('MemoryView', () => {
   beforeEach(() => {
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ memories: [{ id: 'm1', content: 'remembered this', source: 'user', importance: 5, accessCount: 2, createdAt: '2024-01-01' }] }),
+      json: async () => ({
+        memories: [
+          {
+            id: 'm1',
+            content: 'remembered this',
+            source: 'user',
+            importance: 5,
+            accessCount: 2,
+            createdAt: '2024-01-01',
+          },
+        ],
+      }),
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -31,8 +42,26 @@ describe('MemoryView', () => {
   });
 
   it('switches to search tab and searches', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ memories: [] }) } as Response)
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ results: [{ memory: { id: 'm1', content: 'found', source: 'user', importance: 1, accessCount: 0, createdAt: '2024-01-01' }, distance: 0.1 }] }) } as Response);
+    fetchMock
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ memories: [] }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          results: [
+            {
+              memory: {
+                id: 'm1',
+                content: 'found',
+                source: 'user',
+                importance: 1,
+                accessCount: 0,
+                createdAt: '2024-01-01',
+              },
+              distance: 0.1,
+            },
+          ],
+        }),
+      } as Response);
     render(<MemoryView />);
     await userEvent.click(screen.getByRole('button', { name: 'search' }));
     await userEvent.type(screen.getByPlaceholderText(/search memories/i), 'query');
@@ -126,8 +155,14 @@ describe('MemoryView', () => {
           ok: true,
           json: async () => ({
             summary: {
-              id: 's1', userId: 'u1', date: '2024-05-21', content: 'summary',
-              sessionCount: 0, messageCount: 0, tokensUsed: 0, cost: 0,
+              id: 's1',
+              userId: 'u1',
+              date: '2024-05-21',
+              content: 'summary',
+              sessionCount: 0,
+              messageCount: 0,
+              tokensUsed: 0,
+              cost: 0,
               createdAt: '2024-05-21T00:00:00.000Z',
             },
           }),
@@ -140,10 +175,16 @@ describe('MemoryView', () => {
       return {
         ok: true,
         json: async () => ({
-          memories: [{
-            id: 'm1', content: 'remembered this', source: 'user',
-            importance: 5, accessCount: 2, createdAt: '2024-01-01',
-          }],
+          memories: [
+            {
+              id: 'm1',
+              content: 'remembered this',
+              source: 'user',
+              importance: 5,
+              accessCount: 2,
+              createdAt: '2024-01-01',
+            },
+          ],
         }),
       } as Response;
     });

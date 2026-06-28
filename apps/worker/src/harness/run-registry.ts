@@ -1,29 +1,26 @@
 /**
  * DEBT #29 — Server-side harness run abort.
  *
- * Tracks an abort flag per project so POST /harness/projects/:id/abort can stop
- * the in-flight coder/evaluator loop between rounds/features (the client's
+ * Thin compatibility shim over the shared `run-control` module so the Harness
+ * coder/evaluator loop can be aborted between rounds/features (the client's
  * reader.cancel() only drops the SSE consumer — the expensive AI loop keeps
- * running otherwise). In-memory + per-process: adequate for the single-worker
- * deployment; a multi-instance deploy would need a shared store.
+ * running otherwise). New run-control also exposes pause/resume; legacy callers
+ * keep using the abort-only API exported here.
  */
 
-const abortFlags = new Map<string, boolean>();
+import { abortRun as controlAbort, registerRun as controlRegister, unregisterRun as controlUnregister } from '../lib/run-control';
 
 /** Register (reset) the abort flag for a project run. Returns a checker. */
 export function registerRun(projectId: string): () => boolean {
-  abortFlags.set(projectId, false);
-  return () => abortFlags.get(projectId) === true;
+  return controlRegister(projectId).isAborted;
 }
 
 /** Mark a project's run as aborted (no-op if none registered). */
 export function abortRun(projectId: string): boolean {
-  if (!abortFlags.has(projectId)) return false;
-  abortFlags.set(projectId, true);
-  return true;
+  return controlAbort(projectId);
 }
 
 /** Clear the flag when the run ends (natural or aborted). */
 export function unregisterRun(projectId: string): void {
-  abortFlags.delete(projectId);
+  controlUnregister(projectId);
 }

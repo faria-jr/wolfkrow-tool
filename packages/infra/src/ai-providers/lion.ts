@@ -1,12 +1,27 @@
 import { AnthropicProvider } from './anthropic';
 import { CodexProvider } from './codex';
 import { OpenRouterProvider } from './openrouter';
-import type { AIProvider, ChatMessage, CompletionOptions, CompletionResult, StreamChunk } from './types';
+import type {
+  AIProvider,
+  ChatMessage,
+  CompletionOptions,
+  CompletionResult,
+  StreamChunk,
+} from './types';
 
 const OLLAMA_DEFAULT_URL = 'http://localhost:11434/v1';
 
 const OPENAI_PREFIXES = ['gpt-', 'o1-', 'o3-', 'o4-', 'ft:gpt-'];
-const OLLAMA_PREFIXES = ['llama-', 'qwen', 'phi-', 'mistral', 'gemma', 'deepseek', 'codellama', 'vicuna'];
+const OLLAMA_PREFIXES = [
+  'llama-',
+  'qwen',
+  'phi-',
+  'mistral',
+  'gemma',
+  'deepseek',
+  'codellama',
+  'vicuna',
+];
 const OPENROUTER_PREFIXES = ['openrouter/', 'google/', 'groq/', 'mistral/', 'together/'];
 
 export interface LionProviderConfig {
@@ -48,17 +63,22 @@ export class LionProvider implements AIProvider {
     const m = model.toLowerCase();
 
     if (m.startsWith('claude-')) {
-      if (!this.config.anthropicApiKey) throw new Error('LionProvider: anthropicApiKey required for claude-* models');
+      if (!this.config.anthropicApiKey)
+        throw new Error('LionProvider: anthropicApiKey required for claude-* models');
       return new AnthropicProvider(this.config.anthropicApiKey);
     }
 
     if (OPENAI_PREFIXES.some((p) => m.startsWith(p))) {
-      if (!this.config.openaiApiKey) throw new Error('LionProvider: openaiApiKey required for gpt-*/o1-* models');
+      if (!this.config.openaiApiKey)
+        throw new Error('LionProvider: openaiApiKey required for gpt-*/o1-* models');
       return new CodexProvider(this.config.openaiApiKey);
     }
 
     if (OPENROUTER_PREFIXES.some((p) => m.startsWith(p))) {
-      if (!this.config.openrouterApiKey) throw new Error('LionProvider: openrouterApiKey required for openrouter/google/groq/mistral/together models');
+      if (!this.config.openrouterApiKey)
+        throw new Error(
+          'LionProvider: openrouterApiKey required for openrouter/google/groq/mistral/together models'
+        );
       return new OpenRouterProvider(this.config.openrouterApiKey);
     }
 
@@ -67,9 +87,16 @@ export class LionProvider implements AIProvider {
       return new CodexProvider('ollama', baseURL);
     }
 
-    if (m.startsWith('gemini-')) throw new Error(`LionProvider: Google GenAI adapter not yet implemented — use google/ prefix via OpenRouter (model: ${model})`);
-    if (m.startsWith('zai-')) throw new Error(`LionProvider: Z.ai adapter not yet implemented (model: ${model})`);
-    if (m.startsWith('groq-')) throw new Error(`LionProvider: Groq adapter not yet implemented — use groq/ prefix via OpenRouter (model: ${model})`);
+    if (m.startsWith('gemini-'))
+      throw new Error(
+        `LionProvider: Google GenAI adapter not yet implemented — use google/ prefix via OpenRouter (model: ${model})`
+      );
+    if (m.startsWith('zai-'))
+      throw new Error(`LionProvider: Z.ai adapter not yet implemented (model: ${model})`);
+    if (m.startsWith('groq-'))
+      throw new Error(
+        `LionProvider: Groq adapter not yet implemented — use groq/ prefix via OpenRouter (model: ${model})`
+      );
 
     throw new Error(`LionProvider: unknown model prefix — cannot resolve provider for "${model}"`);
   }

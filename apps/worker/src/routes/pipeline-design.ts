@@ -11,11 +11,14 @@ import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { ContinuePipelineConversationUseCase, ImplementViaHarnessUseCase } from '@wolfkrow/use-cases';
+import {
+  ContinuePipelineConversationUseCase,
+  ImplementViaHarnessUseCase,
+} from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { getAdapters, getArtifactWriter, getHarnessAgents, getRepos } from '../container';
-import { getAnthropicApiKey } from '../lib/keychain';
+import { getArtifactWriter, getHarnessAgents, getRepos } from '../container';
+import { resolveAIProvider, resolveProviderConfigForRequest } from '../lib/provider-resolver';
 import { bootstrapDesignSession, sanitizeOdProjectId } from '../open-design/bootstrap';
 import { OpenDesignClient } from '../open-design/client';
 import { lockDesign } from '../open-design/lock';
@@ -32,12 +35,20 @@ type RunParams = { id: string; phaseId: string };
 /** implementation stage: delegate to the Harness (creates Harness project + sprints). */
 export async function runImplementationViaHarness(
   req: FastifyRequest<{ Params: RunParams }>,
-  reply: FastifyReply,
+  reply: FastifyReply
 ): Promise<unknown> {
   const r = getRepos();
   const body = validate(runPhaseBody, req.body ?? {});
   try {
-    const { planner } = await getHarnessAgents({ maxRoundsPerFeature: 5, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' });
+    const providerConfig = await resolveProviderConfigForRequest({ model: body.model });
+    const implementationModel = body.model ?? 'claude-sonnet-4-6';
+    const plannerModel = body.model ?? 'claude-opus-4-8';
+    const { planner } = await getHarnessAgents({
+      maxRoundsPerFeature: 5,
+      coderModel: implementationModel,
+      plannerModel,
+      providerId: providerConfig.id,
+    });
     const result = await new ImplementViaHarnessUseCase({
       pipelineProjectRepo: r.pipelineProject,
       pipelinePhaseRepo: r.pipelinePhase,
@@ -64,7 +75,9 @@ export async function runImplementationViaHarness(
 }
 
 /** Returns the daemon client + web URL, or sends 409 when the engine isn't up. */
-function engineClientOr409(reply: FastifyReply): { client: OpenDesignClient; webUrl: string } | null {
+function engineClientOr409(
+  reply: FastifyReply
+): { client: OpenDesignClient; webUrl: string } | null {
   const { daemonUrl, webUrl, status } = openDesignManager.getState();
   if (status !== 'running' || !daemonUrl || !webUrl) {
     reply.status(409).send({ error: 'Open Design engine is not running — start it first' });
@@ -83,7 +96,10 @@ async function readSpec(specPath: string | undefined): Promise<string> {
 }
 
 /** design stage: bootstrap an OD session tied to this pipeline project. */
-export async function runDesignBootstrap(req: FastifyRequest<{ Params: RunParams }>, reply: FastifyReply): Promise<unknown> {
+export async function runDesignBootstrap(
+  req: FastifyRequest<{ Params: RunParams }>,
+  reply: FastifyReply
+): Promise<unknown> {
   const r = getRepos();
   const project = await r.pipelineProject.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Not found' });
@@ -106,7 +122,10 @@ export async function runDesignBootstrap(req: FastifyRequest<{ Params: RunParams
 }
 
 /** design_lock stage: capture + validate + freeze the design artifacts. */
-export async function runDesignLock(req: FastifyRequest<{ Params: RunParams }>, reply: FastifyReply): Promise<unknown> {
+export async function runDesignLock(
+  req: FastifyRequest<{ Params: RunParams }>,
+  reply: FastifyReply
+): Promise<unknown> {
   const r = getRepos();
   const project = await r.pipelineProject.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Not found' });
@@ -114,13 +133,22 @@ export async function runDesignLock(req: FastifyRequest<{ Params: RunParams }>, 
   const engine = engineClientOr409(reply);
   if (!engine) return undefined;
 
-  const outputDir = join(process.env['WOLFKROW_DESIGN_DIR'] ?? tmpdir(), 'wolfkrow-design', project.id);
+  const outputDir = join(
+    process.env['WOLFKROW_DESIGN_DIR'] ?? tmpdir(),
+    'wolfkrow-design',
+    project.id
+  );
   const result = await lockDesign({
     client: engine.client,
     odProjectId: sanitizeOdProjectId(project.id),
     outputDir,
   });
-  return { phase: phase?.toProps(), project: project.toProps(), lock: result, designDir: outputDir };
+  return {
+    phase: phase?.toProps(),
+    project: project.toProps(),
+    lock: result,
+    designDir: outputDir,
+  };
 }
 
 const chatBody = z.object({
@@ -129,18 +157,25 @@ const chatBody = z.object({
 });
 
 /** DEBT #12 — multi-turn conversation within a pipeline phase (no stage advance). */
-export async function continuePhaseChat(req: FastifyRequest<{ Params: RunParams }>, reply: FastifyReply): Promise<unknown> {
+export async function continuePhaseChat(
+  req: FastifyRequest<{ Params: RunParams }>,
+  reply: FastifyReply
+): Promise<unknown> {
   const r = getRepos();
   const project = await r.pipelineProject.findById(req.params.id);
   if (!project) return reply.status(404).send({ error: 'Not found' });
   const phase = await r.pipelinePhase.findById(req.params.phaseId);
   const body = validate(chatBody, req.body);
 
-  const apiKey = await getAnthropicApiKey();
-  const aiProvider = getAdapters().aiFactory.create('anthropic', apiKey);
+  const { provider: aiProvider } = await resolveAIProvider({
+    model: body.model,
+    userId: project.userId,
+  });
   const result = await new ContinuePipelineConversationUseCase(
-    r.pipelineProject, r.pipelinePhase, aiProvider,
-    { messageRepo: r.pipelineMessage, artifactWriter: getArtifactWriter() },
+    r.pipelineProject,
+    r.pipelinePhase,
+    aiProvider,
+    { messageRepo: r.pipelineMessage, artifactWriter: getArtifactWriter() }
   ).execute({
     projectId: req.params.id,
     phaseId: req.params.phaseId,

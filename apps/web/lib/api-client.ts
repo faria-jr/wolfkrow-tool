@@ -20,11 +20,7 @@ import {
   SecretMetadataSchema,
   UsageSummarySchema,
 } from '@wolfkrow/shared-types';
-import type {
-  LoginResponse,
-  SecretMetadata,
-  UsageSummary,
-} from '@wolfkrow/shared-types';
+import type { LoginResponse, SecretMetadata, UsageSummary } from '@wolfkrow/shared-types';
 import { z } from 'zod';
 
 /** Error raised when the API returns a non-ok status or a shape that fails parse. */
@@ -32,7 +28,7 @@ export class ApiClientError extends Error {
   constructor(
     message: string,
     readonly status: number,
-    readonly body?: unknown,
+    readonly body?: unknown
   ) {
     super(message);
     this.name = 'ApiClientError';
@@ -60,7 +56,7 @@ async function safeJson(res: Response): Promise<unknown> {
 async function parseBody<S extends z.ZodType>(
   res: Response,
   schema: S,
-  url: string,
+  url: string
 ): Promise<z.output<S>> {
   const parsed = await safeJson(res);
   const result = schema.safeParse(parsed);
@@ -68,7 +64,7 @@ async function parseBody<S extends z.ZodType>(
     throw new ApiClientError(
       `Response shape mismatch for ${url}: ${result.error.message}`,
       res.status,
-      parsed,
+      parsed
     );
   }
   return result.data;
@@ -77,16 +73,13 @@ async function parseBody<S extends z.ZodType>(
 async function request<S extends z.ZodType>(
   url: string,
   schema: S,
-  init?: RequestInit,
+  init?: RequestInit
 ): Promise<z.output<S>> {
   let res: Response;
   try {
     res = await fetch(url, { credentials: 'include', ...init });
   } catch (err) {
-    throw new ApiClientError(
-      err instanceof Error ? err.message : 'Network request failed',
-      0,
-    );
+    throw new ApiClientError(err instanceof Error ? err.message : 'Network request failed', 0);
   }
 
   if (!res.ok) {
@@ -194,7 +187,9 @@ export interface KnowledgeSearchOptions {
  * Semantic search. Validates the request with `SearchQuerySchema` (client-side)
  * and the response array with `KnowledgeSearchItemSchema`.
  */
-export async function searchKnowledge(opts: KnowledgeSearchOptions): Promise<KnowledgeSearchItem[]> {
+export async function searchKnowledge(
+  opts: KnowledgeSearchOptions
+): Promise<KnowledgeSearchItem[]> {
   const body = SearchQuerySchema.parse({
     query: opts.query,
     ...(opts.documentIds ? { documentIds: opts.documentIds } : {}),

@@ -18,7 +18,7 @@ export interface ProcessedAttachments {
 
 export async function processAttachments(
   message: string,
-  attachments: AttachmentInput[] | undefined,
+  attachments: AttachmentInput[] | undefined
 ): Promise<ProcessedAttachments> {
   if (!attachments?.length) return { content: message, imageParts: [] };
 

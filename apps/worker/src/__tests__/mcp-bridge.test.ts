@@ -26,7 +26,9 @@ describe('MCP JSON-RPC bridge', () => {
   it('call returns result from server', async () => {
     manager = createMcpManager({ rpcTimeoutMs: 5000 });
     await manager.start({ name: 'srv', command: 'node', args: [MOCK_SERVER] });
-    const result = await manager.call('srv', 'tools/list', {}) as { tools: Array<{ name: string }> };
+    const result = (await manager.call('srv', 'tools/list', {})) as {
+      tools: Array<{ name: string }>;
+    };
     expect(result.tools).toHaveLength(1);
     expect(result.tools[0]?.name).toBe('echo');
   });

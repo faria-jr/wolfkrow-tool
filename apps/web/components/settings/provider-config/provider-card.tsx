@@ -29,7 +29,7 @@ export function ProviderCard({ provider, isBuiltIn, onEdit, onDelete }: Provider
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-base">{provider.displayName}</CardTitle>
-            <p className="text-muted-foreground text-xs mt-0.5">{provider.baseUrl}</p>
+            <p className="text-muted-foreground mt-0.5 text-xs">{provider.baseUrl}</p>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline">{provider.protocol}</Badge>
@@ -42,10 +42,14 @@ export function ProviderCard({ provider, isBuiltIn, onEdit, onDelete }: Provider
         <div className="flex items-center justify-between">
           <div className="flex flex-wrap gap-1">
             {provider.models.slice(0, 3).map((m) => (
-              <span key={m} className="rounded bg-muted px-1.5 py-0.5 text-xs">{m}</span>
+              <span key={m} className="bg-muted rounded px-1.5 py-0.5 text-xs">
+                {m}
+              </span>
             ))}
             {provider.models.length > 3 && (
-              <span className="rounded bg-muted px-1.5 py-0.5 text-xs">+{provider.models.length - 3}</span>
+              <span className="bg-muted rounded px-1.5 py-0.5 text-xs">
+                +{provider.models.length - 3}
+              </span>
             )}
           </div>
           <div className="flex gap-2">

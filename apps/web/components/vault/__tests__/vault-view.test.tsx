@@ -15,18 +15,21 @@ describe('VaultView', () => {
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      text: async () => JSON.stringify({
-        secrets: [{
-          id: VALID_UUID,
-          userId: VALID_UUID,
-          key: 'anthropic-api-key',
-          displayName: 'Anthropic',
-          category: 'ai',
-          metadata: {},
-          createdAt: '2026-06-01T00:00:00Z',
-          updatedAt: '2026-06-01T00:00:00Z',
-        }],
-      }),
+      text: async () =>
+        JSON.stringify({
+          secrets: [
+            {
+              id: VALID_UUID,
+              userId: VALID_UUID,
+              key: 'anthropic-api-key',
+              displayName: 'Anthropic',
+              category: 'ai',
+              metadata: {},
+              createdAt: '2026-06-01T00:00:00Z',
+              updatedAt: '2026-06-01T00:00:00Z',
+            },
+          ],
+        }),
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
   });

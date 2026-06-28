@@ -1,7 +1,21 @@
 import { randomUUID } from 'node:crypto';
 
-export type PipelineStage = 'discovery' | 'spec_build' | 'spec_validate' | 'approval' | 'design' | 'design_lock' | 'implementation' | 'completed';
-export type PipelineStatus = 'running' | 'paused' | 'awaiting_approval' | 'completed' | 'failed' | 'cancelled';
+export type PipelineStage =
+  | 'discovery'
+  | 'spec_build'
+  | 'spec_validate'
+  | 'approval'
+  | 'design'
+  | 'design_lock'
+  | 'implementation'
+  | 'completed';
+export type PipelineStatus =
+  | 'running'
+  | 'paused'
+  | 'awaiting_approval'
+  | 'completed'
+  | 'failed'
+  | 'cancelled';
 
 export interface PipelineMetrics {
   totalTokens: number;
@@ -30,9 +44,17 @@ export interface PipelineProjectProps {
   completedAt: Date | undefined;
 }
 
-export type PipelineProjectCreateInput = Pick<PipelineProjectProps, 'userId' | 'name'> & { description?: string; projectPath?: string };
+export type PipelineProjectCreateInput = Pick<PipelineProjectProps, 'userId' | 'name'> & {
+  description?: string;
+  projectPath?: string;
+};
 
-const DEFAULT_METRICS: PipelineMetrics = { totalTokens: 0, totalCost: 0, phasesCompleted: 0, durationMs: 0 };
+const DEFAULT_METRICS: PipelineMetrics = {
+  totalTokens: 0,
+  totalCost: 0,
+  phasesCompleted: 0,
+  durationMs: 0,
+};
 
 export class PipelineProject {
   readonly id: string;
@@ -102,31 +124,64 @@ export class PipelineProject {
 
   toProps(): PipelineProjectProps {
     return {
-      id: this.id, userId: this.userId, name: this.name, description: this.description,
-      currentStage: this.currentStage, status: this.status, discoveryNotes: this.discoveryNotes,
-      projectPath: this.projectPath, specPath: this.specPath, prdPath: this.prdPath, approvalNotes: this.approvalNotes,
-      specEdits: this.specEdits, harnessProjectId: this.harnessProjectId,
-      metrics: this.metrics, createdAt: this.createdAt, updatedAt: this.updatedAt, completedAt: this.completedAt,
+      id: this.id,
+      userId: this.userId,
+      name: this.name,
+      description: this.description,
+      currentStage: this.currentStage,
+      status: this.status,
+      discoveryNotes: this.discoveryNotes,
+      projectPath: this.projectPath,
+      specPath: this.specPath,
+      prdPath: this.prdPath,
+      approvalNotes: this.approvalNotes,
+      specEdits: this.specEdits,
+      harnessProjectId: this.harnessProjectId,
+      metrics: this.metrics,
+      createdAt: this.createdAt,
+      updatedAt: this.updatedAt,
+      completedAt: this.completedAt,
     };
   }
 
-  withStage(stage: PipelineStage, extraProps?: Partial<Pick<PipelineProjectProps, 'discoveryNotes' | 'specPath' | 'prdPath' | 'approvalNotes' | 'specEdits' | 'harnessProjectId' | 'status' | 'completedAt'>>): PipelineProject {
+  withStage(
+    stage: PipelineStage,
+    extraProps?: Partial<
+      Pick<
+        PipelineProjectProps,
+        | 'discoveryNotes'
+        | 'specPath'
+        | 'prdPath'
+        | 'approvalNotes'
+        | 'specEdits'
+        | 'harnessProjectId'
+        | 'status'
+        | 'completedAt'
+      >
+    >
+  ): PipelineProject {
     return PipelineProject.fromProps({
-      ...this.toProps(), currentStage: stage, updatedAt: new Date(),
+      ...this.toProps(),
+      currentStage: stage,
+      updatedAt: new Date(),
       ...(extraProps ?? {}),
     });
   }
 
   withStatus(status: PipelineStatus, completedAt?: Date): PipelineProject {
     return PipelineProject.fromProps({
-      ...this.toProps(), status, updatedAt: new Date(),
+      ...this.toProps(),
+      status,
+      updatedAt: new Date(),
       ...(completedAt !== undefined ? { completedAt } : {}),
     });
   }
 
   withMetrics(metrics: Partial<PipelineMetrics>): PipelineProject {
     return PipelineProject.fromProps({
-      ...this.toProps(), metrics: { ...this.metrics, ...metrics }, updatedAt: new Date(),
+      ...this.toProps(),
+      metrics: { ...this.metrics, ...metrics },
+      updatedAt: new Date(),
     });
   }
 }

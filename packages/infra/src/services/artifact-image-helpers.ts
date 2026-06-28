@@ -52,7 +52,9 @@ function findMarkdownImage(content: string): { imagePath: string; title?: string
 }
 
 function findLabelledImage(content: string): { imagePath: string; title?: string } | null {
-  const matches = content.matchAll(/(?:Arquivo|Imagem|Image|File):\s*((?:\/|[A-Za-z]:\\).+?\.(?:png|jpe?g|webp|gif))(?:\s|\\n|\n|$)/gi);
+  const matches = content.matchAll(
+    /(?:Arquivo|Imagem|Image|File):\s*((?:\/|[A-Za-z]:\\).+?\.(?:png|jpe?g|webp|gif))(?:\s|\\n|\n|$)/gi
+  );
   for (const match of matches) {
     if (!match[1]) continue;
     const imagePath = existingImagePath(match[1]);
@@ -62,7 +64,9 @@ function findLabelledImage(content: string): { imagePath: string; title?: string
 }
 
 function findBareImage(content: string): { imagePath: string; title?: string } | null {
-  const matches = content.matchAll(/((?:\/|[A-Za-z]:\\)[^\n\r"'`<>]+?\.(?:png|jpe?g|webp|gif))(?:[\s).,;]|$)/gi);
+  const matches = content.matchAll(
+    /((?:\/|[A-Za-z]:\\)[^\n\r"'`<>]+?\.(?:png|jpe?g|webp|gif))(?:[\s).,;]|$)/gi
+  );
   for (const match of matches) {
     if (!match[1]) continue;
     const imagePath = existingImagePath(match[1]);
@@ -97,7 +101,9 @@ export function readImageAsBase64(p: string): { base64: string; mime: string } |
   }
 }
 
-export function normalizeBase64Image(raw: string): { imageBase64: string; mimeType: string } | null {
+export function normalizeBase64Image(
+  raw: string
+): { imageBase64: string; mimeType: string } | null {
   const trimmed = raw.trim();
   const dataUrl = /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=\s]+)$/i.exec(trimmed);
   if (dataUrl?.[1] && dataUrl[2]) {
@@ -126,7 +132,7 @@ export interface InlineImageMatch {
 function resolveInlineFields(
   record: Record<string, unknown> | null,
   data: Record<string, unknown> | null,
-  image: { imageBase64: string; mimeType: string },
+  image: { imageBase64: string; mimeType: string }
 ): InlineImageMatch {
   const prompt =
     firstString(record, ['prompt', 'revised_prompt', 'revisedPrompt']) ??

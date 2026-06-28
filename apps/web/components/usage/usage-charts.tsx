@@ -17,7 +17,6 @@ import {
   Legend,
 } from 'recharts';
 
-
 import { EmptyState } from '@/components/common/empty-state';
 import { ErrorState } from '@/components/common/error-state';
 import { getUsageSummary } from '@/lib/api-client';
@@ -32,28 +31,32 @@ function ModelBreakdownTable({ byModel }: { byModel: UsageSummary['byModel'] }) 
       <h3 className="mb-4 text-sm font-semibold">Usage by Model</h3>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-xs text-muted-foreground">
-            <th className="pb-2 pr-4">Model</th>
-            <th className="pb-2 pr-4 text-right">Input</th>
-            <th className="pb-2 pr-4 text-right">Output</th>
-            <th className="pb-2 text-right">Cost (USD)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(([model, d]) => (
-            <tr key={model} className="border-b last:border-0">
-              <td className="py-2 pr-4 font-mono text-xs">{model}</td>
-              <td className="py-2 pr-4 text-right">{formatTokens(d.inputTokens)}</td>
-              <td className="py-2 pr-4 text-right">{formatTokens(d.outputTokens)}</td>
-              <td className="py-2 text-right">
-                {hasKnownPricing(model)
-                  ? <span>{formatCost(d.costUSD)}</span>
-                  : <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">unknown</span>}
-              </td>
+          <thead>
+            <tr className="text-muted-foreground border-b text-left text-xs">
+              <th className="pb-2 pr-4">Model</th>
+              <th className="pb-2 pr-4 text-right">Input</th>
+              <th className="pb-2 pr-4 text-right">Output</th>
+              <th className="pb-2 text-right">Cost (USD)</th>
             </tr>
-          ))}
-        </tbody>
+          </thead>
+          <tbody>
+            {rows.map(([model, d]) => (
+              <tr key={model} className="border-b last:border-0">
+                <td className="py-2 pr-4 font-mono text-xs">{model}</td>
+                <td className="py-2 pr-4 text-right">{formatTokens(d.inputTokens)}</td>
+                <td className="py-2 pr-4 text-right">{formatTokens(d.outputTokens)}</td>
+                <td className="py-2 text-right">
+                  {hasKnownPricing(model) ? (
+                    <span>{formatCost(d.costUSD)}</span>
+                  ) : (
+                    <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs">
+                      unknown
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
     </div>
@@ -64,22 +67,27 @@ function UsageSummaryCards({ summary }: { summary: UsageSummary }) {
   return (
     <div className="grid grid-cols-3 gap-4">
       <div className="rounded border p-4">
-        <p className="text-xs text-muted-foreground">Total Input Tokens</p>
+        <p className="text-muted-foreground text-xs">Total Input Tokens</p>
         <p className="text-2xl font-bold">{summary.totalInputTokens.toLocaleString()}</p>
       </div>
       <div className="rounded border p-4">
-        <p className="text-xs text-muted-foreground">Total Output Tokens</p>
+        <p className="text-muted-foreground text-xs">Total Output Tokens</p>
         <p className="text-2xl font-bold">{summary.totalOutputTokens.toLocaleString()}</p>
       </div>
       <div className="rounded border p-4">
-        <p className="text-xs text-muted-foreground">Total Cost</p>
+        <p className="text-muted-foreground text-xs">Total Cost</p>
         <p className="text-2xl font-bold">${summary.totalCostUSD.toFixed(4)}</p>
       </div>
     </div>
   );
 }
 
-interface DayDataItem { date: string; cost: number; inputTokens: number; outputTokens: number; }
+interface DayDataItem {
+  date: string;
+  cost: number;
+  inputTokens: number;
+  outputTokens: number;
+}
 function DayChart({ data }: { data: DayDataItem[] }) {
   if (data.length === 0) return null;
   return (
@@ -121,7 +129,7 @@ export function UsageCharts() {
   }, []);
 
   if (error) return <ErrorState title="Failed to load usage data" description={error} />;
-  if (!summary) return <div className="text-sm text-muted-foreground">Loading usage data…</div>;
+  if (!summary) return <div className="text-muted-foreground text-sm">Loading usage data…</div>;
 
   const dayData = buildDayData(summary);
 
@@ -142,7 +150,15 @@ export function UsageCharts() {
           <h3 className="mb-4 text-sm font-semibold">Cost by Source</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={sourceData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+              <Pie
+                data={sourceData}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                label
+              >
                 {sourceData.map((_e, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
@@ -155,7 +171,10 @@ export function UsageCharts() {
       )}
 
       {dayData.length === 0 && sourceData.length === 0 && (
-        <EmptyState title="No usage data yet" description="Usage analytics appear here once your agents start running." />
+        <EmptyState
+          title="No usage data yet"
+          description="Usage analytics appear here once your agents start running."
+        />
       )}
     </div>
   );

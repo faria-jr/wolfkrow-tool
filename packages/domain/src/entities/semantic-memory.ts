@@ -15,7 +15,10 @@ export interface SemanticMemoryProps {
   createdAt: Date;
 }
 
-export type SemanticMemoryCreateInput = Omit<SemanticMemoryProps, 'id' | 'accessCount' | 'lastAccessedAt' | 'createdAt'>;
+export type SemanticMemoryCreateInput = Omit<
+  SemanticMemoryProps,
+  'id' | 'accessCount' | 'lastAccessedAt' | 'createdAt'
+>;
 
 export class SemanticMemory {
   readonly id: string;

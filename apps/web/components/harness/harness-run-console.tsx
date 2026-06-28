@@ -56,17 +56,19 @@ interface RunHeaderProps {
 
 function RunHeader({ project, sprints, activeSprintId }: RunHeaderProps) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-4">
+    <div className="bg-card flex flex-wrap items-start justify-between gap-3 rounded-lg border p-4">
       <div>
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">{project.name}</h2>
           <Badge variant={statusBadgeVariant(project.status)}>{project.status}</Badge>
         </div>
         {project.description && (
-          <p className="mt-1 text-sm text-muted-foreground">{project.description}</p>
+          <p className="text-muted-foreground mt-1 text-sm">{project.description}</p>
         )}
         {project.projectPath && (
-          <p className="mt-1 font-mono text-xs text-muted-foreground">Path: {project.projectPath}</p>
+          <p className="text-muted-foreground mt-1 font-mono text-xs">
+            Path: {project.projectPath}
+          </p>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -100,14 +102,20 @@ export function HarnessRunConsole({ projectId, sprintId }: HarnessRunConsoleProp
       }
     }
     void load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
 
-  const sprint = useMemo(() => selectSprint(data?.sprints ?? [], sprintId), [data?.sprints, sprintId]);
+  const sprint = useMemo(
+    () => selectSprint(data?.sprints ?? [], sprintId),
+    [data?.sprints, sprintId]
+  );
 
-  if (error) return <p className="text-sm text-destructive">{error}</p>;
-  if (!data) return <p className="text-sm text-muted-foreground">Loading run console...</p>;
-  if (!sprint) return <p className="text-sm text-muted-foreground">No sprint found for this project.</p>;
+  if (error) return <p className="text-destructive text-sm">{error}</p>;
+  if (!data) return <p className="text-muted-foreground text-sm">Loading run console...</p>;
+  if (!sprint)
+    return <p className="text-muted-foreground text-sm">No sprint found for this project.</p>;
 
   return (
     <div className="flex min-h-full flex-col gap-4">
@@ -120,7 +128,9 @@ export function HarnessRunConsole({ projectId, sprintId }: HarnessRunConsoleProp
         onClose={() => router.push('/harness')}
       />
       <div className="flex justify-end">
-        <Button variant="outline" onClick={() => router.push('/harness')}>Back to harness</Button>
+        <Button variant="outline" onClick={() => router.push('/harness')}>
+          Back to harness
+        </Button>
       </div>
     </div>
   );

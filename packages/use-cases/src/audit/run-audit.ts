@@ -1,4 +1,11 @@
-import type { SecurityFinding, SecurityFindingRepo, SecurityScanRecord, SecurityScanRepo, SecurityAuditRunner, SecurityScanSummary } from '@wolfkrow/domain';
+import type {
+  SecurityFinding,
+  SecurityFindingRepo,
+  SecurityScanRecord,
+  SecurityScanRepo,
+  SecurityAuditRunner,
+  SecurityScanSummary,
+} from '@wolfkrow/domain';
 
 export interface RunAuditInput {
   userId: string;
@@ -17,10 +24,25 @@ export interface RunAuditOutput {
   error?: string;
 }
 
+const EMPTY_SUMMARY: SecurityScanSummary = {
+  total: 0,
+  bySeverity: { info: 0, warning: 0, major: 0, critical: 0, blocker: 0 },
+  byDimension: {
+    secrets: 0,
+    auth: 0,
+    isolation: 0,
+    duplication: 0,
+    logic: 0,
+    standards: 0,
+    owasp: 0,
+    general: 0,
+  },
+};
+
 export class RunAuditUseCase {
   constructor(
     private readonly scanRepo: SecurityScanRepo,
-    private readonly findingRepo: SecurityFindingRepo,
+    private readonly findingRepo: SecurityFindingRepo
   ) {}
 
   async execute(input: RunAuditInput): Promise<RunAuditOutput> {
@@ -54,20 +76,7 @@ export class RunAuditUseCase {
         completedAt: new Date(),
         error: message,
       });
-      return {
-        scanId: scan.id,
-        status: 'failed',
-        findingCount: 0,
-        summary: {
-          total: 0,
-          bySeverity: { info: 0, warning: 0, major: 0, critical: 0, blocker: 0 },
-          byDimension: {
-            secrets: 0, auth: 0, isolation: 0, duplication: 0, logic: 0,
-            standards: 0, owasp: 0, general: 0,
-          },
-        },
-        error: message,
-      };
+      return { scanId: scan.id, status: 'failed', findingCount: 0, summary: EMPTY_SUMMARY, error: message };
     }
   }
 }
@@ -75,10 +84,13 @@ export class RunAuditUseCase {
 export class ListFindingsUseCase {
   constructor(
     private readonly scanRepo: SecurityScanRepo,
-    private readonly findingRepo: SecurityFindingRepo,
+    private readonly findingRepo: SecurityFindingRepo
   ) {}
 
-  async execute(input: { scanId: string; userId: string }): Promise<{ scan: SecurityScanRecord | null; findings: SecurityFinding[] }> {
+  async execute(input: {
+    scanId: string;
+    userId: string;
+  }): Promise<{ scan: SecurityScanRecord | null; findings: SecurityFinding[] }> {
     const scan = this.scanRepo.findById(input.scanId);
     if (!scan) return { scan: null, findings: [] };
     const findings = this.findingRepo.findByScan(input.scanId);

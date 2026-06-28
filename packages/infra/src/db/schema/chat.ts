@@ -27,7 +27,7 @@ export const chatSessions = sqliteTable(
     userIdIdx: index('chat_sessions_user_id_idx').on(t.userId),
     lastActivityIdx: index('chat_sessions_last_activity_idx').on(t.lastActivity),
     archivedIdx: index('chat_sessions_archived_idx').on(t.archived),
-  }),
+  })
 );
 
 export const chatMessages = sqliteTable(
@@ -50,7 +50,7 @@ export const chatMessages = sqliteTable(
   },
   (t) => ({
     sessionIdIdx: index('chat_messages_session_id_idx').on(t.sessionId),
-  }),
+  })
 );
 
 export const chatAttachments = sqliteTable(
@@ -68,5 +68,5 @@ export const chatAttachments = sqliteTable(
   },
   (t) => ({
     messageIdIdx: index('chat_attachments_message_id_idx').on(t.messageId),
-  }),
+  })
 );

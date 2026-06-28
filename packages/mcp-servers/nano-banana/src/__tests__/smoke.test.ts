@@ -1,7 +1,6 @@
 import { handleRpcMessage } from '@wolfkrow/mcp-shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-
 import { handlers } from '../index';
 
 afterEach(() => {
@@ -34,9 +33,8 @@ describe('nano-banana MCP server smoke tests', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         headers: { get: (h: string) => (h === 'content-type' ? 'image/png' : null) },
-        arrayBuffer: async () =>
-          img.buffer.slice(img.byteOffset, img.byteOffset + img.byteLength),
-      }),
+        arrayBuffer: async () => img.buffer.slice(img.byteOffset, img.byteOffset + img.byteLength),
+      })
     );
     const res = await handleRpcMessage(
       {
@@ -48,7 +46,7 @@ describe('nano-banana MCP server smoke tests', () => {
           arguments: { prompt: 'a banana in space', width: 512, height: 512 },
         },
       },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     const text = (res?.result as { content: { text: string }[] }).content[0]?.text ?? '{}';
@@ -73,11 +71,16 @@ describe('nano-banana MCP server smoke tests', () => {
         ok: true,
         headers: { get: () => 'image/png' },
         arrayBuffer: async () => img.buffer.slice(img.byteOffset, img.byteOffset + img.byteLength),
-      }),
+      })
     );
     await handleRpcMessage(
-      { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'generate_image', arguments: { prompt: 'x' } } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 4,
+        method: 'tools/call',
+        params: { name: 'generate_image', arguments: { prompt: 'x' } },
+      },
+      handlers
     );
     expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('https://custom.example.com');
   });
@@ -85,16 +88,26 @@ describe('nano-banana MCP server smoke tests', () => {
   it('generate_image requires prompt', async () => {
     process.env['NANO_BANANA_API_KEY'] = 'k';
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'generate_image', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'tools/call',
+        params: { name: 'generate_image', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
 
   it('returns isError when api key missing', async () => {
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'generate_image', arguments: { prompt: 'x' } } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 6,
+        method: 'tools/call',
+        params: { name: 'generate_image', arguments: { prompt: 'x' } },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
@@ -102,7 +115,7 @@ describe('nano-banana MCP server smoke tests', () => {
   it('unknown tool returns isError', async () => {
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'nope', arguments: {} } },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });

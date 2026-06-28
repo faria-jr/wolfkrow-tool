@@ -5,7 +5,9 @@ vi.mock('recharts', async () => {
   const actual = await vi.importActual<Record<string, unknown>>('recharts');
   return {
     ...actual,
-    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="container">{children}</div>,
+    ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+      <div data-testid="container">{children}</div>
+    ),
   };
 });
 
@@ -82,22 +84,28 @@ describe('UsageCharts — model breakdown table (RM6.2)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('shows Cost (USD) column header when models present', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify(summaryWithModels),
-    } as Response));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify(summaryWithModels),
+      } as Response)
+    );
 
     render(<UsageCharts />);
     await waitFor(() => expect(screen.getByText('Cost (USD)')).toBeInTheDocument());
   });
 
   it('shows formatted cost for known model', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify(summaryWithModels),
-    } as Response));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify(summaryWithModels),
+      } as Response)
+    );
 
     render(<UsageCharts />);
     await waitFor(() => expect(screen.getByText('claude-sonnet-4-6')).toBeInTheDocument());
@@ -106,11 +114,14 @@ describe('UsageCharts — model breakdown table (RM6.2)', () => {
   });
 
   it('shows "unknown" badge for model without known pricing', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      text: async () => JSON.stringify(summaryWithModels),
-    } as Response));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify(summaryWithModels),
+      } as Response)
+    );
 
     render(<UsageCharts />);
     await waitFor(() => expect(screen.getByText('my-custom-unknown-model')).toBeInTheDocument());

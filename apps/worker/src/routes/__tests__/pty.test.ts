@@ -45,13 +45,17 @@ describe('pty POST /pty — create', () => {
   it('creates a session and returns the sessionId', async () => {
     fakePtyServer.create.mockClear();
     const res = await app.inject({
-      method: 'POST', url: '/pty',
+      method: 'POST',
+      url: '/pty',
       payload: { id: 'sess-1', cols: 100, rows: 30 },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { sessionId: string };
     expect(body.sessionId).toBe('sess-1');
-    expect(fakePtyServer.create).toHaveBeenCalledWith('sess-1', expect.objectContaining({ cols: 100, rows: 30 }));
+    expect(fakePtyServer.create).toHaveBeenCalledWith(
+      'sess-1',
+      expect.objectContaining({ cols: 100, rows: 30 })
+    );
   });
 
   it('generates a sessionId when id is omitted', async () => {
@@ -69,9 +73,16 @@ describe('pty POST /pty — create', () => {
 
   it('coerces string cols/rows from query-like bodies', async () => {
     fakePtyServer.create.mockClear();
-    const res = await app.inject({ method: 'POST', url: '/pty', payload: { cols: '120', rows: '40' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/pty',
+      payload: { cols: '120', rows: '40' },
+    });
     expect(res.statusCode).toBe(200);
-    expect(fakePtyServer.create).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ cols: 120, rows: 40 }));
+    expect(fakePtyServer.create).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ cols: 120, rows: 40 })
+    );
   });
 });
 

@@ -1,7 +1,6 @@
 import { handleRpcMessage } from '@wolfkrow/mcp-shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-
 import { handlers } from '../index';
 
 afterEach(() => {
@@ -36,8 +35,13 @@ describe('google-drive MCP server smoke tests', () => {
     process.env['GOOGLE_DRIVE_TOKEN'] = 't';
     vi.stubGlobal('fetch', makeFetchOk({ files: [] }));
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'list_files', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: { name: 'list_files', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
@@ -55,7 +59,7 @@ describe('google-drive MCP server smoke tests', () => {
         method: 'tools/call',
         params: { name: 'list_files', arguments: { query: "name contains 'report'" } },
       },
-      handlers,
+      handlers
     );
     const url = String(vi.mocked(fetch).mock.calls[0]?.[0]);
     expect(url).toContain('q=name+contains+%27report%27');
@@ -65,15 +69,20 @@ describe('google-drive MCP server smoke tests', () => {
     process.env['GOOGLE_DRIVE_TOKEN'] = 't';
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'get_file', arguments: {} } },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
 
   it('returns isError when token missing', async () => {
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'list_files', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 6,
+        method: 'tools/call',
+        params: { name: 'list_files', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
@@ -81,7 +90,7 @@ describe('google-drive MCP server smoke tests', () => {
   it('unknown tool returns isError', async () => {
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'nope', arguments: {} } },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });

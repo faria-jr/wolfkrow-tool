@@ -18,7 +18,9 @@ beforeAll(() => {
 });
 
 function makeWrapper() {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   );
@@ -50,10 +52,13 @@ describe('ProviderList', () => {
   });
 
   it('renders providers from API', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => [builtIn, custom],
-    }) as unknown as typeof fetch);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => [builtIn, custom],
+      }) as unknown as typeof fetch
+    );
 
     const Wrapper = makeWrapper();
     render(<ProviderList />, { wrapper: Wrapper });
@@ -64,10 +69,13 @@ describe('ProviderList', () => {
   });
 
   it('built-in provider does not show Delete button', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => [builtIn],
-    }) as unknown as typeof fetch);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => [builtIn],
+      }) as unknown as typeof fetch
+    );
 
     const Wrapper = makeWrapper();
     render(<ProviderList />, { wrapper: Wrapper });
@@ -79,10 +87,13 @@ describe('ProviderList', () => {
 
   it('custom provider shows Delete button that opens confirmation', async () => {
     const user = userEvent.setup();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => [custom],
-    }) as unknown as typeof fetch);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => [custom],
+      }) as unknown as typeof fetch
+    );
 
     const Wrapper = makeWrapper();
     render(<ProviderList />, { wrapper: Wrapper });
@@ -116,10 +127,13 @@ describe('ProviderList', () => {
 
   it('delete opens confirmation dialog with cancel/confirm buttons', async () => {
     const user = userEvent.setup();
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => [custom],
-    }) as unknown as typeof fetch);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => [custom],
+      }) as unknown as typeof fetch
+    );
 
     const Wrapper = makeWrapper();
     render(<ProviderList />, { wrapper: Wrapper });

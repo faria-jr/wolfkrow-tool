@@ -14,7 +14,7 @@ function makeImage(dir: string, name = 'cat.png'): string {
   // 1x1 transparent PNG (89 bytes).
   const png = Buffer.from(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
-    'base64',
+    'base64'
   );
   const p = join(dir, name);
   writeFileSync(p, png);
@@ -80,7 +80,8 @@ describe('ArtifactDetector — image artifacts', () => {
 
   it('detects inline base64 PNG', () => {
     const det = new ArtifactDetector();
-    const b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+    const b64 =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
     const out = det.detectFromToolResult('t1', b64, false);
     expect(out.artifact).not.toBeNull();
     expect(out.artifact!.type).toBe('image');
@@ -117,7 +118,11 @@ describe('ArtifactDetector — image artifacts', () => {
 
   it('skips non-existent image path', () => {
     const det = new ArtifactDetector();
-    const out = det.detectFromToolResult('t1', 'ARQUIVO_IMAGEM: /tmp/does-not-exist-1234.png\n', false);
+    const out = det.detectFromToolResult(
+      't1',
+      'ARQUIVO_IMAGEM: /tmp/does-not-exist-1234.png\n',
+      false
+    );
     expect(out.artifact).toBeNull();
   });
 
@@ -125,7 +130,8 @@ describe('ArtifactDetector — image artifacts', () => {
     const det = new ArtifactDetector();
     const json = JSON.stringify({
       data: {
-        imageBase64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+        imageBase64:
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
         prompt: 'test prompt',
       },
     });
@@ -155,14 +161,22 @@ describe('ArtifactDetector — audio artifacts', () => {
 describe('ArtifactDetector — combined', () => {
   it('detect() returns excalidraw from tool_use', () => {
     const det = new ArtifactDetector();
-    const a = det.detect('excalidraw.create_view', { elements: [{ type: 'line' }] }, { output: null, isError: false });
+    const a = det.detect(
+      'excalidraw.create_view',
+      { elements: [{ type: 'line' }] },
+      { output: null, isError: false }
+    );
     expect(a).not.toBeNull();
     expect(a!.type).toBe('mcp_app');
   });
 
   it('detect() returns null when nothing matches', () => {
     const det = new ArtifactDetector();
-    const a = det.detect('bash', { command: 'ls' }, { output: 'file1.txt\nfile2.txt', isError: false });
+    const a = det.detect(
+      'bash',
+      { command: 'ls' },
+      { output: 'file1.txt\nfile2.txt', isError: false }
+    );
     expect(a).toBeNull();
   });
 });

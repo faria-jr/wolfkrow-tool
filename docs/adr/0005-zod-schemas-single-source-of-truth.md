@@ -13,6 +13,7 @@ O LionClaw v3 tem tipos TypeScript duplicados em vários lugares:
 - Seed agents em `.ts` (sem validação de schema)
 
 Problemas:
+
 1. **Duplicação**: mesmo tipo definido em 2-3 lugares
 2. **Drift**: mudanças em 1 lugar não propagam
 3. **Zero runtime safety**: API aceita payload inválido
@@ -88,6 +89,7 @@ export type CreateAgentInput = z.infer<typeof CreateAgentInputSchema>;
 ### 1. Shared Types (Single Source of Truth)
 
 `packages/shared-types/src/schemas/`:
+
 - `agent.ts` — Agent, CreateAgentInput, UpdateAgentInput
 - `chat.ts` — Session, Message, Attachment
 - `mcp.ts` — MCPServer, Tool
@@ -113,13 +115,13 @@ import { AgentSchema, CreateAgentInputSchema } from '@wolfkrow/shared-types/sche
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  
+
   // Valida e parseia (throws ZodError se inválido)
   const input = CreateAgentInputSchema.parse(body);
-  
+
   const useCase = container.get(CreateAgent);
   const agent = await useCase.execute(input);
-  
+
   return Response.json(AgentSchema.parse(agent));
 }
 ```
@@ -137,7 +139,7 @@ export function AgentForm() {
     resolver: zodResolver(CreateAgentInputSchema),
     defaultValues: { ... },
   });
-  
+
   return (
     <Form {...form}>
       <FormField

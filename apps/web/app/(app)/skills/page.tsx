@@ -9,7 +9,11 @@ export const metadata = { title: 'Skills' };
 export default function SkillsPage() {
   return (
     <PageShell>
-      <PageHeader title="Skills" description="Reusable capabilities injected into agent system prompts." icon={<Sparkles className="h-6 w-6" />} />
+      <PageHeader
+        title="Skills"
+        description="Reusable capabilities injected into agent system prompts."
+        icon={<Sparkles className="h-6 w-6" />}
+      />
       <PageContent>
         <SkillsView />
       </PageContent>

@@ -12,13 +12,13 @@ import { DailySummary } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-
 const { memories, summaries, fakeMemoryRepo, fakeSummaryRepo, fakeEmbedder } = vi.hoisted(() => {
   const memories = new Map<string, SemanticMemory>();
   const summaries = new Map<string, DailySummary>();
   const fakeMemoryRepo = {
     findById: async (id: string) => memories.get(id) ?? null,
-    findByUserId: async (userId: string) => [...memories.values()].filter((m) => m.userId === userId),
+    findByUserId: async (userId: string) =>
+      [...memories.values()].filter((m) => m.userId === userId),
     save: async (m: SemanticMemory) => {
       memories.set(m.id, m);
       return m;
@@ -34,7 +34,8 @@ const { memories, summaries, fakeMemoryRepo, fakeSummaryRepo, fakeEmbedder } = v
   };
   const fakeSummaryRepo = {
     findByUserIdAndDate: async () => null,
-    findByUserId: async (userId: string) => [...summaries.values()].filter((s) => s.userId === userId),
+    findByUserId: async (userId: string) =>
+      [...summaries.values()].filter((s) => s.userId === userId),
     save: async (s: DailySummary) => {
       summaries.set(`${s.userId}:${s.date}`, s);
       return s;
@@ -84,7 +85,9 @@ describe('memory routes — authentication', () => {
 describe('memory POST /memory — add', () => {
   it('creates a memory and returns 201 with props', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/memory', headers: BEARER,
+      method: 'POST',
+      url: '/memory',
+      headers: BEARER,
       payload: { content: 'remember this', source: 'user', importance: 80 },
     });
     expect(res.statusCode).toBe(201);
@@ -95,14 +98,19 @@ describe('memory POST /memory — add', () => {
 
   it('applies defaults (source=user, importance=50)', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/memory', headers: BEARER, payload: { content: 'x' },
+      method: 'POST',
+      url: '/memory',
+      headers: BEARER,
+      payload: { content: 'x' },
     });
     expect(res.statusCode).toBe(201);
   });
 
   it('accepts metadata (covers metadata spread branch)', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/memory', headers: BEARER,
+      method: 'POST',
+      url: '/memory',
+      headers: BEARER,
       payload: { content: 'with-meta', source: 'agent', importance: 90, metadata: { tag: 'x' } },
     });
     expect(res.statusCode).toBe(201);
@@ -115,7 +123,9 @@ describe('memory POST /memory — add', () => {
 
   it('rejects invalid source enum → 400', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/memory', headers: BEARER,
+      method: 'POST',
+      url: '/memory',
+      headers: BEARER,
       payload: { content: 'x', source: 'bogus' },
     });
     expect(res.statusCode).toBe(400);
@@ -134,7 +144,9 @@ describe('memory GET /memory — list', () => {
 describe('memory POST /memory/search', () => {
   it('returns search results', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/memory/search', headers: BEARER,
+      method: 'POST',
+      url: '/memory/search',
+      headers: BEARER,
       payload: { query: 'remember', limit: 5 },
     });
     expect(res.statusCode).toBe(200);
@@ -144,14 +156,20 @@ describe('memory POST /memory/search', () => {
 
   it('works without an explicit limit (default branch)', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/memory/search', headers: BEARER, payload: { query: 'x' },
+      method: 'POST',
+      url: '/memory/search',
+      headers: BEARER,
+      payload: { query: 'x' },
     });
     expect(res.statusCode).toBe(200);
   });
 
   it('rejects empty query → 400', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/memory/search', headers: BEARER, payload: { query: '' },
+      method: 'POST',
+      url: '/memory/search',
+      headers: BEARER,
+      payload: { query: '' },
     });
     expect(res.statusCode).toBe(400);
   });
@@ -160,7 +178,11 @@ describe('memory POST /memory/search', () => {
 describe('memory DELETE /memory/:id', () => {
   it('deletes a memory and returns ok', async () => {
     const existing = [...memories.values()][0]!;
-    const res = await app.inject({ method: 'DELETE', url: `/memory/${existing.id}`, headers: BEARER });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/memory/${existing.id}`,
+      headers: BEARER,
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ deleted: true });
   });
@@ -169,8 +191,14 @@ describe('memory DELETE /memory/:id', () => {
 describe('memory summaries', () => {
   it('GET /memory/summaries returns summaries for the user', async () => {
     const seeded = DailySummary.create({
-      userId: 'u1', date: '2026-06-24', content: 'A productive day',
-      sessionCount: 0, messageCount: 0, tokensUsed: 0, cost: 0, metadata: {},
+      userId: 'u1',
+      date: '2026-06-24',
+      content: 'A productive day',
+      sessionCount: 0,
+      messageCount: 0,
+      tokensUsed: 0,
+      cost: 0,
+      metadata: {},
     });
     summaries.set('u1:2026-06-24', seeded);
     const res = await app.inject({ method: 'GET', url: '/memory/summaries', headers: BEARER });
@@ -181,7 +209,9 @@ describe('memory summaries', () => {
 
   it('POST /memory/summaries creates a summary and returns 201', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/memory/summaries', headers: BEARER,
+      method: 'POST',
+      url: '/memory/summaries',
+      headers: BEARER,
       payload: { date: '2026-06-25', content: 'Manual note' },
     });
     expect(res.statusCode).toBe(201);
@@ -191,7 +221,12 @@ describe('memory summaries', () => {
   });
 
   it('POST /memory/summaries uses today + default content when body is empty', async () => {
-    const res = await app.inject({ method: 'POST', url: '/memory/summaries', headers: BEARER, payload: {} });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/memory/summaries',
+      headers: BEARER,
+      payload: {},
+    });
     expect(res.statusCode).toBe(201);
   });
 });

@@ -42,11 +42,16 @@ function handlePtyMessage(id: string, raw: Buffer | string): void {
     } else if (msg.type === 'kill') {
       ptyServer.kill(id);
     }
-  } catch { /* ignore malformed */ }
+  } catch {
+    /* ignore malformed */
+  }
 }
 
 function handlePtyWs(socket: WebSocket, id: string): void {
-  if (!ptyServer.has(id)) { socket.close(1008, 'Session not found'); return; }
+  if (!ptyServer.has(id)) {
+    socket.close(1008, 'Session not found');
+    return;
+  }
 
   const offData = ptyServer.onData(id, (data) => {
     if (socket.readyState === socket.OPEN) socket.send(JSON.stringify({ type: 'output', data }));
@@ -58,8 +63,14 @@ function handlePtyWs(socket: WebSocket, id: string): void {
     }
   });
 
-  socket.on('message', (raw: Buffer | string) => { handlePtyMessage(id, raw); });
-  socket.on('close', () => { offData(); offExit(); ptyServer.kill(id); });
+  socket.on('message', (raw: Buffer | string) => {
+    handlePtyMessage(id, raw);
+  });
+  socket.on('close', () => {
+    offData();
+    offExit();
+    ptyServer.kill(id);
+  });
 }
 
 export async function ptyRoutes(server: AuthFastifyInstance) {
@@ -88,9 +99,7 @@ export async function ptyRoutes(server: AuthFastifyInstance) {
     return reply.send({ ok: true });
   });
 
-  server.get<{ Params: { id: string } }>(
-    '/pty/:id',
-    { websocket: true, ...auth },
-    (socket, req) => handlePtyWs(socket, req.params.id),
+  server.get<{ Params: { id: string } }>('/pty/:id', { websocket: true, ...auth }, (socket, req) =>
+    handlePtyWs(socket, req.params.id)
   );
 }

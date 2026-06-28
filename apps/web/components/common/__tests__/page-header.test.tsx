@@ -13,11 +13,7 @@ describe('PageHeader', () => {
 
   it('renders icon when provided', () => {
     render(
-      <PageHeader
-        title="Chat"
-        description="Talk to AI"
-        icon={<span data-testid="icon">🤖</span>}
-      />,
+      <PageHeader title="Chat" description="Talk to AI" icon={<span data-testid="icon">🤖</span>} />
     );
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
@@ -25,11 +21,7 @@ describe('PageHeader', () => {
   it('renders actions slot', async () => {
     const onClick = () => undefined;
     render(
-      <PageHeader
-        title="Agents"
-        description="X"
-        actions={<button onClick={onClick}>Add</button>}
-      />,
+      <PageHeader title="Agents" description="X" actions={<button onClick={onClick}>Add</button>} />
     );
     const button = screen.getByRole('button', { name: 'Add' });
     expect(button).toBeInTheDocument();

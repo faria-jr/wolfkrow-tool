@@ -27,7 +27,7 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
         <Link
           href="/settings"
           className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted',
+            'text-muted-foreground hover:bg-muted flex items-center gap-2 rounded-md px-3 py-2 text-sm'
           )}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -38,7 +38,7 @@ export function SettingsShell({ children }: { children: React.ReactNode }) {
             <Link
               key={tab.href}
               href={tab.href}
-              className="block rounded-md px-3 py-2 text-sm hover:bg-muted"
+              className="hover:bg-muted block rounded-md px-3 py-2 text-sm"
             >
               {tab.label}
             </Link>

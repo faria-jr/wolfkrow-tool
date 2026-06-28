@@ -21,5 +21,5 @@ export const providerConfigs = sqliteTable(
   (t) => ({
     byUser: index('provider_configs_user_idx').on(t.userId),
     byUserProvider: index('provider_configs_user_provider_idx').on(t.userId, t.providerId),
-  }),
+  })
 );

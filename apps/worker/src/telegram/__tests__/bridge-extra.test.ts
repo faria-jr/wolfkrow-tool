@@ -113,6 +113,9 @@ describe('TelegramBridge — handleMessage error paths', () => {
     const follow = { chat: { id: 4 }, from: { id: 66 }, text: 'hi' };
     if (handlers['message']) void handlers['message'](follow);
     await new Promise((r) => setTimeout(r, 10));
-    expect(mockBot.sendMessage).toHaveBeenCalledWith(4, expect.stringContaining('Error processing'));
+    expect(mockBot.sendMessage).toHaveBeenCalledWith(
+      4,
+      expect.stringContaining('Error processing')
+    );
   });
 });

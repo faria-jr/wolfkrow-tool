@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Stub the D3 canvas so the smoke test stays deterministic in jsdom.
 vi.mock('@/components/graph/GraphCanvas', () => ({
-  GraphCanvas: ({ nodes, edges, selectedId }: {
+  GraphCanvas: ({
+    nodes,
+    edges,
+    selectedId,
+  }: {
     nodes: { id: string }[];
     edges: unknown[];
     selectedId?: string | null;
@@ -25,11 +29,33 @@ import type { GraphSnapshot } from '../types';
 
 const SNAPSHOT: GraphSnapshot = {
   nodes: [
-    { id: 'n1', userId: 'u1', label: 'doc', type: 'document', sourceId: null, createdAt: '2024-01-01T00:00:00.000Z' },
-    { id: 'n2', userId: 'u1', label: 'GraphQL', type: 'concept', sourceId: 'n1', createdAt: '2024-01-01T00:00:00.000Z' },
+    {
+      id: 'n1',
+      userId: 'u1',
+      label: 'doc',
+      type: 'document',
+      sourceId: null,
+      createdAt: '2024-01-01T00:00:00.000Z',
+    },
+    {
+      id: 'n2',
+      userId: 'u1',
+      label: 'GraphQL',
+      type: 'concept',
+      sourceId: 'n1',
+      createdAt: '2024-01-01T00:00:00.000Z',
+    },
   ],
   edges: [
-    { id: 'e1', userId: 'u1', sourceNodeId: 'n1', targetNodeId: 'n2', relation: 'mentions', weight: 1, createdAt: '2024-01-01T00:00:00.000Z' },
+    {
+      id: 'e1',
+      userId: 'u1',
+      sourceNodeId: 'n1',
+      targetNodeId: 'n2',
+      relation: 'mentions',
+      weight: 1,
+      createdAt: '2024-01-01T00:00:00.000Z',
+    },
   ],
 };
 

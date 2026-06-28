@@ -31,17 +31,13 @@ export const agents = sqliteTable('agents', {
 // packages/infra/src/repos/drizzle-agent-repo.ts
 export class DrizzleAgentRepo implements AgentRepo {
   constructor(private db: Database) {}
-  
+
   async findById(id: string): Promise<Agent | null> {
-    const row = await this.db
-      .select()
-      .from(agents)
-      .where(eq(agents.id, id))
-      .limit(1);
-    
+    const row = await this.db.select().from(agents).where(eq(agents.id, id)).limit(1);
+
     return row[0] ? Agent.fromRow(row[0]) : null;
   }
-  
+
   async save(agent: Agent): Promise<void> {
     await this.db
       .insert(agents)
@@ -52,6 +48,7 @@ export class DrizzleAgentRepo implements AgentRepo {
 ```
 
 Migrations geradas automaticamente:
+
 ```bash
 pnpm db:generate    # drizzle-kit generate
 pnpm db:migrate     # apply migrations

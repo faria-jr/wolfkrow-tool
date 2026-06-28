@@ -9,19 +9,22 @@ export const PIPELINE_TEMPLATES: readonly PipelineTemplate[] = [
   {
     id: 'security-audit',
     name: 'Security Audit',
-    description: 'Full security review: threat modeling, OWASP checks, auth analysis, and remediation report.',
+    description:
+      'Full security review: threat modeling, OWASP checks, auth analysis, and remediation report.',
     stages: ['discovery', 'spec_build', 'spec_validate', 'approval', 'implementation'],
   },
   {
     id: 'architecture-review',
     name: 'Architecture Review',
-    description: 'Deep-dive architectural analysis: patterns, dependencies, module boundaries, and ADR generation.',
+    description:
+      'Deep-dive architectural analysis: patterns, dependencies, module boundaries, and ADR generation.',
     stages: ['discovery', 'spec_build', 'spec_validate', 'approval', 'implementation'],
   },
   {
     id: 'feature-pipeline',
     name: 'Feature Pipeline',
-    description: 'End-to-end feature delivery: discovery, spec, validation, approval, and TDD implementation.',
+    description:
+      'End-to-end feature delivery: discovery, spec, validation, approval, and TDD implementation.',
     stages: ['discovery', 'spec_build', 'spec_validate', 'approval', 'implementation'],
   },
   {
@@ -33,7 +36,8 @@ export const PIPELINE_TEMPLATES: readonly PipelineTemplate[] = [
   {
     id: 'enrich-pipeline',
     name: 'Enrich Pipeline',
-    description: 'Knowledge enrichment: validate data quality, run enrichment, and generate output report.',
+    description:
+      'Knowledge enrichment: validate data quality, run enrichment, and generate output report.',
     stages: ['discovery', 'spec_validate', 'implementation'],
   },
 ] as const;

@@ -64,9 +64,7 @@ function failure(message: string): McpToolResult {
   return { content: [{ type: 'text', text: message }], isError: true };
 }
 
-async function searchMemories(
-  args: Record<string, unknown>,
-): Promise<McpToolResult> {
+async function searchMemories(args: Record<string, unknown>): Promise<McpToolResult> {
   const query = String(args['query'] ?? '');
   if (!query) return failure('search_memories requires a "query" argument');
   const body: Record<string, unknown> = { query };

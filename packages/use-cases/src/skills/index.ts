@@ -2,6 +2,8 @@ export { CreateSkillUseCase } from './create-skill';
 export type { CreateSkillOutput } from './create-skill';
 export { UpdateSkillUseCase } from './update-skill';
 export type { UpdateSkillInput, UpdateSkillOutput } from './update-skill';
+export { OverrideSkillUseCase } from './override-skill';
+export type { OverrideSkillInput, OverrideSkillOutput } from './override-skill';
 export { DeleteSkillUseCase } from './delete-skill';
 export type { DeleteSkillInput } from './delete-skill';
 export { ListSkillsUseCase } from './list-skills';

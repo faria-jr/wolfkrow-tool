@@ -13,22 +13,23 @@
 
 ### 0.1 Estado Atual (Auditado 2026-06-27)
 
-| Dimensão | Status |
-|---|---|
-| Paridade funcional vs lionclaw | **~88%** (6 features gap, 8 não-portadas) |
-| Bugs BLOCKER/CRITICAL | **6** (chat keychain, knowledge upload, auth-bypass 3x, type-safety) |
-| Cobertura testes `packages/infra` | **72.18%** (PRD ≥85% — gap 12.82pp) |
-| E2E domínios cobertos | 3 de 12 ❌ |
-| Conformidade Clean Architecture | 88/100 (vazamentos presentation) |
-| Code Quality (DRY/SOLID/YAGNI) | Bom no core; 4 padrões DRY 20-30x duplicados |
-| TODOs/FIXMEs/any/@ts-ignore | **0** (excelente) |
-| Funcionalidades não-portadas do lionclaw | 8 (6 gaps reais + 2 deferidas) |
-| Paginação | ❌ Falta em quase todas as listagens |
-| Bloqueio por usuário | ❌ Default é bloqueante (shared-workspace) |
+| Dimensão                                 | Status                                                               |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| Paridade funcional vs lionclaw           | **~88%** (6 features gap, 8 não-portadas)                            |
+| Bugs BLOCKER/CRITICAL                    | **6** (chat keychain, knowledge upload, auth-bypass 3x, type-safety) |
+| Cobertura testes `packages/infra`        | **72.18%** (PRD ≥85% — gap 12.82pp)                                  |
+| E2E domínios cobertos                    | 3 de 12 ❌                                                           |
+| Conformidade Clean Architecture          | 88/100 (vazamentos presentation)                                     |
+| Code Quality (DRY/SOLID/YAGNI)           | Bom no core; 4 padrões DRY 20-30x duplicados                         |
+| TODOs/FIXMEs/any/@ts-ignore              | **0** (excelente)                                                    |
+| Funcionalidades não-portadas do lionclaw | 8 (6 gaps reais + 2 deferidas)                                       |
+| Paginação                                | ❌ Falta em quase todas as listagens                                 |
+| Bloqueio por usuário                     | ❌ Default é bloqueante (shared-workspace)                           |
 
 ### 0.2 Escopo do MVP Final
 
 **Obrigatório (Must-have):**
+
 - ✅ Corrigir **6 bugs BLOCKER/CRITICAL** que impedem uso real
 - ✅ Implementar **6 features gap** do lionclaw (cadastro projetos, HITL chat, timeline, etc)
 - ✅ Adicionar **paginação** em todas as páginas e endpoints
@@ -38,6 +39,7 @@
 - ✅ Adicionar **9 specs E2E** faltantes (agents, skills, mcp, scheduler, rules, knowledge, memory, harness, pipeline)
 
 **Desejável (Should-have):**
+
 - 🟡 Redesenhar layout Harness/Pipeline com timeline + HITL
 - 🟡 Polir cadastro de agents (ordem dos campos + MarkdownEditor inline)
 - 🟡 Implementar edição de providers (id locked em edit mode)
@@ -45,6 +47,7 @@
 - 🟡 Implementar configuração de channels (Telegram + Discord/Slack placeholders)
 
 **Fora do escopo (deferido v1.1+):**
+
 - ⛔ Auto-execução AI do Harness (Planner→Coder→Evaluator) — v1.1 (FEATURE_MATRIX aceita)
 - ⛔ AskUserQuestion interativo — v1.1 (P0-3 aceita)
 - ⛔ Excalidraw inline no chat — v1.1 (FEATURE_MATRIX aceita)
@@ -56,17 +59,17 @@
 
 ### 0.3 Estimativa de Esforço
 
-| Fase | Esforço | Duração |
-|---|---|---|
-| Fase 0 — Bug fixes BLOCKER/CRITICAL | 0.5 dev-day | 1 dia |
-| Fase 1 — Quality + Architecture (Clean-up) | 3 dev-days | 3 dias |
-| Fase 2 — Features gap (cadastro projetos, HITL, timeline) | 5 dev-days | 5 dias |
-| Fase 3 — Paginação + Remoção bloqueios usuário | 1 dev-day | 1 dia |
-| Fase 4 — Cobertura de testes (`packages/infra` 72→85%) | 2 dev-days | 2 dias |
-| Fase 5 — E2E specs (9 specs faltantes) | 3 dev-days | 3 dias |
-| Fase 6 — Layout/UX polish (Harness, Pipeline, Sidebar) | 4 dev-days | 4 dias |
-| Fase 7 — Auditoria final + validação | 1 dev-day | 1 dia |
-| **TOTAL** | **20 dev-days** | **~4 semanas (1 dev full-time)** |
+| Fase                                                      | Esforço         | Duração                          |
+| --------------------------------------------------------- | --------------- | -------------------------------- |
+| Fase 0 — Bug fixes BLOCKER/CRITICAL                       | 0.5 dev-day     | 1 dia                            |
+| Fase 1 — Quality + Architecture (Clean-up)                | 3 dev-days      | 3 dias                           |
+| Fase 2 — Features gap (cadastro projetos, HITL, timeline) | 5 dev-days      | 5 dias                           |
+| Fase 3 — Paginação + Remoção bloqueios usuário            | 1 dev-day       | 1 dia                            |
+| Fase 4 — Cobertura de testes (`packages/infra` 72→85%)    | 2 dev-days      | 2 dias                           |
+| Fase 5 — E2E specs (9 specs faltantes)                    | 3 dev-days      | 3 dias                           |
+| Fase 6 — Layout/UX polish (Harness, Pipeline, Sidebar)    | 4 dev-days      | 4 dias                           |
+| Fase 7 — Auditoria final + validação                      | 1 dev-day       | 1 dia                            |
+| **TOTAL**                                                 | **20 dev-days** | **~4 semanas (1 dev full-time)** |
 
 ### 0.4 Critérios de Done (Definition of Done — PRD §10)
 
@@ -128,25 +131,25 @@ Para cada item do MVP ser considerado "Done":
 
 ### 1.2 Estado-Alvo dos Pacotes
 
-| Pacote | Antes | Depois | Mudança |
-|---|---|---|---|
-| `packages/domain` | 97.97% cov, 0 deps | 97.97% cov, 0 deps | Manter |
-| `packages/use-cases` | 93.98% cov, 50+ sem teste | 95% cov, ≥1 teste/use case | Adicionar testes |
-| `packages/infra` | 72.18% cov ❌ | **85% cov** ✅ | Adicionar testes (5 arquivos 0%) |
-| `packages/shared-types` | 17 erros paralelos | Seeds movidos daqui; errors em domain | Consolidar |
-| `apps/web` | 80.21% cov, 24 grupos | 85% cov, layout polido | Paginar + polish |
-| `apps/worker` | 85.78% cov, 9 routes sem auth | 90% cov, 0 routes sem auth | Auth + testes |
-| `apps/sidecar` | 95% cov | 95% cov | Manter |
-| `apps/wrapper` | OK | OK | Manter |
+| Pacote                  | Antes                         | Depois                                | Mudança                          |
+| ----------------------- | ----------------------------- | ------------------------------------- | -------------------------------- |
+| `packages/domain`       | 97.97% cov, 0 deps            | 97.97% cov, 0 deps                    | Manter                           |
+| `packages/use-cases`    | 93.98% cov, 50+ sem teste     | 95% cov, ≥1 teste/use case            | Adicionar testes                 |
+| `packages/infra`        | 72.18% cov ❌                 | **85% cov** ✅                        | Adicionar testes (5 arquivos 0%) |
+| `packages/shared-types` | 17 erros paralelos            | Seeds movidos daqui; errors em domain | Consolidar                       |
+| `apps/web`              | 80.21% cov, 24 grupos         | 85% cov, layout polido                | Paginar + polish                 |
+| `apps/worker`           | 85.78% cov, 9 routes sem auth | 90% cov, 0 routes sem auth            | Auth + testes                    |
+| `apps/sidecar`          | 95% cov                       | 95% cov                               | Manter                           |
+| `apps/wrapper`          | OK                            | OK                                    | Manter                           |
 
 ### 1.3 Estado-Alvo da FEATURE_MATRIX
 
-| Status | Antes | Depois |
-|---|---|---|
-| ✅ Feito | 48/55 | **55/55** (eliminar 🟡 e ⛔ não-deferidos) |
-| 🟡 Parcial | 4 | 0 (v1.1 é v1.1) |
-| ⛔ v1.1+ | 5 | 5 (mantém deferidos documentados) |
-| **Cobertura total** | **~93%** | **100%** das features não-deferidas |
+| Status              | Antes    | Depois                                     |
+| ------------------- | -------- | ------------------------------------------ |
+| ✅ Feito            | 48/55    | **55/55** (eliminar 🟡 e ⛔ não-deferidos) |
+| 🟡 Parcial          | 4        | 0 (v1.1 é v1.1)                            |
+| ⛔ v1.1+            | 5        | 5 (mantém deferidos documentados)          |
+| **Cobertura total** | **~93%** | **100%** das features não-deferidas        |
 
 ### 1.4 Estado-Alvo de Segurança
 
@@ -179,9 +182,11 @@ Há TRÊS fontes de verdade para o `service` name do keytar:
 3. `packages/infra/src/auth/keypair-store.ts:15` → `SERVICE = 'wolfkrow'` (correto, para JWT keypair)
 
 **Quando o usuário adiciona Z.ai key via web UI:**
+
 - `POST /api/providers` → `KeytarSecretsAdapter.set` grava em `wolfkrow-tool/zai-api-key` ✓
 
 **Quando o worker tenta usar:**
+
 - `orchestrator.loadApiKey` (`orchestrator.ts:203-205`) chama direto `getProviderApiKey(provider, 'wolfkrow')` → procura em `wolfkrow/zai-api-key` → null → **throw** ❌
 
 **Correção:**
@@ -224,6 +229,7 @@ private async loadApiKey(provider: string, cfg?: ProviderConfig): Promise<string
 ```
 
 **Critérios de aceitação:**
+
 - [ ] `pnpm test apps/worker/src/__tests__/orchestrator.test.ts` passa com novo teste de resolution Z.ai
 - [ ] Manual test: adicionar Z.ai key via UI → chat com modelo `glm-4.7` funciona sem erro
 - [ ] Teste E2E: `apps/web/e2e/chat-with-claude-compat.spec.ts` (novo) passa
@@ -250,6 +256,7 @@ private async loadApiKey(provider: string, cfg?: ProviderConfig): Promise<string
 ```
 
 **Critérios:**
+
 - [ ] Upload de PDF via `/knowledge` page funciona end-to-end
 - [ ] Teste E2E: `apps/web/e2e/knowledge-upload.spec.ts` (novo) passa
 
@@ -305,6 +312,7 @@ export async function getAuthHeaders(request: Request): Promise<Record<string, s
 ```
 
 **Critérios:**
+
 - [ ] Chamada anônima para `/api/audit/run` retorna 401
 - [ ] Chamada autenticada funciona
 - [ ] Teste em `apps/web/app/api/audit/__tests__/` (novo) cobre 401 + 200 paths
@@ -345,6 +353,7 @@ export async function getAuthHeaders(request: Request): Promise<Record<string, s
 ```
 
 **Critérios:**
+
 - [ ] Chamada sem token para `/sidecar/start` retorna 401
 - [ ] Teste em `apps/worker/src/routes/__tests__/sidecar.test.ts` (novo) cobre 401 + 200
 
@@ -367,6 +376,7 @@ export async function getAuthHeaders(request: Request): Promise<Record<string, s
 ```
 
 **Critérios:**
+
 - [ ] `grep -r "WOLFKROW_WORKER_URL" apps/web/` retorna 0 matches
 - [ ] CI passa com `WORKER_URL` apenas
 
@@ -420,6 +430,7 @@ export const UpdateMcpServerRequestBodySchema = z.discriminatedUnion('type', [
 ```
 
 **Critérios:**
+
 - [ ] `pnpm typecheck` passa
 - [ ] Update MCP custom funciona end-to-end
 - [ ] Update MCP built-in (active/visibility toggle) funciona
@@ -492,6 +503,7 @@ export const UpdateMcpServerRequestBodySchema = z.discriminatedUnion('type', [
 9. `apps/worker/src/memory/pipeline.ts:21` → usar `getRepos()` e `getAdapters()`
 
 **Critérios:**
+
 - [ ] `pnpm lint` passa
 - [ ] CI bloqueia novos imports cross-layer
 - [ ] 13 acoplamentos eliminados
@@ -502,16 +514,17 @@ export const UpdateMcpServerRequestBodySchema = z.discriminatedUnion('type', [
 
 **Arquivos movidos:**
 
-| De | Para |
-|---|---|
-| `packages/infra/src/seed/built-in-mcps.ts` | `packages/shared-types/src/constants/mcp-servers.ts` |
-| `packages/infra/src/seed/built-in-skills.ts` | `packages/shared-types/src/constants/skills.ts` |
-| `packages/infra/src/seed/pipeline-templates.ts` | `packages/shared-types/src/constants/pipeline-templates.ts` |
-| `packages/domain/src/services/provider-registry.ts` (BUILT_IN_PROVIDERS) | `packages/shared-types/src/constants/providers.ts` |
+| De                                                                       | Para                                                        |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| `packages/infra/src/seed/built-in-mcps.ts`                               | `packages/shared-types/src/constants/mcp-servers.ts`        |
+| `packages/infra/src/seed/built-in-skills.ts`                             | `packages/shared-types/src/constants/skills.ts`             |
+| `packages/infra/src/seed/pipeline-templates.ts`                          | `packages/shared-types/src/constants/pipeline-templates.ts` |
+| `packages/domain/src/services/provider-registry.ts` (BUILT_IN_PROVIDERS) | `packages/shared-types/src/constants/providers.ts`          |
 
 **Atualizar 5 consumidores:** web (3) + worker (2).
 
 **Critérios:**
+
 - [ ] `grep -r "BUILT_IN_MCP_SERVERS\|PIPELINE_TEMPLATES" packages/ apps/` mostra apenas imports de `@wolfkrow/shared-types`
 - [ ] Build passa
 
@@ -522,6 +535,7 @@ export const UpdateMcpServerRequestBodySchema = z.discriminatedUnion('type', [
 **Deletar:** `packages/shared-types/src/errors/index.ts` (236 linhas, não importado em lugar nenhum — verificado)
 
 **Critérios:**
+
 - [ ] `pnpm typecheck` passa após delete
 
 ---
@@ -588,6 +602,7 @@ export function getUserAgent(request: Request): string | undefined {
 **Aplicar em 7 rotas auth.**
 
 **Critérios:**
+
 - [ ] `pnpm test` passa após refactor
 - [ ] 0 ocorrências de `await request.json().catch(() => null)` em apps/web
 - [ ] 0 ocorrências de `(req as unknown as { user: { userId` em apps/worker/src/routes/
@@ -622,6 +637,7 @@ export const VEC_DIM = 1024;
 **Aplicar em 3+ arquivos.**
 
 **Critérios:**
+
 - [ ] 0 magic numbers identificados na Fase de Code Quality (`100_000`, `65_536`, `8192`, `4096`, `80` em `for` loop)
 - [ ] `pnpm test` passa
 
@@ -651,6 +667,7 @@ export abstract class AnthropicStreamingBase implements AIProvider {
 **Redução estimada: 250 linhas.**
 
 **Critérios:**
+
 - [ ] `claude-agent.test.ts` + `claude-compat.test.ts` passam sem modificação
 - [ ] Coverage mantida
 - [ ] -250 linhas (diff)
@@ -671,6 +688,7 @@ export abstract class AnthropicStreamingBase implements AIProvider {
 **Arquivo:** `apps/web/app/api/mcp-servers/[id]/route.ts:17-19` (deletar `optionalField`)
 
 **Critérios:**
+
 - [ ] `pnpm typecheck` e `pnpm lint` passam
 
 ---
@@ -680,6 +698,7 @@ export abstract class AnthropicStreamingBase implements AIProvider {
 **God-class 1: `apps/worker/src/routes/memory.ts` (151L, 3 domínios)**
 
 Quebrar em:
+
 - `routes/memory.ts` (CRUD + search) — 50L
 - `routes/memory-summaries.ts` (daily summaries) — 30L
 - `routes/memory-dreaming.ts` (dreaming + compaction log) — 50L
@@ -687,6 +706,7 @@ Quebrar em:
 **Long-function 1: `apps/worker/src/routes/chat.ts:159` (`handleSendRequest` 53L)**
 
 Extrair:
+
 - `prepareAgentAI()` (10L)
 - `executeChatStream()` (15L)
 - `finalizeChatTurn()` (10L)
@@ -696,6 +716,7 @@ Extrair:
 Extrair `buildWrappedProvider(project)` reutilizável.
 
 **Critérios:**
+
 - [ ] Cada arquivo < 100 linhas
 - [ ] `pnpm test` passa
 - [ ] Cobertura mantida
@@ -741,15 +762,14 @@ server.post('/harness/projects', { onRequest: [server.authenticate] }, async (re
     value={projectPath}
     onChange={(e) => setProjectPath(e.target.value)}
   />
-  <p className="text-xs text-muted-foreground">
-    Must be within the allowed project roots.
-  </p>
+  <p className="text-muted-foreground text-xs">Must be within the allowed project roots.</p>
 </div>
 ```
 
 **Validação:** usar `validateProjectPath` server-side (já existe em `apps/worker/src/lib/project-path.ts`).
 
 **Critérios:**
+
 - [ ] Criar projeto Harness com path funciona
 - [ ] Path fora do allowlist retorna 400 com mensagem clara
 - [ ] Teste E2E: `apps/web/e2e/harness-create.spec.ts` (novo) passa
@@ -771,28 +791,36 @@ server.post('/harness/projects', { onRequest: [server.authenticate] }, async (re
 // POST /pipeline/projects/:id/phases/:phaseId/chat
 // Body: { message: string, role: 'user' | 'assistant' }
 // Server: persiste mensagem, dispara round do agent, retorna stream SSE
-server.post('/pipeline/projects/:id/phases/:phaseId/chat', { onRequest: [server.authenticate] }, async (req, reply) => {
-  // ... validação ...
-  // Usa UseCase SendMessageUseCase com sessionId = phaseId
-  // Stream SSE igual a /chat/send
-});
+server.post(
+  '/pipeline/projects/:id/phases/:phaseId/chat',
+  { onRequest: [server.authenticate] },
+  async (req, reply) => {
+    // ... validação ...
+    // Usa UseCase SendMessageUseCase com sessionId = phaseId
+    // Stream SSE igual a /chat/send
+  }
+);
 ```
 
 **Adicionar `phase_chat_messages` tabela** (Drizzle migration 0011):
 
 ```typescript
-export const phaseChatMessages = sqliteTable('phase_chat_messages', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').notNull(),
-  projectId: text('project_id').notNull(),
-  phaseId: text('phase_id').notNull(),
-  role: text('role', { enum: ['user', 'assistant'] }).notNull(),
-  content: text('content').notNull(),
-  createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
-}, (table) => ({
-  userIdx: index('phase_chat_user_idx').on(table.userId),
-  projectIdx: index('phase_chat_project_idx').on(table.projectId, table.phaseId),
-}));
+export const phaseChatMessages = sqliteTable(
+  'phase_chat_messages',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').notNull(),
+    projectId: text('project_id').notNull(),
+    phaseId: text('phase_id').notNull(),
+    role: text('role', { enum: ['user', 'assistant'] }).notNull(),
+    content: text('content').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+  },
+  (table) => ({
+    userIdx: index('phase_chat_user_idx').on(table.userId),
+    projectIdx: index('phase_chat_project_idx').on(table.projectId, table.phaseId),
+  })
+);
 ```
 
 **Use case novo:** `packages/use-cases/src/pipeline/send-phase-message.ts`
@@ -838,10 +866,16 @@ export interface TimelineNode {
   children?: TimelineNode[];
 }
 
-export function Timeline({ nodes, onSelect }: { nodes: TimelineNode[]; onSelect?: (n: TimelineNode) => void }) {
+export function Timeline({
+  nodes,
+  onSelect,
+}: {
+  nodes: TimelineNode[];
+  onSelect?: (n: TimelineNode) => void;
+}) {
   return (
-    <ol className="relative border-l border-zinc-200 dark:border-zinc-800 ml-3">
-      {nodes.map(node => (
+    <ol className="relative ml-3 border-l border-zinc-200 dark:border-zinc-800">
+      {nodes.map((node) => (
         <TimelineItem key={node.id} node={node} onSelect={onSelect} />
       ))}
     </ol>
@@ -852,6 +886,7 @@ export function Timeline({ nodes, onSelect }: { nodes: TimelineNode[]; onSelect?
 **Componente Chat HITL:** reutilizar `apps/web/components/chat/chat-view.tsx` com prop `sessionId={phaseId}`.
 
 **Critérios:**
+
 - [ ] Run console mostra timeline visual de execuções
 - [ ] Chat HITL funciona (envia mensagem, recebe stream, persiste)
 - [ ] Mesma UI para harness e pipeline
@@ -891,6 +926,7 @@ const onSubmit = async (data: ProviderFormData) => {
 **Backend:** `apps/worker/src/routes/providers.ts` — confirmar que `PUT /providers/:id` usa o id da URL, não do body.
 
 **Critérios:**
+
 - [ ] Editar provider Z.ai mantém o id; não cria novo registro
 - [ ] Listagem após edit mostra apenas 1 registro (não 2)
 - [ ] Teste unitário: `apps/web/components/settings/provider-config/__tests__/provider-form-modal.test.tsx` (novo)
@@ -904,6 +940,7 @@ const onSubmit = async (data: ProviderFormData) => {
 **Arquivo:** `apps/web/components/agents/agent-form-body.tsx`
 
 **Ordem dos campos (lionclaw):**
+
 1. Nome
 2. System Prompt (com MarkdownEditor)
 3. Effort
@@ -915,6 +952,7 @@ const onSubmit = async (data: ProviderFormData) => {
 **Correção:** Reordenar JSX.
 
 **Critérios:**
+
 - [ ] Form renderiza com ordem correta
 - [ ] System Prompt usa MarkdownEditor com preview
 - [ ] Teste snapshot: `apps/web/components/agents/__tests__/agent-form-body.test.tsx` (verificar ordem)
@@ -947,6 +985,7 @@ const onSubmit = async (data: ProviderFormData) => {
 **Schema Drizzle:** adicionar `channels` table (já existe, verificar).
 
 **Critérios:**
+
 - [ ] Tela mostra todos os 6 channels (Telegram funcional + 5 placeholders com config UI)
 - [ ] CRUD de channel Telegram funciona
 - [ ] Teste E2E: `apps/web/e2e/channels.spec.ts` (novo) passa
@@ -979,29 +1018,39 @@ type PaginatedResponse<T> = {
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
 
-export function parsePagination(searchParams: URLSearchParams): { page: number; pageSize: number; offset: number } {
+export function parsePagination(searchParams: URLSearchParams): {
+  page: number;
+  pageSize: number;
+  offset: number;
+} {
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1);
-  const pageSize = Math.min(MAX_PAGE_SIZE, Math.max(1, parseInt(searchParams.get('pageSize') ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE));
+  const pageSize = Math.min(
+    MAX_PAGE_SIZE,
+    Math.max(
+      1,
+      parseInt(searchParams.get('pageSize') ?? String(DEFAULT_PAGE_SIZE), 10) || DEFAULT_PAGE_SIZE
+    )
+  );
   return { page, pageSize, offset: (page - 1) * pageSize };
 }
 ```
 
 **Endpoints a paginar (12):**
 
-| Endpoint | Repo | Mudança |
-|---|---|---|
-| `GET /api/agents` | `agent-repo.ts:18` | Adicionar `findAll({ userId, offset, limit })` + `count({ userId })` |
-| `GET /api/skills` | `skill-repo.ts:18` | Idem |
-| `GET /api/chat/sessions` | `chat-repos.ts:19` | Idem |
-| `GET /api/knowledge/documents` | `knowledge-doc-repo.ts:35` | Idem |
-| `GET /api/tasks` | `task-repo.ts:25-36` | Idem |
-| `GET /api/scheduler/tasks` | `scheduled-task-repo.ts:38` | Idem |
-| `GET /api/pipeline/projects` | `pipeline-project-repo.ts:59` | Idem |
-| `GET /api/harness/projects` | `harness-project-repo.ts:38` | Idem |
-| `GET /api/enrich/sessions` | `enrich-session-repo.ts:50` | Idem |
-| `GET /api/memory` | `semantic-memory-repo.ts:49` | Idem |
-| `GET /api/rules` | `rule-repo.ts:25` | Idem |
-| `GET /api/permissions/decisions` | `permission-repo.ts:30` | Idem |
+| Endpoint                         | Repo                          | Mudança                                                              |
+| -------------------------------- | ----------------------------- | -------------------------------------------------------------------- |
+| `GET /api/agents`                | `agent-repo.ts:18`            | Adicionar `findAll({ userId, offset, limit })` + `count({ userId })` |
+| `GET /api/skills`                | `skill-repo.ts:18`            | Idem                                                                 |
+| `GET /api/chat/sessions`         | `chat-repos.ts:19`            | Idem                                                                 |
+| `GET /api/knowledge/documents`   | `knowledge-doc-repo.ts:35`    | Idem                                                                 |
+| `GET /api/tasks`                 | `task-repo.ts:25-36`          | Idem                                                                 |
+| `GET /api/scheduler/tasks`       | `scheduled-task-repo.ts:38`   | Idem                                                                 |
+| `GET /api/pipeline/projects`     | `pipeline-project-repo.ts:59` | Idem                                                                 |
+| `GET /api/harness/projects`      | `harness-project-repo.ts:38`  | Idem                                                                 |
+| `GET /api/enrich/sessions`       | `enrich-session-repo.ts:50`   | Idem                                                                 |
+| `GET /api/memory`                | `semantic-memory-repo.ts:49`  | Idem                                                                 |
+| `GET /api/rules`                 | `rule-repo.ts:25`             | Idem                                                                 |
+| `GET /api/permissions/decisions` | `permission-repo.ts:30`       | Idem                                                                 |
 
 **Componentes UI a atualizar (12):** adicionar `<Pagination />` no rodapé de cada lista:
 
@@ -1010,21 +1059,39 @@ export function parsePagination(searchParams: URLSearchParams): { page: number; 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export function Pagination({ page, pageSize, total, onPageChange }: {
-  page: number; pageSize: number; total: number; onPageChange: (page: number) => void;
+export function Pagination({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
 }) {
   const totalPages = Math.ceil(total / pageSize);
   return (
-    <div className="flex items-center justify-between px-2 py-3 border-t">
-      <div className="text-sm text-muted-foreground">
+    <div className="flex items-center justify-between border-t px-2 py-3">
+      <div className="text-muted-foreground text-sm">
         Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} of {total}
       </div>
       <div className="flex gap-2">
-        <Button variant="outline" size="sm" disabled={page === 1} onClick={() => onPageChange(page - 1)}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={page === 1}
+          onClick={() => onPageChange(page - 1)}
+        >
           <ChevronLeft className="h-4 w-4" />
           Previous
         </Button>
-        <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => onPageChange(page + 1)}>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={page === totalPages}
+          onClick={() => onPageChange(page + 1)}
+        >
           Next
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -1035,6 +1102,7 @@ export function Pagination({ page, pageSize, total, onPageChange }: {
 ```
 
 **Critérios:**
+
 - [ ] Todas as 12 listagens retornam envelope `PaginatedResponse<T>`
 - [ ] UI tem `<Pagination />` visível
 - [ ] `?page=999&pageSize=20` retorna 404/empty
@@ -1084,6 +1152,7 @@ test('user can access all features without blocking', async () => {
 ```
 
 **Critérios:**
+
 - [ ] User tem acesso a todas as funcionalidades
 - [ ] Nenhum cadastro é bloqueado por user
 - [ ] Logs mostram userId real (não reescrito)
@@ -1097,17 +1166,18 @@ test('user can access all features without blocking', async () => {
 
 ### 6.1 Testes para 5 arquivos com 0% (4h)
 
-| Arquivo | Linhas | Testes a criar |
-|---|---|---|
-| `secrets/keytar-adapter.ts` | 23 | 4 testes: get/set/delete/list com mock de keytar |
-| `embeddings/voyage-embedder.ts` | 37 | 3 testes: happy, batch, API error |
-| `auth/keypair-store.ts` | 50 | 4 testes: generate, serialize, load, rotation |
-| `auth/jwt.ts` | 80 | 5 testes: sign+verify round-trip, expiry, wrong secret, malformed |
-| `auth/bcrypt-hasher.ts` | 30 | 3 testes: hash+verify, wrong password, timing |
+| Arquivo                         | Linhas | Testes a criar                                                    |
+| ------------------------------- | ------ | ----------------------------------------------------------------- |
+| `secrets/keytar-adapter.ts`     | 23     | 4 testes: get/set/delete/list com mock de keytar                  |
+| `embeddings/voyage-embedder.ts` | 37     | 3 testes: happy, batch, API error                                 |
+| `auth/keypair-store.ts`         | 50     | 4 testes: generate, serialize, load, rotation                     |
+| `auth/jwt.ts`                   | 80     | 5 testes: sign+verify round-trip, expiry, wrong secret, malformed |
+| `auth/bcrypt-hasher.ts`         | 30     | 3 testes: hash+verify, wrong password, timing                     |
 
 **Padrão de mock:** `vi.mock('keytar')` em cada teste.
 
 **Critérios:**
+
 - [ ] 5 arquivos com 100% coverage
 - [ ] Total `packages/infra` sobe para ~80%
 
@@ -1117,39 +1187,40 @@ test('user can access all features without blocking', async () => {
 
 **Repos prioritários:**
 
-| Repo | Linhas | Testes | Tipo |
-|---|---|---|---|
-| `user-repo.ts` | 80 | 5 | Integration (SQLite real) |
-| `secret-repo.ts` | 60 | 4 | Integration |
-| `global-rule-repo.ts` | 70 | 4 | Integration |
-| `token-usage-repo.ts` | 90 | 5 | Integration |
-| `tool-permission-repo.ts` | 75 | 4 | Integration |
-| `security-audit-repo.ts` | 95 | 5 | Integration |
-| `pipeline-phase-repo.ts` | 100 | 6 | Integration |
-| `harness-project-repo.ts` | 85 | 5 | Integration |
-| `harness-sprint-repo.ts` | 70 | 4 | Integration |
-| `harness-round-repo.ts` | 90 | 5 | Integration |
-| `knowledge-doc-repo.ts` | 110 | 6 | Integration |
-| `knowledge-chunk-repo.ts` | 130 | 7 | Integration |
-| `knowledge-cosine-repo.ts` | 50 | 3 | Integration |
-| `knowledge-hybrid-repo.ts` | 80 | 5 | Integration |
-| `pipeline-project-repo.ts` | 90 | 5 | Integration |
-| `pipeline-message-repo.ts` | 75 | 4 | Integration |
-| `enrich-session-repo.ts` | 65 | 4 | Integration |
-| `skill-repo.ts` | 70 | 4 | Integration |
-| `audit-log-repo.ts` | 100 | 5 | Integration |
-| `compaction-log-repo.ts` | 60 | 3 | Integration |
-| `daily-summary-repo.ts` | 70 | 4 | Integration |
-| `graph-repo.ts` | 95 | 5 | Integration |
-| `scheduled-task-repo.ts` | 90 | 5 | Integration |
-| `task-run-repo.ts` | 70 | 4 | Integration |
-| `workflow-run-repo.ts` | 80 | 4 | Integration |
+| Repo                       | Linhas | Testes | Tipo                      |
+| -------------------------- | ------ | ------ | ------------------------- |
+| `user-repo.ts`             | 80     | 5      | Integration (SQLite real) |
+| `secret-repo.ts`           | 60     | 4      | Integration               |
+| `global-rule-repo.ts`      | 70     | 4      | Integration               |
+| `token-usage-repo.ts`      | 90     | 5      | Integration               |
+| `tool-permission-repo.ts`  | 75     | 4      | Integration               |
+| `security-audit-repo.ts`   | 95     | 5      | Integration               |
+| `pipeline-phase-repo.ts`   | 100    | 6      | Integration               |
+| `harness-project-repo.ts`  | 85     | 5      | Integration               |
+| `harness-sprint-repo.ts`   | 70     | 4      | Integration               |
+| `harness-round-repo.ts`    | 90     | 5      | Integration               |
+| `knowledge-doc-repo.ts`    | 110    | 6      | Integration               |
+| `knowledge-chunk-repo.ts`  | 130    | 7      | Integration               |
+| `knowledge-cosine-repo.ts` | 50     | 3      | Integration               |
+| `knowledge-hybrid-repo.ts` | 80     | 5      | Integration               |
+| `pipeline-project-repo.ts` | 90     | 5      | Integration               |
+| `pipeline-message-repo.ts` | 75     | 4      | Integration               |
+| `enrich-session-repo.ts`   | 65     | 4      | Integration               |
+| `skill-repo.ts`            | 70     | 4      | Integration               |
+| `audit-log-repo.ts`        | 100    | 5      | Integration               |
+| `compaction-log-repo.ts`   | 60     | 3      | Integration               |
+| `daily-summary-repo.ts`    | 70     | 4      | Integration               |
+| `graph-repo.ts`            | 95     | 5      | Integration               |
+| `scheduled-task-repo.ts`   | 90     | 5      | Integration               |
+| `task-run-repo.ts`         | 70     | 4      | Integration               |
+| `workflow-run-repo.ts`     | 80     | 4      | Integration               |
 
 **Total:** ~110 testes novos.
 
 **Padrão:** usar `chat-repos.integration.test.ts` como template (já existe, integration com SQLite real).
 
 **Critérios:**
+
 - [ ] 25 repos com ≥1 teste cada
 - [ ] `packages/infra` coverage ≥85% ✅
 - [ ] `pnpm test` passa
@@ -1163,6 +1234,7 @@ test('user can access all features without blocking', async () => {
 **Testes a criar:** 6 testes (happy path, error path, scanId generation, AI provider failure, partial findings, cancellation).
 
 **Critérios:**
+
 - [ ] `use-cases/audit` coverage ≥80%
 - [ ] `pnpm test` passa
 
@@ -1173,6 +1245,7 @@ test('user can access all features without blocking', async () => {
 **Arquivo:** `apps/web/components/vault/vault-view.tsx` (49.56% stmts, 29.16% funcs)
 
 **Testes a criar (8):**
+
 - Renderiza lista de secrets masked
 - Click em "Add secret" abre modal
 - Submit form adiciona secret
@@ -1183,6 +1256,7 @@ test('user can access all features without blocking', async () => {
 - Test connection (Telegram)
 
 **Critérios:**
+
 - [ ] `vault-view` coverage ≥80%
 - [ ] `pnpm test` passa
 
@@ -1195,6 +1269,7 @@ test('user can access all features without blocking', async () => {
 ### 7.1 agents.spec.ts (4h)
 
 **Cenários (6):**
+
 - Lista de agents carrega
 - Criar novo agent (com todos os campos)
 - Editar agent existente
@@ -1205,6 +1280,7 @@ test('user can access all features without blocking', async () => {
 ### 7.2 skills.spec.ts (4h)
 
 **Cenários (5):**
+
 - Lista de skills (built-in + custom)
 - Criar skill com MarkdownEditor
 - Editar skill bundled
@@ -1214,6 +1290,7 @@ test('user can access all features without blocking', async () => {
 ### 7.3 mcp-servers.spec.ts (4h)
 
 **Cenários (6):**
+
 - Lista de MCPs (built-in + custom)
 - Built-in MCPs exibidos (corrigir bug "nenhum MCP exibido")
 - Criar custom MCP
@@ -1224,6 +1301,7 @@ test('user can access all features without blocking', async () => {
 ### 7.4 scheduler.spec.ts (3h)
 
 **Cenários (4):**
+
 - Lista de scheduled tasks
 - Criar task com cron
 - Manual trigger
@@ -1232,6 +1310,7 @@ test('user can access all features without blocking', async () => {
 ### 7.5 rules.spec.ts (2h)
 
 **Cenários (3):**
+
 - Lista de rules
 - Criar rule com MarkdownEditor
 - Toggle rule
@@ -1239,6 +1318,7 @@ test('user can access all features without blocking', async () => {
 ### 7.6 knowledge.spec.ts (4h)
 
 **Cenários (5):**
+
 - Upload de PDF (testa B2 corrigido)
 - Lista de documents
 - Search semântica
@@ -1248,6 +1328,7 @@ test('user can access all features without blocking', async () => {
 ### 7.7 memory.spec.ts (3h)
 
 **Cenários (4):**
+
 - Lista de memories
 - Add memory
 - Search semântica
@@ -1256,6 +1337,7 @@ test('user can access all features without blocking', async () => {
 ### 7.8 harness.spec.ts (4h)
 
 **Cenários (5):**
+
 - Lista de projects
 - Criar project com path (testa G1)
 - Run console com timeline (testa G3)
@@ -1265,6 +1347,7 @@ test('user can access all features without blocking', async () => {
 ### 7.9 pipeline.spec.ts (4h)
 
 **Cenários (5):**
+
 - Lista de projects
 - Criar pipeline com template
 - Run console com timeline
@@ -1272,6 +1355,7 @@ test('user can access all features without blocking', async () => {
 - Pipeline report
 
 **Critérios:**
+
 - [ ] 9 specs E2E novos, todos passando em CI
 - [ ] Total E2E: 19 specs, ~120 testes
 - [ ] `pnpm e2e` exit code 0
@@ -1283,6 +1367,7 @@ test('user can access all features without blocking', async () => {
 ### 8.1 Redesign Harness + Pipeline screens (2 dev-days)
 
 **Problema atual:**
+
 - Double-titles (PageHeader + h2 interno)
 - Sem timeline visual
 - Sem chat HITL inline
@@ -1321,12 +1406,14 @@ test('user can access all features without blocking', async () => {
 **Inspiração:** LionClaw `PipelinePage.tsx` + `ProjectList` + `ProjectCard` + `SprintListBar`.
 
 **Otimizações Next.js:**
+
 - RSC para `ProjectList` (sem 'use client')
 - Client Component para Detail (interatividade)
 - `next/dynamic` para `RunConsole` (lazy load)
 - Suspense boundary com skeleton para `MetricsView`
 
 **Critérios:**
+
 - [ ] Double-titles eliminados
 - [ ] Timeline visual para execuções
 - [ ] Chat HITL inline em RunConsole
@@ -1338,17 +1425,20 @@ test('user can access all features without blocking', async () => {
 ### 8.2 Polir Sidebar (1 dev-day)
 
 **Validações:**
+
 - Todos os 24 itens têm rota válida ✅ (já validado)
 - Sem duplicação ✅
 - Agrupamento: Main / Automation / Tools / System (já tem)
 
 **Melhorias:**
+
 - **Badges de contador:** review queue, pending runs, etc
 - **Indicador de "novo"** em features recentes (channels, audit, profiler)
 - **Tooltip** com descrição em hover
 - **Atalhos de teclado** (1-9 para primeiros 9 itens)
 
 **Critérios:**
+
 - [ ] `CommandPalette` (⌘K) inclui todos os 24 itens
 - [ ] Badges funcionais
 - [ ] Teste E2E: `apps/web/e2e/sidebar.spec.ts`
@@ -1359,15 +1449,16 @@ test('user can access all features without blocking', async () => {
 
 **Telas a polir:**
 
-| Tela | Mudança |
-|---|---|
-| `agent-edit-screen` | Tabs: Basic / System Prompt / Tools / Skills / Advanced |
-| `skill-edit-screen` | Tabs: Content (MarkdownEditor) / Frontmatter / Preview |
-| `rule-edit-screen` | Tabs: Content (MarkdownEditor) / Scope / Preview |
-| `mcp-server-edit-screen` | Tabs: Config / Env / Health / Logs |
-| `provider-form-modal` | Tabs: Config / Models / Test Connection |
+| Tela                     | Mudança                                                 |
+| ------------------------ | ------------------------------------------------------- |
+| `agent-edit-screen`      | Tabs: Basic / System Prompt / Tools / Skills / Advanced |
+| `skill-edit-screen`      | Tabs: Content (MarkdownEditor) / Frontmatter / Preview  |
+| `rule-edit-screen`       | Tabs: Content (MarkdownEditor) / Scope / Preview        |
+| `mcp-server-edit-screen` | Tabs: Config / Env / Health / Logs                      |
+| `provider-form-modal`    | Tabs: Config / Models / Test Connection                 |
 
 **Critérios:**
+
 - [ ] Tabs implementadas com `Tabs` component (shadcn)
 - [ ] MarkdownEditor com preview em todas as telas de conteúdo
 - [ ] Teste visual: `apps/web/e2e/visual-regression.spec.ts` atualizado
@@ -1377,6 +1468,7 @@ test('user can access all features without blocking', async () => {
 ### 8.4 Adicionar Métricas (1 dev-day)
 
 **Dashboard widgets (lionclaw):**
+
 - Sessions ativas (chat)
 - Total tokens (24h / 7d / 30d)
 - Total cost (24h / 7d / 30d)
@@ -1405,6 +1497,7 @@ server.get('/usage/dashboard', { onRequest: [server.authenticate] }, async (req,
 **Frontend:** `apps/web/components/dashboard/dashboard-view.tsx` — adicionar widgets em grid 2x4.
 
 **Critérios:**
+
 - [ ] Dashboard mostra 8 widgets
 - [ ] Performance: queries paralelas com `Promise.all`
 - [ ] Skeleton loading
@@ -1417,59 +1510,59 @@ server.get('/usage/dashboard', { onRequest: [server.authenticate] }, async (req,
 
 ### 9.1 Checklist de Validação (matriz 1:1 com requisitos)
 
-| # | Requisito | Validação | Status |
-|---|---|---|---|
-| 1 | funcionalidade realmente implementada | `grep` + manual test em cada rota | ☐ |
-| 2 | funcionalidade implementada de forma funcional | Manual test + E2E | ☐ |
-| 3 | clean code | `pnpm lint` + `pnpm typecheck` | ☐ |
-| 4 | clean arch | `pnpm lint` (ESLint boundary) | ☐ |
-| 5 | solid | Code review manual | ☐ |
-| 6 | dry | `grep` para padrões duplicados | ☐ |
-| 7 | yagni | `grep` para dead code | ☐ |
-| 8 | sem bugs | Manual test + E2E | ☐ |
-| 9 | sem débito técnico | `grep TODO FIXME DEBT` | ☐ |
-| 10 | testes unitários sem falhas | `pnpm test` exit 0 | ☐ |
-| 11 | teste unitário valida código | Code review + coverage report | ☐ |
-| 12 | implementação segue plano | Code review vs Fase 0-6 | ☐ |
-| 13 | frontend layout moderno/minimalista | Visual review | ☐ |
-| 14 | frontend componentes padronizados | shadcn/ui only | ☐ |
-| 15 | frontend reflete funcionalidades | E2E test por feature | ☐ |
-| 16 | integração backend↔frontend | E2E completo | ☐ |
-| 17 | frontend bem distribuído | Visual review | ☐ |
-| 18 | frontend UI/UX best practices | Visual review | ☐ |
-| 19 | frontend sem ambiguidade | Manual test | ☐ |
-| 20 | token 30 dias | Unit test | ☐ |
-| 21 | bloqueio só após 30 dias | Unit test | ☐ |
-| 22 | agents ordem campos | Visual + E2E | ☐ |
-| 23 | skills edição qualquer | E2E | ☐ |
-| 24 | providers edição sem duplicar | E2E | ☐ |
-| 25 | channels config | E2E | ☐ |
-| 26 | harness run console + chat HITL + timeline | E2E | ☐ |
-| 27 | pipeline run console + chat HITL + timeline | E2E | ☐ |
-| 28 | cadastro de projetos | E2E | ☐ |
-| 29 | auditoria SDKs (GLM/Kimi/MiniMax/Qwen) | Unit + E2E | ☐ |
-| 30 | Open Design Studio funcional | E2E | ☐ |
-| 31 | chat sem bloqueios por user | E2E | ☐ |
-| 32 | paginação em todas as páginas | E2E | ☐ |
-| 33 | sem bloqueios por usuário | Manual + E2E | ☐ |
-| 34 | sem débito técnico tracked | `grep DEBT #` | ☐ |
+| #   | Requisito                                      | Validação                         | Status |
+| --- | ---------------------------------------------- | --------------------------------- | ------ |
+| 1   | funcionalidade realmente implementada          | `grep` + manual test em cada rota | ☐      |
+| 2   | funcionalidade implementada de forma funcional | Manual test + E2E                 | ☐      |
+| 3   | clean code                                     | `pnpm lint` + `pnpm typecheck`    | ☐      |
+| 4   | clean arch                                     | `pnpm lint` (ESLint boundary)     | ☐      |
+| 5   | solid                                          | Code review manual                | ☐      |
+| 6   | dry                                            | `grep` para padrões duplicados    | ☐      |
+| 7   | yagni                                          | `grep` para dead code             | ☐      |
+| 8   | sem bugs                                       | Manual test + E2E                 | ☐      |
+| 9   | sem débito técnico                             | `grep TODO FIXME DEBT`            | ☐      |
+| 10  | testes unitários sem falhas                    | `pnpm test` exit 0                | ☐      |
+| 11  | teste unitário valida código                   | Code review + coverage report     | ☐      |
+| 12  | implementação segue plano                      | Code review vs Fase 0-6           | ☐      |
+| 13  | frontend layout moderno/minimalista            | Visual review                     | ☐      |
+| 14  | frontend componentes padronizados              | shadcn/ui only                    | ☐      |
+| 15  | frontend reflete funcionalidades               | E2E test por feature              | ☐      |
+| 16  | integração backend↔frontend                    | E2E completo                      | ☐      |
+| 17  | frontend bem distribuído                       | Visual review                     | ☐      |
+| 18  | frontend UI/UX best practices                  | Visual review                     | ☐      |
+| 19  | frontend sem ambiguidade                       | Manual test                       | ☐      |
+| 20  | token 30 dias                                  | Unit test                         | ☐      |
+| 21  | bloqueio só após 30 dias                       | Unit test                         | ☐      |
+| 22  | agents ordem campos                            | Visual + E2E                      | ☐      |
+| 23  | skills edição qualquer                         | E2E                               | ☐      |
+| 24  | providers edição sem duplicar                  | E2E                               | ☐      |
+| 25  | channels config                                | E2E                               | ☐      |
+| 26  | harness run console + chat HITL + timeline     | E2E                               | ☐      |
+| 27  | pipeline run console + chat HITL + timeline    | E2E                               | ☐      |
+| 28  | cadastro de projetos                           | E2E                               | ☐      |
+| 29  | auditoria SDKs (GLM/Kimi/MiniMax/Qwen)         | Unit + E2E                        | ☐      |
+| 30  | Open Design Studio funcional                   | E2E                               | ☐      |
+| 31  | chat sem bloqueios por user                    | E2E                               | ☐      |
+| 32  | paginação em todas as páginas                  | E2E                               | ☐      |
+| 33  | sem bloqueios por usuário                      | Manual + E2E                      | ☐      |
+| 34  | sem débito técnico tracked                     | `grep DEBT #`                     | ☐      |
 
 ### 9.2 Auditoria Específica de Bugs Conhecidos
 
-| Bug | Validação |
-|---|---|
-| B1 keychain mismatch | Test: adicionar Z.ai key + chat com glm-4.7 |
-| B2 knowledge upload 401 | Test: upload PDF via UI |
-| B3 auth-bypass audit | Test: curl sem token para /api/audit/run |
-| B4 sidecar sem auth | Test: curl sem token para /sidecar/start |
-| B5 env var inconsistente | Test: build com WORKER_URL apenas |
-| B6 type-safety bug | Test: `pnpm typecheck` |
-| FP1 provider edit duplica | Test: edit Z.ai + verificar lista |
-| FP8 harness run console confuso | Test: visual review |
-| G1 sem cadastro de projeto | Test: criar project com path |
-| G2 sem chat HITL | Test: enviar msg durante run |
-| G3 sem timeline | Test: visual review |
-| MCPs não exibidos | Test: list MCPs após install |
+| Bug                             | Validação                                   |
+| ------------------------------- | ------------------------------------------- |
+| B1 keychain mismatch            | Test: adicionar Z.ai key + chat com glm-4.7 |
+| B2 knowledge upload 401         | Test: upload PDF via UI                     |
+| B3 auth-bypass audit            | Test: curl sem token para /api/audit/run    |
+| B4 sidecar sem auth             | Test: curl sem token para /sidecar/start    |
+| B5 env var inconsistente        | Test: build com WORKER_URL apenas           |
+| B6 type-safety bug              | Test: `pnpm typecheck`                      |
+| FP1 provider edit duplica       | Test: edit Z.ai + verificar lista           |
+| FP8 harness run console confuso | Test: visual review                         |
+| G1 sem cadastro de projeto      | Test: criar project com path                |
+| G2 sem chat HITL                | Test: enviar msg durante run                |
+| G3 sem timeline                 | Test: visual review                         |
+| MCPs não exibidos               | Test: list MCPs após install                |
 
 ### 9.3 Auditoria de Layout/UX
 
@@ -1513,31 +1606,32 @@ server.get('/usage/dashboard', { onRequest: [server.authenticate] }, async (req,
 
 ### 9.4 Auditoria de Segurança
 
-| # | Teste | Esperado |
-|---|---|---|
-| S1 | `curl -X POST http://localhost:3000/api/audit/run` (sem cookie) | 401 |
-| S2 | `curl http://localhost:4000/sidecar/start` (sem Bearer) | 401 |
-| S3 | Upload de arquivo com `../../etc/passwd` no nome | rejeitado |
-| S4 | Adicionar key Z.ai com espaço no início | trimmed |
-| S5 | Cookie de sessão em HTTP (não HTTPS) | rejeitado (secure: true em prod) |
-| S6 | Rate limit: 20 logins em 1 min | 11+ retornam 429 |
-| S7 | `validateProjectPath('/etc/passwd')` | throws |
-| S8 | `validateProjectPath('${HOME}/projects/my-app')` | ok |
+| #   | Teste                                                           | Esperado                         |
+| --- | --------------------------------------------------------------- | -------------------------------- |
+| S1  | `curl -X POST http://localhost:3000/api/audit/run` (sem cookie) | 401                              |
+| S2  | `curl http://localhost:4000/sidecar/start` (sem Bearer)         | 401                              |
+| S3  | Upload de arquivo com `../../etc/passwd` no nome                | rejeitado                        |
+| S4  | Adicionar key Z.ai com espaço no início                         | trimmed                          |
+| S5  | Cookie de sessão em HTTP (não HTTPS)                            | rejeitado (secure: true em prod) |
+| S6  | Rate limit: 20 logins em 1 min                                  | 11+ retornam 429                 |
+| S7  | `validateProjectPath('/etc/passwd')`                            | throws                           |
+| S8  | `validateProjectPath('${HOME}/projects/my-app')`                | ok                               |
 
 ### 9.5 Auditoria de Performance
 
 **Métricas-alvo:**
 
-| Métrica | Target | Como medir |
-|---|---|---|
-| TTFB (homepage) | <200ms | Lighthouse |
-| TTI (chat) | <1s | Lighthouse |
-| Time to First Token (chat) | <500ms (P95) | Custom metric |
-| Bundle size (web) | <500KB gzip | `pnpm build` |
-| SQLite query time | <10ms P95 | `EXPLAIN QUERY PLAN` |
-| Memory usage (worker idle) | <200MB | `process.memoryUsage()` |
+| Métrica                    | Target       | Como medir              |
+| -------------------------- | ------------ | ----------------------- |
+| TTFB (homepage)            | <200ms       | Lighthouse              |
+| TTI (chat)                 | <1s          | Lighthouse              |
+| Time to First Token (chat) | <500ms (P95) | Custom metric           |
+| Bundle size (web)          | <500KB gzip  | `pnpm build`            |
+| SQLite query time          | <10ms P95    | `EXPLAIN QUERY PLAN`    |
+| Memory usage (worker idle) | <200MB       | `process.memoryUsage()` |
 
 **Ações se fora do target:**
+
 - Adicionar `loading.tsx` Suspense boundaries
 - `next/dynamic` para code-splitting
 - React Server Components para reduzir JS
@@ -1549,11 +1643,13 @@ server.get('/usage/dashboard', { onRequest: [server.authenticate] }, async (req,
 
 ```markdown
 # Auditoria Final — Wolfkrow-Tool MVP
+
 **Data:** YYYY-MM-DD
 **Versão:** 1.0
 **Reviewer:** [name]
 
 ## Resumo
+
 - Bugs encontrados: N (lista)
 - Features gap restantes: N (lista)
 - Cobertura testes: backend X% / frontend Y% / infra Z%
@@ -1561,6 +1657,7 @@ server.get('/usage/dashboard', { onRequest: [server.authenticate] }, async (req,
 - Segurança: N vulnerabilidades (lista)
 
 ## Conformidade vs PRD
+
 - [x] TDD
 - [x] Cobertura ≥85% backend
 - [x] Cobertura ≥70% frontend
@@ -1571,13 +1668,16 @@ server.get('/usage/dashboard', { onRequest: [server.authenticate] }, async (req,
 - [x] SOLID/DRY/YAGNI
 
 ## Features Implementadas vs Lionclaw
+
 - 55/55 (100% de features não-deferidas)
 - 8 melhorias adicionais
 
 ## Pendências para v1.1
+
 - Lista priorizada
 
 ## Aprovação
+
 - [x] Product Owner
 - [x] Tech Lead
 ```
@@ -1613,22 +1713,23 @@ Semana 4 (5 dias)
 
 ## 11. Riscos & Mitigações
 
-| # | Risco | Probabilidade | Impacto | Mitigação |
-|---|---|---|---|---|
-| R1 | B1 keychain fix quebra chaves existentes (chaves em 'wolfkrow-tool' são perdidas) | Alta | Médio | Migration script: lê 'wolfkrow-tool/*' e grava em 'wolfkrow/*' antes de mudar SERVICE |
-| R2 | Paginação quebra consumers que esperam array direto | Média | Alto | Manter backward-compat: se `?page` ausente, retorna array (sem envelope) |
-| R3 | ESLint boundary enforcer bloqueia PRs legítimos | Média | Médio | Documentar exceções em `lib/container.ts`, `lib/auth.ts`, `container.ts` worker |
-| R4 | E2E flaky (visual regression, keyboard nav) | Alta | Baixo | Marcar como `test.fixme` + issue tracker; meta é smoke E2E, não perfection |
-| R5 | Cobertura 85% em `packages/infra` requer 100+ testes | Média | Médio | Foco em repos críticos (user, secret, rule) + 5 arquivos 0% |
-| R6 | Run console com timeline + HITL é 2 dev-days | Baixa | Alto | MVP da timeline pode ser lista simples com timestamps; HITL pode ser MVP |
-| R7 | Refactor DRY (claude-agent + claude-compat) pode introduzir bugs | Média | Alto | TDD: refactor com testes verdes antes; cobertura 100% nos providers antes |
-| R8 | Shared-workspace=false default pode quebrar single-user workflows | Baixa | Alto | Migration guide + log warning + auto-detect (1 user = default true) |
+| #   | Risco                                                                             | Probabilidade | Impacto | Mitigação                                                                             |
+| --- | --------------------------------------------------------------------------------- | ------------- | ------- | ------------------------------------------------------------------------------------- |
+| R1  | B1 keychain fix quebra chaves existentes (chaves em 'wolfkrow-tool' são perdidas) | Alta          | Médio   | Migration script: lê 'wolfkrow-tool/_' e grava em 'wolfkrow/_' antes de mudar SERVICE |
+| R2  | Paginação quebra consumers que esperam array direto                               | Média         | Alto    | Manter backward-compat: se `?page` ausente, retorna array (sem envelope)              |
+| R3  | ESLint boundary enforcer bloqueia PRs legítimos                                   | Média         | Médio   | Documentar exceções em `lib/container.ts`, `lib/auth.ts`, `container.ts` worker       |
+| R4  | E2E flaky (visual regression, keyboard nav)                                       | Alta          | Baixo   | Marcar como `test.fixme` + issue tracker; meta é smoke E2E, não perfection            |
+| R5  | Cobertura 85% em `packages/infra` requer 100+ testes                              | Média         | Médio   | Foco em repos críticos (user, secret, rule) + 5 arquivos 0%                           |
+| R6  | Run console com timeline + HITL é 2 dev-days                                      | Baixa         | Alto    | MVP da timeline pode ser lista simples com timestamps; HITL pode ser MVP              |
+| R7  | Refactor DRY (claude-agent + claude-compat) pode introduzir bugs                  | Média         | Alto    | TDD: refactor com testes verdes antes; cobertura 100% nos providers antes             |
+| R8  | Shared-workspace=false default pode quebrar single-user workflows                 | Baixa         | Alto    | Migration guide + log warning + auto-detect (1 user = default true)                   |
 
 ---
 
 ## 12. Entregáveis
 
 **Código:**
+
 - 6 bug fixes (B1-B6)
 - 13 acoplamentos de camada eliminados
 - 4 helpers DRY criados
@@ -1639,6 +1740,7 @@ Semana 4 (5 dias)
 - Layout Harness/Pipeline redesign
 
 **Documentação:**
+
 - `mvp_final_plan_minimax.md` (este arquivo)
 - ADRs novos:
   - `ADR-0034-keychain-single-service.md`
@@ -1649,6 +1751,7 @@ Semana 4 (5 dias)
 - `CHANGELOG.md` com v1.0 entry
 
 **Relatórios:**
+
 - Coverage report (HTML)
 - E2E report (Playwright HTML)
 - Auditoria final (template Fase 7.6)
@@ -1657,12 +1760,12 @@ Semana 4 (5 dias)
 
 ## 13. Aprovação Necessária
 
-| Papel | Pessoa | Status |
-|---|---|---|
-| Product Owner | Junior Faria | ☐ |
-| Tech Lead | Junior Faria | ☐ |
-| Dev Frontend | TBD | ☐ |
-| Dev Backend | TBD | ☐ |
-| QA | TBD | ☐ |
+| Papel         | Pessoa       | Status |
+| ------------- | ------------ | ------ |
+| Product Owner | Junior Faria | ☐      |
+| Tech Lead     | Junior Faria | ☐      |
+| Dev Frontend  | TBD          | ☐      |
+| Dev Backend   | TBD          | ☐      |
+| QA            | TBD          | ☐      |
 
 **Próximo passo:** Submeter para aprovação do PO/TL e iniciar Fase 0 imediatamente.

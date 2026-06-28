@@ -8,7 +8,9 @@ export interface UpdateAgentInput {
   userId: string;
   patch: AgentUpdateInput;
 }
-export interface UpdateAgentOutput { agent: Agent; }
+export interface UpdateAgentOutput {
+  agent: Agent;
+}
 
 export class UpdateAgentUseCase implements UseCase<UpdateAgentInput, UpdateAgentOutput> {
   constructor(private readonly repo: AgentRepo) {}

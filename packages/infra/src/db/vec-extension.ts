@@ -77,7 +77,10 @@ export function loadKnowledgeExtensions(db: Database.Database): boolean {
       );
     `);
   } catch (err) {
-    console.warn('[vec-extension] FTS5 setup failed:', err instanceof Error ? err.message : String(err));
+    console.warn(
+      '[vec-extension] FTS5 setup failed:',
+      err instanceof Error ? err.message : String(err)
+    );
   }
   return vec0Ok;
 }

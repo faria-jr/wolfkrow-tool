@@ -21,6 +21,9 @@ import { CompactSessionUseCase, SendMessageUseCase } from '../index';
 class InMemoryChatSessionRepo implements ChatSessionRepo {
   private readonly store = new Map<string, ChatSession>();
 
+  async findAll(): Promise<ChatSession[]> {
+    return [...this.store.values()];
+  }
   async findById(id: string): Promise<ChatSession | null> {
     return this.store.get(id) ?? null;
   }
@@ -132,7 +135,14 @@ describe('SendMessageUseCase', () => {
   });
 
   it('reuses existing session', async () => {
-    const session = await sessionRepo.save(ChatSessionEntity.create({ userId: 'u1', agentId: undefined, title: undefined, archived: false }));
+    const session = await sessionRepo.save(
+      ChatSessionEntity.create({
+        userId: 'u1',
+        agentId: undefined,
+        title: undefined,
+        archived: false,
+      })
+    );
     const uc = new SendMessageUseCase(sessionRepo, messageRepo, ai);
     await collect(await uc.execute(input({ sessionId: session.id })));
     const sessions = await sessionRepo.findByUserId('u1');
@@ -151,7 +161,10 @@ describe('SendMessageUseCase', () => {
   it('yields text chunks from AI', async () => {
     const uc = new SendMessageUseCase(sessionRepo, messageRepo, ai);
     const chunks = await collect(await uc.execute(input()));
-    const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
+    const text = chunks
+      .filter((c) => c.delta !== '')
+      .map((c) => c.delta)
+      .join('');
     expect(text).toBe('Hello world');
   });
 
@@ -203,8 +216,20 @@ describe('SendMessageUseCase', () => {
       },
     };
 
-    const session = await sessionRepo.save(ChatSessionEntity.create({ userId: 'u1', agentId: undefined, title: undefined, archived: false }));
-    const existingMsg = MessageEntity.create({ sessionId: session.id, userId: 'u1', role: 'user', content: 'first message' });
+    const session = await sessionRepo.save(
+      ChatSessionEntity.create({
+        userId: 'u1',
+        agentId: undefined,
+        title: undefined,
+        archived: false,
+      })
+    );
+    const existingMsg = MessageEntity.create({
+      sessionId: session.id,
+      userId: 'u1',
+      role: 'user',
+      content: 'first message',
+    });
     await messageRepo.save(existingMsg);
 
     const uc = new SendMessageUseCase(sessionRepo, messageRepo, recordingAI);
@@ -261,14 +286,24 @@ describe('CompactSessionUseCase', () => {
         role: i % 2 === 0 ? 'user' : 'assistant',
         content: 'a'.repeat(100),
         createdAt: new Date(),
-      }),
+      })
     );
   }
 
   beforeEach(async () => {
     sessionRepo = new InMemoryChatSessionRepo();
     messageRepo = new InMemoryMessageRepo();
-    const session = ChatSessionEntity.fromProps({ id: SESSION_ID, userId: USER_ID, agentId: undefined, title: undefined, archived: false, messages: [], createdAt: new Date(), updatedAt: new Date(), lastActivity: new Date() });
+    const session = ChatSessionEntity.fromProps({
+      id: SESSION_ID,
+      userId: USER_ID,
+      agentId: undefined,
+      title: undefined,
+      archived: false,
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastActivity: new Date(),
+    });
     await sessionRepo.save(session);
   });
 
@@ -276,7 +311,12 @@ describe('CompactSessionUseCase', () => {
     const msgs = makeMessages(2);
     for (const m of msgs) await messageRepo.save(m);
     const uc = new CompactSessionUseCase(messageRepo, ai);
-    const result = await uc.execute({ sessionId: SESSION_ID, userId: USER_ID, model: 'claude-3-5-sonnet-20241022', tokenThreshold: 10_000 });
+    const result = await uc.execute({
+      sessionId: SESSION_ID,
+      userId: USER_ID,
+      model: 'claude-3-5-sonnet-20241022',
+      tokenThreshold: 10_000,
+    });
     expect(result.compacted).toBe(false);
   });
 
@@ -284,7 +324,12 @@ describe('CompactSessionUseCase', () => {
     const msgs = makeMessages(10);
     for (const m of msgs) await messageRepo.save(m);
     const uc = new CompactSessionUseCase(messageRepo, ai);
-    const result = await uc.execute({ sessionId: SESSION_ID, userId: USER_ID, model: 'claude-3-5-sonnet-20241022', tokenThreshold: 50 });
+    const result = await uc.execute({
+      sessionId: SESSION_ID,
+      userId: USER_ID,
+      model: 'claude-3-5-sonnet-20241022',
+      tokenThreshold: 50,
+    });
     expect(result.compacted).toBe(true);
     const remaining = await messageRepo.findBySessionId(SESSION_ID);
     // summary system msg + 6 kept
@@ -297,7 +342,12 @@ describe('CompactSessionUseCase', () => {
     const msgs = makeMessages(10);
     for (const m of msgs) await messageRepo.save(m);
     const uc = new CompactSessionUseCase(messageRepo, ai);
-    const result = await uc.execute({ sessionId: SESSION_ID, userId: USER_ID, model: 'claude-3-5-sonnet-20241022', tokenThreshold: 50 });
+    const result = await uc.execute({
+      sessionId: SESSION_ID,
+      userId: USER_ID,
+      model: 'claude-3-5-sonnet-20241022',
+      tokenThreshold: 50,
+    });
     expect(result.afterTokens).toBeLessThan(result.beforeTokens);
   });
 });

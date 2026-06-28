@@ -52,7 +52,7 @@ function failure(message: string): McpToolResult {
 
 async function nanoBananaPost(
   path: string,
-  body: Record<string, unknown>,
+  body: Record<string, unknown>
 ): Promise<{ contentType: string; imageBase64: string; sizeBytes: number }> {
   const key = getApiKey();
   if (!key) throw new Error('NANO_BANANA_API_KEY not set');

@@ -10,7 +10,7 @@ export function PipelineTemplatePicker({ onSelect }: Props) {
       {PIPELINE_TEMPLATES.map((t) => (
         <div key={t.id} className="bg-card flex flex-col gap-2 rounded-lg border p-3">
           <div>
-            <p className="font-medium text-sm">{t.name}</p>
+            <p className="text-sm font-medium">{t.name}</p>
             <p className="text-muted-foreground text-xs">{t.description}</p>
           </div>
           <button

@@ -26,7 +26,9 @@ describe('AgentList', () => {
   });
 
   it('renders agent rows with name and status', () => {
-    render(<AgentList agents={[agent]} onEdit={vi.fn()} onDuplicate={vi.fn()} onDelete={vi.fn()} />);
+    render(
+      <AgentList agents={[agent]} onEdit={vi.fn()} onDuplicate={vi.fn()} onDelete={vi.fn()} />
+    );
     expect(screen.getByText('Alpha')).toBeInTheDocument();
     expect(screen.getByText('active')).toBeInTheDocument();
   });
@@ -40,10 +42,14 @@ describe('AgentList', () => {
 
   it('opens confirm dialog on delete and confirms', async () => {
     const onDelete = vi.fn().mockResolvedValue(undefined);
-    render(<AgentList agents={[agent]} onEdit={vi.fn()} onDuplicate={vi.fn()} onDelete={onDelete} />);
+    render(
+      <AgentList agents={[agent]} onEdit={vi.fn()} onDuplicate={vi.fn()} onDelete={onDelete} />
+    );
     await userEvent.click(screen.getByLabelText('Delete agent'));
     expect(await screen.findByText('Delete agent')).toBeInTheDocument();
-    const deleteBtn = screen.getAllByRole('button', { name: 'Delete' }).find((b) => !b.hasAttribute('aria-label'));
+    const deleteBtn = screen
+      .getAllByRole('button', { name: 'Delete' })
+      .find((b) => !b.hasAttribute('aria-label'));
     await userEvent.click(deleteBtn!);
     await vi.waitFor(() => expect(onDelete).toHaveBeenCalledWith('a1'));
   });

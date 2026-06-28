@@ -43,13 +43,13 @@ export function formatCitationLabel(input: CitationInput): string {
  */
 export function buildCitationIndex(
   chunks: ReadonlyArray<KnowledgeChunk>,
-  filenames?: Map<string, string>,
+  filenames?: Map<string, string>
 ): string[] {
   return chunks.map((chunk, idx) =>
     formatCitation({
       index: idx + 1,
       chunk,
       documentFilename: filenames?.get(chunk.documentId),
-    }),
+    })
   );
 }

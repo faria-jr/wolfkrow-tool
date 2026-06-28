@@ -25,14 +25,14 @@ function trimTrailingSlash(url: string): string {
 
 export function createWorkerClient(opts: WorkerClientOptions = {}): WorkerClient {
   const baseUrl = trimTrailingSlash(
-    opts.baseUrl ?? process.env['WOLFKROW_WORKER_URL'] ?? DEFAULT_WORKER_URL,
+    opts.baseUrl ?? process.env['WOLFKROW_WORKER_URL'] ?? DEFAULT_WORKER_URL
   );
   const token = opts.authToken ?? process.env['WOLFKROW_AUTH_TOKEN'];
 
   async function request(path: string, init: RequestInit): Promise<unknown> {
     if (!token) {
       throw new Error(
-        'WOLFKROW_AUTH_TOKEN not set — MCP server cannot call authenticated worker routes',
+        'WOLFKROW_AUTH_TOKEN not set — MCP server cannot call authenticated worker routes'
       );
     }
     const headers = new Headers(init.headers);

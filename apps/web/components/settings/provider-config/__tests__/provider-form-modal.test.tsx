@@ -31,7 +31,11 @@ describe('ProviderFormModal', () => {
 
     await user.click(screen.getByRole('button', { name: /save/i }));
     expect(onSave).toHaveBeenCalledWith(
-      expect.objectContaining({ displayName: 'My LLM', baseUrl: 'https://my/v1', models: ['model-a'] }),
+      expect.objectContaining({
+        displayName: 'My LLM',
+        baseUrl: 'https://my/v1',
+        models: ['model-a'],
+      })
     );
   });
 

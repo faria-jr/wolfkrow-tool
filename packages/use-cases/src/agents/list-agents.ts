@@ -2,8 +2,13 @@ import type { Agent, AgentRepo } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
-export interface ListAgentsInput { userId: string; activeOnly?: boolean; }
-export interface ListAgentsOutput { agents: Agent[]; }
+export interface ListAgentsInput {
+  userId: string;
+  activeOnly?: boolean;
+}
+export interface ListAgentsOutput {
+  agents: Agent[];
+}
 
 export class ListAgentsUseCase implements UseCase<ListAgentsInput, ListAgentsOutput> {
   constructor(private readonly repo: AgentRepo) {}

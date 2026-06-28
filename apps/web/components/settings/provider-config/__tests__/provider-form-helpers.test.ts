@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildProviderFormValues, resolveProviderId, slugifyProviderId } from '../provider-form-helpers';
+import {
+  buildProviderFormValues,
+  resolveProviderId,
+  slugifyProviderId,
+} from '../provider-form-helpers';
 import type { ProviderFormValues } from '../schema';
 
 const baseValues: ProviderFormValues = {

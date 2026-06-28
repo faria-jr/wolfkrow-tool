@@ -23,7 +23,9 @@ describe('ensureBuiltInRules', () => {
     mockRepo.findAll.mockReset();
     mockRepo.save.mockReset();
     mockGlobalRule.create.mockReset();
-    mockGlobalRule.create.mockImplementation((input: { title: string }) => ({ id: `rule-${input.title}` }));
+    mockGlobalRule.create.mockImplementation((input: { title: string }) => ({
+      id: `rule-${input.title}`,
+    }));
   });
 
   it('returns 0 and skips writes when the user already has rules', async () => {

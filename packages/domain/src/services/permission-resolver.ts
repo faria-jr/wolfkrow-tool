@@ -1,10 +1,22 @@
 const SAFE_TOOLS = new Set([
-  'Read', 'Grep', 'Glob', 'WebFetch', 'WebSearch', 'Bash:echo', 'Bash:cat', 'Bash:ls',
+  'Read',
+  'Grep',
+  'Glob',
+  'WebFetch',
+  'WebSearch',
+  'Bash:echo',
+  'Bash:cat',
+  'Bash:ls',
 ]);
 
 const DESTRUCTIVE_TOOLS = new Set([
-  'Bash:rm', 'Bash:sudo', 'Bash:git push', 'Bash:drop', 'Bash:delete',
-  'Write', 'Edit',
+  'Bash:rm',
+  'Bash:sudo',
+  'Bash:git push',
+  'Bash:drop',
+  'Bash:delete',
+  'Write',
+  'Edit',
 ]);
 
 export type PermissionResult =
@@ -13,8 +25,8 @@ export type PermissionResult =
   | { type: 'ask'; prompt: string };
 
 export interface AgentPermissions {
-  allowedTools: string[];   // whitelist — if non-empty, only these are allowed
-  blockedTools?: string[];  // blacklist — always denied
+  allowedTools: string[]; // whitelist — if non-empty, only these are allowed
+  blockedTools?: string[]; // blacklist — always denied
 }
 
 export class PermissionResolver {

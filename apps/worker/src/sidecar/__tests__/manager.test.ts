@@ -104,7 +104,7 @@ describe('SidecarManager — state machine', () => {
     manager.start();
     currentProc()!.stdout.emit('data', Buffer.from('ready'));
     // Simulate crash.
-    currentProc()!.emit("exit", 1);
+    currentProc()!.emit('exit', 1);
     expect(manager.getState().status).toBe('crashed');
     // Advancing the fake timer triggers the scheduled spawn.
     spawnMock.mockClear();
@@ -115,7 +115,7 @@ describe('SidecarManager — state machine', () => {
   it('process exit while NOT running does not schedule a restart', () => {
     manager.start();
     // Crash before reaching 'running'.
-    currentProc()!.emit("exit", 1);
+    currentProc()!.emit('exit', 1);
     expect(manager.getState().status).toBe('crashed');
     spawnMock.mockClear();
     vi.advanceTimersByTime(60_000);
@@ -135,7 +135,7 @@ describe('SidecarManager — state machine', () => {
       const proc = currentProc();
       if (proc) {
         proc.stdout.emit('data', Buffer.from('ready'));
-        proc.emit("exit", 1);
+        proc.emit('exit', 1);
       }
       vi.advanceTimersByTime(60_000);
     }

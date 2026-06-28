@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { clearAllPendingPermissions, hasPendingPermission, requestToolPermission, resolveToolPermission } from '../permission-store';
+import {
+  clearAllPendingPermissions,
+  hasPendingPermission,
+  requestToolPermission,
+  resolveToolPermission,
+} from '../permission-store';
 
 /** Minimal context required by requestToolPermission (park-only tests). */
 const ctx = { userId: 'u', agentId: 'a', tool: 't' };

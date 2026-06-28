@@ -6,7 +6,12 @@ import { GraphSidePanel } from '../GraphSidePanel';
 import type { GraphNode } from '../types';
 
 const node: GraphNode = {
-  id: 'n1', userId: 'u1', label: 'React', type: 'concept', sourceId: 'src-1', createdAt: '2024-01-01T00:00:00Z',
+  id: 'n1',
+  userId: 'u1',
+  label: 'React',
+  type: 'concept',
+  sourceId: 'src-1',
+  createdAt: '2024-01-01T00:00:00Z',
 };
 
 describe('GraphSidePanel', () => {
@@ -23,8 +28,20 @@ describe('GraphSidePanel', () => {
   });
 
   it('renders neighbors', () => {
-    const neighbor: GraphNode = { id: 'n2', userId: 'u1', label: 'TypeScript', type: 'concept', sourceId: 's', createdAt: '2024-01-01T00:00:00Z' };
-    render(<GraphSidePanel selected={node} neighborhood={{ center: node, neighbors: [neighbor], edges: [] }} />);
+    const neighbor: GraphNode = {
+      id: 'n2',
+      userId: 'u1',
+      label: 'TypeScript',
+      type: 'concept',
+      sourceId: 's',
+      createdAt: '2024-01-01T00:00:00Z',
+    };
+    render(
+      <GraphSidePanel
+        selected={node}
+        neighborhood={{ center: node, neighbors: [neighbor], edges: [] }}
+      />
+    );
     expect(screen.getByText('TypeScript')).toBeInTheDocument();
     expect(screen.getByText('Connections (1)')).toBeInTheDocument();
   });

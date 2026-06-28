@@ -29,7 +29,9 @@ import { AnthropicProvider } from '../anthropic';
 import type { CompletionOptions } from '../types';
 
 async function drain(it: AsyncIterable<unknown>): Promise<void> {
-  for await (const _chunk of it) { /* consume */ }
+  for await (const _chunk of it) {
+    /* consume */
+  }
 }
 
 const baseOpts = (): CompletionOptions => ({

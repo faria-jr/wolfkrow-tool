@@ -42,6 +42,9 @@ export { expect };
 
 export async function expectToastOrAlert(page: Page, text: RegExp | string): Promise<void> {
   const pattern = typeof text === 'string' ? new RegExp(text, 'i') : text;
-  const alert = page.locator('[role="alert"], [role="status"]').filter({ hasText: pattern }).first();
+  const alert = page
+    .locator('[role="alert"], [role="status"]')
+    .filter({ hasText: pattern })
+    .first();
   await expect(alert).toBeVisible({ timeout: 5000 });
 }

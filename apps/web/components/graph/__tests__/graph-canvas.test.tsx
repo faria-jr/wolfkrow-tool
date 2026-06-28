@@ -15,7 +15,12 @@ vi.mock('d3', () => ({
     text: vi.fn().mockReturnThis(),
     node: vi.fn(() => ({})),
   })),
-  forceSimulation: vi.fn(() => ({ force: vi.fn().mockReturnThis(), on: vi.fn().mockReturnThis(), alphaTarget: vi.fn().mockReturnThis(), restart: vi.fn().mockReturnThis() })),
+  forceSimulation: vi.fn(() => ({
+    force: vi.fn().mockReturnThis(),
+    on: vi.fn().mockReturnThis(),
+    alphaTarget: vi.fn().mockReturnThis(),
+    restart: vi.fn().mockReturnThis(),
+  })),
   forceManyBody: vi.fn(() => ({ strength: vi.fn() })),
   forceLink: vi.fn(() => ({ id: vi.fn().mockReturnThis(), distance: vi.fn() })),
   forceCenter: vi.fn(),

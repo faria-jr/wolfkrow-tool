@@ -88,14 +88,14 @@ docs/             → PRD, ARCHITECTURE, IMPLEMENTATION_PLAN, FEATURE_MATRIX, sp
 
 ## Stack
 
-| Camada | Tecnologia |
-|---|---|
-| Web | Next.js 15, React 19, TypeScript, Tailwind 4, shadcn/Radix, TanStack Query, Zustand, react-hook-form + Zod, recharts, d3, xterm, react-markdown |
-| Worker | Fastify 5, TypeScript, Drizzle ORM, better-sqlite3 + sqlite-vec, pino, jose (JWT), keytar, node-pty, node-telegram-bot-api, pdf-parse/mammoth/xlsx (parsers) |
-| Embeddings | Voyage (`VOYAGE_API_KEY`) — Knowledge/RAG |
-| Testes | Vitest, Testing Library, Playwright (E2E), MSW |
-| Tooling | pnpm 9, Turborepo 2, ESLint 9 (regras estritas), Prettier, Husky + commitlint |
-| Desktop | Electron 33, electron-builder |
+| Camada     | Tecnologia                                                                                                                                                   |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Web        | Next.js 15, React 19, TypeScript, Tailwind 4, shadcn/Radix, TanStack Query, Zustand, react-hook-form + Zod, recharts, d3, xterm, react-markdown              |
+| Worker     | Fastify 5, TypeScript, Drizzle ORM, better-sqlite3 + sqlite-vec, pino, jose (JWT), keytar, node-pty, node-telegram-bot-api, pdf-parse/mammoth/xlsx (parsers) |
+| Embeddings | Voyage (`VOYAGE_API_KEY`) — Knowledge/RAG                                                                                                                    |
+| Testes     | Vitest, Testing Library, Playwright (E2E), MSW                                                                                                               |
+| Tooling    | pnpm 9, Turborepo 2, ESLint 9 (regras estritas), Prettier, Husky + commitlint                                                                                |
+| Desktop    | Electron 33, electron-builder                                                                                                                                |
 
 ---
 
@@ -141,10 +141,10 @@ pnpm dev
 
 Expansão (`package.json` raiz → `pnpm dev:web` + `pnpm dev:worker`):
 
-| Processo | Cmd efetivo | cwd | Porta |
-|---|---|---|---|
-| Web | `next dev --port 3000` | `apps/web` | `3000` |
-| Worker | `tsx watch src/index.ts` | `apps/worker` | `4000` |
+| Processo | Cmd efetivo              | cwd           | Porta  |
+| -------- | ------------------------ | ------------- | ------ |
+| Web      | `next dev --port 3000`   | `apps/web`    | `3000` |
+| Worker   | `tsx watch src/index.ts` | `apps/worker` | `4000` |
 
 Endpoints úteis: UI **http://localhost:3000** · Worker health **http://localhost:4000/health** · Swagger **http://localhost:4000/docs**.
 
@@ -164,16 +164,16 @@ Produção: `pnpm build` depois `pnpm start` (web `next start` + worker `node di
 
 Cópie de [`.env.example`](.env.example). Principais:
 
-| Var | Onde | Default | Descrição |
-|---|---|---|---|
-| `WORKER_URL` / `NEXT_PUBLIC_WORKER_URL` | web | `http://localhost:4000` | URL do worker (BFF) |
-| `WOLFKROW_DB_PATH` | ambos | `.wolfkrow/data/wolfkrow.db` | Caminho do SQLite (use absoluto p/ consistência) |
-| `PORT` | worker | `4000` | Porta do worker |
-| `HOST` | worker | `127.0.0.1` | Bind do worker |
-| `WORKER_SECRET` | worker | dev default | Secret interno (≥32 chars; **obrigatório em prod**) |
-| `JWKS_URL` | worker | `http://localhost:3000/.well-known/jwks.json` | JWKS do web p/ validar JWT |
-| `LOG_LEVEL` | worker | `info` | `trace\|debug\|info\|warn\|error\|fatal` |
-| `VOYAGE_API_KEY` | ambos | — | Embeddings Voyage (Knowledge/RAG search). Opcional se não usar RAG |
+| Var                                     | Onde   | Default                                       | Descrição                                                          |
+| --------------------------------------- | ------ | --------------------------------------------- | ------------------------------------------------------------------ |
+| `WORKER_URL` / `NEXT_PUBLIC_WORKER_URL` | web    | `http://localhost:4000`                       | URL do worker (BFF)                                                |
+| `WOLFKROW_DB_PATH`                      | ambos  | `.wolfkrow/data/wolfkrow.db`                  | Caminho do SQLite (use absoluto p/ consistência)                   |
+| `PORT`                                  | worker | `4000`                                        | Porta do worker                                                    |
+| `HOST`                                  | worker | `127.0.0.1`                                   | Bind do worker                                                     |
+| `WORKER_SECRET`                         | worker | dev default                                   | Secret interno (≥32 chars; **obrigatório em prod**)                |
+| `JWKS_URL`                              | worker | `http://localhost:3000/.well-known/jwks.json` | JWKS do web p/ validar JWT                                         |
+| `LOG_LEVEL`                             | worker | `info`                                        | `trace\|debug\|info\|warn\|error\|fatal`                           |
+| `VOYAGE_API_KEY`                        | ambos  | —                                             | Embeddings Voyage (Knowledge/RAG search). Opcional se não usar RAG |
 
 Chaves de providers (Anthropic, OpenAI, ElevenLabs, Cartesia, Telegram bot token, etc) são lidas do **Vault** (keytar) em runtime, não de env.
 
@@ -195,19 +195,19 @@ Schema-fonte: `packages/infra/src/db/schema/` (37 tabelas: auth, agents, skills,
 
 ## Scripts (raiz)
 
-| Script | Ação |
-|---|---|
-| `pnpm dev` | Web + Worker em paralelo (dev) |
-| `pnpm start` | Web + Worker em paralelo (produção) |
-| `pnpm build` | Builda todos os workspaces (`turbo build`) |
-| `pnpm lint` / `lint:fix` | ESLint (`turbo lint`) |
-| `pnpm typecheck` | `tsc --noEmit` em todos (`turbo typecheck`) |
-| `pnpm test` / `test:cov` / `test:watch` | Vitest (`turbo test`) |
-| `pnpm test:e2e` | Playwright |
-| `pnpm db:generate` / `db:migrate` / `db:studio` | Drizzle |
-| `pnpm storybook` | Storybook (web) |
-| `pnpm format` / `format:check` | Prettier |
-| `pnpm dist:mac` / `dist:win` / `dist:linux` / `dist:all` | Empacota Electron |
+| Script                                                   | Ação                                        |
+| -------------------------------------------------------- | ------------------------------------------- |
+| `pnpm dev`                                               | Web + Worker em paralelo (dev)              |
+| `pnpm start`                                             | Web + Worker em paralelo (produção)         |
+| `pnpm build`                                             | Builda todos os workspaces (`turbo build`)  |
+| `pnpm lint` / `lint:fix`                                 | ESLint (`turbo lint`)                       |
+| `pnpm typecheck`                                         | `tsc --noEmit` em todos (`turbo typecheck`) |
+| `pnpm test` / `test:cov` / `test:watch`                  | Vitest (`turbo test`)                       |
+| `pnpm test:e2e`                                          | Playwright                                  |
+| `pnpm db:generate` / `db:migrate` / `db:studio`          | Drizzle                                     |
+| `pnpm storybook`                                         | Storybook (web)                             |
+| `pnpm format` / `format:check`                           | Prettier                                    |
+| `pnpm dist:mac` / `dist:win` / `dist:linux` / `dist:all` | Empacota Electron                           |
 
 Scripts por app: ver [`apps/web/README.md`](apps/web/README.md) e [`apps/worker/README.md`](apps/worker/README.md).
 
@@ -217,26 +217,26 @@ Scripts por app: ver [`apps/web/README.md`](apps/web/README.md) e [`apps/worker/
 
 Cobertura por área (status real por commit log):
 
-| Área | Feature | Onde (UI) |
-|---|---|---|
-| **Chat** | Streaming SSE multi-SDK (Anthropic, Claude-compat, Codex, Lion) | Chat |
-| **Agents/Skills** | CRUD + runtime, skills markdown+frontmatter | Agents, Skills |
-| **MCP** | Lifecycle de servidores MCP + catalog (18) | MCP Servers |
-| **Knowledge** | Ingest (PDF/DOCX/XLSX/MD/URL) → chunk → embed → search híbrido | Knowledge |
-| **Memory** | Compaction, daily summary, semantic memory + dreaming | Memory |
-| **Scheduler** | Cron engine + tasks (kanban) | Scheduler, Tasks |
-| **Harness** | Planner→Coder→Evaluator, sprints/rounds/métricas | Harness |
-| **Pipeline** | BuildPlan multi-fase + aprovações | Pipeline |
-| **Enrich/Workflow** | Validator→Enricher + WorkflowRun | (worker) |
-| **Voice** | STT (Whisper) + TTS (ElevenLabs/Cartesia) | (worker + UI orb) |
-| **Terminal** | CodeBurn — PTY interativo (node-pty) | Terminal |
-| **Telegram** | Bridge bot conversacional + channels | Channels, Telegram |
-| **Vault** | Segredos via keytar (valores nunca no DB/log) | Vault |
-| **Usage/Pricing** | Analytics de tokens + PricingCalculator multi-fonte | Usage |
-| **Logs** | Live-tail SSE + filtros | Logs |
-| **Permissions** | Whitelist/blacklist de tools + audit log | Permissions |
-| **Rules** | Regras globais editáveis injetadas no prompt | Rules |
-| **Graph** | Knowledge graph (ingest entidades/relações + D3 force view) | Graph |
+| Área                | Feature                                                         | Onde (UI)          |
+| ------------------- | --------------------------------------------------------------- | ------------------ |
+| **Chat**            | Streaming SSE multi-SDK (Anthropic, Claude-compat, Codex, Lion) | Chat               |
+| **Agents/Skills**   | CRUD + runtime, skills markdown+frontmatter                     | Agents, Skills     |
+| **MCP**             | Lifecycle de servidores MCP + catalog (18)                      | MCP Servers        |
+| **Knowledge**       | Ingest (PDF/DOCX/XLSX/MD/URL) → chunk → embed → search híbrido  | Knowledge          |
+| **Memory**          | Compaction, daily summary, semantic memory + dreaming           | Memory             |
+| **Scheduler**       | Cron engine + tasks (kanban)                                    | Scheduler, Tasks   |
+| **Harness**         | Planner→Coder→Evaluator, sprints/rounds/métricas                | Harness            |
+| **Pipeline**        | BuildPlan multi-fase + aprovações                               | Pipeline           |
+| **Enrich/Workflow** | Validator→Enricher + WorkflowRun                                | (worker)           |
+| **Voice**           | STT (Whisper) + TTS (ElevenLabs/Cartesia)                       | (worker + UI orb)  |
+| **Terminal**        | CodeBurn — PTY interativo (node-pty)                            | Terminal           |
+| **Telegram**        | Bridge bot conversacional + channels                            | Channels, Telegram |
+| **Vault**           | Segredos via keytar (valores nunca no DB/log)                   | Vault              |
+| **Usage/Pricing**   | Analytics de tokens + PricingCalculator multi-fonte             | Usage              |
+| **Logs**            | Live-tail SSE + filtros                                         | Logs               |
+| **Permissions**     | Whitelist/blacklist de tools + audit log                        | Permissions        |
+| **Rules**           | Regras globais editáveis injetadas no prompt                    | Rules              |
+| **Graph**           | Knowledge graph (ingest entidades/relações + D3 force view)     | Graph              |
 
 Matriz completa de rastreabilidade (55 features do LionClaw): [`docs/FEATURE_MATRIX.md`](docs/FEATURE_MATRIX.md).
 

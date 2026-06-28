@@ -3,8 +3,12 @@ import type { ProviderConfig, ProviderConfigRepo } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
-export interface ListProvidersInput { userId: string; }
-export interface ListProvidersOutput { providers: ProviderConfig[]; }
+export interface ListProvidersInput {
+  userId: string;
+}
+export interface ListProvidersOutput {
+  providers: ProviderConfig[];
+}
 
 export class ListProvidersUseCase implements UseCase<ListProvidersInput, ListProvidersOutput> {
   constructor(private readonly repo: ProviderConfigRepo) {}

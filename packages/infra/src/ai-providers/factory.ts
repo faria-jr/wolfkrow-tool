@@ -1,4 +1,8 @@
-import { isClaudeCompatProviderId, type PermissionResolver, type ProviderConfig } from '@wolfkrow/domain';
+import {
+  isClaudeCompatProviderId,
+  type PermissionResolver,
+  type ProviderConfig,
+} from '@wolfkrow/domain';
 
 import type { ToolRegistry } from '../tools/tool-registry';
 
@@ -25,7 +29,7 @@ function createSimpleProvider(
   normalized: string,
   apiKey: string,
   toolRegistry: ToolRegistry | undefined,
-  permissionResolver: PermissionResolver | undefined,
+  permissionResolver: PermissionResolver | undefined
 ): AIProvider | undefined {
   switch (normalized) {
     case 'anthropic':
@@ -35,7 +39,7 @@ function createSimpleProvider(
     case 'claude-compat':
       throw new Error(
         'Provider "claude-compat" requires a preset suffix — use "claude-compat:zai", ' +
-        '"claude-compat:minimax", "claude-compat:moonshot", or "claude-compat:qwen".',
+          '"claude-compat:minimax", "claude-compat:moonshot", or "claude-compat:qwen".'
       );
     case 'codex':
     case 'openai':
@@ -56,7 +60,7 @@ function createSimpleProvider(
 export class ProviderAIProviderFactory implements AIProviderFactory {
   constructor(
     private readonly toolRegistry?: ToolRegistry,
-    private readonly permissionResolver?: PermissionResolver,
+    private readonly permissionResolver?: PermissionResolver
   ) {}
 
   create(provider: string, apiKey: string): AIProvider {
@@ -81,7 +85,12 @@ export class ProviderAIProviderFactory implements AIProviderFactory {
       });
     }
 
-    const simple = createSimpleProvider(normalized, apiKey, this.toolRegistry, this.permissionResolver);
+    const simple = createSimpleProvider(
+      normalized,
+      apiKey,
+      this.toolRegistry,
+      this.permissionResolver
+    );
     if (simple) return simple;
 
     throw new Error(`Unsupported AI provider: ${provider}`);
@@ -91,15 +100,26 @@ export class ProviderAIProviderFactory implements AIProviderFactory {
     cfg: ProviderConfig,
     apiKey: string,
     toolRegistry?: ToolRegistry,
-    permissionResolver?: PermissionResolver,
+    permissionResolver?: PermissionResolver
   ): AIProvider {
     switch (cfg.protocol) {
-      case 'anthropic-compat':
-        return new ClaudeCompatProvider(apiKey, { baseUrl: cfg.baseUrl }, {
-          supportsTools: cfg.supportsTools,
-          ...(cfg.supportsTools && toolRegistry ? { toolRegistry } : {}),
-          ...(cfg.supportsTools && permissionResolver ? { permissionResolver } : {}),
-        });
+      case 'anthropic-compat': {
+        const resolvedToolRegistry = toolRegistry ?? this.toolRegistry;
+        const resolvedPermissionResolver = permissionResolver ?? this.permissionResolver;
+        return new ClaudeCompatProvider(
+          apiKey,
+          { baseUrl: cfg.baseUrl },
+          {
+            supportsTools: cfg.supportsTools,
+            ...(cfg.supportsTools && resolvedToolRegistry
+              ? { toolRegistry: resolvedToolRegistry }
+              : {}),
+            ...(cfg.supportsTools && resolvedPermissionResolver
+              ? { permissionResolver: resolvedPermissionResolver }
+              : {}),
+          }
+        );
+      }
       case 'openai-compatible':
         return new CodexProvider(apiKey, cfg.baseUrl);
       default: {

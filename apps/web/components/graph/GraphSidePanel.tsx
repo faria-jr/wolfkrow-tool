@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-
 export interface GraphSidePanelProps {
   selected: GraphNode | null;
   neighborhood: GraphNeighborhood | null;
@@ -23,10 +22,15 @@ const TYPE_LABEL: Record<NodeType, string> = {
   memory: 'Memory',
 };
 
-export function GraphSidePanel({ selected, neighborhood, loadingNeighborhood, onDelete }: GraphSidePanelProps) {
+export function GraphSidePanel({
+  selected,
+  neighborhood,
+  loadingNeighborhood,
+  onDelete,
+}: GraphSidePanelProps) {
   if (!selected) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 p-6 text-center text-sm">
         <Network className="h-8 w-8 opacity-40" />
         <p>Select a node to inspect its connections and source.</p>
       </div>
@@ -42,7 +46,13 @@ export function GraphSidePanel({ selected, neighborhood, loadingNeighborhood, on
   );
 }
 
-function NodeHeader({ node, onDelete }: { node: GraphNode; onDelete: ((node: GraphNode) => void) | undefined }) {
+function NodeHeader({
+  node,
+  onDelete,
+}: {
+  node: GraphNode;
+  onDelete: ((node: GraphNode) => void) | undefined;
+}) {
   return (
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
@@ -71,17 +81,23 @@ function NodeMeta({ node }: { node: GraphNode }) {
   );
 }
 
-function NodeConnections({ neighbors, loading }: { neighbors: GraphNode[]; loading: boolean | undefined }) {
+function NodeConnections({
+  neighbors,
+  loading,
+}: {
+  neighbors: GraphNode[];
+  loading: boolean | undefined;
+}) {
   return (
-    <div className="mt-2 flex-1 min-h-0">
-      <p className="mb-1 text-xs font-medium uppercase text-muted-foreground">
+    <div className="mt-2 min-h-0 flex-1">
+      <p className="text-muted-foreground mb-1 text-xs font-medium uppercase">
         Connections ({neighbors.length})
       </p>
-      <ScrollArea className="h-[calc(100%-1.25rem)] rounded-md border border-border">
-        <ul className="divide-y divide-border">
-          {loading && <li className="p-2 text-xs text-muted-foreground">Loading…</li>}
+      <ScrollArea className="border-border h-[calc(100%-1.25rem)] rounded-md border">
+        <ul className="divide-border divide-y">
+          {loading && <li className="text-muted-foreground p-2 text-xs">Loading…</li>}
           {!loading && neighbors.length === 0 && (
-            <li className="p-2 text-xs text-muted-foreground">No connections.</li>
+            <li className="text-muted-foreground p-2 text-xs">No connections.</li>
           )}
           {!loading &&
             neighbors.map((n) => (

@@ -35,7 +35,7 @@ export class AnthropicProvider implements AIProvider {
         ...(options.system ? { system: options.system } : {}),
         messages,
       },
-      { signal: options.signal },
+      { signal: options.signal }
     );
 
     for await (const event of stream) {
@@ -69,14 +69,8 @@ function toAnthropicMessage(message: ChatMessage): Anthropic.Messages.MessagePar
   };
 }
 
-function injectImageParts(
-  messages: Anthropic.Messages.MessageParam[],
-  parts: ImagePart[],
-): void {
-  const lastUserIdx = messages.reduce(
-    (found, m, i) => (m.role === 'user' ? i : found),
-    -1,
-  );
+function injectImageParts(messages: Anthropic.Messages.MessageParam[], parts: ImagePart[]): void {
+  const lastUserIdx = messages.reduce((found, m, i) => (m.role === 'user' ? i : found), -1);
   if (lastUserIdx < 0) return;
 
   const lastMsg = messages[lastUserIdx];

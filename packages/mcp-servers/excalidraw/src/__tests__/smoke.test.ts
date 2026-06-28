@@ -1,7 +1,6 @@
 import { handleRpcMessage } from '@wolfkrow/mcp-shared';
 import { describe, expect, it } from 'vitest';
 
-
 import { handlers } from '../index';
 
 describe('excalidraw MCP server smoke tests', () => {
@@ -18,7 +17,7 @@ describe('excalidraw MCP server smoke tests', () => {
     const tools = (res?.result as { tools: { name: string }[] })?.tools ?? [];
     const names = tools.map((t) => t.name);
     expect(names).toEqual(
-      expect.arrayContaining(['create_flow', 'create_sequence', 'create_mindmap']),
+      expect.arrayContaining(['create_flow', 'create_sequence', 'create_mindmap'])
     );
   });
 
@@ -40,7 +39,7 @@ describe('excalidraw MCP server smoke tests', () => {
           },
         },
       },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     const text = (res?.result as { content: { text: string }[] }).content[0]?.text ?? '{}';
@@ -68,7 +67,7 @@ describe('excalidraw MCP server smoke tests', () => {
           },
         },
       },
-      handlers,
+      handlers
     );
     const text = (res?.result as { content: { text: string }[] }).content[0]?.text ?? '{}';
     const scene = JSON.parse(text) as { elements: unknown[] };
@@ -92,7 +91,7 @@ describe('excalidraw MCP server smoke tests', () => {
           },
         },
       },
-      handlers,
+      handlers
     );
     const text = (res?.result as { content: { text: string }[] }).content[0]?.text ?? '{}';
     const scene = JSON.parse(text) as { elements: unknown[]; title: string };
@@ -103,7 +102,7 @@ describe('excalidraw MCP server smoke tests', () => {
   it('unknown tool returns isError', async () => {
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'nope', arguments: {} } },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });

@@ -24,7 +24,7 @@ type Params = { params: Promise<{ id: string }> };
 function buildScheduledTaskUpdate(
   taskId: string,
   userId: string,
-  body: UpdateScheduledTaskRequestBody,
+  body: UpdateScheduledTaskRequestBody
 ): UpdateScheduledTaskInput {
   return {
     taskId,
@@ -45,12 +45,15 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const body = validateBody(UpdateScheduledTaskRequestBodySchema, await req.json().catch(() => null));
+  const body = validateBody(
+    UpdateScheduledTaskRequestBodySchema,
+    await req.json().catch(() => null)
+  );
   if (body instanceof Response) return body;
 
   const repo = getRepos().scheduledTask;
   const result = await new UpdateScheduledTaskUseCase(repo).execute(
-    buildScheduledTaskUpdate(id, session.userId, body),
+    buildScheduledTaskUpdate(id, session.userId, body)
   );
   return Response.json({ task: result.task.toProps() });
 }

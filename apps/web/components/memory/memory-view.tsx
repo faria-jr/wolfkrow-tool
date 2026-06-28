@@ -57,18 +57,34 @@ function useMemoryViewBase(): MemoryViewState {
     return runSearch(query, setSearching, setResults);
   }, [query]);
 
-  const deleteOne = useCallback(async (id: string) => {
-    await fetch(`/api/memory/${id}`, { method: 'DELETE', credentials: 'include' });
-    await loadMemories();
-  }, [loadMemories]);
+  const deleteOne = useCallback(
+    async (id: string) => {
+      await fetch(`/api/memory/${id}`, { method: 'DELETE', credentials: 'include' });
+      await loadMemories();
+    },
+    [loadMemories]
+  );
 
   const compact = useCallback(async () => {
     return runCompact({ memories, tab, loadSummaries, setTab, setCompactPending });
   }, [memories, tab, loadSummaries]);
 
   return {
-    memories, tab, query, results, searching, compactPending, summaries, summariesError,
-    loadMemories, loadSummaries, setTab, setQuery, search, deleteOne, compact,
+    memories,
+    tab,
+    query,
+    results,
+    searching,
+    compactPending,
+    summaries,
+    summariesError,
+    loadMemories,
+    loadSummaries,
+    setTab,
+    setQuery,
+    search,
+    deleteOne,
+    compact,
   };
 }
 
@@ -87,7 +103,7 @@ function useMemoryViewEffects(state: MemoryViewState): void {
 async function runSearch(
   query: string,
   setSearching: (v: boolean) => void,
-  setResults: (r: MemorySearchResult[]) => void,
+  setResults: (r: MemorySearchResult[]) => void
 ): Promise<void> {
   if (!query.trim()) return;
   setSearching(true);

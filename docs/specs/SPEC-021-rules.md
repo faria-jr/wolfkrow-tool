@@ -29,8 +29,17 @@ Rules globais editáveis pelo user, injetadas em todo prompt (comportamento, tom
 export type RuleKind = 'behavior' | 'soul' | 'user' | 'custom';
 
 export class GlobalRule {
-  static create(input: { kind: RuleKind; title: string; body: string; enabled?: boolean }): GlobalRule { /* ... */ }
-  toPromptSection(): string { return `## ${this.title}\n${this.body}`; }
+  static create(input: {
+    kind: RuleKind;
+    title: string;
+    body: string;
+    enabled?: boolean;
+  }): GlobalRule {
+    /* ... */
+  }
+  toPromptSection(): string {
+    return `## ${this.title}\n${this.body}`;
+  }
 }
 ```
 

@@ -23,44 +23,70 @@ describe('youtube MCP server smoke tests', () => {
   });
 
   it('youtube_search calls YouTube Data API and returns content', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        items: [
-          { id: { videoId: 'abc123' }, snippet: { title: 'Test Video', description: 'desc' } },
-        ],
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [
+            { id: { videoId: 'abc123' }, snippet: { title: 'Test Video', description: 'desc' } },
+          ],
+        }),
+      })
+    );
     process.env['YOUTUBE_API_KEY'] = 'test-key';
 
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'youtube_search', arguments: { query: 'node.js' } } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: { name: 'youtube_search', arguments: { query: 'node.js' } },
+      },
+      handlers
     );
 
-    expect(res?.result).toMatchObject({ content: expect.arrayContaining([expect.objectContaining({ type: 'text' })]) });
+    expect(res?.result).toMatchObject({
+      content: expect.arrayContaining([expect.objectContaining({ type: 'text' })]),
+    });
     expect(vi.mocked(fetch)).toHaveBeenCalledOnce();
   });
 
   it('youtube_get_transcript extracts transcript from YouTube page', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      text: async () => '<html><body>{"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":[{"baseUrl":"https://www.youtube.com/api/timedtext?v=abc"}]}}}</body></html>',
-    }));
-
-    const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'youtube_get_transcript', arguments: { videoId: 'abc123' } } },
-      handlers,
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: async () =>
+          '<html><body>{"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":[{"baseUrl":"https://www.youtube.com/api/timedtext?v=abc"}]}}}</body></html>',
+      })
     );
 
-    expect(res?.result).toMatchObject({ content: expect.arrayContaining([expect.objectContaining({ type: 'text' })]) });
+    const res = await handleRpcMessage(
+      {
+        jsonrpc: '2.0',
+        id: 4,
+        method: 'tools/call',
+        params: { name: 'youtube_get_transcript', arguments: { videoId: 'abc123' } },
+      },
+      handlers
+    );
+
+    expect(res?.result).toMatchObject({
+      content: expect.arrayContaining([expect.objectContaining({ type: 'text' })]),
+    });
     expect(vi.mocked(fetch)).toHaveBeenCalledOnce();
   });
 
   it('unknown tool returns isError result', async () => {
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'nonexistent_tool', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'tools/call',
+        params: { name: 'nonexistent_tool', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });

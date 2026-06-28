@@ -30,18 +30,18 @@ export function handlePtyConnection(ws: WebSocket) {
     cwd: process.env.HOME || '/',
     env: process.env as { [key: string]: string },
   });
-  
+
   // PTY output → WebSocket
   pty.onData((data) => {
     if (ws.readyState === ws.OPEN) {
       ws.send(JSON.stringify({ type: 'output', data }));
     }
   });
-  
+
   // WebSocket input → PTY
   ws.on('message', (raw) => {
     const msg = JSON.parse(raw.toString());
-    
+
     switch (msg.type) {
       case 'input':
         pty.write(msg.data);
@@ -54,7 +54,7 @@ export function handlePtyConnection(ws: WebSocket) {
         break;
     }
   });
-  
+
   // Cleanup
   ws.on('close', () => pty.kill());
   ws.on('error', () => pty.kill());
@@ -65,15 +65,15 @@ export function handlePtyConnection(ws: WebSocket) {
 // apps/web/app/api/pty/[id]/route.ts
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await requireSession();
-  
+
   // Upgrade HTTP to WebSocket via Worker
   const workerWs = new WebSocket(`ws://localhost:4000/pty/${params.id}`, {
-    headers: { 'Authorization': `Bearer ${await getJWT(session)}` },
+    headers: { Authorization: `Bearer ${await getJWT(session)}` },
   });
-  
+
   // Bridge: browser WebSocket ↔ worker WebSocket
   // (Implementação real usa upgrade de conexão HTTP, não nested WebSocket)
-  
+
   return new Response('WebSocket upgrade required', { status: 426 });
 }
 ```
@@ -88,7 +88,7 @@ import { FitAddon } from '@xterm/addon-fit';
 export function usePty(sessionId: string) {
   const wsRef = useRef<WebSocket | null>(null);
   const termRef = useRef<Terminal | null>(null);
-  
+
   useEffect(() => {
     const term = new Terminal({
       cursorBlink: true,
@@ -96,54 +96,56 @@ export function usePty(sessionId: string) {
       fontSize: 14,
       theme: { background: '#0a0a0a' },
     });
-    
+
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.open(document.getElementById('terminal')!);
     fit.fit();
-    
+
     termRef.current = term;
-    
+
     const ws = new WebSocket(`ws://localhost:3000/api/pty/${sessionId}`);
     wsRef.current = ws;
-    
+
     ws.onopen = () => {
       term.writeln('\x1b[32mConnected\x1b[0m');
     };
-    
+
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
       if (msg.type === 'output') {
         term.write(msg.data);
       }
     };
-    
+
     term.onData((data) => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'input', data }));
       }
     });
-    
+
     const handleResize = () => {
       fit.fit();
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({
-          type: 'resize',
-          cols: term.cols,
-          rows: term.rows,
-        }));
+        ws.send(
+          JSON.stringify({
+            type: 'resize',
+            cols: term.cols,
+            rows: term.rows,
+          })
+        );
       }
     };
-    
+
     window.addEventListener('resize', handleResize);
-    
+
     return () => {
       ws.close();
       term.dispose();
       window.removeEventListener('resize', handleResize);
     };
   }, [sessionId]);
-  
+
   return { send: (data: string) => wsRef.current?.send(JSON.stringify({ type: 'input', data })) };
 }
 ```
@@ -198,17 +200,17 @@ import { WebSocket } from 'ws';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await requireSession();
-  
+
   // Next.js não tem upgrade nativo de WebSocket em Route Handlers
   // Solução: Next.js serve página que abre WebSocket direto para Worker
-  
+
   // OU: usar custom server (não Route Handler)
   // OU: usar Edge runtime com experimental.websocket
-  
+
   // Para nosso caso, browser conecta direto ao Worker via:
   // ws://localhost:4000/pty/{id}
   // com JWT no query string ou via subprotocol
-  
+
   return Response.json({ error: 'Use ws://localhost:4000 directly' }, { status: 400 });
 }
 ```
@@ -223,22 +225,22 @@ export function useWebSocket(url: string, onMessage: (msg: unknown) => void) {
   const [status, setStatus] = useState<'connecting' | 'open' | 'closed'>('connecting');
   const wsRef = useRef<WebSocket | null>(null);
   const attemptsRef = useRef(0);
-  
+
   useEffect(() => {
     let cancelled = false;
-    
+
     const connect = () => {
       if (cancelled) return;
-      
+
       const ws = new WebSocket(url);
       wsRef.current = ws;
       setStatus('connecting');
-      
+
       ws.onopen = () => {
         attemptsRef.current = 0;
         setStatus('open');
       };
-      
+
       ws.onmessage = (e) => {
         try {
           onMessage(JSON.parse(e.data));
@@ -246,28 +248,28 @@ export function useWebSocket(url: string, onMessage: (msg: unknown) => void) {
           console.error('Invalid WS message:', error);
         }
       };
-      
+
       ws.onclose = () => {
         setStatus('closed');
-        
+
         // Reconnect with exponential backoff
         const delay = Math.min(1000 * 2 ** attemptsRef.current, 30000);
         attemptsRef.current++;
-        
+
         setTimeout(connect, delay);
       };
-      
+
       ws.onerror = () => ws.close();
     };
-    
+
     connect();
-    
+
     return () => {
       cancelled = true;
       wsRef.current?.close();
     };
   }, [url]);
-  
+
   return { status, send: (data: unknown) => wsRef.current?.send(JSON.stringify(data)) };
 }
 ```
@@ -278,23 +280,23 @@ export function useWebSocket(url: string, onMessage: (msg: unknown) => void) {
 // JWT validation no Worker
 wss.on('connection', async (ws, req) => {
   const token = new URL(req.url, 'http://localhost').searchParams.get('token');
-  
+
   if (!token) {
     ws.close(1008, 'Missing token');
     return;
   }
-  
+
   try {
     const payload = await jwtVerify(token, SECRET);
     const session = payload as { userId: string };
-    
+
     // Authorization check: user can only access their own PTY sessions
     const ptySession = await ptyRepo.findById(sessionId);
     if (ptySession.userId !== session.userId) {
       ws.close(1008, 'Forbidden');
       return;
     }
-    
+
     handlePtyConnection(ws);
   } catch {
     ws.close(1008, 'Invalid token');
@@ -305,12 +307,14 @@ wss.on('connection', async (ws, req) => {
 ## Quando Usar
 
 ### ✅ WebSocket
+
 - PTY terminal (CodeBurn)
 - Real-time bidirectional (futuro)
 - OAuth callbacks (futuro)
 - Code review live (futuro)
 
 ### ✅ SSE
+
 - Chat streaming
 - Pipeline progress
 - Harness rounds

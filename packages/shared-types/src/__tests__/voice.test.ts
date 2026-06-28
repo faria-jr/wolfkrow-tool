@@ -16,7 +16,7 @@ describe('voice schemas', () => {
       'accepts %s',
       (v) => {
         expect(VoiceSessionStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('rejects invalid', () => {
       expect(() => VoiceSessionStatusSchema.parse('nope')).toThrow();
@@ -46,16 +46,14 @@ describe('voice schemas', () => {
           ttsVoiceId: 'v1',
           startedAt: '2024-01-01T00:00:00Z',
           endedAt: '2024-01-01T00:01:00Z',
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects non-uuid id', () => {
       expect(() => VoiceSessionSchema.parse({ ...valid, id: 'x' })).toThrow();
     });
     it('rejects invalid sttProvider', () => {
-      expect(() =>
-        VoiceSessionSchema.parse({ ...valid, sttProvider: 'nope' }),
-      ).toThrow();
+      expect(() => VoiceSessionSchema.parse({ ...valid, sttProvider: 'nope' })).toThrow();
     });
   });
 
@@ -65,9 +63,7 @@ describe('voice schemas', () => {
       expect(parsed.language).toBe('auto');
     });
     it('accepts a Uint8Array', () => {
-      expect(() =>
-        STTRequestSchema.parse({ audio: new Uint8Array([1, 2]) }),
-      ).not.toThrow();
+      expect(() => STTRequestSchema.parse({ audio: new Uint8Array([1, 2]) })).not.toThrow();
     });
     it('rejects a non-Buffer/non-Uint8Array audio', () => {
       expect(() => STTRequestSchema.parse({ audio: 'not-a-buffer' })).toThrow();
@@ -79,13 +75,11 @@ describe('voice schemas', () => {
 
   describe('STTResponseSchema', () => {
     it('accepts a valid response', () => {
-      expect(() =>
-        STTResponseSchema.parse({ text: 'hello' }),
-      ).not.toThrow();
+      expect(() => STTResponseSchema.parse({ text: 'hello' })).not.toThrow();
     });
     it('accepts optional language / durationMs', () => {
       expect(() =>
-        STTResponseSchema.parse({ text: 'hi', language: 'en', durationMs: 100 }),
+        STTResponseSchema.parse({ text: 'hi', language: 'en', durationMs: 100 })
       ).not.toThrow();
     });
     it('rejects missing text', () => {
@@ -99,19 +93,13 @@ describe('voice schemas', () => {
       expect(parsed.speed).toBe(1);
     });
     it('rejects empty text', () => {
-      expect(() =>
-        TTSRequestSchema.parse({ text: '', voiceId: 'v1' }),
-      ).toThrow();
+      expect(() => TTSRequestSchema.parse({ text: '', voiceId: 'v1' })).toThrow();
     });
     it('rejects text over 10k chars', () => {
-      expect(() =>
-        TTSRequestSchema.parse({ text: 'a'.repeat(10_001), voiceId: 'v1' }),
-      ).toThrow();
+      expect(() => TTSRequestSchema.parse({ text: 'a'.repeat(10_001), voiceId: 'v1' })).toThrow();
     });
     it('rejects speed out of [0.5, 2]', () => {
-      expect(() =>
-        TTSRequestSchema.parse({ text: 'hi', voiceId: 'v1', speed: 3 }),
-      ).toThrow();
+      expect(() => TTSRequestSchema.parse({ text: 'hi', voiceId: 'v1', speed: 3 })).toThrow();
     });
     it('rejects missing voiceId', () => {
       expect(() => TTSRequestSchema.parse({ text: 'hi' })).toThrow();

@@ -23,6 +23,7 @@ Wolfkrow is a local-first AI assistant platform that runs entirely on your machi
 ### System tray
 
 After launch, Wolfkrow lives in your system tray. Click the icon to:
+
 - **Open** — bring the window to front
 - **Quick Chat** — open a floating chat window
 - **Lock** — lock the session
@@ -84,6 +85,7 @@ The Vault stores API keys and credentials securely using your operating system's
 ### Adding a secret
 
 Go to **Settings → Vault → Add secret**. Required fields:
+
 - **Key**: identifier used in code/agents (e.g., `OPENAI_API_KEY`)
 - **Display name**: human-readable label
 - **Category**: `ai`, `integration`, `oauth`, or `other`
@@ -102,6 +104,7 @@ Go to **Tasks** to create and manage structured tasks separate from chat convers
 ### Creating a task
 
 Click **New Task** and fill in:
+
 - **Title** (required)
 - **Description** (optional)
 - **Status**: `todo`, `in_progress`, `blocked`, `done`, `cancelled`
@@ -123,6 +126,7 @@ Create cron-based tasks that run AI agents on a schedule.
 ### Creating a scheduled task
 
 Go to **Settings → Automation → New scheduled task**:
+
 - **Name**: descriptive label
 - **Cron expression**: standard cron syntax (e.g., `0 9 * * 1-5` = weekdays at 9am)
 - **Timezone**: defaults to your local timezone
@@ -142,12 +146,12 @@ Rules shape how agents behave. Go to **Settings → Rules** to manage them.
 
 ### Rule kinds
 
-| Kind | Purpose |
-|---|---|
+| Kind       | Purpose                                          |
+| ---------- | ------------------------------------------------ |
 | `behavior` | How agents should respond (tone, format, length) |
-| `soul` | Fundamental values and ethical principles |
-| `user` | Facts about you (name, role, preferences) |
-| `custom` | Project-specific or context-specific rules |
+| `soul`     | Fundamental values and ethical principles        |
+| `user`     | Facts about you (name, role, preferences)        |
+| `custom`   | Project-specific or context-specific rules       |
 
 ### Rule priority
 
@@ -200,13 +204,13 @@ Wolfkrow checks for updates automatically. When an update is available, a notifi
 
 ## Keyboard shortcuts
 
-| Action | macOS | Windows/Linux |
-|---|---|---|
-| Toggle window | `Cmd+Shift+Space` | `Ctrl+Shift+Space` |
-| New chat | `Cmd+N` | `Ctrl+N` |
-| Voice input | `Cmd+Shift+V` | `Ctrl+Shift+V` |
-| Command palette | `Cmd+K` | `Ctrl+K` |
-| Settings | `Cmd+,` | `Ctrl+,` |
+| Action          | macOS             | Windows/Linux      |
+| --------------- | ----------------- | ------------------ |
+| Toggle window   | `Cmd+Shift+Space` | `Ctrl+Shift+Space` |
+| New chat        | `Cmd+N`           | `Ctrl+N`           |
+| Voice input     | `Cmd+Shift+V`     | `Ctrl+Shift+V`     |
+| Command palette | `Cmd+K`           | `Ctrl+K`           |
+| Settings        | `Cmd+,`           | `Ctrl+,`           |
 
 ---
 
@@ -214,14 +218,14 @@ Wolfkrow checks for updates automatically. When an update is available, a notifi
 
 The following are intentionally out of scope for the current release and are **not yet available**:
 
-| Feature | Status | Notes |
-|---|---|---|
-| **Interactive clarification (ask-the-user dialog)** | Not in v1.0 | The worker does not emit a clarification-question event in v1.0, so the UI was removed to avoid dead code. Planned for v1.1 with a real worker emitter + round-trip answer channel. |
-| **Excalidraw inline embed in chat** | Not in v1.0 | Excalidraw diagrams render as an **external link** (`https://excalidraw.com/#json=…`, opens in a new tab) rather than inline. The Excalidraw MCP is available; only the inline chat embed is deferred. |
-| **Structured mgraph vault (ROAM-like)** | Not in v1.0 | Relation visualization is covered by the **Graph** page + Graph MCP search. The structured node types (entities/meetings/decisions/…) from LionClaw were not ported. Decision recorded in ADR-0033. |
-| **Harness automatic AI execution** | Not in v1.0 | The build harness foundation (planner→coder→evaluator, sprints/rounds, DiffViewer) is present, but end-to-end automated AI execution is deferred. |
-| **STT provider switching UI** | Not in v1.0 | Speech-to-text uses local Whisper (preferred) with OpenAI API fallback (see `WHISPER_BIN_PATH`). There is no in-app UI to switch the STT provider. |
-| **Knowledge retrieval benchmark** | Removed | Intentionally removed (ADR-0032). |
+| Feature                                             | Status      | Notes                                                                                                                                                                                                  |
+| --------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Interactive clarification (ask-the-user dialog)** | Not in v1.0 | The worker does not emit a clarification-question event in v1.0, so the UI was removed to avoid dead code. Planned for v1.1 with a real worker emitter + round-trip answer channel.                    |
+| **Excalidraw inline embed in chat**                 | Not in v1.0 | Excalidraw diagrams render as an **external link** (`https://excalidraw.com/#json=…`, opens in a new tab) rather than inline. The Excalidraw MCP is available; only the inline chat embed is deferred. |
+| **Structured mgraph vault (ROAM-like)**             | Not in v1.0 | Relation visualization is covered by the **Graph** page + Graph MCP search. The structured node types (entities/meetings/decisions/…) from LionClaw were not ported. Decision recorded in ADR-0033.    |
+| **Harness automatic AI execution**                  | Not in v1.0 | The build harness foundation (planner→coder→evaluator, sprints/rounds, DiffViewer) is present, but end-to-end automated AI execution is deferred.                                                      |
+| **STT provider switching UI**                       | Not in v1.0 | Speech-to-text uses local Whisper (preferred) with OpenAI API fallback (see `WHISPER_BIN_PATH`). There is no in-app UI to switch the STT provider.                                                     |
+| **Knowledge retrieval benchmark**                   | Removed     | Intentionally removed (ADR-0032).                                                                                                                                                                      |
 
 See [FEATURE_MATRIX.md](./FEATURE_MATRIX.md) for the full feature/deferred tracking.
 
@@ -246,7 +250,9 @@ Semantic search requires embedding each query. First-time searches on a large kn
 
 **Q: Can Wolfkrow run headless (no Electron)?**
 Yes. Start the worker and web app directly:
+
 ```bash
 pnpm dev
 ```
+
 Then open `http://localhost:3000` in any browser.

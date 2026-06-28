@@ -28,7 +28,7 @@ export type SupportedMimeType =
 export async function parseByMimeType(
   buffer: Buffer,
   mimeType: string,
-  filename: string,
+  filename: string
 ): Promise<ParsedDocument> {
   const { parsePdf } = await import('./pdf');
   const { parseDocx } = await import('./docx');
@@ -37,10 +37,13 @@ export async function parseByMimeType(
   const { parseMd } = await import('./md');
 
   if (mimeType === 'application/pdf') return parsePdf(buffer);
-  if (mimeType.includes('wordprocessingml') || mimeType === 'application/msword') return parseDocx(buffer);
+  if (mimeType.includes('wordprocessingml') || mimeType === 'application/msword')
+    return parseDocx(buffer);
   if (mimeType === 'text/csv') return parseCsv(buffer.toString('utf-8'));
-  if (mimeType.includes('spreadsheetml') || mimeType === 'application/vnd.ms-excel') return parseXlsx(buffer);
-  if (mimeType === 'text/markdown' || mimeType === 'text/plain') return parseMd(buffer.toString('utf-8'), filename);
+  if (mimeType.includes('spreadsheetml') || mimeType === 'application/vnd.ms-excel')
+    return parseXlsx(buffer);
+  if (mimeType === 'text/markdown' || mimeType === 'text/plain')
+    return parseMd(buffer.toString('utf-8'), filename);
   if (mimeType === 'text/html') return parseMd(buffer.toString('utf-8'), filename);
 
   return { text: buffer.toString('utf-8'), title: filename };

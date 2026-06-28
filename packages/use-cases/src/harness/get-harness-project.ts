@@ -1,8 +1,12 @@
 import type { HarnessProject, HarnessProjectRepo } from '@wolfkrow/domain';
 import { NotFoundError } from '@wolfkrow/domain';
 
-export interface GetHarnessProjectInput { projectId: string; }
-export interface GetHarnessProjectOutput { project: HarnessProject; }
+export interface GetHarnessProjectInput {
+  projectId: string;
+}
+export interface GetHarnessProjectOutput {
+  project: HarnessProject;
+}
 
 export class GetHarnessProjectUseCase {
   constructor(private readonly repo: HarnessProjectRepo) {}

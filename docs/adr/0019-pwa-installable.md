@@ -89,7 +89,7 @@ const serwist = new Serwist({
   runtimeCaching: [
     // Static assets (CacheFirst)
     {
-      matcher: ({ request }) => 
+      matcher: ({ request }) =>
         request.destination === 'style' ||
         request.destination === 'script' ||
         request.destination === 'font' ||
@@ -154,6 +154,7 @@ serwist.addEventListeners();
 ## Icons
 
 Necessários 8 ícones:
+
 - 192x192, 512x512, 512x512 maskable
 - 3 shortcut icons (96x96)
 
@@ -162,6 +163,7 @@ Gerados via `pwa-asset-generator` ou manualmente.
 ## Lighthouse PWA Score
 
 Targets:
+
 - Installable: ✅
 - PWA Optimized: ✅
 - Performance: ≥95

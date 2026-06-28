@@ -24,7 +24,12 @@ function makeUser(overrides: Partial<UserProps> = {}): User {
 describe('User', () => {
   it('fromProps → toProps roundtrip with defaults', () => {
     const u = makeUser({ displayName: 'Wolf' });
-    expect(u.toProps()).toMatchObject({ id: 'u1', displayName: 'Wolf', role: 'owner', failedAttempts: 0 });
+    expect(u.toProps()).toMatchObject({
+      id: 'u1',
+      displayName: 'Wolf',
+      role: 'owner',
+      failedAttempts: 0,
+    });
   });
 
   it('isLocked true when lockedUntil is in the future', () => {

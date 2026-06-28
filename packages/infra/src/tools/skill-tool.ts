@@ -16,6 +16,9 @@ export class SkillTool implements ToolExecutor {
   async execute(input: Record<string, unknown>, _ctx: ToolExecutionContext): Promise<ToolResult> {
     const callId = `skill-${Date.now()}`;
     // Stub — full implementation will call SkillRepo and invoke via wolfkrow-skills MCP.
-    return ToolResult.ok(callId, JSON.stringify({ __type: 'skill', name: input['name'], stub: true }));
+    return ToolResult.ok(
+      callId,
+      JSON.stringify({ __type: 'skill', name: input['name'], stub: true })
+    );
   }
 }

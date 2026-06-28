@@ -55,8 +55,15 @@ test.describe('Settings — hub', () => {
   test('renders all navigation cards', async ({ authedPage }) => {
     await authedPage.goto('/settings');
     const cards = [
-      'Providers', 'Vault', 'Agents', 'MCP Servers',
-      'Scheduler', 'Rules', 'Permissions', 'Channels', 'Usage',
+      'Providers',
+      'Vault',
+      'Agents',
+      'MCP Servers',
+      'Scheduler',
+      'Rules',
+      'Permissions',
+      'Channels',
+      'Usage',
     ];
     for (const label of cards) {
       await expect(authedPage.getByRole('link', { name: new RegExp(label, 'i') })).toBeVisible();
@@ -78,7 +85,10 @@ test.describe('Settings — hub', () => {
 
 test.describe('Providers configuration', () => {
   test('lists built-in providers with "Built-in" badge', async ({ authedPage }) => {
-    await mockProviders(authedPage, [providerAsRecord(BUILT_IN_AI), providerAsRecord(BUILT_IN_OPENAI)]);
+    await mockProviders(authedPage, [
+      providerAsRecord(BUILT_IN_AI),
+      providerAsRecord(BUILT_IN_OPENAI),
+    ]);
     await authedPage.goto('/settings/providers');
     await expect(authedPage.getByText(BUILT_IN_AI.displayName)).toBeVisible();
     await expect(authedPage.getByText(BUILT_IN_OPENAI.displayName)).toBeVisible();
@@ -86,7 +96,9 @@ test.describe('Providers configuration', () => {
     await expect(builtInBadges).toHaveCount(2);
   });
 
-  test('built-in providers show "Override" instead of "Edit" and no Delete', async ({ authedPage }) => {
+  test('built-in providers show "Override" instead of "Edit" and no Delete', async ({
+    authedPage,
+  }) => {
     await mockProviders(authedPage, [providerAsRecord(BUILT_IN_AI)]);
     await authedPage.goto('/settings/providers');
     await expect(authedPage.getByRole('button', { name: /^override$/i })).toBeVisible();
@@ -105,7 +117,9 @@ test.describe('Providers configuration', () => {
     };
     await mockProviders(authedPage, [providerAsRecord(BUILT_IN_AI), providerAsRecord(custom)]);
     await authedPage.goto('/settings/providers');
-    const card = authedPage.locator('[class*="rounded-lg"][class*="border"]').filter({ hasText: custom.displayName });
+    const card = authedPage
+      .locator('[class*="rounded-lg"][class*="border"]')
+      .filter({ hasText: custom.displayName });
     await expect(card.getByRole('button', { name: /^edit$/i })).toBeVisible();
     await expect(card.getByRole('button', { name: /^delete$/i })).toBeVisible();
   });
@@ -125,9 +139,17 @@ test.describe('Providers configuration', () => {
     await authedPage.route('**/api/providers', async (route) => {
       if (route.request().method() === 'POST') {
         savedPayload = JSON.parse(route.request().postData() ?? '{}');
-        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true }),
+        });
       } else {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([BUILT_IN_AI]) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([BUILT_IN_AI]),
+        });
       }
     });
 
@@ -155,7 +177,10 @@ test.describe('Providers configuration', () => {
       apiKeyAccount: 'my-e2e-account',
       apiKey: 'sk-test-key',
     });
-    expect((savedPayload as unknown as { models: string[] }).models).toEqual(['model-1', 'model-2']);
+    expect((savedPayload as unknown as { models: string[] }).models).toEqual([
+      'model-1',
+      'model-2',
+    ]);
   });
 
   test('add provider — validation rejects empty fields', async ({ authedPage }) => {
@@ -219,9 +244,17 @@ test.describe('Providers configuration', () => {
     await authedPage.route('**/api/providers', async (route) => {
       const method = route.request().method();
       if (method === 'GET') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(providers) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(providers),
+        });
       } else if (method === 'POST') {
-        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true }),
+        });
       } else {
         await route.continue();
       }
@@ -268,9 +301,17 @@ test.describe('Providers configuration', () => {
     await authedPage.route('**/api/providers', async (route) => {
       const method = route.request().method();
       if (method === 'GET') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([BUILT_IN_AI]) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([BUILT_IN_AI]),
+        });
       } else {
-        await route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'duplicate provider id' }) });
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'duplicate provider id' }),
+        });
       }
     });
 
@@ -284,7 +325,9 @@ test.describe('Providers configuration', () => {
     await dialog.locator(SELECTORS.providers.addModel).click();
     await dialog.locator(SELECTORS.providers.saveButton).click();
 
-    await expect(authedPage.getByText(/save failed.*duplicate provider id/i)).toBeVisible({ timeout: 5_000 });
+    await expect(authedPage.getByText(/save failed.*duplicate provider id/i)).toBeVisible({
+      timeout: 5_000,
+    });
   });
 });
 
@@ -293,12 +336,20 @@ test.describe('Vault configuration', () => {
     await mockVault(authedPage, []);
     await authedPage.goto('/vault');
     await expect(authedPage.getByText(/no secrets stored/i)).toBeVisible();
-    await expect(authedPage.getByText(/os keychain|secret service|credential vault/i)).toBeVisible();
+    await expect(
+      authedPage.getByText(/os keychain|secret service|credential vault/i)
+    ).toBeVisible();
   });
 
   test('lists existing secrets in table', async ({ authedPage }) => {
     await mockVault(authedPage, [
-      { id: 's1', key: 'anthropic-api-key', displayName: 'Anthropic', category: 'ai', lastRotated: '2026-06-01' },
+      {
+        id: 's1',
+        key: 'anthropic-api-key',
+        displayName: 'Anthropic',
+        category: 'ai',
+        lastRotated: '2026-06-01',
+      },
       { id: 's2', key: 'telegram-bot-token', displayName: 'Telegram', category: 'integration' },
     ]);
     await authedPage.goto('/vault');
@@ -321,9 +372,17 @@ test.describe('Vault configuration', () => {
     await authedPage.route('**/api/vault', async (route) => {
       if (route.request().method() === 'POST') {
         posted = JSON.parse(route.request().postData() ?? '{}');
-        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true }),
+        });
       } else {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ secrets: [] }) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ secrets: [] }),
+        });
       }
     });
     await authedPage.goto('/vault');
@@ -333,7 +392,12 @@ test.describe('Vault configuration', () => {
     await authedPage.locator('input[placeholder="Display Name"]').fill('OpenAI');
     await authedPage.getByRole('button', { name: /^save$/i }).click();
 
-    expect(posted).toMatchObject({ key: 'openai-api-key', value: 'sk-test', displayName: 'OpenAI', category: 'ai' });
+    expect(posted).toMatchObject({
+      key: 'openai-api-key',
+      value: 'sk-test',
+      displayName: 'OpenAI',
+      category: 'ai',
+    });
     await expect(authedPage.getByRole('heading', { name: /add secret/i })).toBeHidden();
   });
 
@@ -342,7 +406,11 @@ test.describe('Vault configuration', () => {
       { id: 's1', key: 'anthropic-api-key', displayName: 'Anthropic', category: 'ai' },
     ]);
     await authedPage.route('**/api/vault/anthropic-api-key/masked', async (route) => {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ masked: 'sk-a***************************xyz' }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ masked: 'sk-a***************************xyz' }),
+      });
     });
     await authedPage.goto('/vault');
     await authedPage.getByRole('button', { name: /^show$/i }).click();
@@ -353,18 +421,28 @@ test.describe('Vault configuration', () => {
     await mockVault(authedPage, []);
     await authedPage.goto('/vault');
     await authedPage.getByRole('button', { name: /export backup/i }).click();
-    await expect(authedPage.getByRole('heading', { name: /export encrypted backup/i })).toBeVisible();
+    await expect(
+      authedPage.getByRole('heading', { name: /export encrypted backup/i })
+    ).toBeVisible();
     await expect(authedPage.getByRole('button', { name: /download backup/i })).toBeDisabled();
   });
 
   test('export backup — enabled with passphrase, hits endpoint', async ({ authedPage }) => {
     let exported = false;
     await authedPage.route('**/api/vault', async (route) => {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ secrets: [] }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ secrets: [] }),
+      });
     });
     await authedPage.route('**/api/vault/export', async (route) => {
       exported = true;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ payload: { ciphertext: 'x' } }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ payload: { ciphertext: 'x' } }),
+      });
     });
     await authedPage.goto('/vault');
     await authedPage.getByRole('button', { name: /export backup/i }).click();
@@ -379,7 +457,11 @@ test.describe('Vault configuration', () => {
     ];
     await authedPage.route('**/api/vault', async (route) => {
       if (route.request().method() === 'GET') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ secrets }) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ secrets }),
+        });
       } else {
         await route.continue();
       }

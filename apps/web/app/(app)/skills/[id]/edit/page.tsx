@@ -12,7 +12,9 @@ export const metadata: Metadata = {
   description: 'Edit a reusable skill',
 };
 
-interface PageProps { params: Promise<{ id: string }>; }
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
 export default async function SkillEditPage({ params }: PageProps) {
   const { id } = await params;

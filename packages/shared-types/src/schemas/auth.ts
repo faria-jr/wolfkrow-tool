@@ -4,12 +4,7 @@
 
 import { z } from 'zod';
 
-import {
-  EmailSchema,
-  MetadataSchema,
-  TimestampSchema,
-  UuidSchema,
-} from './common';
+import { EmailSchema, MetadataSchema, TimestampSchema, UuidSchema } from './common';
 
 export const UserRoleSchema = z.enum(['owner']);
 
@@ -151,11 +146,10 @@ export const SetupRequestBodySchema = z
     displayName: z.string().max(100).optional(),
     email: EmailSchema.optional(),
   })
-  .refine(
-    (data) =>
-      data.confirmPassword === undefined || data.confirmPassword === data.password,
-    { message: 'Passwords do not match', path: ['confirmPassword'] },
-  );
+  .refine((data) => data.confirmPassword === undefined || data.confirmPassword === data.password, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 export type SetupRequestBody = z.infer<typeof SetupRequestBodySchema>;
 
@@ -190,7 +184,10 @@ export type EnableTotpRequestBody = z.infer<typeof EnableTotpRequestBodySchema>;
  */
 export const DisableTotpRequestBodySchema = z.object({
   password: z.string().min(1).max(128),
-  code: z.string().regex(/^\d{6}$/).optional(),
+  code: z
+    .string()
+    .regex(/^\d{6}$/)
+    .optional(),
 });
 
 export type DisableTotpRequestBody = z.infer<typeof DisableTotpRequestBodySchema>;

@@ -1,7 +1,10 @@
 import type { HarnessProjectRepo } from '@wolfkrow/domain';
 import { NotFoundError } from '@wolfkrow/domain';
 
-export interface DeleteHarnessProjectInput { projectId: string; userId: string; }
+export interface DeleteHarnessProjectInput {
+  projectId: string;
+  userId: string;
+}
 
 export class DeleteHarnessProjectUseCase {
   constructor(private readonly repo: HarnessProjectRepo) {}

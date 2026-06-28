@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const session = await getSession(sessionToken);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json() as Record<string, unknown>;
+  const body = (await req.json()) as Record<string, unknown>;
   const res = await fetch(`${WORKER}/pipeline/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${sessionToken}` },

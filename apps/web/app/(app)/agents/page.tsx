@@ -13,7 +13,11 @@ export const metadata: Metadata = {
 export default function AgentsPage() {
   return (
     <PageShell>
-      <PageHeader title="Agents" description="Configure AI personas" icon={<Bot className="h-6 w-6" />} />
+      <PageHeader
+        title="Agents"
+        description="Configure AI personas"
+        icon={<Bot className="h-6 w-6" />}
+      />
       <PageContent>
         <AgentsView />
       </PageContent>

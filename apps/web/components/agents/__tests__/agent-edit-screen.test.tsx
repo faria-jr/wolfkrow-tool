@@ -65,7 +65,9 @@ function handleAgentNotFound(): Response {
   return mockJsonResponse({ error: 'Agent not found' }, 404);
 }
 
-interface FetchRouteOpts { notFound?: boolean; }
+interface FetchRouteOpts {
+  notFound?: boolean;
+}
 
 /** URL-aware fetch mock so `/api/providers` doesn't return the agent payload
  *  (which would break `providers.find(...)` inside ModelSection). */
@@ -81,7 +83,9 @@ function setupFetch(_opts: FetchRouteOpts = {}) {
     if (url.includes('/api/agents/') && method === 'PUT') return handleAgentPut();
     return mockJsonResponse({});
   };
-  global.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => handler(input, init)) as unknown as typeof fetch;
+  global.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) =>
+    handler(input, init)
+  ) as unknown as typeof fetch;
   return calls;
 }
 
@@ -100,7 +104,9 @@ describe('AgentEditScreen (EPIC 1.1)', () => {
     await waitFor(() => {
       expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe('researcher');
     });
-    expect((screen.getByLabelText(/system prompt/i) as HTMLTextAreaElement).value).toContain('Existing prompt');
+    expect((screen.getByLabelText(/system prompt/i) as HTMLTextAreaElement).value).toContain(
+      'Existing prompt'
+    );
   });
 
   it('submits PUT to /api/agents/[id] and redirects to /agents on success', async () => {
@@ -114,7 +120,9 @@ describe('AgentEditScreen (EPIC 1.1)', () => {
     await user.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
-      const putCall = calls.find(([url, init]) => url === '/api/agents/a-1' && init?.method === 'PUT');
+      const putCall = calls.find(
+        ([url, init]) => url === '/api/agents/a-1' && init?.method === 'PUT'
+      );
       expect(putCall).toBeTruthy();
     });
 

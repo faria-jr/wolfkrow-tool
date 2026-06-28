@@ -16,7 +16,7 @@ export class UnlockSessionUseCase implements UseCase<UnlockSessionInput, UnlockS
   constructor(
     private readonly userRepo: UserRepo,
     private readonly hasher: PasswordHasher,
-    private readonly lockout: LockoutPolicy,
+    private readonly lockout: LockoutPolicy
   ) {}
 
   async execute(input: UnlockSessionInput): Promise<UnlockSessionOutput> {

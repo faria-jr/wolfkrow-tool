@@ -9,9 +9,17 @@ vi.mock('next/navigation', () => ({ useRouter: vi.fn() }));
 
 function makeSkill() {
   return {
-    id: 'sk1', userId: 'u1', name: 'My Skill', description: 'does things',
-    content: 'body', tags: ['x'], version: '1.0.0', author: undefined,
-    isBuiltIn: false, createdAt: '2024-01-01', updatedAt: '2024-01-01',
+    id: 'sk1',
+    userId: 'u1',
+    name: 'My Skill',
+    description: 'does things',
+    content: 'body',
+    tags: ['x'],
+    version: '1.0.0',
+    author: undefined,
+    isBuiltIn: false,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
   };
 }
 
@@ -63,7 +71,10 @@ describe('SkillsView', () => {
     await userEvent.click(screen.getByLabelText('Duplicate skill'));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/skills', expect.objectContaining({ method: 'POST' }));
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/skills',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
   });
 

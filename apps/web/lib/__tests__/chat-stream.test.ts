@@ -33,7 +33,7 @@ describe('readChatStream (FIX-011)', () => {
     expect(text).toBe('Hello');
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/chat/send'),
-      expect.objectContaining({ method: 'POST', credentials: 'include' }),
+      expect.objectContaining({ method: 'POST', credentials: 'include' })
     );
   });
 

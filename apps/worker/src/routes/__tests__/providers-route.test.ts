@@ -58,7 +58,7 @@ describe('GET /providers', () => {
     });
     mockProviderConfigRepo.findAll.mockResolvedValue([custom]);
     mockSecrets.get.mockImplementation(async (account: string) =>
-      account === 'custom1' ? 'secret' : null,
+      account === 'custom1' ? 'secret' : null
     );
 
     const res = await app.inject({ method: 'GET', url: '/providers' });

@@ -17,7 +17,10 @@ async function proxy(request: Request, path: string): Promise<NextResponse> {
   }
   const res = await fetch(url, init);
   const data = await res.text();
-  return new NextResponse(data, { status: res.status, headers: { 'Content-Type': res.headers.get('content-type') ?? 'application/json' } });
+  return new NextResponse(data, {
+    status: res.status,
+    headers: { 'Content-Type': res.headers.get('content-type') ?? 'application/json' },
+  });
 }
 
 export async function POST(request: Request) {

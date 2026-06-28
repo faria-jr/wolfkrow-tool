@@ -38,25 +38,45 @@ describe('resolveAgentStreamPort (RM3.2)', () => {
   });
 
   it('uses Anthropic key when provider is undefined (default)', async () => {
-    const port = await resolveAgentStreamPort({ agentProvider: undefined, allowedTools: ['bash'], workDir: '/tmp', requestPermission: () => Promise.resolve(true) });
+    const port = await resolveAgentStreamPort({
+      agentProvider: undefined,
+      allowedTools: ['bash'],
+      workDir: '/tmp',
+      requestPermission: () => Promise.resolve(true),
+    });
     expect(port).toBeDefined();
     expect(anthropicKeySpy).toHaveBeenCalled();
   });
 
   it('uses Anthropic key when provider is explicitly anthropic', async () => {
-    const port = await resolveAgentStreamPort({ agentProvider: 'anthropic', allowedTools: ['bash'], workDir: '/tmp', requestPermission: () => Promise.resolve(true) });
+    const port = await resolveAgentStreamPort({
+      agentProvider: 'anthropic',
+      allowedTools: ['bash'],
+      workDir: '/tmp',
+      requestPermission: () => Promise.resolve(true),
+    });
     expect(port).toBeDefined();
     expect(anthropicKeySpy).toHaveBeenCalled();
   });
 
   it('does NOT call getAnthropicApiKey when provider is zai', async () => {
-    const port = await resolveAgentStreamPort({ agentProvider: 'zai', allowedTools: ['bash'], workDir: '/tmp', requestPermission: () => Promise.resolve(true) });
+    const port = await resolveAgentStreamPort({
+      agentProvider: 'zai',
+      allowedTools: ['bash'],
+      workDir: '/tmp',
+      requestPermission: () => Promise.resolve(true),
+    });
     expect(port).toBeDefined();
     expect(anthropicKeySpy).not.toHaveBeenCalled();
   });
 
   it('resolves zai key from secrets or keychain fallback (not Anthropic)', async () => {
-    await resolveAgentStreamPort({ agentProvider: 'zai', allowedTools: ['bash'], workDir: '/tmp', requestPermission: () => Promise.resolve(true) });
+    await resolveAgentStreamPort({
+      agentProvider: 'zai',
+      allowedTools: ['bash'],
+      workDir: '/tmp',
+      requestPermission: () => Promise.resolve(true),
+    });
     expect(anthropicKeySpy).not.toHaveBeenCalled();
   });
 });

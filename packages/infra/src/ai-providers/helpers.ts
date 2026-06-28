@@ -1,9 +1,7 @@
 import type { CompletionResult, StreamChunk } from './types';
 
 /** Acumula um stream de chunks em CompletionResult (complete() de qualquer provider). */
-export async function accumulate(
-  stream: AsyncIterable<StreamChunk>,
-): Promise<CompletionResult> {
+export async function accumulate(stream: AsyncIterable<StreamChunk>): Promise<CompletionResult> {
   let content = '';
   const usage = { inputTokens: 0, outputTokens: 0 };
 

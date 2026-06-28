@@ -8,7 +8,7 @@ describe('PageShell', () => {
     render(
       <PageShell>
         <span data-testid="child" />
-      </PageShell>,
+      </PageShell>
     );
     expect(screen.getByTestId('child')).toBeDefined();
   });
@@ -17,7 +17,7 @@ describe('PageShell', () => {
     const { container } = render(
       <PageShell variant="flush">
         <span data-testid="child" />
-      </PageShell>,
+      </PageShell>
     );
     const shell = container.firstElementChild as HTMLElement;
     expect(shell.className).not.toMatch(/p-4|sm:p-6/);
@@ -28,7 +28,7 @@ describe('PageShell', () => {
     const { container } = render(
       <PageShell>
         <span data-testid="child" />
-      </PageShell>,
+      </PageShell>
     );
     const shell = container.firstElementChild as HTMLElement;
     expect(shell.className).toMatch(/flex/);
@@ -39,7 +39,7 @@ describe('PageShell', () => {
     const { container } = render(
       <PageShell variant="narrow">
         <span data-testid="child" />
-      </PageShell>,
+      </PageShell>
     );
     const shell = container.firstElementChild as HTMLElement;
     expect(shell.className).toMatch(/max-w-content|max-w-3xl/);
@@ -49,7 +49,7 @@ describe('PageShell', () => {
     const { container } = render(
       <PageShell className="custom-x">
         <span data-testid="child" />
-      </PageShell>,
+      </PageShell>
     );
     expect((container.firstElementChild as HTMLElement).className).toMatch(/custom-x/);
   });
@@ -60,7 +60,7 @@ describe('PageContent', () => {
     const { container } = render(
       <PageContent>
         <span data-testid="child" />
-      </PageContent>,
+      </PageContent>
     );
     const region = container.firstElementChild as HTMLElement;
     expect(region.className).toMatch(/overflow-auto/);

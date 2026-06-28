@@ -23,13 +23,19 @@ import { vaultRoutes } from '../vault';
  * as it does in production (server.ts).
  */
 function setErrorHandler(app: ReturnType<typeof Fastify>) {
-  app.setErrorHandler((error: Error, _request: unknown, reply: { status: (code: number) => { send: (body: unknown) => void } }) => {
-    const err = error as Error & { statusCode?: number; code?: string };
-    reply.status(err.statusCode ?? 500).send({
-      error: err.message,
-      code: err.code ?? 'INTERNAL_ERROR',
-    });
-  });
+  app.setErrorHandler(
+    (
+      error: Error,
+      _request: unknown,
+      reply: { status: (code: number) => { send: (body: unknown) => void } }
+    ) => {
+      const err = error as Error & { statusCode?: number; code?: string };
+      reply.status(err.statusCode ?? 500).send({
+        error: err.message,
+        code: err.code ?? 'INTERNAL_ERROR',
+      });
+    }
+  );
 }
 
 /**
@@ -38,7 +44,7 @@ function setErrorHandler(app: ReturnType<typeof Fastify>) {
  * the handler.
  */
 async function buildApp(
-  register: (server: AuthFastifyInstance) => Promise<void>,
+  register: (server: AuthFastifyInstance) => Promise<void>
 ): Promise<ReturnType<typeof Fastify>> {
   const app = Fastify();
   await app.register(async (instance) => {
@@ -59,7 +65,12 @@ const emptyRepos = {
   semanticMemory: { add: vi.fn(), search: vi.fn(), findByUserId: vi.fn(), delete: vi.fn() },
   dailySummary: { findByUserId: vi.fn(), upsert: vi.fn() },
   scheduledTask: { findById: vi.fn(), findAll: vi.fn(), upsert: vi.fn(), delete: vi.fn() },
-  taskRun: { findById: vi.fn(), findByTaskId: vi.fn(), upsert: vi.fn(), findAwaitingReview: vi.fn() },
+  taskRun: {
+    findById: vi.fn(),
+    findByTaskId: vi.fn(),
+    upsert: vi.fn(),
+    findAwaitingReview: vi.fn(),
+  },
   mcpServer: {},
   mcpToolRegistry: {},
 };

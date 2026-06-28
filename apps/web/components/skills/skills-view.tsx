@@ -13,7 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const API = '/api/skills';
-async function apiFetch(path: string, opts?: RequestInit) { return fetch(path, { credentials: 'include', ...opts }); }
+async function apiFetch(path: string, opts?: RequestInit) {
+  return fetch(path, { credentials: 'include', ...opts });
+}
 async function fetchSkills(): Promise<SkillData[]> {
   const res = await apiFetch(API);
   if (!res.ok) throw new Error('Failed to fetch skills');
@@ -29,7 +31,8 @@ export function SkillsView() {
     <div className="space-y-4">
       <div className="flex justify-end">
         <Button onClick={() => router.push('/skills/new')}>
-          <Plus className="mr-2 h-4 w-4" />New skill
+          <Plus className="mr-2 h-4 w-4" />
+          New skill
         </Button>
       </div>
       {loading ? (
@@ -73,41 +76,49 @@ function useSkillsData() {
     }
   }, []);
 
-  useEffect(() => { void loadSkills(); }, [loadSkills]);
+  useEffect(() => {
+    void loadSkills();
+  }, [loadSkills]);
   return { skills, loading, error, loadSkills };
 }
 
 function useSkillMutations(loadSkills: () => Promise<void>) {
-  const duplicate = useCallback(async (skill: SkillData) => {
-    try {
-      const res = await apiFetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: `${skill.name} copy`,
-          description: skill.description,
-          content: skill.content,
-          tags: skill.tags,
-        }),
-      });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      toast.success('Skill duplicated');
-      await loadSkills();
-    } catch {
-      toast.error('Failed to duplicate skill');
-    }
-  }, [loadSkills]);
+  const duplicate = useCallback(
+    async (skill: SkillData) => {
+      try {
+        const res = await apiFetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: `${skill.name} copy`,
+            description: skill.description,
+            content: skill.content,
+            tags: skill.tags,
+          }),
+        });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        toast.success('Skill duplicated');
+        await loadSkills();
+      } catch {
+        toast.error('Failed to duplicate skill');
+      }
+    },
+    [loadSkills]
+  );
 
-  const remove = useCallback(async (id: string) => {
-    try {
-      const res = await apiFetch(`${API}/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      toast.success('Skill deleted');
-      await loadSkills();
-    } catch {
-      toast.error('Failed to delete skill');
-    }
-  }, [loadSkills]);
+  const remove = useCallback(
+    async (id: string) => {
+      try {
+        const res = await apiFetch(`${API}/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        toast.success('Skill deleted');
+        await loadSkills();
+      } catch {
+        toast.error('Failed to delete skill');
+      }
+    },
+    [loadSkills]
+  );
 
   return { duplicate, remove };
 }

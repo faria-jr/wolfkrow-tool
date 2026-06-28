@@ -10,26 +10,28 @@ import { makeCoderWithTools, getHarnessProjectWorkDir } from '../../container';
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { harnessRoutes } from '../harness';
 
-const { mockProjectRepo, mockSprintRepo, mockRoundRepo, mockRunHarnessFeature } = vi.hoisted(() => ({
-  mockProjectRepo: {
-    findById: vi.fn(),
-    findByUserId: vi.fn(),
-    save: vi.fn(),
-    delete: vi.fn(),
-  },
-  mockSprintRepo: {
-    findById: vi.fn(),
-    findByProjectId: vi.fn(),
-    save: vi.fn(),
-  },
-  mockRoundRepo: {
-    findById: vi.fn(),
-    findBySprintId: vi.fn(),
-    findBySprintAndFeature: vi.fn(),
-    save: vi.fn(),
-  },
-  mockRunHarnessFeature: vi.fn(),
-}));
+const { mockProjectRepo, mockSprintRepo, mockRoundRepo, mockRunHarnessFeature } = vi.hoisted(
+  () => ({
+    mockProjectRepo: {
+      findById: vi.fn(),
+      findByUserId: vi.fn(),
+      save: vi.fn(),
+      delete: vi.fn(),
+    },
+    mockSprintRepo: {
+      findById: vi.fn(),
+      findByProjectId: vi.fn(),
+      save: vi.fn(),
+    },
+    mockRoundRepo: {
+      findById: vi.fn(),
+      findBySprintId: vi.fn(),
+      findBySprintAndFeature: vi.fn(),
+      save: vi.fn(),
+    },
+    mockRunHarnessFeature: vi.fn(),
+  })
+);
 
 vi.mock('../../container', () => ({
   getRepos: vi.fn().mockReturnValue({
@@ -58,8 +60,19 @@ function makeProject() {
     description: undefined,
     specPath: '/tmp/spec.md',
     status: 'running',
-    config: { maxRoundsPerFeature: 3, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' },
-    metrics: { totalTokens: 0, totalCost: 0, roundCount: 0, featuresPassed: 0, featuresTotal: 0, totalDurationMs: 0 },
+    config: {
+      maxRoundsPerFeature: 3,
+      coderModel: 'claude-sonnet-4-6',
+      plannerModel: 'claude-opus-4-8',
+    },
+    metrics: {
+      totalTokens: 0,
+      totalCost: 0,
+      roundCount: 0,
+      featuresPassed: 0,
+      featuresTotal: 0,
+      totalDurationMs: 0,
+    },
     createdAt: new Date(),
     updatedAt: new Date(),
     completedAt: undefined,
@@ -74,7 +87,9 @@ function makeSprint() {
     name: 'Sprint 1',
     description: undefined,
     status: 'in_progress',
-    features: [{ name: 'Auth', description: 'login flow', acceptanceCriteria: ['must authenticate'] }],
+    features: [
+      { name: 'Auth', description: 'login flow', acceptanceCriteria: ['must authenticate'] },
+    ],
     startedAt: new Date(),
     completedAt: undefined,
     metrics: { roundCount: 0, featuresPassed: 0, featuresTotal: 1, durationMs: 0 },
@@ -155,14 +170,21 @@ describe('POST /projects/:id/run SSE route (T25)', () => {
     expect(res.headers['content-type']).toContain('text/event-stream');
 
     const events = parseSSE(res.body);
-    expect(events).toContainEqual(expect.objectContaining({ type: 'feature_done', passed: true, featureIndex: 0 }));
+    expect(events).toContainEqual(
+      expect.objectContaining({ type: 'feature_done', passed: true, featureIndex: 0 })
+    );
     expect(events).toContainEqual(expect.objectContaining({ type: 'done' }));
   });
 
   it('calls makeCoderWithTools with the project workspace dir', async () => {
     mockProjectRepo.findById.mockResolvedValue(makeProject());
     mockSprintRepo.findById.mockResolvedValue(makeSprint());
-    mockRunHarnessFeature.mockResolvedValue({ featureIndex: 0, rounds: 1, passed: false, finalOutput: undefined });
+    mockRunHarnessFeature.mockResolvedValue({
+      featureIndex: 0,
+      rounds: 1,
+      passed: false,
+      finalOutput: undefined,
+    });
 
     await app.inject({
       method: 'POST',
@@ -174,7 +196,7 @@ describe('POST /projects/:id/run SSE route (T25)', () => {
     expect(vi.mocked(makeCoderWithTools)).toHaveBeenCalledWith(
       '/tmp/wolfkrow-harness/proj-1',
       { maxRoundsPerFeature: 3, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' },
-      undefined,
+      undefined
     );
   });
 });

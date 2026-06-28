@@ -17,12 +17,9 @@ const ts = '2024-01-01T00:00:00Z';
 
 describe('memory schemas', () => {
   describe('CompactionTriggerSchema', () => {
-    it.each(['manual', 'token_threshold', 'time_based', 'idle'] as const)(
-      'accepts %s',
-      (v) => {
-        expect(CompactionTriggerSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each(['manual', 'token_threshold', 'time_based', 'idle'] as const)('accepts %s', (v) => {
+      expect(CompactionTriggerSchema.parse(v)).toBe(v);
+    });
     it('rejects invalid', () => {
       expect(() => CompactionTriggerSchema.parse('nope')).toThrow();
     });
@@ -48,16 +45,14 @@ describe('memory schemas', () => {
           ...valid,
           embedding: [0.1],
           lastAccessedAt: ts,
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects invalid source', () => {
       expect(() => SemanticMemorySchema.parse({ ...valid, source: 'nope' })).toThrow();
     });
     it('rejects importance out of [0,1]', () => {
-      expect(() =>
-        SemanticMemorySchema.parse({ ...valid, importance: 2 }),
-      ).toThrow();
+      expect(() => SemanticMemorySchema.parse({ ...valid, importance: 2 })).toThrow();
     });
     it('rejects empty content', () => {
       expect(() => SemanticMemorySchema.parse({ ...valid, content: '' })).toThrow();
@@ -73,9 +68,7 @@ describe('memory schemas', () => {
       expect(parsed.importance).toBe(0.5);
     });
     it('rejects missing content', () => {
-      expect(() =>
-        CreateSemanticMemoryInputSchema.parse({ source: 'user' }),
-      ).toThrow();
+      expect(() => CreateSemanticMemoryInputSchema.parse({ source: 'user' })).toThrow();
     });
   });
 
@@ -95,9 +88,7 @@ describe('memory schemas', () => {
       expect(parsed.cost).toBe(0);
     });
     it('rejects a bad date format', () => {
-      expect(() =>
-        DailySummarySchema.parse({ ...valid, date: '01/01/2024' }),
-      ).toThrow();
+      expect(() => DailySummarySchema.parse({ ...valid, date: '01/01/2024' })).toThrow();
     });
     it('rejects empty content', () => {
       expect(() => DailySummarySchema.parse({ ...valid, content: '' })).toThrow();
@@ -123,13 +114,11 @@ describe('memory schemas', () => {
           ...valid,
           sessionId: uuid,
           summary: 'compacted',
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects negative beforeTokens', () => {
-      expect(() =>
-        CompactionLogEntrySchema.parse({ ...valid, beforeTokens: -1 }),
-      ).toThrow();
+      expect(() => CompactionLogEntrySchema.parse({ ...valid, beforeTokens: -1 })).toThrow();
     });
   });
 
@@ -157,24 +146,20 @@ describe('memory schemas', () => {
     });
     it('rejects importance out of 0-100', () => {
       expect(() =>
-        CreateMemoryRequestBodySchema.parse({ content: 'm', importance: 101 }),
+        CreateMemoryRequestBodySchema.parse({ content: 'm', importance: 101 })
       ).toThrow();
     });
   });
 
   describe('MemorySearchRequestBodySchema', () => {
     it('accepts a valid search', () => {
-      expect(() =>
-        MemorySearchRequestBodySchema.parse({ query: 'find' }),
-      ).not.toThrow();
+      expect(() => MemorySearchRequestBodySchema.parse({ query: 'find' })).not.toThrow();
     });
     it('rejects empty query', () => {
       expect(() => MemorySearchRequestBodySchema.parse({ query: '' })).toThrow();
     });
     it('rejects limit over 100', () => {
-      expect(() =>
-        MemorySearchRequestBodySchema.parse({ query: 'q', limit: 101 }),
-      ).toThrow();
+      expect(() => MemorySearchRequestBodySchema.parse({ query: 'q', limit: 101 })).toThrow();
     });
   });
 
@@ -187,13 +172,11 @@ describe('memory schemas', () => {
         CreateDailySummaryRequestBodySchema.parse({
           date: '2024-01-01',
           content: 'sum',
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects bad date format', () => {
-      expect(() =>
-        CreateDailySummaryRequestBodySchema.parse({ date: 'nope' }),
-      ).toThrow();
+      expect(() => CreateDailySummaryRequestBodySchema.parse({ date: 'nope' })).toThrow();
     });
   });
 });

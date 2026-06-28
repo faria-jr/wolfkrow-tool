@@ -7,7 +7,13 @@ import type { AgentFormValues } from './schema';
 
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface ProviderDTO {
   id: string;
@@ -57,39 +63,78 @@ function ModelField({ control, providers }: Props) {
   }, [models, currentModel, setValue]);
 
   return (
-    <FormField control={control} name="model" render={({ field }) => (
-      <FormItem>
-        <FormLabel>Model</FormLabel>
-        <Select onValueChange={field.onChange} value={field.value}>
-          <FormControl><SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger></FormControl>
-          <SelectContent>{models.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
-        </Select>
-        <FormMessage />
-      </FormItem>
-    )} />
+    <FormField
+      control={control}
+      name="model"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Model</FormLabel>
+          <Select onValueChange={field.onChange} value={field.value}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {models.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }
 
 function EffortAndTurnsFields({ control }: Props) {
   return (
     <div className="grid grid-cols-2 gap-4">
-      <FormField control={control} name="effort" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Effort</FormLabel>
-          <Select onValueChange={field.onChange} value={field.value}>
-            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-            <SelectContent>{EFFORTS.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )} />
-      <FormField control={control} name="maxTurns" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Max turns</FormLabel>
-          <FormControl><Input type="number" min={1} {...field} onChange={(e) => field.onChange(Number(e.target.value))} /></FormControl>
-          <FormMessage />
-        </FormItem>
-      )} />
+      <FormField
+        control={control}
+        name="effort"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Effort</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {EFFORTS.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {e}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={control}
+        name="maxTurns"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Max turns</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                min={1}
+                {...field}
+                onChange={(e) => field.onChange(Number(e.target.value))}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 }
@@ -111,24 +156,37 @@ function ProviderField({ control, providers, runtime }: Props & { runtime: Runti
   const list = useMemo(() => {
     if (!providers) return runtime === 'claude-compat' ? FALLBACK_CLAUDE_COMPAT : [];
     const supported = RUNTIME_PROTOCOLS[runtime] ?? [];
-    return providers.filter((p) => supported.includes(p.protocol) && !(runtime === 'claude-compat' && p.id === 'anthropic'));
+    return providers.filter(
+      (p) =>
+        supported.includes(p.protocol) && !(runtime === 'claude-compat' && p.id === 'anthropic')
+    );
   }, [providers, runtime]);
 
   return (
-    <FormField control={control} name="provider" render={({ field }) => (
-      <FormItem>
-        <FormLabel>Provider</FormLabel>
-        <Select onValueChange={field.onChange} value={field.value ?? ''}>
-          <FormControl><SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger></FormControl>
-          <SelectContent>
-            {list.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.displayName}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <FormMessage />
-      </FormItem>
-    )} />
+    <FormField
+      control={control}
+      name="provider"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Provider</FormLabel>
+          <Select onValueChange={field.onChange} value={field.value ?? ''}>
+            <FormControl>
+              <SelectTrigger>
+                <SelectValue placeholder="Select provider" />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent>
+              {list.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.displayName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
   );
 }
 
@@ -138,18 +196,36 @@ export function ModelSection({ control, providers }: Props) {
   return (
     <div className="space-y-4">
       <EffortAndTurnsFields control={control} />
-      <ProviderField control={control} runtime={runtime} {...(providers !== undefined ? { providers } : {})} />
+      <ProviderField
+        control={control}
+        runtime={runtime}
+        {...(providers !== undefined ? { providers } : {})}
+      />
       <ModelField control={control} {...(providers !== undefined ? { providers } : {})} />
-      <FormField control={control} name="runtime" render={({ field }) => (
-        <FormItem>
-          <FormLabel>Runtime</FormLabel>
-          <Select onValueChange={field.onChange} value={field.value}>
-            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-            <SelectContent>{RUNTIMES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )} />
+      <FormField
+        control={control}
+        name="runtime"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Runtime</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
+              <FormControl>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                {RUNTIMES.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
     </div>
   );
 }

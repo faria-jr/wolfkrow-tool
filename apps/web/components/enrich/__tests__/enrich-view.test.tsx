@@ -10,10 +10,13 @@ const mockSessions = [
 ];
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({ sessions: mockSessions }),
-  }));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ sessions: mockSessions }),
+    })
+  );
 });
 
 describe('EnrichView', () => {
@@ -71,7 +74,8 @@ describe('EnrichView', () => {
 
   it('validate sends specContent in request body', async () => {
     const user = userEvent.setup();
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ sessions: mockSessions }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ output: 'validator result' }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ sessions: mockSessions }) });
@@ -100,7 +104,8 @@ describe('EnrichView', () => {
 
   it('shows validator output after validate', async () => {
     const user = userEvent.setup();
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ sessions: mockSessions }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ output: 'validator result text' }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ sessions: mockSessions }) });
@@ -117,7 +122,8 @@ describe('EnrichView', () => {
 
   it('shows enricher output after enrich', async () => {
     const user = userEvent.setup();
-    const mockFetch = vi.fn()
+    const mockFetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ sessions: mockSessions }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ enriched: 'enriched result text' }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ sessions: mockSessions }) });

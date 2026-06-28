@@ -10,7 +10,10 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 export function SeverityBadge({ severity }: { severity: string }) {
   return (
-    <Badge className={SEVERITY_COLORS[severity] ?? 'bg-muted text-muted-foreground'} variant="outline">
+    <Badge
+      className={SEVERITY_COLORS[severity] ?? 'bg-muted text-muted-foreground'}
+      variant="outline"
+    >
       {severity}
     </Badge>
   );

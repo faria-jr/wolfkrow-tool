@@ -6,7 +6,8 @@ export function fromJson<T>(value: unknown, fallback: T): T {
 }
 
 export function fromJsonRequired<T>(value: unknown): T {
-  if (value === null || value === undefined) throw new Error('Expected non-null JSON field from DB');
+  if (value === null || value === undefined)
+    throw new Error('Expected non-null JSON field from DB');
   return value as T;
 }
 

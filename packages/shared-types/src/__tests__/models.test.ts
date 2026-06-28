@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  DEFAULT_AGENT_MODEL,
-  DEFAULT_CHAT_MODEL,
-  DEFAULT_CODER_MODEL,
-} from '../constants/models';
+import { DEFAULT_AGENT_MODEL, DEFAULT_CHAT_MODEL, DEFAULT_CODER_MODEL } from '../constants/models';
 
 describe('default model constants', () => {
   it('exposes a DEFAULT_CHAT_MODEL string', () => {

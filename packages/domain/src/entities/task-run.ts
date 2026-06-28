@@ -51,9 +51,16 @@ export class TaskRun {
 
   static create(input: TaskRunCreateInput): TaskRun {
     return new TaskRun({
-      id: randomUUID(), taskId: input.taskId, status: 'pending',
-      startedAt: undefined, completedAt: undefined, output: undefined,
-      error: undefined, reviewNote: undefined, reviewedAt: undefined, metrics: undefined,
+      id: randomUUID(),
+      taskId: input.taskId,
+      status: 'pending',
+      startedAt: undefined,
+      completedAt: undefined,
+      output: undefined,
+      error: undefined,
+      reviewNote: undefined,
+      reviewedAt: undefined,
+      metrics: undefined,
     });
   }
 
@@ -63,9 +70,15 @@ export class TaskRun {
 
   toProps(): TaskRunProps {
     return {
-      id: this.id, taskId: this.taskId, status: this.status,
-      startedAt: this.startedAt, completedAt: this.completedAt, output: this.output,
-      error: this.error, reviewNote: this.reviewNote, reviewedAt: this.reviewedAt,
+      id: this.id,
+      taskId: this.taskId,
+      status: this.status,
+      startedAt: this.startedAt,
+      completedAt: this.completedAt,
+      output: this.output,
+      error: this.error,
+      reviewNote: this.reviewNote,
+      reviewedAt: this.reviewedAt,
       metrics: this.metrics,
     };
   }
@@ -81,11 +94,13 @@ export class TaskRun {
       error?: string;
       metrics?: TaskRunMetrics;
       now?: Date;
-    } = {},
+    } = {}
   ): TaskRun {
     const now = opts.now ?? new Date();
     return TaskRun.fromProps({
-      ...this.toProps(), status, completedAt: now,
+      ...this.toProps(),
+      status,
+      completedAt: now,
       ...(opts.output !== undefined ? { output: opts.output } : {}),
       ...(opts.error !== undefined ? { error: opts.error } : {}),
       ...(opts.metrics !== undefined ? { metrics: opts.metrics } : {}),
@@ -94,7 +109,9 @@ export class TaskRun {
 
   review(status: 'validated' | 'rejected', note?: string, now = new Date()): TaskRun {
     return TaskRun.fromProps({
-      ...this.toProps(), status, reviewedAt: now,
+      ...this.toProps(),
+      status,
+      reviewedAt: now,
       ...(note !== undefined ? { reviewNote: note } : {}),
     });
   }

@@ -1,8 +1,16 @@
 import type { HarnessRound, HarnessRoundRepo, HarnessSprintRepo } from '@wolfkrow/domain';
 import { HarnessRound as HarnessRoundEntity, NotFoundError } from '@wolfkrow/domain';
 
-export interface CoderToolCall { id: string; name: string; input: Record<string, unknown>; }
-export interface CoderToolResult { callId: string; output: string; isError: boolean; }
+export interface CoderToolCall {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+export interface CoderToolResult {
+  callId: string;
+  output: string;
+  isError: boolean;
+}
 
 export interface CoderAgent {
   implement(input: {
@@ -42,7 +50,7 @@ export class RunCoderRoundUseCase {
   constructor(
     private readonly sprintRepo: HarnessSprintRepo,
     private readonly roundRepo: HarnessRoundRepo,
-    private readonly coder: CoderAgent,
+    private readonly coder: CoderAgent
   ) {}
 
   async execute(input: RunCoderRoundInput): Promise<RunCoderRoundOutput> {
@@ -50,10 +58,15 @@ export class RunCoderRoundUseCase {
     if (!sprint) throw new NotFoundError('HarnessSprint', input.sprintId);
 
     const feature = sprint.features[input.featureIndex];
-    if (!feature) throw new NotFoundError('SprintFeature', `${input.sprintId}:${input.featureIndex}`);
+    if (!feature)
+      throw new NotFoundError('SprintFeature', `${input.sprintId}:${input.featureIndex}`);
 
     let round = await this.roundRepo.save(
-      HarnessRoundEntity.create({ sprintId: sprint.id, featureIndex: input.featureIndex, roundNumber: input.roundNumber }),
+      HarnessRoundEntity.create({
+        sprintId: sprint.id,
+        featureIndex: input.featureIndex,
+        roundNumber: input.roundNumber,
+      })
     );
 
     const result = await this.coder.implement({

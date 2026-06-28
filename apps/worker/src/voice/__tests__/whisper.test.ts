@@ -45,7 +45,7 @@ describe('WhisperSttProvider', () => {
     expect(result.text).toBe('hello world');
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.openai.com/v1/audio/transcriptions',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({ method: 'POST' })
     );
     expect(spawnMock).not.toHaveBeenCalled();
   });
@@ -61,7 +61,7 @@ describe('WhisperSttProvider', () => {
     expect(spawnMock).toHaveBeenCalledWith(
       '/usr/local/bin/whisper-cpp',
       expect.arrayContaining(['--output-json']),
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 

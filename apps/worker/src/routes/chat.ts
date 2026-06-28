@@ -3,13 +3,18 @@
  * Session persistence via Drizzle (DrizzleChatSessionRepo / DrizzleMessageRepo).
  */
 
-import type { AICompletionOptions, AICompletionResult, AIStreamChunk, AIStreamPort } from '@wolfkrow/domain';
-import type { ImagePart } from '@wolfkrow/infra';
+import type { AIStreamChunk, AIStreamPort } from '@wolfkrow/domain';
+import { parseAskUserResult } from '@wolfkrow/infra';
 import { DEFAULT_CHAT_MODEL } from '@wolfkrow/shared-types';
 import { CompactSessionUseCase, SendMessageUseCase } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { getDecision, requestToolPermission, resolveToolPermission } from '../chat/permission-store';
+import { resolveHumanQuestion } from '../chat/human-question-store';
+import {
+  getDecision,
+  requestToolPermission,
+  resolveToolPermission,
+} from '../chat/permission-store';
 import { getChatWorkDir, getRepos, resolveAgentStreamPort } from '../container';
 import type { Logger } from '../logger';
 import { recordChatTurn } from '../memory/lifecycle';
@@ -17,6 +22,7 @@ import { OrchestratorService } from '../orchestrator';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, z } from '../validation';
 
+import { adapterOptions, makeAIAdapter } from './chat-adapter';
 import { processAttachments } from './chat-attachments';
 import { chatSessionRoutes } from './chat-sessions';
 
@@ -25,80 +31,93 @@ import { chatSessionRoutes } from './chat-sessions';
  * free-form text with optional model/provider/session/agent overrides.
  */
 const chatSendBody = z.object({
- message: z.string().min(1).max(100_000),
- model: z.string().max(128).optional(),
- provider: z.string().max(128).optional(),
- system: z.string().max(65_536).optional(),
- sessionId: z.string().max(128).optional(),
- agentId: z.string().max(128).optional(),
- attachments: z
-   .array(
-     z.object({
-       filename: z.string().min(1).max(255),
-       mimeType: z.string().min(1).max(128),
-       data: z.string().min(1),
-     }),
-   )
-   .max(20)
-   .default([]),
+  message: z.string().min(1).max(100_000),
+  model: z.string().max(128).optional(),
+  provider: z.string().max(128).optional(),
+  system: z.string().max(65_536).optional(),
+  sessionId: z.string().max(128).optional(),
+  agentId: z.string().max(128).optional(),
+  attachments: z
+    .array(
+      z.object({
+        filename: z.string().min(1).max(255),
+        mimeType: z.string().min(1).max(128),
+        data: z.string().min(1),
+      })
+    )
+    .max(20)
+    .default([]),
 });
 
 type ChatBody = z.infer<typeof chatSendBody>;
 
 const compactBody = z.object({
- model: z.string().max(128).optional(),
- tokenThreshold: z.number().int().min(100).max(1_000_000).optional(),
+  model: z.string().max(128).optional(),
+  tokenThreshold: z.number().int().min(100).max(1_000_000).optional(),
 });
 
 const permissionBody = z.object({
- callId: z.string().min(1).max(128),
- approved: z.boolean(),
+  callId: z.string().min(1).max(128),
+  approved: z.boolean(),
 });
 
 interface SendCtx {
- orchestrator: OrchestratorService;
- log: Logger;
- signal: AbortSignal;
- sse: (data: unknown) => void;
+  orchestrator: OrchestratorService;
+  log: Logger;
+  signal: AbortSignal;
+  sse: (data: unknown) => void;
 }
 
 const DEFAULT_MODEL = DEFAULT_CHAT_MODEL;
 const AUTO_COMPACT_THRESHOLD = 8000;
 
-/** Build adapter opts, omitting undefined values (exactOptionalPropertyTypes). */
-function adapterOptions(
- provider: string | undefined,
- agentId: string | undefined,
- userId: string | undefined,
-): { provider?: string; agentId?: string; userId?: string } {
- return {
- ...(provider !== undefined ? { provider } : {}),
- ...(agentId !== undefined ? { agentId } : {}),
- ...(userId !== undefined ? { userId } : {}),
- };
+interface ToolResultEmit {
+  callId: string;
+  output: string;
+  isError: boolean;
+  sse: (data: unknown) => void;
+  pipeline: { detectArtifact: (id: string, out: string, err: boolean) => { toJSON: () => unknown } | null };
 }
 
+/** Emit tool_result + any ask-user question and artifact derived from it. */
+function emitToolResult(r: ToolResultEmit): void {
+  r.sse({ type: 'tool_result', callId: r.callId, output: r.output, isError: r.isError });
+  // AskUserTool returns a sentinel result; surface it as a human_question event
+  // so the UI renders a question dialog and the answer flows back as the next
+  // user message (real HITL, not a UI mock).
+  const ask = parseAskUserResult(r.output);
+  if (ask) {
+    r.sse({
+      type: 'human_question',
+      questionId: r.callId,
+      question: ask.question,
+      ...(ask.options.length ? { options: ask.options } : {}),
+    });
+  }
+  const artifact = r.pipeline.detectArtifact(r.callId, r.output, r.isError);
+  if (artifact) r.sse({ type: 'artifact', artifact: artifact.toJSON() });
+}
+
+/** Build adapter opts, omitting undefined values (exactOptionalPropertyTypes). */
 /** Write the AI stream as SSE events (ack/done/text/tool_call/tool_result/artifact). */
 async function writeStreamAsSse(
   stream: AsyncIterable<AIStreamChunk>,
-  sse: (data: unknown) => void,
+  sse: (data: unknown) => void
 ): Promise<void> {
   const { createArtifactPipeline } = await import('../chat/artifact-pipeline');
   const pipeline = createArtifactPipeline();
   for await (const chunk of stream) {
     if (chunk.done) {
-      sse({ type: 'done', usage: { inputTokens: chunk.inputTokens, outputTokens: chunk.outputTokens } });
+      sse({
+        type: 'done',
+        usage: { inputTokens: chunk.inputTokens, outputTokens: chunk.outputTokens },
+      });
     } else if (chunk.toolCall) {
       const { id, name, input } = chunk.toolCall;
       pipeline.registerToolCall(id, name, input);
       sse({ type: 'tool_call', id, name, input });
     } else if (chunk.toolResult) {
-      const { callId, output, isError } = chunk.toolResult;
-      sse({ type: 'tool_result', callId, output, isError });
-      const artifact = pipeline.detectArtifact(callId, output, isError);
-      if (artifact) {
-        sse({ type: 'artifact', artifact: artifact.toJSON() });
-      }
+      emitToolResult({ ...chunk.toolResult, sse, pipeline });
     } else if (chunk.toolPermission) {
       const { callId, name, input, prompt } = chunk.toolPermission;
       sse({ type: 'tool_permission', id: callId, name, input, prompt });
@@ -108,106 +127,91 @@ async function writeStreamAsSse(
   }
 }
 
-function makeAIAdapter(
- orchestrator: OrchestratorService,
- opts: { provider?: string; agentId?: string; userId?: string },
- imageParts?: ImagePart[],
-): AIStreamPort {
- function query(options: AICompletionOptions): AsyncIterable<AIStreamChunk> {
- return orchestrator.stream({
- messages: options.messages,
- model: options.model,
- ...(opts.provider !== undefined ? { provider: opts.provider } : {}),
- ...(opts.agentId !== undefined ? { agentId: opts.agentId } : {}),
- ...(opts.userId !== undefined ? { userId: opts.userId } : {}),
- ...(options.system !== undefined ? { system: options.system } : {}),
- ...(options.signal !== undefined ? { signal: options.signal } : {}),
- ...(imageParts?.length ? { imageParts } : {}),
- }) as AsyncIterable<AIStreamChunk>;
- }
-
- async function complete(options: AICompletionOptions): Promise<AICompletionResult> {
- let content = '';
- let inputTokens = 0;
- let outputTokens = 0;
- for await (const chunk of query(options)) {
- if (chunk.delta) content += chunk.delta;
- if (chunk.inputTokens !== undefined) inputTokens = chunk.inputTokens;
- if (chunk.outputTokens !== undefined) outputTokens = chunk.outputTokens;
- }
- return { content, usage: { inputTokens, outputTokens } };
- }
-
- return { query, complete };
+async function autoCompact(
+  sessionId: string,
+  userId: string,
+  model: string,
+  ai: AIStreamPort
+): Promise<void> {
+  const messageRepo = getRepos().message;
+  await new CompactSessionUseCase(messageRepo, ai).execute({
+    sessionId,
+    userId,
+    model,
+    tokenThreshold: AUTO_COMPACT_THRESHOLD,
+  });
 }
 
-async function autoCompact(
- sessionId: string,
- userId: string,
- model: string,
- ai: AIStreamPort,
-): Promise<void> {
- const messageRepo = getRepos().message;
- await new CompactSessionUseCase(messageRepo, ai).execute({
- sessionId,
- userId,
- model,
- tokenThreshold: AUTO_COMPACT_THRESHOLD,
- });
+async function resolveAgentAI(
+  agentId: string | undefined,
+  userId: string,
+  fallback: AIStreamPort
+): Promise<AIStreamPort> {
+  if (!agentId) return fallback;
+  const agent = await getRepos().agent.findById(agentId);
+  if (!agent || agent.allowedTools.length === 0) return fallback;
+  return resolveAgentStreamPort({
+    agentProvider: agent.provider,
+    allowedTools: agent.allowedTools,
+    workDir: getChatWorkDir(userId),
+    requestPermission: (callId, tool) => {
+      const prior = getDecision(userId, agentId, tool);
+      if (prior === 'allow') return Promise.resolve(true);
+      if (prior === 'deny') return Promise.resolve(false);
+      return requestToolPermission(callId, { userId, agentId, tool });
+    },
+    userId,
+  });
 }
 
 async function handleSendRequest(
- body: ChatBody,
- authUserId: string | undefined,
- ctx: SendCtx,
+  body: ChatBody,
+  authUserId: string | undefined,
+  ctx: SendCtx
 ): Promise<void> {
- const { message, model = DEFAULT_MODEL, provider, system, sessionId, agentId, attachments } = body;
- const userId = authUserId ?? 'anonymous';
+  const {
+    message,
+    model = DEFAULT_MODEL,
+    provider,
+    system,
+    sessionId,
+    agentId,
+    attachments,
+  } = body;
+  const userId = authUserId ?? 'anonymous';
 
- ctx.sse({ type: 'ack', message });
+  ctx.sse({ type: 'ack', message });
 
- const { content, imageParts } = await processAttachments(message, attachments);
- let ai = makeAIAdapter(ctx.orchestrator, adapterOptions(provider, agentId, authUserId), imageParts);
+  const { content, imageParts } = await processAttachments(message, attachments);
+  const adapter = makeAIAdapter(
+    ctx.orchestrator,
+    adapterOptions(provider, agentId, authUserId),
+    imageParts
+  );
+  const ai = await resolveAgentAI(agentId, userId, adapter);
 
- //  when the agent declares allowed tools, resolve the agentic provider
- // based on the agent's configured provider (non-Anthropic uses ClaudeCompatProvider).
- // A prior durable decision (allow/deny) short-circuits the UI prompt so a
- // restart does NOT re-ask tools the user already decided on (P1-7).
-  if (agentId) {
-    const agent = await getRepos().agent.findById(agentId);
-    if (agent && agent.allowedTools.length > 0) {
-      ai = await resolveAgentStreamPort({
-        agentProvider: agent.provider,
-        allowedTools: agent.allowedTools,
-        workDir: getChatWorkDir(userId),
-        requestPermission: (callId, tool) => {
-          const prior = getDecision(userId, agentId, tool);
-          if (prior === 'allow') return Promise.resolve(true);
-          if (prior === 'deny') return Promise.resolve(false);
-          return requestToolPermission(callId, { userId, agentId, tool });
-        },
-        userId,
-      });
-    }
+  const { chatSession: sessionRepo, message: messageRepo, tokenUsage: usageRepo } = getRepos();
+  const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, { usageRepo });
+
+  const stream = await useCase.execute({
+    sessionId,
+    userId,
+    agentId,
+    content,
+    model,
+    signal: ctx.signal,
+    ...(system !== undefined ? { system } : {}),
+  });
+
+  await writeStreamAsSse(stream, ctx.sse);
+
+  if (sessionId) {
+    autoCompact(sessionId, userId, model, ai).catch(() => undefined);
   }
 
- const { chatSession: sessionRepo, message: messageRepo, tokenUsage: usageRepo } = getRepos();
- const useCase = new SendMessageUseCase(sessionRepo, messageRepo, ai, { usageRepo });
-
- const stream = await useCase.execute({
- sessionId, userId, agentId, content, model, signal: ctx.signal,
- ...(system !== undefined ? { system } : {}),
- });
-
- await writeStreamAsSse(stream, ctx.sse);
-
- if (sessionId) {
- autoCompact(sessionId, userId, model, ai).catch(() => undefined);
- }
-
- if (authUserId) {
- recordChatTurn(ctx.log, authUserId, [{ role: 'user', content: message }]);
- }
+  if (authUserId) {
+    recordChatTurn(ctx.log, authUserId, [{ role: 'user', content: message }]);
+  }
 }
 
 export async function chatRoutes(server: AuthFastifyInstance) {
@@ -216,22 +220,22 @@ export async function chatRoutes(server: AuthFastifyInstance) {
   server.post<{ Body: ChatBody }>(
     '/send',
     { preHandler: [server.authenticate] },
-    (request, reply) => handleSendRoute(request, reply, server, orchestrator),
+    (request, reply) => handleSendRoute(request, reply, server, orchestrator)
   );
 
   server.post<{ Params: { id: string } }>(
     '/sessions/:id/compact',
     { preHandler: [server.authenticate] },
-    (request, reply) => handleCompactRoute(request, reply, server, orchestrator),
+    (request, reply) => handleCompactRoute(request, reply, server, orchestrator)
   );
 
   // resolve a pending tool-permission request (UI approves/denies a
   // destructive tool call surfaced via the tool_permission SSE event).
-  server.post(
-    '/permission',
-    { preHandler: [server.authenticate] },
-    permissionHandler,
-  );
+  server.post('/permission', { preHandler: [server.authenticate] }, permissionHandler);
+
+  // resolve a pending ask-user question (UI answers a free-form question
+  // surfaced via the human_question SSE event).
+  server.post('/human-question', { preHandler: [server.authenticate] }, humanQuestionHandler);
 
   await chatSessionRoutes(server);
 }
@@ -241,17 +245,24 @@ async function handleSendRoute(
   request: FastifyRequest<{ Body: ChatBody }>,
   reply: FastifyReply,
   server: AuthFastifyInstance,
-  orchestrator: OrchestratorService,
+  orchestrator: OrchestratorService
 ): Promise<void> {
   // Validate input BEFORE opening the SSE stream so a bad body yields 400.
   const body = validate(chatSendBody, request.body);
-  reply.raw.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' });
+  reply.raw.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+  });
   const ac = new AbortController();
   request.raw.on('close', () => ac.abort());
   const sse = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
   try {
     await handleSendRequest(body, request.user?.userId, {
-      orchestrator, log: server.log as unknown as Logger, signal: ac.signal, sse,
+      orchestrator,
+      log: server.log as unknown as Logger,
+      signal: ac.signal,
+      sse,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
@@ -267,7 +278,7 @@ async function handleCompactRoute(
   request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
   server: AuthFastifyInstance,
-  orchestrator: OrchestratorService,
+  orchestrator: OrchestratorService
 ): Promise<unknown> {
   const userId = request.user?.userId ?? 'anonymous';
   const body = validate(compactBody, request.body ?? {});
@@ -275,7 +286,9 @@ async function handleCompactRoute(
   const ai = makeAIAdapter(orchestrator, adapterOptions(undefined, undefined, userId));
   try {
     const result = await new CompactSessionUseCase(getRepos().message, ai).execute({
-      sessionId: request.params.id, userId, model,
+      sessionId: request.params.id,
+      userId,
+      model,
       ...(body.tokenThreshold !== undefined ? { tokenThreshold: body.tokenThreshold } : {}),
     });
     return result;
@@ -285,13 +298,22 @@ async function handleCompactRoute(
   }
 }
 
-async function permissionHandler(
- request: FastifyRequest,
- reply: FastifyReply,
-) {
- const { callId, approved } = validate(permissionBody, request.body);
- const ok = resolveToolPermission(callId, approved);
- if (!ok) return reply.status(404).send({ error: 'No pending permission for callId' });
- return { resolved: true };
+async function permissionHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { callId, approved } = validate(permissionBody, request.body);
+  const ok = resolveToolPermission(callId, approved);
+  if (!ok) return reply.status(404).send({ error: 'No pending permission for callId' });
+  return { resolved: true };
 }
 
+const humanQuestionBody = z.object({
+  questionId: z.string().min(1).max(128),
+  answer: z.string().max(32_000),
+});
+
+/** POST /human-question — resolve a pending ask-user question (UI answer). */
+async function humanQuestionHandler(request: FastifyRequest, reply: FastifyReply) {
+  const { questionId, answer } = validate(humanQuestionBody, request.body);
+  const ok = resolveHumanQuestion(questionId, answer);
+  if (!ok) return reply.status(404).send({ error: 'No pending question for questionId' });
+  return { resolved: true };
+}

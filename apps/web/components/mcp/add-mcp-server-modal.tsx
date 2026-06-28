@@ -29,20 +29,51 @@ interface McpServerFormFieldsProps {
   onArgsChange: (v: string) => void;
 }
 
-function McpServerFormFields({ name, command, args, error, onNameChange, onCommandChange, onArgsChange }: McpServerFormFieldsProps) {
+function McpServerFormFields({
+  name,
+  command,
+  args,
+  error,
+  onNameChange,
+  onCommandChange,
+  onArgsChange,
+}: McpServerFormFieldsProps) {
   return (
     <div className="space-y-3 py-2">
       <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="mcp-name">Name</label>
-        <Input id="mcp-name" placeholder="e.g. filesystem" value={name} onChange={(e) => onNameChange(e.target.value)} />
+        <label className="mb-1 block text-sm font-medium" htmlFor="mcp-name">
+          Name
+        </label>
+        <Input
+          id="mcp-name"
+          placeholder="e.g. filesystem"
+          value={name}
+          onChange={(e) => onNameChange(e.target.value)}
+        />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="mcp-command">Command</label>
-        <Input id="mcp-command" placeholder="e.g. npx -y @modelcontextprotocol/server-filesystem" value={command} onChange={(e) => onCommandChange(e.target.value)} className="font-mono text-sm" />
+        <label className="mb-1 block text-sm font-medium" htmlFor="mcp-command">
+          Command
+        </label>
+        <Input
+          id="mcp-command"
+          placeholder="e.g. npx -y @modelcontextprotocol/server-filesystem"
+          value={command}
+          onChange={(e) => onCommandChange(e.target.value)}
+          className="font-mono text-sm"
+        />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="mcp-args">Extra args (space-separated, optional)</label>
-        <Input id="mcp-args" placeholder="e.g. /Users/me/docs" value={args} onChange={(e) => onArgsChange(e.target.value)} className="font-mono text-sm" />
+        <label className="mb-1 block text-sm font-medium" htmlFor="mcp-args">
+          Extra args (space-separated, optional)
+        </label>
+        <Input
+          id="mcp-args"
+          placeholder="e.g. /Users/me/docs"
+          value={args}
+          onChange={(e) => onArgsChange(e.target.value)}
+          className="font-mono text-sm"
+        />
       </div>
       {error && <p className="text-destructive text-sm">{error}</p>}
     </div>
@@ -57,16 +88,25 @@ export function AddMcpServerModal({ onDone, onCreate }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function reset() { setName(''); setCommand(''); setArgs(''); setError(null); }
+  function reset() {
+    setName('');
+    setCommand('');
+    setArgs('');
+    setError(null);
+  }
 
   async function handleAdd() {
-    if (!name.trim() || !command.trim()) { setError('Name and command are required.'); return; }
+    if (!name.trim() || !command.trim()) {
+      setError('Name and command are required.');
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       const argsArray = args.trim() ? args.trim().split(/\s+/) : [];
       const res = await fetch('/api/mcp-servers', {
-        method: 'POST', credentials: 'include',
+        method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, command, args: argsArray, isActive: true }),
       });
@@ -86,16 +126,39 @@ export function AddMcpServerModal({ onDone, onCreate }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) reset();
+      }}
+    >
       <DialogTrigger asChild>
-        <Button><Plus className="mr-2 h-4 w-4" />Add server</Button>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Add server
+        </Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Add MCP Server</DialogTitle></DialogHeader>
-        <McpServerFormFields name={name} command={command} args={args} error={error} onNameChange={setName} onCommandChange={setCommand} onArgsChange={setArgs} />
+        <DialogHeader>
+          <DialogTitle>Add MCP Server</DialogTitle>
+        </DialogHeader>
+        <McpServerFormFields
+          name={name}
+          command={command}
+          args={args}
+          error={error}
+          onNameChange={setName}
+          onCommandChange={setCommand}
+          onArgsChange={setArgs}
+        />
         <div className="flex justify-end gap-2 pt-1">
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-          <Button onClick={() => void handleAdd()} disabled={saving}>{saving ? 'Adding…' : 'Add'}</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={() => void handleAdd()} disabled={saving}>
+            {saving ? 'Adding…' : 'Add'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

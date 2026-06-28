@@ -11,38 +11,43 @@ import { PipelineProject } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
+const { projects, phases, fakeProjectRepo, fakePhaseRepo, fakePipelineMessageRepo } = vi.hoisted(
+  () => {
+    const projects = new Map<string, PipelineProject>();
+    const phases = new Map<string, PipelinePhase>();
 
-const { projects, phases, fakeProjectRepo, fakePhaseRepo, fakePipelineMessageRepo } = vi.hoisted(() => {
-  const projects = new Map<string, PipelineProject>();
-  const phases = new Map<string, PipelinePhase>();
+    const fakeProjectRepo = {
+      findById: async (id: string) => projects.get(id) ?? null,
+      findAll: async () => [...projects.values()],
+      findByUserId: async (userId: string) =>
+        [...projects.values()].filter((p) => p.userId === userId),
+      save: async (p: PipelineProject) => {
+        projects.set(p.id, p);
+        return p;
+      },
+      delete: async (id: string) => {
+        projects.delete(id);
+      },
+    };
 
-  const fakeProjectRepo = {
-    findById: async (id: string) => projects.get(id) ?? null,
-    findByUserId: async (userId: string) => [...projects.values()].filter((p) => p.userId === userId),
-    save: async (p: PipelineProject) => {
-      projects.set(p.id, p);
-      return p;
-    },
-    delete: async (id: string) => {
-      projects.delete(id);
-    },
-  };
+    const fakePhaseRepo = {
+      findById: async (id: string) => phases.get(id) ?? null,
+      findByProjectId: async (projectId: string) =>
+        [...phases.values()].filter(
+          (p) => (p as unknown as { projectId: string }).projectId === projectId
+        ),
+      save: async (p: PipelinePhase) => {
+        phases.set(p.id, p);
+        return p;
+      },
+    };
 
-  const fakePhaseRepo = {
-    findById: async (id: string) => phases.get(id) ?? null,
-    findByProjectId: async (projectId: string) =>
-      [...phases.values()].filter((p) => (p as unknown as { projectId: string }).projectId === projectId),
-    save: async (p: PipelinePhase) => {
-      phases.set(p.id, p);
-      return p;
-    },
-  };
-
-  const fakePipelineMessageRepo = {
-    findByProjectId: async () => [],
-  };
-  return { projects, phases, fakeProjectRepo, fakePhaseRepo, fakePipelineMessageRepo };
-});
+    const fakePipelineMessageRepo = {
+      findByProjectId: async () => [],
+    };
+    return { projects, phases, fakeProjectRepo, fakePhaseRepo, fakePipelineMessageRepo };
+  }
+);
 
 vi.mock('../../container', () => ({
   getRepos: () => ({
@@ -85,7 +90,8 @@ afterAll(async () => {
 describe('pipeline POST /projects — create', () => {
   it('creates a project and returns its props', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/projects',
+      method: 'POST',
+      url: '/projects',
       payload: { name: 'New pipeline', description: 'd', projectPath: process.cwd() },
     });
     expect(res.statusCode).toBe(200);
@@ -106,7 +112,8 @@ describe('pipeline POST /projects — userId derived from session (IDOR)', () =>
     // Authenticated user (u1) sends userId: 'victim' in the body to try to
     // create a project owned by 'victim'. The project MUST be owned by u1.
     const res = await app.inject({
-      method: 'POST', url: '/projects',
+      method: 'POST',
+      url: '/projects',
       payload: { userId: 'victim', name: 'Spoof attempt' },
     });
     expect(res.statusCode).toBe(200);
@@ -156,7 +163,8 @@ describe('pipeline POST /projects/:id/phases — start phase', () => {
   it('starts a phase for an existing project', async () => {
     const existing = [...projects.values()].find((p) => p.name === 'Acme build')!;
     const res = await app.inject({
-      method: 'POST', url: `/projects/${existing.id}/phases`,
+      method: 'POST',
+      url: `/projects/${existing.id}/phases`,
       payload: { stage: 'discovery' },
     });
     expect(res.statusCode).toBe(200);
@@ -166,14 +174,20 @@ describe('pipeline POST /projects/:id/phases — start phase', () => {
 
   it('returns 404 when the project does not exist', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/projects/unknown/phases', payload: { stage: 'discovery' },
+      method: 'POST',
+      url: '/projects/unknown/phases',
+      payload: { stage: 'discovery' },
     });
     expect(res.statusCode).toBe(404);
   });
 
   it('rejects a body missing stage → 400', async () => {
     const existing = [...projects.values()].find((p) => p.name === 'Acme build')!;
-    const res = await app.inject({ method: 'POST', url: `/projects/${existing.id}/phases`, payload: {} });
+    const res = await app.inject({
+      method: 'POST',
+      url: `/projects/${existing.id}/phases`,
+      payload: {},
+    });
     expect(res.statusCode).toBe(400);
   });
 });
@@ -206,7 +220,9 @@ describe('pipeline POST /projects/:id/phases/:phaseId/run — 404 when phase mis
   it('returns 404 when the phase does not exist', async () => {
     const existing = [...projects.values()].find((p) => p.name === 'Acme build')!;
     const res = await app.inject({
-      method: 'POST', url: `/projects/${existing.id}/phases/unknown/run`, payload: {},
+      method: 'POST',
+      url: `/projects/${existing.id}/phases/unknown/run`,
+      payload: {},
     });
     expect(res.statusCode).toBe(404);
   });
@@ -216,7 +232,9 @@ describe('pipeline POST /projects/:id/phases/:phaseId/approve', () => {
   it('rejects a body missing approved → 400', async () => {
     const existing = [...projects.values()].find((p) => p.name === 'Acme build')!;
     const res = await app.inject({
-      method: 'POST', url: `/projects/${existing.id}/phases/unknown/approve`, payload: {},
+      method: 'POST',
+      url: `/projects/${existing.id}/phases/unknown/approve`,
+      payload: {},
     });
     expect(res.statusCode).toBe(400);
   });
@@ -224,7 +242,8 @@ describe('pipeline POST /projects/:id/phases/:phaseId/approve', () => {
   it('returns 404 when the project/phase is not found', async () => {
     const existing = [...projects.values()].find((p) => p.name === 'Acme build')!;
     const res = await app.inject({
-      method: 'POST', url: `/projects/${existing.id}/phases/unknown/approve`,
+      method: 'POST',
+      url: `/projects/${existing.id}/phases/unknown/approve`,
       payload: { approved: true },
     });
     expect(res.statusCode).toBe(404);
@@ -240,7 +259,8 @@ describe('pipeline routes — authentication required', () => {
     await pipelineRoutes(a as unknown as AuthFastifyInstance);
     await a.ready();
     const res = await a.inject({
-      method: 'POST', url: '/projects',
+      method: 'POST',
+      url: '/projects',
       payload: { name: 'p' },
     });
     expect(res.statusCode).toBe(401);

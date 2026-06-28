@@ -39,20 +39,12 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '5mb',
     },
-    optimizePackageImports: [
-      'lucide-react',
-      'date-fns',
-      'recharts',
-      'd3',
-      '@radix-ui/react-icons',
-    ],
+    optimizePackageImports: ['lucide-react', 'date-fns', 'recharts', 'd3', '@radix-ui/react-icons'],
   },
 
   images: {
     formats: ['image/avif', 'image/webp'],
-    remotePatterns: [
-      { protocol: 'https', hostname: '**' },
-    ],
+    remotePatterns: [{ protocol: 'https', hostname: '**' }],
   },
 
   async headers() {
@@ -77,7 +69,7 @@ const nextConfig: NextConfig = {
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      "upgrade-insecure-requests",
+      'upgrade-insecure-requests',
     ].join('; ');
 
     return [
@@ -103,9 +95,7 @@ const nextConfig: NextConfig = {
   },
 
   async redirects() {
-    return [
-      { source: '/', destination: '/dashboard', permanent: false },
-    ];
+    return [{ source: '/', destination: '/dashboard', permanent: false }];
   },
 
   webpack: (config) => {

@@ -16,7 +16,7 @@ describe('enrich schemas', () => {
       'accepts %s',
       (v) => {
         expect(EnrichSessionStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('rejects invalid', () => {
       expect(() => EnrichSessionStatusSchema.parse('nope')).toThrow();
@@ -63,9 +63,7 @@ describe('enrich schemas', () => {
     });
 
     it('rejects invalid status', () => {
-      expect(() =>
-        EnrichSessionSchema.parse({ ...valid, status: 'nope' }),
-      ).toThrow();
+      expect(() => EnrichSessionSchema.parse({ ...valid, status: 'nope' })).toThrow();
     });
 
     it('rejects non-uuid id', () => {
@@ -86,25 +84,16 @@ describe('enrich schemas', () => {
       expect(() => EnrichMessageSchema.parse(valid)).not.toThrow();
     });
 
-    it.each(['user', 'validator', 'enricher', 'system'] as const)(
-      'accepts role %s',
-      (role) => {
-        expect(() =>
-          EnrichMessageSchema.parse({ ...valid, role }),
-        ).not.toThrow();
-      },
-    );
+    it.each(['user', 'validator', 'enricher', 'system'] as const)('accepts role %s', (role) => {
+      expect(() => EnrichMessageSchema.parse({ ...valid, role })).not.toThrow();
+    });
 
     it('rejects invalid role', () => {
-      expect(() =>
-        EnrichMessageSchema.parse({ ...valid, role: 'nope' }),
-      ).toThrow();
+      expect(() => EnrichMessageSchema.parse({ ...valid, role: 'nope' })).toThrow();
     });
 
     it('rejects empty content', () => {
-      expect(() =>
-        EnrichMessageSchema.parse({ ...valid, content: '' }),
-      ).toThrow();
+      expect(() => EnrichMessageSchema.parse({ ...valid, content: '' })).toThrow();
     });
   });
 

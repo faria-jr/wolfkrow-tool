@@ -27,16 +27,12 @@ export class DrizzleSecretRepo implements SecretRepo {
         lastRotated: r.lastRotated ?? undefined,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
-      }),
+      })
     );
   }
 
   async findByKey(key: string): Promise<Secret | null> {
-    const row = this.db
-      .select()
-      .from(secretsMetadata)
-      .where(eq(secretsMetadata.key, key))
-      .get();
+    const row = this.db.select().from(secretsMetadata).where(eq(secretsMetadata.key, key)).get();
 
     if (!row) return null;
     return Secret.fromProps({

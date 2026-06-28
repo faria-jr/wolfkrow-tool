@@ -14,7 +14,10 @@ async function getKey(name: string): Promise<string | null> {
 
 type RawReply = { raw: { write: (b: Buffer) => void; end: () => void } };
 
-async function streamAudioToResponse(stream: AsyncIterable<Buffer>, reply: RawReply): Promise<void> {
+async function streamAudioToResponse(
+  stream: AsyncIterable<Buffer>,
+  reply: RawReply
+): Promise<void> {
   for await (const chunk of stream) reply.raw.write(chunk);
   reply.raw.end();
 }
@@ -58,7 +61,7 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
         .header('Content-Type', 'audio/mpeg')
         .header('Content-Length', audio.length)
         .send(audio);
-    },
+    }
   );
 
   server.post<{ Body: { text: string; voice?: string; provider?: string } }>(
@@ -81,6 +84,6 @@ export async function voiceRoutes(server: AuthFastifyInstance) {
 
       const stream = tts.streamSynthesize(text, voice !== undefined ? { voice } : {});
       await streamAudioToResponse(stream, reply);
-    },
+    }
   );
 }

@@ -28,6 +28,7 @@ export const codeReviewer: AgentConfig = {
 ```
 
 Problemas:
+
 1. **Verboso**: 140 linhas por agent × 67 = 9.610 linhas
 2. **Difícil de revisar**: PRs com diffs enormes
 3. **Sem metadata rica**: YAML suporta mais (tags, examples, etc)
@@ -63,20 +64,20 @@ tags:
   - quality
   - security
 examples:
-  - input: "Review PR #123"
-    output: "Analyzing 3 files changed..."
+  - input: 'Review PR #123'
+    output: 'Analyzing 3 files changed...'
 metadata:
   author: wolfkrow-labs
   version: 1.0.0
 systemPrompt: |
   You are a senior code reviewer with 15 years of experience.
-  
+
   Focus on:
   - Security vulnerabilities (OWASP Top 10)
   - Performance bottlenecks
   - Maintainability issues
   - Test coverage gaps
-  
+
   Be constructive. Suggest improvements, don't just criticize.
   Use markdown for clarity.
   Cite specific files and line numbers.
@@ -94,37 +95,43 @@ import { z } from 'zod';
 
 const AgentYamlSchema = AgentSchema.extend({
   tags: z.array(z.string()).default([]),
-  examples: z.array(z.object({
-    input: z.string(),
-    output: z.string(),
-  })).default([]),
-  metadata: z.object({
-    author: z.string().optional(),
-    version: z.string().default('1.0.0'),
-  }).default({}),
+  examples: z
+    .array(
+      z.object({
+        input: z.string(),
+        output: z.string(),
+      })
+    )
+    .default([]),
+  metadata: z
+    .object({
+      author: z.string().optional(),
+      version: z.string().default('1.0.0'),
+    })
+    .default({}),
 });
 
 export type AgentYaml = z.infer<typeof AgentYamlSchema>;
 
 export class SeedAgentsLoader {
   constructor(private agentsDir: string) {}
-  
+
   async loadAll(): Promise<AgentYaml[]> {
     const files = await fs.readdir(this.agentsDir);
     const yamlFiles = files.filter((f) => f.endsWith('.yaml') || f.endsWith('.yml'));
-    
+
     return Promise.all(yamlFiles.map((f) => this.loadOne(f)));
   }
-  
+
   async loadOne(filename: string): Promise<AgentYaml> {
     const filepath = path.join(this.agentsDir, filename);
     const content = await fs.readFile(filepath, 'utf-8');
     const data = yaml.parse(content);
-    
+
     // Validate with Zod (throws if invalid)
     return AgentYamlSchema.parse(data);
   }
-  
+
   async save(agent: AgentYaml): Promise<void> {
     const filepath = path.join(this.agentsDir, `${agent.id}.yaml`);
     const content = yaml.stringify(agent);
@@ -176,7 +183,7 @@ const tsFiles = files.filter((f) => f.endsWith('.ts'));
 for (const file of tsFiles) {
   const module = await import(path.join(sourceDir, file));
   const agent = Object.values(module)[0] as any;
-  
+
   const yamlContent = yaml.stringify({
     id: agent.id,
     name: agent.name,
@@ -192,7 +199,7 @@ for (const file of tsFiles) {
     squad: agent.squad,
     systemPrompt: agent.systemPrompt,
   });
-  
+
   await fs.writeFile(path.join(targetDir, `${agent.id}.yaml`), yamlContent);
   console.log(`Migrated ${agent.id}`);
 }

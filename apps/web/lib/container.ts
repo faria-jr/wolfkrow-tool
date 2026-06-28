@@ -9,7 +9,13 @@
  */
 
 import type { EmbeddingPort, PasswordHasher, SecretsAdapter, TotpVerifier } from '@wolfkrow/domain';
-import { aiProviderFactory, type AIProviderFactory, BcryptHasher, OtplibTotp, VoyageEmbedder } from '@wolfkrow/infra';
+import {
+  aiProviderFactory,
+  type AIProviderFactory,
+  BcryptHasher,
+  OtplibTotp,
+  VoyageEmbedder,
+} from '@wolfkrow/infra';
 import { createRepoRegistry, type RepoRegistry } from '@wolfkrow/infra/repos';
 import { KeytarSecretsAdapter } from '@wolfkrow/infra/secrets/keytar-adapter';
 

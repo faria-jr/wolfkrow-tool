@@ -2,7 +2,13 @@ import { randomUUID } from 'node:crypto';
 
 import type { PipelineStage } from './pipeline-project';
 
-export type PhaseStatus = 'pending' | 'in_progress' | 'awaiting_user' | 'completed' | 'failed' | 'skipped';
+export type PhaseStatus =
+  | 'pending'
+  | 'in_progress'
+  | 'awaiting_user'
+  | 'completed'
+  | 'failed'
+  | 'skipped';
 
 export interface PhaseMetrics {
   tokens: number;
@@ -63,8 +69,13 @@ export class PipelinePhase {
 
   toProps(): PipelinePhaseProps {
     return {
-      id: this.id, projectId: this.projectId, stage: this.stage, status: this.status,
-      artifactPath: this.artifactPath, startedAt: this.startedAt, completedAt: this.completedAt,
+      id: this.id,
+      projectId: this.projectId,
+      stage: this.stage,
+      status: this.status,
+      artifactPath: this.artifactPath,
+      startedAt: this.startedAt,
+      completedAt: this.completedAt,
       metrics: this.metrics,
     };
   }
@@ -75,7 +86,9 @@ export class PipelinePhase {
 
   complete(artifactPath?: string, tokens = 0, now = new Date(), cost = 0): PipelinePhase {
     return PipelinePhase.fromProps({
-      ...this.toProps(), status: 'completed', completedAt: now,
+      ...this.toProps(),
+      status: 'completed',
+      completedAt: now,
       ...(artifactPath !== undefined ? { artifactPath } : {}),
       metrics: {
         tokens,

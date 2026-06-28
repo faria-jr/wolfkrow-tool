@@ -49,7 +49,9 @@ function SttSection({ idBase, settings, update }: SectionProps) {
           </SelectTrigger>
           <SelectContent>
             {STT_PROVIDERS.map((p) => (
-              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              <SelectItem key={p.value} value={p.value}>
+                {p.label}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -71,7 +73,9 @@ function TtsProviderSection({ idBase, settings, update }: SectionProps) {
         </SelectTrigger>
         <SelectContent>
           {TTS_PROVIDERS.map((p) => (
-            <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+            <SelectItem key={p.value} value={p.value}>
+              {p.label}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -94,9 +98,27 @@ function TtsTuningSection({ idBase, settings, update }: SectionProps) {
           data-testid="voice-id-input"
         />
       </div>
-      <SliderField id={`${idBase}-speed`} label={`Speed: ${settings.speed.toFixed(2)}x`} value={settings.speed} onChange={(v) => update({ speed: v })} min={0.5} max={2} testId="speed-slider" />
-      <SliderField id={`${idBase}-stability`} label={`Stability: ${settings.stability.toFixed(2)}`} value={settings.stability} onChange={(v) => update({ stability: v })} />
-      <SliderField id={`${idBase}-sim`} label={`Similarity boost: ${settings.similarityBoost.toFixed(2)}`} value={settings.similarityBoost} onChange={(v) => update({ similarityBoost: v })} />
+      <SliderField
+        id={`${idBase}-speed`}
+        label={`Speed: ${settings.speed.toFixed(2)}x`}
+        value={settings.speed}
+        onChange={(v) => update({ speed: v })}
+        min={0.5}
+        max={2}
+        testId="speed-slider"
+      />
+      <SliderField
+        id={`${idBase}-stability`}
+        label={`Stability: ${settings.stability.toFixed(2)}`}
+        value={settings.stability}
+        onChange={(v) => update({ stability: v })}
+      />
+      <SliderField
+        id={`${idBase}-sim`}
+        label={`Similarity boost: ${settings.similarityBoost.toFixed(2)}`}
+        value={settings.similarityBoost}
+        onChange={(v) => update({ similarityBoost: v })}
+      />
     </>
   );
 }
@@ -121,7 +143,9 @@ function SliderField({ id, label, value, min = 0, max = 1, testId, onChange }: S
         max={max}
         step={0.05}
         value={[value]}
-        onValueChange={([v]) => { if (v !== undefined) onChange(v); }}
+        onValueChange={([v]) => {
+          if (v !== undefined) onChange(v);
+        }}
         {...(testId !== undefined ? { 'data-testid': testId } : {})}
       />
     </div>

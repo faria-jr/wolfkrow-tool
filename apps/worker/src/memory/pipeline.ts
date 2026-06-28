@@ -24,7 +24,7 @@ export class MemoryPipeline {
   async extractAndStore(
     userId: string,
     messages: SessionMessage[],
-    options: MemoryPipelineOptions = {},
+    options: MemoryPipelineOptions = {}
   ): Promise<void> {
     const facts = this.extractFacts(messages);
     if (facts.length === 0) return;
@@ -36,8 +36,8 @@ export class MemoryPipeline {
           content: fact,
           source: 'conversation',
           importance: options.minImportance ?? 50,
-        }),
-      ),
+        })
+      )
     );
   }
 
@@ -49,7 +49,10 @@ export class MemoryPipeline {
       const content = msg.content.trim();
       if (content.length < 20) continue;
 
-      const sentences = content.split(/[.!?]+/).map((s) => s.trim()).filter((s) => s.length > 20);
+      const sentences = content
+        .split(/[.!?]+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 20);
 
       for (const sentence of sentences) {
         if (this.isMemorableStatement(sentence)) {
@@ -64,9 +67,24 @@ export class MemoryPipeline {
   private isMemorableStatement(text: string): boolean {
     const lower = text.toLowerCase();
     const markers = [
-      'i prefer', 'i like', 'i dislike', 'i hate', 'i love', 'i always', 'i never',
-      'i usually', 'my name', 'i am', "i'm", 'i work', 'remember that', 'important:',
-      'note that', 'always use', 'never use', 'please remember',
+      'i prefer',
+      'i like',
+      'i dislike',
+      'i hate',
+      'i love',
+      'i always',
+      'i never',
+      'i usually',
+      'my name',
+      'i am',
+      "i'm",
+      'i work',
+      'remember that',
+      'important:',
+      'note that',
+      'always use',
+      'never use',
+      'please remember',
     ];
     return markers.some((m) => lower.includes(m));
   }

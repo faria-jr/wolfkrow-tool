@@ -1,11 +1,4 @@
-import {
-  eachDayOfInterval,
-  endOfMonth,
-  format,
-  getDay,
-  isSameDay,
-  startOfMonth,
-} from 'date-fns';
+import { eachDayOfInterval, endOfMonth, format, getDay, isSameDay, startOfMonth } from 'date-fns';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -40,24 +33,32 @@ export function TasksCalendar({ tasks, year, month }: Props) {
 
   return (
     <div className="select-none">
-      <div className="mb-2 grid grid-cols-7 text-center text-xs font-medium text-muted-foreground">
-        {DOW.map((d) => <div key={d}>{d}</div>)}
+      <div className="text-muted-foreground mb-2 grid grid-cols-7 text-center text-xs font-medium">
+        {DOW.map((d) => (
+          <div key={d}>{d}</div>
+        ))}
       </div>
-      <div className="grid grid-cols-7 gap-px rounded-lg border bg-border">
+      <div className="bg-border grid grid-cols-7 gap-px rounded-lg border">
         {Array.from({ length: firstDow }).map((_, i) => (
           <div key={`pad-${i}`} className="bg-background min-h-20 rounded-tl-lg" />
         ))}
         {days.map((day, i) => {
           const dayTasks = tasksWithDate.filter((t) => isSameDay(new Date(t.dueDate!), day));
           const isLast = i === days.length - 1;
-          const roundedClass = i === 0 ? (firstDow === 0 ? 'rounded-tl-lg' : '') : isLast ? 'rounded-br-lg' : '';
+          const roundedClass =
+            i === 0 ? (firstDow === 0 ? 'rounded-tl-lg' : '') : isLast ? 'rounded-br-lg' : '';
           return (
             <div key={day.toISOString()} className={`bg-background min-h-20 p-1 ${roundedClass}`}>
-              <p className="text-right text-xs text-muted-foreground">{format(day, 'd')}</p>
+              <p className="text-muted-foreground text-right text-xs">{format(day, 'd')}</p>
               <div className="mt-1 space-y-0.5">
                 {dayTasks.map((t) => (
-                  <div key={t.id} className="flex items-center gap-1 rounded px-1 py-0.5 text-xs bg-accent">
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${PRIORITY_DOT[t.priority] ?? 'bg-muted-foreground'}`} />
+                  <div
+                    key={t.id}
+                    className="bg-accent flex items-center gap-1 rounded px-1 py-0.5 text-xs"
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${PRIORITY_DOT[t.priority] ?? 'bg-muted-foreground'}`}
+                    />
                     <span className="truncate">{t.title}</span>
                   </div>
                 ))}

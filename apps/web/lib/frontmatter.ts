@@ -24,7 +24,10 @@ export function splitFrontmatter(src: string): { raw: string | null; body: strin
 
 function parseScalar(raw: string): string {
   const trimmed = raw.trim();
-  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
     return trimmed.slice(1, -1);
   }
   return trimmed;
@@ -40,7 +43,10 @@ export function parseFrontmatter(src: string): { frontmatter: Frontmatter; body:
   while (i < lines.length) {
     const line = lines[i]!;
     const match = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
-    if (!match) { i += 1; continue; }
+    if (!match) {
+      i += 1;
+      continue;
+    }
     const [, key, inline] = match;
     if (inline && inline.trim()) {
       frontmatter[key!] = parseScalar(inline);

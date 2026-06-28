@@ -25,15 +25,20 @@ async function fetchAgents(): Promise<AgentData[]> {
   return ((await res.json()) as { agents: AgentData[] }).agents;
 }
 
-interface ViewActionsProps { onNew: () => void; onSync: () => void; }
+interface ViewActionsProps {
+  onNew: () => void;
+  onSync: () => void;
+}
 function ViewActions({ onNew, onSync }: ViewActionsProps) {
   return (
     <div className="flex justify-end gap-2">
       <Button variant="outline" onClick={onSync}>
-        <RefreshCw className="mr-2 h-4 w-4" />Sync to orchestrator
+        <RefreshCw className="mr-2 h-4 w-4" />
+        Sync to orchestrator
       </Button>
       <Button onClick={onNew}>
-        <Plus className="mr-2 h-4 w-4" />New agent
+        <Plus className="mr-2 h-4 w-4" />
+        New agent
       </Button>
     </div>
   );
@@ -66,37 +71,45 @@ function useAgents() {
     }
   }, []);
 
-  useEffect(() => { void loadAgents(); }, [loadAgents]);
+  useEffect(() => {
+    void loadAgents();
+  }, [loadAgents]);
   return { agents, loading, error, loadAgents };
 }
 
 function useAgentMutations(loadAgents: () => Promise<void>) {
-  const duplicate = useCallback(async (agent: AgentData) => {
-    if (!agent.id) return;
-    try {
-      const res = await apiFetch(`${API}/${agent.id}/duplicate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newName: `${agent.name} (copy)` }),
-      });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      toast.success('Agent duplicated');
-      await loadAgents();
-    } catch {
-      toast.error('Failed to duplicate agent');
-    }
-  }, [loadAgents]);
+  const duplicate = useCallback(
+    async (agent: AgentData) => {
+      if (!agent.id) return;
+      try {
+        const res = await apiFetch(`${API}/${agent.id}/duplicate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newName: `${agent.name} (copy)` }),
+        });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        toast.success('Agent duplicated');
+        await loadAgents();
+      } catch {
+        toast.error('Failed to duplicate agent');
+      }
+    },
+    [loadAgents]
+  );
 
-  const remove = useCallback(async (id: string) => {
-    try {
-      const res = await apiFetch(`${API}/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-      toast.success('Agent deleted');
-      await loadAgents();
-    } catch {
-      toast.error('Failed to delete agent');
-    }
-  }, [loadAgents]);
+  const remove = useCallback(
+    async (id: string) => {
+      try {
+        const res = await apiFetch(`${API}/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        toast.success('Agent deleted');
+        await loadAgents();
+      } catch {
+        toast.error('Failed to delete agent');
+      }
+    },
+    [loadAgents]
+  );
 
   return { duplicate, remove };
 }
@@ -107,16 +120,23 @@ export function AgentsView() {
   const router = useRouter();
   const [syncOpen, setSyncOpen] = useState(false);
 
-  const openNew = useCallback(() => { router.push('/agents/new'); }, [router]);
-  const openEdit = useCallback((a: AgentData) => {
-    if (!a.id) return;
-    router.push(`/agents/${a.id}/edit`);
+  const openNew = useCallback(() => {
+    router.push('/agents/new');
   }, [router]);
+  const openEdit = useCallback(
+    (a: AgentData) => {
+      if (!a.id) return;
+      router.push(`/agents/${a.id}/edit`);
+    },
+    [router]
+  );
 
   return (
     <div className="space-y-4">
       <ViewActions onNew={openNew} onSync={() => setSyncOpen(true)} />
-      {loading ? <AgentListSkeleton /> : error ? (
+      {loading ? (
+        <AgentListSkeleton />
+      ) : error ? (
         <ErrorState
           title="Failed to load agents"
           description={error.message}
@@ -125,7 +145,14 @@ export function AgentsView() {
       ) : (
         <AgentList agents={agents} onEdit={openEdit} onDuplicate={duplicate} onDelete={remove} />
       )}
-      <SyncAgentsModal open={syncOpen} onClose={() => setSyncOpen(false)} onSynced={() => { void loadAgents(); }} agentCount={agents.length} />
+      <SyncAgentsModal
+        open={syncOpen}
+        onClose={() => setSyncOpen(false)}
+        onSynced={() => {
+          void loadAgents();
+        }}
+        agentCount={agents.length}
+      />
     </div>
   );
 }

@@ -16,7 +16,7 @@ export interface AddMemoryOutput {
 export class AddMemoryUseCase {
   constructor(
     private readonly repo: SemanticMemoryRepo,
-    private readonly embedder: EmbeddingPort,
+    private readonly embedder: EmbeddingPort
   ) {}
 
   async execute(input: AddMemoryInput): Promise<AddMemoryOutput> {

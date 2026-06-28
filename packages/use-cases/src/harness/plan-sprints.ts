@@ -8,7 +8,10 @@ export interface PlannerSprintData {
 }
 
 export interface HarnessPlanner {
-  plan(specContent: string, config: { plannerModel: string; repoSummary?: string }): Promise<PlannerSprintData[]>;
+  plan(
+    specContent: string,
+    config: { plannerModel: string; repoSummary?: string }
+  ): Promise<PlannerSprintData[]>;
 }
 
 export interface PlanSprintsInput {
@@ -25,7 +28,7 @@ export class PlanSprintsUseCase {
   constructor(
     private readonly projectRepo: HarnessProjectRepo,
     private readonly sprintRepo: HarnessSprintRepo,
-    private readonly planner: HarnessPlanner,
+    private readonly planner: HarnessPlanner
   ) {}
 
   async execute(input: PlanSprintsInput): Promise<PlanSprintsOutput> {
@@ -39,14 +42,16 @@ export class PlanSprintsUseCase {
 
     const sprints = await Promise.all(
       sprintData.map((data, i) =>
-        this.sprintRepo.save(HarnessSprint.create({
-          projectId: project.id,
-          number: i + 1,
-          name: data.name,
-          description: data.description,
-          features: data.features,
-        })),
-      ),
+        this.sprintRepo.save(
+          HarnessSprint.create({
+            projectId: project.id,
+            number: i + 1,
+            name: data.name,
+            description: data.description,
+            features: data.features,
+          })
+        )
+      )
     );
 
     await this.projectRepo.save(project.withStatus('ready'));

@@ -73,7 +73,7 @@ function ProfileLoading() {
 
 function SectionHeading({ children }: { children: ReactNode }) {
   return (
-    <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+    <h3 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
       {children}
     </h3>
   );
@@ -89,7 +89,7 @@ function BadgeList({
   emptyLabel: string;
 }) {
   if (items.length === 0) {
-    return <p className="text-xs text-muted-foreground">{emptyLabel}</p>;
+    return <p className="text-muted-foreground text-xs">{emptyLabel}</p>;
   }
   return (
     <div className="flex flex-wrap gap-2">
@@ -105,7 +105,7 @@ function BadgeList({
 function RoleList({ roles }: { roles: Record<string, string[]> }) {
   const roleKeys = Object.keys(roles);
   if (roleKeys.length === 0) {
-    return <p className="text-xs text-muted-foreground">No roles classified.</p>;
+    return <p className="text-muted-foreground text-xs">No roles classified.</p>;
   }
   return (
     <Accordion type="multiple" className="rounded-lg border">
@@ -120,7 +120,7 @@ function RoleList({ roles }: { roles: Record<string, string[]> }) {
           <AccordionContent>
             <ul className="space-y-1">
               {(roles[role] ?? []).map((file) => (
-                <li key={file} className="font-mono text-xs text-muted-foreground">
+                <li key={file} className="text-muted-foreground font-mono text-xs">
                   {file}
                 </li>
               ))}
@@ -136,9 +136,9 @@ function ProfileResultCard({ result }: { result: ProfileResult }) {
   return (
     <div className="space-y-5">
       <div className="space-y-1">
-        <p className="text-sm text-muted-foreground">{result.summary}</p>
-        <p className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{result.fileCount}</span> files scanned ·
+        <p className="text-muted-foreground text-sm">{result.summary}</p>
+        <p className="text-muted-foreground text-xs">
+          <span className="text-foreground font-medium">{result.fileCount}</span> files scanned ·
           root <span className="font-mono">{result.root}</span>
         </p>
       </div>
@@ -189,7 +189,12 @@ function ProfileBody({
   if (loading) return <ProfileLoading />;
   if (error) {
     return (
-      <ErrorState title="Profiler failed" description={error} retryLabel="Try again" onRetry={onRetry} />
+      <ErrorState
+        title="Profiler failed"
+        description={error}
+        retryLabel="Try again"
+        onRetry={onRetry}
+      />
     );
   }
   if (result) return <ProfileResultCard result={result} />;
@@ -228,12 +233,7 @@ export function ProfilerView() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-6">
       <ProfileForm dir={dir} loading={loading} onChange={setDir} onSubmit={submit} />
-      <ProfileBody
-        loading={loading}
-        error={error}
-        result={result}
-        onRetry={submit}
-      />
+      <ProfileBody loading={loading} error={error} result={result} onRetry={submit} />
     </div>
   );
 }

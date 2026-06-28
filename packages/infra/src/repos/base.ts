@@ -18,7 +18,7 @@ type Db = BetterSQLite3Database<Record<string, never>>;
 export abstract class DrizzleRepo<T extends Entity> implements Repository<T, string> {
   constructor(
     protected readonly db: Db,
-    protected readonly table: SQLiteTable & { readonly id: SQLiteColumn },
+    protected readonly table: SQLiteTable & { readonly id: SQLiteColumn }
   ) {}
 
   async findById(id: string): Promise<T | null> {
@@ -43,7 +43,10 @@ export abstract class DrizzleRepo<T extends Entity> implements Repository<T, str
   }
 
   async delete(id: string): Promise<void> {
-    this.db.delete(this.table).where(eq(this.table.id, id as never)).run();
+    this.db
+      .delete(this.table)
+      .where(eq(this.table.id, id as never))
+      .run();
   }
 
   protected abstract toEntity(row: Record<string, unknown>): T;

@@ -15,7 +15,13 @@ describe('SkillEditor', () => {
   });
 
   it('renders with initial values', () => {
-    render(<SkillEditor initialValues={{ name: 'pdf', description: 'PDF proc', content: '# PDF', tags: ['docs'] }} onSave={noop} onCancel={noop} />);
+    render(
+      <SkillEditor
+        initialValues={{ name: 'pdf', description: 'PDF proc', content: '# PDF', tags: ['docs'] }}
+        onSave={noop}
+        onCancel={noop}
+      />
+    );
     expect(screen.getByDisplayValue('pdf')).toBeInTheDocument();
     expect(screen.getByDisplayValue('PDF proc')).toBeInTheDocument();
     expect(screen.getByText(/docs/)).toBeInTheDocument();
@@ -28,7 +34,9 @@ describe('SkillEditor', () => {
     await userEvent.type(screen.getByLabelText('Description'), 'My skill');
     await userEvent.type(screen.getByLabelText('Skill content'), 'body');
     await userEvent.click(screen.getByText('Save skill'));
-    expect(save).toHaveBeenCalledWith(expect.objectContaining({ name: 'my-skill', description: 'My skill' }));
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'my-skill', description: 'My skill' })
+    );
   });
 
   it('calls onCancel when cancel clicked', async () => {

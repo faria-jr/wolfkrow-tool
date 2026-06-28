@@ -7,7 +7,9 @@ import remarkGfm from 'remark-gfm';
 
 const markdownComponents = {
   pre: ({ children }: ComponentPropsWithoutRef<'pre'>) => (
-    <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 text-xs font-mono">{children}</pre>
+    <pre className="bg-muted/40 overflow-x-auto rounded-md border p-3 font-mono text-xs">
+      {children}
+    </pre>
   ),
 };
 
@@ -49,14 +51,12 @@ export function PipelineReportView({ projectId }: { projectId: string }) {
   }, [projectId]);
 
   if (state.loading) {
-    return (
-      <div className="py-12 text-center text-muted-foreground">Generating report…</div>
-    );
+    return <div className="text-muted-foreground py-12 text-center">Generating report…</div>;
   }
 
   if (state.error || !state.report) {
     return (
-      <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border px-4 py-3 text-sm">
         {state.error ?? 'No report available.'}
       </div>
     );

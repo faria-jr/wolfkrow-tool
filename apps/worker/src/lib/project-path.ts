@@ -19,9 +19,7 @@
 import { realpathSync, statSync } from 'node:fs';
 import { isAbsolute, resolve, sep } from 'node:path';
 
-export type ProjectPathResult =
-  | { ok: true; path: string }
-  | { ok: false; reason: string };
+export type ProjectPathResult = { ok: true; path: string } | { ok: false; reason: string };
 
 function parseAllowlist(): string[] | null {
   const raw = process.env['WOLFKROW_ALLOWED_PROJECT_ROOTS'];

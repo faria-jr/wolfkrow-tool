@@ -106,7 +106,12 @@ describe('MgraphEngine', () => {
         tags: [],
         body: 'Initial body.',
       });
-      const updated = await engine.updateNote('projects/alpha.md', 'Updated body content', 'Alpha v2', ['updated']);
+      const updated = await engine.updateNote(
+        'projects/alpha.md',
+        'Updated body content',
+        'Alpha v2',
+        ['updated']
+      );
       expect(updated.title).toBe('Alpha v2');
       expect(updated.tags).toEqual(['updated']);
       expect(updated.body).toBe('Updated body content');
@@ -120,7 +125,11 @@ describe('MgraphEngine', () => {
     try {
       await engine.ensureVault();
       await engine.createNote({
-        path: 'decisions/abc.md', kind: 'decision', title: 'ABC', tags: [], body: 'x',
+        path: 'decisions/abc.md',
+        kind: 'decision',
+        title: 'ABC',
+        tags: [],
+        body: 'x',
       });
       await engine.deleteNote('decisions/abc.md');
       expect(await engine.readNote('decisions/abc.md')).toBeNull();
@@ -133,9 +142,15 @@ describe('MgraphEngine', () => {
     const { dir, engine } = makeVault();
     try {
       await engine.ensureVault();
-      await expect(engine.createNote({
-        path: '../escape.md', kind: 'entity', title: 'X', tags: [], body: 'x',
-      })).rejects.toThrow(/traversal|invalid/i);
+      await expect(
+        engine.createNote({
+          path: '../escape.md',
+          kind: 'entity',
+          title: 'X',
+          tags: [],
+          body: 'x',
+        })
+      ).rejects.toThrow(/traversal|invalid/i);
     } finally {
       cleanup(dir);
     }
@@ -146,10 +161,18 @@ describe('MgraphEngine', () => {
     try {
       await engine.ensureVault();
       await engine.createNote({
-        path: 'projects/main.md', kind: 'project', title: 'Main Project', tags: [], body: 'See [[auth-service]] for login.',
+        path: 'projects/main.md',
+        kind: 'project',
+        title: 'Main Project',
+        tags: [],
+        body: 'See [[auth-service]] for login.',
       });
       await engine.createNote({
-        path: 'entities/auth-service.md', kind: 'entity', title: 'Auth Service', tags: [], body: 'Auth details.',
+        path: 'entities/auth-service.md',
+        kind: 'entity',
+        title: 'Auth Service',
+        tags: [],
+        body: 'Auth details.',
       });
       const graph = await engine.buildGraphData();
       expect(graph.nodes).toHaveLength(2);
@@ -168,7 +191,11 @@ describe('MgraphEngine', () => {
     try {
       await engine.ensureVault();
       await engine.createNote({
-        path: 'references/postgres.md', kind: 'reference', title: 'Postgres', tags: [], body: 'Relational database.',
+        path: 'references/postgres.md',
+        kind: 'reference',
+        title: 'Postgres',
+        tags: [],
+        body: 'Relational database.',
       });
       const byTitle = await engine.searchVault({ query: 'postgres' });
       expect(byTitle.length).toBeGreaterThan(0);
@@ -184,10 +211,18 @@ describe('MgraphEngine', () => {
     try {
       await engine.ensureVault();
       await engine.createNote({
-        path: 'entities/foo.md', kind: 'entity', title: 'Foo', tags: [], body: 'common term',
+        path: 'entities/foo.md',
+        kind: 'entity',
+        title: 'Foo',
+        tags: [],
+        body: 'common term',
       });
       await engine.createNote({
-        path: 'meetings/m1.md', kind: 'meeting', title: 'M1', tags: [], body: 'common term',
+        path: 'meetings/m1.md',
+        kind: 'meeting',
+        title: 'M1',
+        tags: [],
+        body: 'common term',
       });
       const onlyEntities = await engine.searchVault({ query: 'common', kind: 'entity' });
       expect(onlyEntities).toHaveLength(1);
@@ -201,8 +236,20 @@ describe('MgraphEngine', () => {
     const { dir, engine } = makeVault();
     try {
       await engine.ensureVault();
-      await engine.createNote({ path: 'entities/a.md', kind: 'entity', title: 'A', tags: [], body: 'x' });
-      await engine.createNote({ path: 'meetings/m1.md', kind: 'meeting', title: 'M1', tags: [], body: 'x' });
+      await engine.createNote({
+        path: 'entities/a.md',
+        kind: 'entity',
+        title: 'A',
+        tags: [],
+        body: 'x',
+      });
+      await engine.createNote({
+        path: 'meetings/m1.md',
+        kind: 'meeting',
+        title: 'M1',
+        tags: [],
+        body: 'x',
+      });
       const stats = await engine.getStats();
       expect(stats.noteCount).toBe(2);
       expect(stats.byKind.entity).toBe(1);
@@ -221,7 +268,7 @@ describe('MgraphEngine — existing files', () => {
       await engine.ensureVault();
       writeFileSync(
         join(dir, 'entities', 'pre-existing.md'),
-        '---\ntitle: "Pre Existing"\ntype: entity\ntags: ["legacy"]\n---\n\nLegacy content here.',
+        '---\ntitle: "Pre Existing"\ntype: entity\ntags: ["legacy"]\n---\n\nLegacy content here.'
       );
       const note = await engine.readNote('entities/pre-existing.md');
       expect(note).not.toBeNull();

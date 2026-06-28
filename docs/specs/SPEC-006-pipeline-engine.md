@@ -46,7 +46,9 @@ export const pipelineProjects = sqliteTable('pipeline_projects', {
 
 export const pipelinePhases = sqliteTable('pipeline_phases', {
   id: text('id').primaryKey(),
-  projectId: text('project_id').notNull().references(() => pipelineProjects.id, { onDelete: 'cascade' }),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => pipelineProjects.id, { onDelete: 'cascade' }),
   stage: text('stage', {
     enum: ['discovery', 'spec_build', 'spec_validate', 'approval', 'implementation'],
   }).notNull(),
@@ -61,8 +63,12 @@ export const pipelinePhases = sqliteTable('pipeline_phases', {
 
 export const pipelineMessages = sqliteTable('pipeline_messages', {
   id: text('id').primaryKey(),
-  projectId: text('project_id').notNull().references(() => pipelineProjects.id, { onDelete: 'cascade' }),
-  phaseId: text('phase_id').notNull().references(() => pipelinePhases.id, { onDelete: 'cascade' }),
+  projectId: text('project_id')
+    .notNull()
+    .references(() => pipelineProjects.id, { onDelete: 'cascade' }),
+  phaseId: text('phase_id')
+    .notNull()
+    .references(() => pipelinePhases.id, { onDelete: 'cascade' }),
   role: text('role', { enum: ['user', 'assistant', 'system'] }).notNull(),
   content: text('content').notNull(),
   createdAt: integer('created_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
@@ -116,11 +122,14 @@ export const pipelineMessages = sqliteTable('pipeline_messages', {
 ```typescript
 // apps/worker/src/pipeline/stages/discovery.stage.ts
 export class DiscoveryStage {
-  constructor(private provider: AIProvider, private messageRepo: PipelineMessageRepo) {}
-  
+  constructor(
+    private provider: AIProvider,
+    private messageRepo: PipelineMessageRepo
+  ) {}
+
   async *execute(projectId: string, phaseId: string): AsyncIterable<PipelineEvent> {
     const messages = await this.messageRepo.listByPhase(phaseId);
-    
+
     const prompt: Prompt = {
       system: DISCOVERY_SYSTEM_PROMPT,
       messages: [
@@ -131,7 +140,7 @@ export class DiscoveryStage {
       model: 'claude-sonnet-4-5',
       maxTokens: 4000,
     };
-    
+
     for await (const chunk of this.provider.query(prompt)) {
       if (chunk.type === 'text') {
         yield { type: 'message', phaseId, role: 'assistant', content: chunk.content };
@@ -147,12 +156,15 @@ export class DiscoveryStage {
 
 ```typescript
 export class SpecBuildStage {
-  constructor(private provider: AIProvider, private fs: FileSystem) {}
-  
+  constructor(
+    private provider: AIProvider,
+    private fs: FileSystem
+  ) {}
+
   async execute(projectId: string, phaseId: string): Promise<PhaseArtifact> {
     const project = await this.projectRepo.findById(projectId);
     const discoveryMessages = await this.messageRepo.listByProjectAndStage(projectId, 'discovery');
-    
+
     const prompt: Prompt = {
       system: SPEC_BUILD_SYSTEM_PROMPT,
       messages: [
@@ -165,18 +177,18 @@ export class SpecBuildStage {
       model: 'claude-opus-4',
       maxTokens: 16000,
     };
-    
+
     // Agent writes files
     for await (const chunk of this.provider.query(prompt)) {
       if (chunk.type === 'tool_call') {
         await this.handleToolCall(chunk);
       }
     }
-    
+
     // Read generated artifacts
     const prdPath = `.wolfkrow/pipelines/${projectId}/PRD.md`;
     const specPath = `.wolfkrow/pipelines/${projectId}/SPEC.md`;
-    
+
     return { prdPath, specPath };
   }
 }
@@ -187,22 +199,24 @@ export class SpecBuildStage {
 ```typescript
 export class SpecValidateStage {
   constructor(private provider: AIProvider) {}
-  
+
   async execute(projectId: string, phaseId: string): Promise<ValidationReport> {
     const specPath = `.wolfkrow/pipelines/${projectId}/SPEC.md`;
     const spec = await this.fs.readFile(specPath);
-    
+
     const prompt: Prompt = {
       system: SPEC_VALIDATE_SYSTEM_PROMPT,
-      messages: [{
-        role: 'user',
-        content: `Review this SPEC for technical soundness, completeness, and risks.\n\n${spec}`,
-      }],
+      messages: [
+        {
+          role: 'user',
+          content: `Review this SPEC for technical soundness, completeness, and risks.\n\n${spec}`,
+        },
+      ],
       tools: [ReadTool],
       model: 'claude-opus-4',
       maxTokens: 16000,
     };
-    
+
     // ... stream validation report
   }
 }
@@ -240,7 +254,7 @@ export async function rejectPipeline(projectId: string, notes: string) {
 'use client';
 export function PipelinePage() {
   const { data: projects } = usePipelineProjects();
-  
+
   return (
     <div className="grid grid-cols-3 gap-4">
       <PipelineProjectList projects={projects} />
@@ -258,7 +272,7 @@ export function PipelinePage() {
 export function PipelineChatView({ projectId }: { projectId: string }) {
   const { data: messages } = usePipelineMessages(projectId);
   const sendMessage = useSendPipelineMessage();
-  
+
   return (
     <div>
       <StreamViewer messages={messages} />
@@ -275,20 +289,29 @@ export function PipelineChatView({ projectId }: { projectId: string }) {
 'use client';
 export function PipelineProgressBar({ projectId }: { projectId: string }) {
   const { data: project } = usePipelineProject(projectId);
-  
+
   const stages = ['discovery', 'spec_build', 'spec_validate', 'approval', 'implementation'];
   const currentIndex = stages.indexOf(project?.currentStage);
-  
+
   return (
     <div className="space-y-2">
       {stages.map((stage, i) => (
-        <div key={stage} className={cn(
-          'flex items-center gap-2',
-          i < currentIndex && 'text-green-500',
-          i === currentIndex && 'text-blue-500 font-bold',
-          i > currentIndex && 'text-zinc-500',
-        )}>
-          {i < currentIndex ? <Check /> : i === currentIndex ? <Loader className="animate-spin" /> : <Circle />}
+        <div
+          key={stage}
+          className={cn(
+            'flex items-center gap-2',
+            i < currentIndex && 'text-green-500',
+            i === currentIndex && 'font-bold text-blue-500',
+            i > currentIndex && 'text-zinc-500'
+          )}
+        >
+          {i < currentIndex ? (
+            <Check />
+          ) : i === currentIndex ? (
+            <Loader className="animate-spin" />
+          ) : (
+            <Circle />
+          )}
           <span className="capitalize">{stage.replace('_', ' ')}</span>
         </div>
       ))}

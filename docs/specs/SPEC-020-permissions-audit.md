@@ -41,7 +41,7 @@ export class PermissionResolver {
 }
 ```
 
-Regras: Safe (Read/Grep/Glob/Web*) → allow; Write/Edit em path permitido → allow; destrutivo (rm/sudo/send/push) → ask; desconhecido → deny.
+Regras: Safe (Read/Grep/Glob/Web\*) → allow; Write/Edit em path permitido → allow; destrutivo (rm/sudo/send/push) → ask; desconhecido → deny.
 
 ---
 

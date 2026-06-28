@@ -23,6 +23,7 @@ export { DrizzleHarnessSprintRepo } from './harness-sprint-repo';
 export { DrizzleHarnessRoundRepo } from './harness-round-repo';
 export { DrizzlePipelineProjectRepo } from './pipeline-project-repo';
 export { DrizzlePipelinePhaseRepo } from './pipeline-phase-repo';
+export { DrizzleProjectRepo } from './project-repo';
 export { DrizzleEnrichSessionRepo } from './enrich-session-repo';
 export { DrizzleWorkflowRunRepo } from './workflow-run-repo';
 export { DrizzleGraphRepo } from './graph-repo';
@@ -36,6 +37,7 @@ export { DrizzleAuditLogRepo } from './audit-log-repo';
 export { DrizzleProviderConfigRepo } from './provider-config-repo';
 export { DrizzleToolPermissionRepo, decisionKey } from './tool-permission-repo';
 export type { ToolPermissionRow, ToolPermissionDecision } from './tool-permission-repo';
+export { DrizzleRunEventRepo } from './run-event-repo';
 
 import type { ISchedulerRepository } from './scheduler-repo';
 import { DrizzleSchedulerRepository } from './scheduler-repo';

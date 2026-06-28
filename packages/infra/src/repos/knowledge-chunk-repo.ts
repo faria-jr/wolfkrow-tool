@@ -71,13 +71,13 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
     };
     if (hasTable(sqlite, 'knowledge_chunks_vec')) {
       stmts.vec0Insert = sqlite.prepare(
-        'INSERT OR REPLACE INTO knowledge_chunks_vec (chunk_id, embedding) VALUES (?, ?)',
+        'INSERT OR REPLACE INTO knowledge_chunks_vec (chunk_id, embedding) VALUES (?, ?)'
       );
     }
     if (hasTable(sqlite, 'knowledge_chunks_fts')) {
       stmts.ftsDelete = sqlite.prepare('DELETE FROM knowledge_chunks_fts WHERE chunk_id = ?');
       stmts.ftsInsert = sqlite.prepare(
-        'INSERT INTO knowledge_chunks_fts (chunk_id, content) VALUES (?, ?)',
+        'INSERT INTO knowledge_chunks_fts (chunk_id, content) VALUES (?, ?)'
       );
     }
     return stmts;
@@ -90,15 +90,18 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
     // Wrap primary insert + shadow-index writes in a single transaction so
     // the primary row and its search projections are always consistent.
     sqlite.transaction(() => {
-      this.db.insert(knowledgeChunks).values({
-        id: p.id,
-        documentId: p.documentId,
-        content: p.content,
-        embedding: p.embedding ?? null,
-        metadata: p.metadata,
-        position: p.position,
-        createdAt: p.createdAt,
-      }).run();
+      this.db
+        .insert(knowledgeChunks)
+        .values({
+          id: p.id,
+          documentId: p.documentId,
+          content: p.content,
+          embedding: p.embedding ?? null,
+          metadata: p.metadata,
+          position: p.position,
+          createdAt: p.createdAt,
+        })
+        .run();
 
       const { vec0Insert, ftsDelete, ftsInsert } = stmts;
       if (vec0Insert && p.embedding && p.embedding.length === VEC_DIM) {
@@ -112,7 +115,11 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
   }
 
   async findByDocumentId(documentId: string): Promise<KnowledgeChunk[]> {
-    const rows = this.db.select().from(knowledgeChunks).where(eq(knowledgeChunks.documentId, documentId)).all();
+    const rows = this.db
+      .select()
+      .from(knowledgeChunks)
+      .where(eq(knowledgeChunks.documentId, documentId))
+      .all();
     return rows.map(toEntity);
   }
 
@@ -145,7 +152,7 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
   async vectorSearch(
     embedding: number[],
     limit: number,
-    documentIds?: string[],
+    documentIds?: string[]
   ): Promise<ChunkSearchResult[]> {
     if (embedding.length === VEC_DIM && isVec0Available(this.db.$client)) {
       return vectorSearchVec0(this.db, {
@@ -161,11 +168,13 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
   private vectorSearchJS(
     embedding: number[],
     limit: number,
-    documentIds?: string[],
+    documentIds?: string[]
   ): ChunkSearchResult[] {
     const where = and(
       isNotNull(knowledgeChunks.embedding),
-      documentIds && documentIds.length > 0 ? inArray(knowledgeChunks.documentId, documentIds) : undefined,
+      documentIds && documentIds.length > 0
+        ? inArray(knowledgeChunks.documentId, documentIds)
+        : undefined
     );
     const rows = this.db.select().from(knowledgeChunks).where(where).all();
 
@@ -184,7 +193,7 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
   async keywordSearch(
     query: string,
     limit: number,
-    documentIds?: string[],
+    documentIds?: string[]
   ): Promise<KeywordSearchResult[]> {
     const trimmed = query.trim();
     if (!trimmed) return [];
@@ -203,14 +212,16 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
   private keywordSearchLike(
     query: string,
     limit: number,
-    documentIds?: string[],
+    documentIds?: string[]
   ): KeywordSearchResult[] {
     // Escape LIKE metacharacters so user input is treated literally.
     const escaped = query.replace(/[%_\\]/g, '\\$&');
     const pattern = `%${escaped}%`;
     const where = and(
       sql`${knowledgeChunks.content} LIKE ${pattern} ESCAPE '\\'`,
-      documentIds && documentIds.length > 0 ? inArray(knowledgeChunks.documentId, documentIds) : undefined,
+      documentIds && documentIds.length > 0
+        ? inArray(knowledgeChunks.documentId, documentIds)
+        : undefined
     );
     const rows = this.db.select().from(knowledgeChunks).where(where).all();
     return rows.slice(0, limit).map((row) => ({ chunk: toEntity(row), rank: 0 }));
@@ -220,7 +231,7 @@ export class DrizzleKnowledgeChunkRepo implements KnowledgeChunkRepo {
     query: string,
     embedding: number[],
     limit: number,
-    documentIds?: string[],
+    documentIds?: string[]
   ): Promise<HybridChunkSearchResult[]> {
     const fetchLimit = Math.max(limit * 3, 30);
     const [vecResults, kwResults] = await Promise.all([

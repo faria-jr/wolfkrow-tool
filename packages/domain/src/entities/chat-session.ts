@@ -14,7 +14,10 @@ export interface ChatSessionProps {
   lastActivity: Date;
 }
 
-export type ChatSessionCreateInput = Pick<ChatSessionProps, 'userId' | 'agentId' | 'title' | 'archived'>;
+export type ChatSessionCreateInput = Pick<
+  ChatSessionProps,
+  'userId' | 'agentId' | 'title' | 'archived'
+>;
 
 export class ChatSession {
   readonly id: string;
@@ -75,7 +78,12 @@ export class ChatSession {
 
   addMessage(message: Message): ChatSession {
     const now = new Date();
-    return ChatSession.fromProps({ ...this.toProps(), messages: [...this.messages, message], updatedAt: now, lastActivity: now });
+    return ChatSession.fromProps({
+      ...this.toProps(),
+      messages: [...this.messages, message],
+      updatedAt: now,
+      lastActivity: now,
+    });
   }
 
   withMessages(messages: Message[]): ChatSession {

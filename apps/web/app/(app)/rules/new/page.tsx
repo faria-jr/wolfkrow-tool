@@ -15,7 +15,14 @@ export default function NewRulePage() {
         title="New rule"
         description="Create a global prompt rule with markdown body."
         icon={<ScrollText className="h-6 w-6" />}
-        actions={<Button asChild variant="outline"><Link href="/rules"><ArrowLeft className="mr-2 h-4 w-4" />Back to rules</Link></Button>}
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/rules">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to rules
+            </Link>
+          </Button>
+        }
       />
       <PageContent>
         <RuleEditScreen />

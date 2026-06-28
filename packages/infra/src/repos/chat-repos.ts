@@ -16,6 +16,11 @@ export class DrizzleChatSessionRepo implements ChatSessionRepo {
     return rows[0] ? this.toEntity(rows[0]) : null;
   }
 
+  async findAll(): Promise<ChatSession[]> {
+    const rows = this.db.select().from(chatSessions).all();
+    return rows.map((r) => this.toEntity(r));
+  }
+
   async findByUserId(userId: string): Promise<ChatSession[]> {
     const rows = this.db.select().from(chatSessions).where(eq(chatSessions.userId, userId)).all();
     return rows.map((r) => this.toEntity(r));
@@ -66,7 +71,8 @@ export class DrizzleChatSessionRepo implements ChatSessionRepo {
       messages: [],
       createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt),
       updatedAt: row.updatedAt instanceof Date ? row.updatedAt : new Date(row.updatedAt),
-      lastActivity: row.lastActivity instanceof Date ? row.lastActivity : new Date(row.lastActivity),
+      lastActivity:
+        row.lastActivity instanceof Date ? row.lastActivity : new Date(row.lastActivity),
     });
   }
 }
@@ -75,7 +81,11 @@ export class DrizzleMessageRepo implements MessageRepo {
   constructor(private readonly db: Db = getDb()) {}
 
   async findBySessionId(sessionId: string): Promise<Message[]> {
-    const rows = this.db.select().from(chatMessages).where(eq(chatMessages.sessionId, sessionId)).all();
+    const rows = this.db
+      .select()
+      .from(chatMessages)
+      .where(eq(chatMessages.sessionId, sessionId))
+      .all();
     return rows.map((r) => this.toEntity(r));
   }
 

@@ -97,6 +97,44 @@ function useDeleteConfirm(onDelete: (id: string) => Promise<void>) {
 
 const PAGE_SIZE = 20;
 
+interface AgentTableProps {
+  agents: AgentData[];
+  onEdit: (agent: AgentData) => void;
+  onDuplicate: (agent: AgentData) => void;
+  onDelete: (agent: AgentData) => void;
+  deleting: boolean;
+}
+
+function AgentTable({ agents, onEdit, onDuplicate, onDelete, deleting }: AgentTableProps) {
+  return (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Model</TableHead>
+            <TableHead>Runtime</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="w-24" />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {agents.map((agent) => (
+            <AgentRow
+              key={agent.id}
+              agent={agent}
+              onEdit={onEdit}
+              onDuplicate={onDuplicate}
+              onDelete={onDelete}
+              disableDelete={deleting}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 export function AgentList({ agents, onEdit, onDuplicate, onDelete }: Props) {
   const { toDelete, setToDelete, deleting, confirmDelete } = useDeleteConfirm(onDelete);
   const [currentPage, setCurrentPage] = useState(1);
@@ -116,31 +154,13 @@ export function AgentList({ agents, onEdit, onDuplicate, onDelete }: Props) {
 
   return (
     <>
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Model</TableHead>
-              <TableHead>Runtime</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-24" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedAgents.map((agent) => (
-              <AgentRow
-                key={agent.id}
-                agent={agent}
-                onEdit={onEdit}
-                onDuplicate={onDuplicate}
-                onDelete={setToDelete}
-                disableDelete={deleting}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <AgentTable
+        agents={paginatedAgents}
+        onEdit={onEdit}
+        onDuplicate={onDuplicate}
+        onDelete={setToDelete}
+        deleting={deleting}
+      />
       <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       {toDelete && (
         <DeleteAgentDialog

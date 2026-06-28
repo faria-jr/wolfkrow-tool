@@ -1,4 +1,3 @@
-
 import { GlobalRule } from '@wolfkrow/domain';
 import type { GlobalRuleRepo, RuleKind } from '@wolfkrow/domain';
 import { eq } from 'drizzle-orm';
@@ -10,11 +9,7 @@ export class DrizzleGlobalRuleRepo implements GlobalRuleRepo {
   constructor(private readonly db = getDb()) {}
 
   async findAll(userId: string): Promise<GlobalRule[]> {
-    const rows = this.db
-      .select()
-      .from(globalRules)
-      .where(eq(globalRules.userId, userId))
-      .all();
+    const rows = this.db.select().from(globalRules).where(eq(globalRules.userId, userId)).all();
 
     return rows.map((r) =>
       GlobalRule.fromProps({
@@ -27,7 +22,7 @@ export class DrizzleGlobalRuleRepo implements GlobalRuleRepo {
         sortOrder: r.sortOrder,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
-      }),
+      })
     );
   }
 

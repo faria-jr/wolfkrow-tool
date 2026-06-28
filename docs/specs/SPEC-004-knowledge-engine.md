@@ -10,6 +10,7 @@
 ## 1. Visão Geral
 
 Engine de RAG (Retrieval-Augmented Generation) 100% local:
+
 - Ingere PDFs, DOCX, CSV, XLSX, MD, URLs
 - Chunking semântico (não fixed-size)
 - Embeddings via Anthropic API
@@ -115,10 +116,10 @@ interface Chunk {
 export function semanticChunk(content: string, maxChunkSize = 1000): Chunk[] {
   const tree = remark().use(remarkGfm).parse(content);
   const chunks: Chunk[] = [];
-  
+
   let currentChunk = '';
   let currentHeading = '';
-  
+
   visit(tree, (node: any) => {
     if (node.type === 'heading') {
       currentHeading = toString(node);
@@ -129,7 +130,7 @@ export function semanticChunk(content: string, maxChunkSize = 1000): Chunk[] {
       }
     } else if (node.type === 'paragraph' || node.type === 'code' || node.type === 'list') {
       const text = toString(node);
-      
+
       if (currentChunk.length + text.length > maxChunkSize && currentChunk.length > 0) {
         chunks.push({
           content: currentChunk.trim(),
@@ -141,11 +142,11 @@ export function semanticChunk(content: string, maxChunkSize = 1000): Chunk[] {
       }
     }
   });
-  
+
   if (currentChunk.trim().length > 0) {
     chunks.push({ content: currentChunk.trim(), metadata: { heading: currentHeading, sourceType: 'paragraph', position: chunks.length } });
   }
-  
+
   return chunks;
 }
 ```
@@ -160,26 +161,26 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export class AnthropicEmbeddings {
   constructor(private apiKey: string) {}
-  
+
   async embed(text: string): Promise<number[]> {
     const client = new Anthropic({ apiKey: this.apiKey });
-    
+
     const response = await client.embeddings.create({
       model: 'voyage-3',
       input: text,
     });
-    
+
     return response.embedding;
   }
-  
+
   async embedBatch(texts: string[]): Promise<number[][]> {
     const client = new Anthropic({ apiKey: this.apiKey });
-    
+
     const response = await client.embeddings.create({
       model: 'voyage-3',
       input: texts,
     });
-    
+
     return response.embeddings;
   }
 }
@@ -194,28 +195,28 @@ export class AnthropicEmbeddings {
 export class HybridSearch {
   constructor(
     private db: Database,
-    private embeddings: AnthropicEmbeddings,
+    private embeddings: AnthropicEmbeddings
   ) {}
-  
+
   async search(query: string, options: SearchOptions): Promise<SearchResult[]> {
     // 1. Generate query embedding
     const queryEmbedding = await this.embeddings.embed(query);
-    
+
     // 2. Vector search (semantic)
     const vectorResults = await this.vectorSearch(queryEmbedding, options);
-    
+
     // 3. Keyword search (BM25 via FTS5)
     const keywordResults = await this.keywordSearch(query, options);
-    
+
     // 4. Reciprocal Rank Fusion (RRF)
     const fused = this.fuse(vectorResults, keywordResults, {
       vectorWeight: 0.7,
       keywordWeight: 0.3,
     });
-    
+
     return fused.slice(0, options.limit ?? 10);
   }
-  
+
   private async vectorSearch(embedding: number[], options: SearchOptions) {
     const sql = sql`
       SELECT 
@@ -231,10 +232,10 @@ export class HybridSearch {
       ORDER BY distance
       LIMIT ${(options.limit ?? 10) * 2}
     `;
-    
+
     return this.db.all(sql);
   }
-  
+
   private async keywordSearch(query: string, options: SearchOptions) {
     const sql = sql`
       SELECT 
@@ -249,26 +250,32 @@ export class HybridSearch {
       ORDER BY rank
       LIMIT ${(options.limit ?? 10) * 2}
     `;
-    
+
     return this.db.all(sql);
   }
-  
-  private fuse(vectorResults: any[], keywordResults: any[], weights: { vectorWeight: number; keywordWeight: number }) {
+
+  private fuse(
+    vectorResults: any[],
+    keywordResults: any[],
+    weights: { vectorWeight: number; keywordWeight: number }
+  ) {
     const scores = new Map<string, number>();
-    
+
     vectorResults.forEach((r, i) => {
       const score = (1 / (i + 1)) * weights.vectorWeight;
       scores.set(r.id, (scores.get(r.id) ?? 0) + score);
     });
-    
+
     keywordResults.forEach((r, i) => {
       const score = (1 / (i + 1)) * weights.keywordWeight;
       scores.set(r.id, (scores.get(r.id) ?? 0) + score);
     });
-    
+
     return Array.from(scores.entries())
       .sort(([, a], [, b]) => b - a)
-      .map(([id]) => vectorResults.find((r) => r.id === id) ?? keywordResults.find((r) => r.id === id));
+      .map(
+        ([id]) => vectorResults.find((r) => r.id === id) ?? keywordResults.find((r) => r.id === id)
+      );
   }
 }
 ```
@@ -294,7 +301,9 @@ export const knowledgeDocuments = sqliteTable('knowledge_documents', {
 
 export const knowledgeChunks = sqliteTable('knowledge_chunks', {
   id: text('id').primaryKey(),
-  documentId: text('document_id').notNull().references(() => knowledgeDocuments.id, { onDelete: 'cascade' }),
+  documentId: text('document_id')
+    .notNull()
+    .references(() => knowledgeDocuments.id, { onDelete: 'cascade' }),
   content: text('content').notNull(),
   embedding: text('embedding', { mode: 'json' }).$type<number[]>(), // sqlite-vec will handle
   metadata: text('metadata', { mode: 'json' }).$type<ChunkMetadata>().default({}),
@@ -316,10 +325,13 @@ export class IngestPipeline {
     private embeddings: AnthropicEmbeddings,
     private docRepo: KnowledgeDocRepo,
     private chunkRepo: KnowledgeChunkRepo,
-    private events: EventBus,
+    private events: EventBus
   ) {}
-  
-  async ingest(file: UploadedFile, onProgress?: (progress: IngestProgress) => void): Promise<KnowledgeDocument> {
+
+  async ingest(
+    file: UploadedFile,
+    onProgress?: (progress: IngestProgress) => void
+  ): Promise<KnowledgeDocument> {
     // 1. Create document record
     const doc = await this.docRepo.create({
       filename: file.name,
@@ -327,40 +339,40 @@ export class IngestPipeline {
       size: file.size,
       status: 'processing',
     });
-    
+
     onProgress?.({ stage: 'parsing', progress: 0 });
     this.events.publish(new DocumentIngestStartedEvent(doc.id));
-    
+
     try {
       // 2. Parse file
       const parser = this.parsers.forMimeType(file.mimeType);
       const content = await parser.parse(file.path);
-      
+
       onProgress?.({ stage: 'chunking', progress: 0.3 });
-      
+
       // 3. Chunk semantically
       const chunks = this.chunker.chunk(content);
-      
+
       onProgress?.({ stage: 'embedding', progress: 0.5 });
-      
+
       // 4. Generate embeddings (batched)
       const batchSize = 100;
       const embeddings: number[][] = [];
-      
+
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
         const batchEmbeddings = await this.embeddings.embedBatch(batch.map((c) => c.content));
         embeddings.push(...batchEmbeddings);
-        
+
         onProgress?.({
           stage: 'embedding',
-          progress: 0.5 + (0.4 * (i + batch.length) / chunks.length),
+          progress: 0.5 + (0.4 * (i + batch.length)) / chunks.length,
         });
       }
-      
+
       // 5. Save chunks
       onProgress?.({ stage: 'saving', progress: 0.9 });
-      
+
       await this.chunkRepo.saveMany(
         chunks.map((chunk, i) => ({
           documentId: doc.id,
@@ -368,25 +380,25 @@ export class IngestPipeline {
           embedding: embeddings[i],
           metadata: chunk.metadata,
           position: i,
-        })),
+        }))
       );
-      
+
       // 6. Mark as ready
       const updated = await this.docRepo.update(doc.id, {
         status: 'ready',
         chunkCount: chunks.length,
       });
-      
+
       onProgress?.({ stage: 'done', progress: 1 });
       this.events.publish(new DocumentIngestCompletedEvent(doc.id, chunks.length));
-      
+
       return updated;
     } catch (error) {
       await this.docRepo.update(doc.id, {
         status: 'failed',
         error: String(error),
       });
-      
+
       this.events.publish(new DocumentIngestFailedEvent(doc.id, String(error)));
       throw error;
     }
@@ -398,31 +410,34 @@ export class IngestPipeline {
 
 ## 9. Performance Targets
 
-| Metric | Target |
-|---|---|
-| Ingest 100 PDFs (avg 50 pages) | <5min |
-| Embedding generation | 100 chunks/sec |
-| Vector search (10k chunks) | <50ms |
-| Hybrid search (10k chunks) | <100ms |
-| Citation generation | <10ms |
+| Metric                         | Target         |
+| ------------------------------ | -------------- |
+| Ingest 100 PDFs (avg 50 pages) | <5min          |
+| Embedding generation           | 100 chunks/sec |
+| Vector search (10k chunks)     | <50ms          |
+| Hybrid search (10k chunks)     | <100ms         |
+| Citation generation            | <10ms          |
 
 ---
 
 ## 10. Testes
 
 ### Unit
+
 - Parser per format (PDF, DOCX, etc)
 - Semantic chunker edge cases
 - RRF algorithm
 - Embedding batch processing
 
 ### Integration
+
 - Full ingest pipeline
 - Search across multiple documents
 - Metadata filtering
 - Re-index workflow
 
 ### E2E
+
 - User uploads PDF → search → results
 - Citation inline rendering
 - Document deletion cascade

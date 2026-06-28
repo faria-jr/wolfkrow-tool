@@ -120,19 +120,29 @@ export class ComputeUsageUseCase {
       d.costCents += r.cost;
     }
 
-    return { totalInputTokens, totalOutputTokens, totalCostCents, byModel, bySource, byRuntime, byDayMap };
+    return {
+      totalInputTokens,
+      totalOutputTokens,
+      totalCostCents,
+      byModel,
+      bySource,
+      byRuntime,
+      byDayMap,
+    };
   }
 }
 
 type CentBucket = { inputTokens: number; outputTokens: number; costCents: number };
 type CentBuckets = Record<string, CentBucket>;
 
-function toUsdEntries(buckets: CentBuckets): Record<string, { inputTokens: number; outputTokens: number; costUSD: number }> {
+function toUsdEntries(
+  buckets: CentBuckets
+): Record<string, { inputTokens: number; outputTokens: number; costUSD: number }> {
   return Object.fromEntries(
     Object.entries(buckets).map(([k, v]) => [
       k,
       { inputTokens: v.inputTokens, outputTokens: v.outputTokens, costUSD: v.costCents / 100 },
-    ]),
+    ])
   );
 }
 

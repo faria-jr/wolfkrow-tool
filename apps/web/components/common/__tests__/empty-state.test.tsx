@@ -17,13 +17,7 @@ describe('EmptyState', () => {
 
   it('renders action button and calls onClick', async () => {
     const onClick = vi.fn();
-    render(
-      <EmptyState
-        title="Empty"
-        description="d"
-        action={{ label: 'Add new', onClick }}
-      />,
-    );
+    render(<EmptyState title="Empty" description="d" action={{ label: 'Add new', onClick }} />);
     await userEvent.click(screen.getByRole('button', { name: 'Add new' }));
     expect(onClick).toHaveBeenCalledOnce();
   });
@@ -34,12 +28,7 @@ describe('EmptyState', () => {
   });
 
   it('renders icon when provided', () => {
-    render(
-      <EmptyState
-        title="Empty"
-        icon={<span data-testid="icon">⭐</span>}
-      />,
-    );
+    render(<EmptyState title="Empty" icon={<span data-testid="icon">⭐</span>} />);
     expect(screen.getByTestId('icon')).toBeInTheDocument();
   });
 });

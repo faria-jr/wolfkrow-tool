@@ -1,7 +1,11 @@
 import type { HarnessProject, HarnessProjectRepo } from '@wolfkrow/domain';
 
-export interface ListHarnessProjectsInput { userId: string; }
-export interface ListHarnessProjectsOutput { projects: HarnessProject[]; }
+export interface ListHarnessProjectsInput {
+  userId: string;
+}
+export interface ListHarnessProjectsOutput {
+  projects: HarnessProject[];
+}
 
 export class ListHarnessProjectsUseCase {
   constructor(private readonly repo: HarnessProjectRepo) {}

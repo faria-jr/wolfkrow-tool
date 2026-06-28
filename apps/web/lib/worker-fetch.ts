@@ -10,7 +10,8 @@
  */
 
 // Prefer server-only WORKER_URL; fall back to NEXT_PUBLIC_WORKER_URL for backward compat.
-const WORKER_URL = process.env.WORKER_URL ?? process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
+const WORKER_URL =
+  process.env.WORKER_URL ?? process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
 
 export interface WorkerFetchOptions {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -21,7 +22,7 @@ export interface WorkerFetchOptions {
 
 export async function workerFetch<T>(
   path: string,
-  options: WorkerFetchOptions = {},
+  options: WorkerFetchOptions = {}
 ): Promise<{ status: number; body: T }> {
   const headers: Record<string, string> = {};
   if (options.body !== undefined) headers['Content-Type'] = 'application/json';

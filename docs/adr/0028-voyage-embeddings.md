@@ -9,6 +9,7 @@
 ADR-0016 escolheu `better-sqlite3 + sqlite-vec` para o database engine e referenciou "Anthropic embeddings" no schema de exemplo. O Wolfkrow precisava de um provider de embeddings para o Knowledge Base (RAG local) e Semantic Memories.
 
 Opções avaliadas:
+
 1. **Anthropic API** — não expõe endpoint de embeddings públicos para texto geral
 2. **OpenAI `text-embedding-3-small`** — 1536 dims, vendor lock-in com OpenAI
 3. **Voyage AI `voyage-3`** — 1024 dims, especializado em retrieval, melhor custo-benefício
@@ -28,7 +29,7 @@ export class VoyageEmbedder implements EmbeddingPort {
 
   constructor(
     private readonly apiKey: string,
-    private readonly model: string = 'voyage-3',
+    private readonly model: string = 'voyage-3'
   ) {}
 
   async embedBatch(texts: string[]): Promise<number[][]> {
@@ -59,12 +60,14 @@ export function cosineSimilarity(a: number[], b: number[]): number { ... }
 ## Consequências
 
 **Positivas**:
+
 - `voyage-3` tem recall superior ao `text-embedding-3-small` em benchmarks de retrieval
 - 1024 dims vs 1536 = menos storage, queries JS mais rápidas
 - API simples (sem SDK proprietário)
 - `EmbeddingPort` abstrai o provider — troca futura sem mudar domínio
 
 **Negativas**:
+
 - Requer `VOYAGE_API_KEY` no vault (custo por token)
 - Busca JS O(n) não escala além de ~5 k chunks — roadmap: migrar para `sqlite-vec` `vec0` virtual table quando corpus crescer
 
@@ -79,7 +82,7 @@ CREATE VIRTUAL TABLE knowledge_vec USING vec0(
 );
 ```
 
-Reescrever `vectorSearch()` em `DrizzleKnowledgeChunkRepo` para usar `sql\`vec_distance_cosine(...)\`` com `LIMIT`. Sem mudança na camada de domínio.
+Reescrever `vectorSearch()` em `DrizzleKnowledgeChunkRepo` para usar `sql\`vec_distance_cosine(...)\``com`LIMIT`. Sem mudança na camada de domínio.
 
 ## Referências
 

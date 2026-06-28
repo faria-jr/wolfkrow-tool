@@ -1,5 +1,9 @@
 import { BUILT_IN_PROVIDERS } from '@wolfkrow/domain';
-import { DeleteProviderUseCase, ListProvidersUseCase, SaveProviderUseCase } from '@wolfkrow/use-cases';
+import {
+  DeleteProviderUseCase,
+  ListProvidersUseCase,
+  SaveProviderUseCase,
+} from '@wolfkrow/use-cases';
 import { z } from 'zod';
 
 import { getAdapters, getRepos } from '../container';
@@ -24,49 +28,53 @@ function userId(req: { user?: { userId?: string } }): string {
   return req.user?.userId ?? 'anonymous';
 }
 
+async function listProviders(req: { user?: { userId?: string } }) {
+  const repo = getRepos().providerConfig;
+  const customConfigs = await repo.findAll(userId(req));
+  const customIds = new Set(customConfigs.map((c) => c.id));
+  const builtInIds = new Set(BUILT_IN_PROVIDERS.map((p) => p.id));
+  const { providers } = await new ListProvidersUseCase(repo).execute({ userId: userId(req) });
+  const secrets = getAdapters().secrets;
+  return Promise.all(
+    providers.map(async (p) => {
+      const config = p.toJSON();
+      const key = await secrets.get(config.apiKeyAccount);
+      const hasDbRecord = customIds.has(config.id);
+      const isBuiltInId = builtInIds.has(config.id);
+      return {
+        ...config,
+        hasApiKey: Boolean(key),
+        isOverridden: hasDbRecord && isBuiltInId,
+        isCustom: hasDbRecord && !isBuiltInId,
+      };
+    })
+  );
+}
+
+async function saveProvider(
+  req: { user?: { userId?: string }; body: unknown },
+  reply: { status: (code: number) => { send: (body: unknown) => unknown } }
+) {
+  const body = validate(providerBody, req.body);
+  const repo = getRepos().providerConfig;
+  const { apiKey, pricingUrl, ...base } = body;
+  const config = { ...base, ...(pricingUrl !== undefined ? { pricingUrl } : {}) };
+  await new SaveProviderUseCase(repo).execute({ userId: userId(req), config });
+  if (apiKey) await getAdapters().secrets.set(body.apiKeyAccount, apiKey);
+  return reply.status(201).send({ ok: true });
+}
+
 export async function providerRoutes(server: AuthFastifyInstance) {
   server.get('/providers', { preHandler: [server.authenticate] }, async (req) => {
-    const repo = getRepos().providerConfig;
-    const customConfigs = await repo.findAll(userId(req));
-    const customIds = new Set(customConfigs.map((c) => c.id));
-    const builtInIds = new Set(BUILT_IN_PROVIDERS.map((p) => p.id));
-
-    const uc = new ListProvidersUseCase(repo);
-    const { providers } = await uc.execute({ userId: userId(req) });
-    const secrets = getAdapters().secrets;
-    const results = await Promise.all(
-      providers.map(async (p) => {
-        const config = p.toJSON();
-        const key = await secrets.get(config.apiKeyAccount);
-        const hasDbRecord = customIds.has(config.id);
-        const isBuiltInId = builtInIds.has(config.id);
-        return {
-          ...config,
-          hasApiKey: Boolean(key),
-          isOverridden: hasDbRecord && isBuiltInId,
-          isCustom: hasDbRecord && !isBuiltInId,
-        };
-      }),
-    );
-    return results;
+    return listProviders(req);
   });
 
   server.post<{ Body: ProviderBody }>(
     '/providers',
     { preHandler: [server.authenticate] },
     async (req, reply) => {
-      const body = validate(providerBody, req.body);
-      const repo = getRepos().providerConfig;
-      const uc = new SaveProviderUseCase(repo);
-      const { apiKey, pricingUrl, ...base } = body;
-      const config = { ...base, ...(pricingUrl !== undefined ? { pricingUrl } : {}) };
-      await uc.execute({ userId: userId(req), config });
-      if (apiKey) {
-        const secrets = getAdapters().secrets;
-        await secrets.set(body.apiKeyAccount, apiKey);
-      }
-      return reply.status(201).send({ ok: true });
-    },
+      return saveProvider(req, reply);
+    }
   );
 
   server.delete<{ Params: { id: string } }>(
@@ -77,6 +85,6 @@ export async function providerRoutes(server: AuthFastifyInstance) {
       const uc = new DeleteProviderUseCase(repo);
       await uc.execute({ userId: userId(req), id: req.params.id });
       return reply.status(204).send();
-    },
+    }
   );
 }

@@ -47,7 +47,7 @@ describe('useVoiceSettings', () => {
   it('rehydrates persisted values on mount', () => {
     window.localStorage.setItem(
       'wolfkrow.voice-settings.v1',
-      JSON.stringify({ ...DEFAULT_VOICE_SETTINGS, provider: 'cartesia', voiceId: 'persisted' }),
+      JSON.stringify({ ...DEFAULT_VOICE_SETTINGS, provider: 'cartesia', voiceId: 'persisted' })
     );
     const { result } = renderHook(() => useVoiceSettings());
     // effect rehydrates after first render

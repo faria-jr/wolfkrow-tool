@@ -48,7 +48,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     expect(screen.getByText('google-calendar')).toBeInTheDocument();
     expect(screen.getByText('custom-mcp')).toBeInTheDocument();
@@ -65,7 +65,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
 
     expect(screen.getByRole('columnheader', { name: /name/i })).toBeInTheDocument();
@@ -84,7 +84,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     expect(screen.getByText(/no mcp servers/i)).toBeInTheDocument();
   });
@@ -99,7 +99,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     const switches = screen.getAllByRole('switch');
     await userEvent.click(switches[0]!);
@@ -115,7 +115,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     expect(screen.getByText('built-in')).toBeInTheDocument();
   });
@@ -129,7 +129,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     expect(screen.getByText('planned')).toBeInTheDocument();
   });
@@ -143,7 +143,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     const badges = screen.getAllByText(/^custom$/);
     expect(badges.length).toBeGreaterThanOrEqual(1);
@@ -162,7 +162,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     const deleteButtons = screen.getAllByLabelText('Delete server');
     expect(deleteButtons).toHaveLength(1);
@@ -178,7 +178,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     await userEvent.click(screen.getByLabelText('Delete server'));
     // FE-6: deletion is gated by a confirm dialog.
@@ -195,7 +195,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     expect(screen.getByLabelText('Restart server')).toBeInTheDocument();
     expect(screen.getByLabelText('Check health')).toBeInTheDocument();
@@ -210,7 +210,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     expect(screen.queryByLabelText('Restart server')).toBeNull();
     expect(screen.queryByLabelText('Check health')).toBeNull();
@@ -226,7 +226,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={check}
         onVisibilityChange={noop}
-      />,
+      />
     );
     await userEvent.click(screen.getByLabelText('Check health'));
     expect(check).toHaveBeenCalledWith('s1');
@@ -242,7 +242,7 @@ describe('McpServerList', () => {
         onRestart={restart}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     await userEvent.click(screen.getByLabelText('Restart server'));
     expect(restart).toHaveBeenCalledWith('s1');
@@ -269,7 +269,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     expect(screen.getByText(/health: ok \(3 tools\)/)).toBeInTheDocument();
   });
@@ -295,7 +295,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     expect(screen.getByText(/health: crashed/)).toBeInTheDocument();
     expect(screen.getByText('boom')).toBeInTheDocument();
@@ -310,7 +310,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     const select = screen.getByRole('combobox');
     expect(select).toBeInTheDocument();
@@ -325,7 +325,7 @@ describe('McpServerList', () => {
         onRestart={noop}
         onHealthCheck={noop}
         onVisibilityChange={noop}
-      />,
+      />
     );
     expect(screen.getByText(/on-demand \(start when used\)/)).toBeInTheDocument();
   });

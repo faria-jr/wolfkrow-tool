@@ -5,8 +5,12 @@ export type { SecretsAdapter } from '@wolfkrow/domain';
 
 // --- List Secrets ---
 
-export interface ListSecretsInput { userId: string }
-export interface ListSecretsOutput { secrets: Secret[] }
+export interface ListSecretsInput {
+  userId: string;
+}
+export interface ListSecretsOutput {
+  secrets: Secret[];
+}
 
 export class ListSecretsUseCase {
   constructor(private readonly repo: SecretRepo) {}
@@ -31,7 +35,7 @@ export interface StoreSecretInput {
 export class StoreSecretUseCase {
   constructor(
     private readonly repo: SecretRepo,
-    private readonly adapter: SecretsAdapter,
+    private readonly adapter: SecretsAdapter
   ) {}
 
   async execute(input: StoreSecretInput): Promise<{ secret: Secret }> {
@@ -55,13 +59,17 @@ export class StoreSecretUseCase {
 
 // --- Get Secret Value ---
 
-export interface GetSecretValueInput { key: string }
-export interface GetSecretValueOutput { value: string | null }
+export interface GetSecretValueInput {
+  key: string;
+}
+export interface GetSecretValueOutput {
+  value: string | null;
+}
 
 export class GetSecretValueUseCase {
   constructor(
     private readonly repo: SecretRepo,
-    private readonly adapter: SecretsAdapter,
+    private readonly adapter: SecretsAdapter
   ) {}
 
   async execute(input: GetSecretValueInput): Promise<GetSecretValueOutput> {
@@ -77,12 +85,14 @@ export class GetSecretValueUseCase {
 
 // --- Delete Secret ---
 
-export interface DeleteSecretInput { key: string }
+export interface DeleteSecretInput {
+  key: string;
+}
 
 export class DeleteSecretUseCase {
   constructor(
     private readonly repo: SecretRepo,
-    private readonly adapter: SecretsAdapter,
+    private readonly adapter: SecretsAdapter
   ) {}
 
   async execute(input: DeleteSecretInput): Promise<void> {

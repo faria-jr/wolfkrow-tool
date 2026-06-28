@@ -29,32 +29,32 @@ import TelegramBot from 'node-telegram-bot-api';
 
 export class TelegramBridge {
   private bot?: TelegramBot;
-  
+
   async start(): Promise<void> {
     const token = await this.secrets.get('telegram-bot-token');
     if (!token) return;
-    
+
     this.bot = new TelegramBot(token, { polling: true });
-    
+
     this.bot.on('message', async (msg) => {
       const chatId = msg.chat.id;
       const userId = String(msg.from?.id);
-      
+
       // Check if user is paired
       const pairing = await this.pairingRepo.findByTelegramId(userId);
       if (!pairing) {
         await this.bot.sendMessage(chatId, 'Please pair first: /pair <code>');
         return;
       }
-      
+
       // Forward to Wolfkrow chat
       await this.forwardToWolfkrow(pairing.wolfkrowUserId, msg);
     });
-    
+
     this.bot.onText(/\/pair (.+)/, async (msg, match) => {
       const code = match![1];
       const telegramId = String(msg.from!.id);
-      
+
       const pairing = await this.pairingRepo.findByCode(code);
       if (pairing) {
         await this.pairingRepo.update(pairing.id, { telegramId });
@@ -64,12 +64,12 @@ export class TelegramBridge {
       }
     });
   }
-  
+
   private async forwardToWolfkrow(wolfkrowUserId: string, msg: TelegramMessage): Promise<void> {
     const useCase = container.get(SendMessage);
-    
+
     let content = msg.text ?? '';
-    
+
     // Handle attachments
     if (msg.photo) {
       const photo = msg.photo[msg.photo.length - 1];
@@ -78,10 +78,10 @@ export class TelegramBridge {
       const attachment = await this.saveAttachment(wolfkrowUserId, buffer, 'photo.jpg');
       content += `\n[attachment: ${attachment.id}]`;
     }
-    
+
     // Send as user message
     const session = await this.getOrCreateTelegramSession(wolfkrowUserId, msg.chat.id);
-    
+
     const chunks: StreamChunk[] = [];
     for await (const chunk of useCase.execute({
       sessionId: session.id,
@@ -91,7 +91,7 @@ export class TelegramBridge {
     })) {
       chunks.push(chunk);
     }
-    
+
     // Reply to user
     const replyText = this.compileText(chunks);
     await this.bot.sendMessage(msg.chat.id, replyText, { parse_mode: 'Markdown' });
@@ -108,13 +108,13 @@ export class TelegramBridge {
 export async function generatePairingCode(): Promise<string> {
   const code = randomBytes(3).toString('hex').toUpperCase(); // 6 chars
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 min
-  
+
   await this.pairingRepo.create({
     code,
     expiresAt,
     status: 'pending',
   });
-  
+
   return code;
 }
 

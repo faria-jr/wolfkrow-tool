@@ -61,7 +61,9 @@ const baseInput = {
 describe('CreateAgentUseCase', () => {
   let repo: InMemoryAgentRepo;
 
-  beforeEach(() => { repo = new InMemoryAgentRepo(); });
+  beforeEach(() => {
+    repo = new InMemoryAgentRepo();
+  });
 
   it('creates and persists agent', async () => {
     const uc = new CreateAgentUseCase(repo);
@@ -74,7 +76,12 @@ describe('CreateAgentUseCase', () => {
 
   it('creates agent with claude-compat provider', async () => {
     const uc = new CreateAgentUseCase(repo);
-    const result = await uc.execute({ ...baseInput, runtime: 'claude-compat', provider: 'zai', model: 'glm-4.7' });
+    const result = await uc.execute({
+      ...baseInput,
+      runtime: 'claude-compat',
+      provider: 'zai',
+      model: 'glm-4.7',
+    });
     expect(result.agent.runtime).toBe('claude-compat');
     expect(result.agent.provider).toBe('zai');
   });
@@ -103,7 +110,11 @@ describe('UpdateAgentUseCase', () => {
 
   it('patches name and model', async () => {
     const uc = new UpdateAgentUseCase(repo);
-    const result = await uc.execute({ id: existing.id, userId: 'u1', patch: { name: 'updated', model: 'claude-haiku-4-5-20251001' } });
+    const result = await uc.execute({
+      id: existing.id,
+      userId: 'u1',
+      patch: { name: 'updated', model: 'claude-haiku-4-5-20251001' },
+    });
     expect(result.agent.name).toBe('updated');
     expect(result.agent.model).toBe('claude-haiku-4-5-20251001');
     expect(result.agent.id).toBe(existing.id);
@@ -111,12 +122,16 @@ describe('UpdateAgentUseCase', () => {
 
   it('throws NotFoundError for unknown id', async () => {
     const uc = new UpdateAgentUseCase(repo);
-    await expect(uc.execute({ id: 'unknown', userId: 'u1', patch: { name: 'x' } })).rejects.toThrow(NotFoundError);
+    await expect(uc.execute({ id: 'unknown', userId: 'u1', patch: { name: 'x' } })).rejects.toThrow(
+      NotFoundError
+    );
   });
 
   it('throws ValidationError when name patched to empty', async () => {
     const uc = new UpdateAgentUseCase(repo);
-    await expect(uc.execute({ id: existing.id, userId: 'u1', patch: { name: '' } })).rejects.toThrow(ValidationError);
+    await expect(
+      uc.execute({ id: existing.id, userId: 'u1', patch: { name: '' } })
+    ).rejects.toThrow(ValidationError);
   });
 });
 
@@ -173,7 +188,9 @@ describe('DuplicateAgentUseCase', () => {
 
   it('throws NotFoundError for unknown source id', async () => {
     const uc = new DuplicateAgentUseCase(repo);
-    await expect(uc.execute({ id: 'unknown', userId: 'u1', newName: 'copy' })).rejects.toThrow(NotFoundError);
+    await expect(uc.execute({ id: 'unknown', userId: 'u1', newName: 'copy' })).rejects.toThrow(
+      NotFoundError
+    );
   });
 });
 
@@ -213,8 +230,18 @@ describe('SyncAgentsToOrchestratorUseCase', () => {
   let repo: InMemoryAgentRepo;
   beforeEach(async () => {
     repo = new InMemoryAgentRepo();
-    await new CreateAgentUseCase(repo).execute({ ...baseInput, name: 'a1', userId: 'u1', runtime: 'cloud' });
-    await new CreateAgentUseCase(repo).execute({ ...baseInput, name: 'a2', userId: 'u1', runtime: 'local' });
+    await new CreateAgentUseCase(repo).execute({
+      ...baseInput,
+      name: 'a1',
+      userId: 'u1',
+      runtime: 'cloud',
+    });
+    await new CreateAgentUseCase(repo).execute({
+      ...baseInput,
+      name: 'a2',
+      userId: 'u1',
+      runtime: 'local',
+    });
   });
 
   it('updates all agents to target runtime', async () => {
@@ -242,16 +269,24 @@ describe('SyncAgentsToOrchestratorUseCase', () => {
 
 describe('GetAgentUseCase', () => {
   let repo: InMemoryAgentRepo;
-  beforeEach(() => { repo = new InMemoryAgentRepo(); });
+  beforeEach(() => {
+    repo = new InMemoryAgentRepo();
+  });
 
   it('returns the agent when it exists', async () => {
-    const { agent: created } = await new CreateAgentUseCase(repo).execute({ ...baseInput, userId: 'u1', name: 'a1' });
+    const { agent: created } = await new CreateAgentUseCase(repo).execute({
+      ...baseInput,
+      userId: 'u1',
+      name: 'a1',
+    });
     const out = await new GetAgentUseCase(repo).execute({ id: created.id, userId: 'u1' });
     expect(out.agent.id).toBe(created.id);
     expect(out.agent.name).toBe('a1');
   });
 
   it('throws NotFoundError when the agent does not exist', async () => {
-    await expect(new GetAgentUseCase(repo).execute({ id: 'missing', userId: 'u1' })).rejects.toBeInstanceOf(NotFoundError);
+    await expect(
+      new GetAgentUseCase(repo).execute({ id: 'missing', userId: 'u1' })
+    ).rejects.toBeInstanceOf(NotFoundError);
   });
 });

@@ -21,6 +21,7 @@ Usuários técnicos (desenvolvedores, fundadores, pesquisadores, power users) pr
 6. Customização profunda — agents, skills, prompts, regras
 
 Chatbots web genéricos (ChatGPT, Claude.ai, Gemini) **não resolvem** isso porque:
+
 - Não têm acesso ao terminal/filesystem
 - Não persistem memória estruturada
 - Não permitem automação complexa (cron, pipelines)
@@ -30,18 +31,21 @@ Chatbots web genéricos (ChatGPT, Claude.ai, Gemini) **não resolvem** isso porq
 ### 1.2 Usuário Principal
 
 **Persona 1: Desenvolvedor Solo / Founder Técnico**
+
 - Stack: TypeScript, React, Node, Python
 - Trabalha em múltiplos projetos simultaneamente
 - Quer automatizar tarefas repetitivas (code review, test generation, deploy)
 - Valoriza privacidade e controle
 
 **Persona 2: Researcher / Data Scientist**
+
 - Processa documentos (PDFs, papers, datasets)
 - Precisa de RAG local sobre conhecimento proprietário
 - Roda experiments em background
 - Quer query em linguagem natural sobre seus dados
 
 **Persona 3: Power User / Knowledge Worker**
+
 - Gerencia múltiplas contas (email, calendar, tasks)
 - Quer inbox zero automático
 - Usa Telegram como primary chat
@@ -52,6 +56,7 @@ Chatbots web genéricos (ChatGPT, Claude.ai, Gemini) **não resolvem** isso porq
 > **"Seu segundo cérebro, self-hosted, com superpoderes de IA."**
 
 Wolfkrow Tool é o único assistente que combina:
+
 - ✅ Acesso local a terminal/filesystem
 - ✅ Memória persistente estruturada
 - ✅ Multi-agent orchestration (Harness, Pipeline)
@@ -74,6 +79,7 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Chat principal com 4 motores de IA selecionáveis (Claude Agent SDK, Claude-compat, Codex SDK, Lion-SDK próprio).
 
 **User Stories**:
+
 - Como dev, quero escolher qual provider de IA usar para cada conversa (Anthropic direto vs OpenAI Codex vs Z.ai vs Ollama local)
 - Como dev, quero que minha escolha de modelo persista entre sessões
 - Como usuário, quero streaming de tokens em tempo real com Markdown rendering
@@ -81,6 +87,7 @@ Wolfkrow Tool é o único assistente que combina:
 - Como usuário, quero poder interromper o assistant no meio do streaming
 
 **Critérios de Aceitação**:
+
 - [ ] Seletor de SDK visível em Settings > Orchestrator
 - [ ] Streaming SSE <500ms latência até primeiro token
 - [ ] Markdown renderizado com syntax highlighting
@@ -93,11 +100,13 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Criar e gerenciar agents especializados com system prompts, tools permitidas, e modelos customizados.
 
 **User Stories**:
+
 - Como dev, quero criar um agent "code-reviewer" que só lê código e dá feedback
 - Como dev, quero criar um agent "researcher" que usa apenas Read + WebFetch
 - Como dev, quero duplicar um agent existente e customizar
 
 **Critérios de Aceitação**:
+
 - [ ] CRUD completo (create, read, update, delete, list)
 - [ ] Editor de system prompt com Markdown preview
 - [ ] Seletor multi-tool com whitelist visual
@@ -113,10 +122,12 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Arquivos Markdown com frontmatter que adicionam capabilities/context ao agent.
 
 **User Stories**:
+
 - Como dev, quero criar uma skill "pdf-processing" com instruções de como parsear PDFs
 - Como dev, quero ativar/desativar skills por agent
 
 **Critérios de Aceitação**:
+
 - [ ] CRUD completo
 - [ ] Editor Markdown com frontmatter visual
 - [ ] Schema de frontmatter validado por Zod
@@ -128,11 +139,13 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Integrações com serviços externos via protocolo MCP (Google Calendar, Gmail, Drive, Sheets, ElevenLabs, Excalidraw, YouTube, Shopify, etc).
 
 **User Stories**:
+
 - Como usuário, quero conectar minha conta Google para gerenciar Calendar/Gmail/Drive via chat
 - Como usuário, quero usar ElevenLabs para TTS de alta qualidade
 - Como usuário, quero gerar desenhos Excalidraw inline no chat
 
 **Critérios de Aceitação**:
+
 - [ ] CRUD completo de MCPs custom
 - [x] 15 MCPs bundled (M3.3 entregou google-drive, google-sheets, elevenlabs, excalidraw, memory-search, local-agents, local-llm, shopify, nano-banana, somando aos 6 existentes). Higgsfield, Blotato e wolfkrow-user-question deferidos para v2 (ADR-0031).
 - [ ] Start/stop/restart manual
@@ -146,10 +159,12 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Ingere documentos (PDF, DOCX, CSV, XLSX, MD, URL), gera embeddings, e permite search semântica.
 
 **User Stories**:
+
 - Como researcher, quero ingestar 100 PDFs e perguntar "o que os autores falam sobre X?"
 - Como dev, quero ingerir documentação de uma library e fazer Q&A
 
 **Critérios de Aceitação**:
+
 - [ ] Upload drag-and-drop multi-file
 - [ ] Parse de PDF/DOCX/CSV/XLSX/MD/URL
 - [ ] Chunking inteligente (semantic, não fixed-size)
@@ -165,10 +180,12 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Compactação automática de contexto, daily summaries, semantic memories.
 
 **User Stories**:
+
 - Como usuário, quero que o assistant "lembre" de conversas passadas sem eu repetir contexto
 - Como usuário, quero daily summaries do que foi discutido
 
 **Critérios de Aceitação**:
+
 - [ ] Compaction automática quando context window > threshold
 - [ ] Daily summaries salvos em `.wolfkrow/memory/`
 - [ ] Semantic memories (embeddings) para retrieval
@@ -181,6 +198,7 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Quando o assistant está idle, roda maintenance tasks em background (memory consolidation, index updates, etc).
 
 **Critérios de Aceitação**:
+
 - [ ] Detecta idle (no chat activity > 5min)
 - [ ] Roda consolidation tasks sem bloquear UI
 - [ ] Atualiza embeddings index
@@ -192,10 +210,12 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Conversa por voz ao vivo com VAD (Voice Activity Detection), barge-in, STT + TTS.
 
 **User Stories**:
+
 - Como usuário, quero falar com o assistant em vez de digitar
 - Como usuário, quero que o assistant me interrompa se eu começar a falar
 
 **Critérios de Aceitação**:
+
 - [ ] VAD client-side (Web Audio API)
 - [ ] Barge-in (interrompe TTS quando user fala)
 - [ ] STT: Whisper local OU OpenAI API (configurável)
@@ -209,10 +229,12 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Tarefas agendadas com cron syntax + review queue.
 
 **User Stories**:
+
 - Como dev, quero rodar "code review" toda segunda às 9h
 - Como usuário, quero "daily briefing" todo dia às 8h
 
 **Critérios de Aceitação**:
+
 - [ ] Cron syntax editor com preview
 - [ ] Time zone aware
 - [ ] Manual trigger
@@ -227,10 +249,12 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Automated code implementation pipeline (Planner→Coder→Evaluator loop).
 
 **User Stories**:
+
 - Como dev, quero descrever uma feature e ter ela implementada + testada automaticamente
 - Como founder, quero "construir um MVP" e ter o Wolfkrow quebrar em sprints e implementar
 
 **Critérios de Aceitação**:
+
 - [ ] Spec input (Markdown ou chat)
 - [ ] Planner decompõe em sprints com features + acceptance criteria
 - [ ] Coder implementa features usando tools (Read, Write, Edit, Bash)
@@ -245,9 +269,11 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Multi-stage workflow: discovery → spec-build → spec-validate → approval → implementation.
 
 **User Stories**:
+
 - Como PM, quero descrever um produto e ter discovery + PRD + SPEC gerados
 
 **Critérios de Aceitação**:
+
 - [ ] Stage 1: Discovery (interview user)
 - [ ] Stage 2: Spec generation (PRD + SPEC)
 - [ ] Stage 3: Spec validation (architecture review)
@@ -262,10 +288,12 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Sub-app Next.js independente para design de interfaces (wireframes, mockups, prototypes).
 
 **User Stories**:
+
 - Como designer, quero criar wireframes de uma feature nova antes de implementar
 - Como PM, quero revisar design antes de aprovar spec
 
 **Critérios de Aceitação**:
+
 - [ ] Canvas interativo (Excalidraw-like)
 - [ ] Design templates
 - [ ] Design systems registry
@@ -278,6 +306,7 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Bot Telegram que permite conversar com Wolfkrow via Telegram.
 
 **Critérios de Aceitação**:
+
 - [ ] Setup via BotFather token
 - [ ] Pairing com Wolfkrow instance (code de 6 dígitos)
 - [ ] Mensagens roteadas para chat principal
@@ -290,10 +319,12 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Armazenamento criptografado de API keys e secrets via OS keychain.
 
 **User Stories**:
+
 - Como usuário, quero salvar minha OpenAI API key de forma segura
 - Como usuário, quero que secrets nunca sejam expostos em logs ou UI
 
 **Critérios de Aceitação**:
+
 - [ ] CRUD de secrets (key + value)
 - [ ] Encryption via keytar (OS keychain)
 - [ ] Nunca exibido em logs
@@ -306,6 +337,7 @@ Wolfkrow Tool é o único assistente que combina:
 **Descrição**: Password + TOTP 2FA + auto-lock.
 
 **Critérios de Aceitação**:
+
 - [ ] Password bcrypt hash
 - [ ] TOTP opcional (otplib)
 - [ ] Auto-lock em idle > 5min OU tab hidden
@@ -360,6 +392,7 @@ Wolfkrow Tool é o único assistente que combina:
 ### 4.1 Persona: Dev Solo
 
 **Background**:
+
 - Senior full-stack dev
 - Stack: TypeScript, React, Node, PostgreSQL
 - Trabalha em 2-3 projetos side
@@ -367,6 +400,7 @@ Wolfkrow Tool é o único assistente que combina:
 - Valoriza privacy (não quer código em cloud)
 
 **Workflow típico**:
+
 1. Acorda, abre Wolfkrow via hotkey
 2. Pergunta "o que tem na minha inbox?" → bot resume emails
 3. Pede "review o PR #123" → agent analiza diff + comenta
@@ -374,11 +408,13 @@ Wolfkrow Tool é o único assistente que combina:
 5. Faz daily standup via Telegram enquanto commute
 
 **Pain points atuais**:
+
 - ChatGPT esquece contexto entre sessões
 - Cursor não tem acesso ao filesystem completo
 - Não consegue orquestrar múltiplos agents
 
 **Como Wolfkrow resolve**:
+
 - Memory pipeline mantém contexto cross-session
 - Worker tem acesso completo a terminal + filesystem
 - Harness + Pipeline orquestram multi-agent
@@ -386,18 +422,21 @@ Wolfkrow Tool é o único assistente que combina:
 ### 4.2 Persona: Researcher
 
 **Background**:
+
 - PhD em ML
 - Stack: Python, PyTorch, Jupyter
 - Processa 100+ papers/mês
 - Precisa de RAG sobre literature proprietário
 
 **Workflow típico**:
+
 1. Ingere 50 PDFs de papers recentes
 2. Pergunta "compare as abordagens de X vs Y"
 3. Wolfkrow busca semanticamente + cita fontes
 4. Exporta summary para Markdown
 
 **Como Wolfkrow resolve**:
+
 - Knowledge engine ingere + embed + index
 - Hybrid search (semantic + keyword)
 - Citation inline
@@ -405,18 +444,21 @@ Wolfkrow Tool é o único assistente que combina:
 ### 4.3 Persona: Knowledge Worker
 
 **Background**:
+
 - Founder de SaaS
 - Gerencia múltiplas contas
 - Quer inbox zero
 - Usa Telegram como chat principal
 
 **Workflow típico**:
+
 1. Telegram message → Wolfkrow processa
 2. Calendar conflicts → sugere resolutions
 3. Daily briefing às 8h (cron)
 4. Weekly summary domingo 20h
 
 **Como Wolfkrow resolve**:
+
 - Telegram bridge
 - Google Calendar MCP
 - Scheduler
@@ -434,15 +476,15 @@ Meta v1.0: **50 WAC** (single-user pode ter 50+ conversas/semana).
 
 ### 5.2 KPIs Secundários
 
-| KPI | Meta v1.0 | Como medir |
-|---|---|---|
-| Time to first response (TTFR) | <500ms (P95) | Métricas coletadas no Worker |
-| Compaction success rate | >95% | Memory pipeline logs |
-| Harness success rate | >70% | Round metrics |
-| Knowledge retrieval precision@5 | >0.80 | Benchmark suite |
-| Crash-free sessions | >99.5% | Sentry (opt-in) |
-| Daily active use | >4 dias/semana | Telemetry opt-in |
-| Setup time (install → first chat) | <10min | User feedback |
+| KPI                               | Meta v1.0      | Como medir                   |
+| --------------------------------- | -------------- | ---------------------------- |
+| Time to first response (TTFR)     | <500ms (P95)   | Métricas coletadas no Worker |
+| Compaction success rate           | >95%           | Memory pipeline logs         |
+| Harness success rate              | >70%           | Round metrics                |
+| Knowledge retrieval precision@5   | >0.80          | Benchmark suite              |
+| Crash-free sessions               | >99.5%         | Sentry (opt-in)              |
+| Daily active use                  | >4 dias/semana | Telemetry opt-in             |
+| Setup time (install → first chat) | <10min         | User feedback                |
 
 ### 5.3 Anti-métricas (não otimizar)
 
@@ -487,44 +529,45 @@ Open-source seletivo: extraction de libraries internas para npm público (`@wolf
 
 ### 7.1 Mínimos (user)
 
-| Recurso | Mínimo | Recomendado |
-|---|---|---|
-| OS | macOS 12+, Windows 10+, Linux (Ubuntu 22+) | macOS 14+ |
-| RAM | 8 GB | 16 GB |
-| Disk | 2 GB | 5 GB |
-| Node | 24+ | 24+ (LTS recomendado) |
-| Browser | Chrome 120+ | Chrome latest |
+| Recurso | Mínimo                                     | Recomendado           |
+| ------- | ------------------------------------------ | --------------------- |
+| OS      | macOS 12+, Windows 10+, Linux (Ubuntu 22+) | macOS 14+             |
+| RAM     | 8 GB                                       | 16 GB                 |
+| Disk    | 2 GB                                       | 5 GB                  |
+| Node    | 24+                                        | 24+ (LTS recomendado) |
+| Browser | Chrome 120+                                | Chrome latest         |
 
 ### 7.2 Opcionais (funcionalidades específicas)
 
-| Feature | Requisito extra |
-|---|---|
-| Whisper local | +500 MB disk, +2 GB RAM |
-| MCPs Google (Calendar/Gmail/Drive/Sheets) | OAuth credentials |
-| Telegram bot | BotFather token |
-| Voice (TTS ElevenLabs) | API key |
-| Voice (TTS Cartesia) | API key |
+| Feature                                   | Requisito extra         |
+| ----------------------------------------- | ----------------------- |
+| Whisper local                             | +500 MB disk, +2 GB RAM |
+| MCPs Google (Calendar/Gmail/Drive/Sheets) | OAuth credentials       |
+| Telegram bot                              | BotFather token         |
+| Voice (TTS ElevenLabs)                    | API key                 |
+| Voice (TTS Cartesia)                      | API key                 |
 
 ---
 
 ## 8. Riscos & Mitigações
 
-| # | Risco | Probabilidade | Impacto | Mitigação |
-|---|---|---|---|---|
-| 1 | SSE não funciona em corporate firewalls | Média | Alto | Fallback long-polling |
-| 2 | Whisper local consome muita RAM | Média | Médio | OpenAI Whisper API como alternativa |
-| 3 | 78 SQLite migrations não portam 1:1 | Alta | Alto | Re-derivar schema Drizzle do zero |
-| 4 | Code signing caro ($100/ano Apple, $200+ Windows) | Alta | Médio | Self-signed dev, doc signing para prod |
-| 5 | Browser throttling de SSE em background | Alta | Médio | Service Worker + documentar "manter tab aberta" |
-| 6 | Codex CLI OAuth requer callback acessível | Alta | Médio | Local server em porta 1455 |
-| 7 | 19 MCPs quebram em updates | Média | Médio | Versioning + smoke tests por MCP |
-| 8 | Time-to-market longo (5 meses) | Média | Alto | MVP focado em core (chat + knowledge + harness) |
+| #   | Risco                                             | Probabilidade | Impacto | Mitigação                                       |
+| --- | ------------------------------------------------- | ------------- | ------- | ----------------------------------------------- |
+| 1   | SSE não funciona em corporate firewalls           | Média         | Alto    | Fallback long-polling                           |
+| 2   | Whisper local consome muita RAM                   | Média         | Médio   | OpenAI Whisper API como alternativa             |
+| 3   | 78 SQLite migrations não portam 1:1               | Alta          | Alto    | Re-derivar schema Drizzle do zero               |
+| 4   | Code signing caro ($100/ano Apple, $200+ Windows) | Alta          | Médio   | Self-signed dev, doc signing para prod          |
+| 5   | Browser throttling de SSE em background           | Alta          | Médio   | Service Worker + documentar "manter tab aberta" |
+| 6   | Codex CLI OAuth requer callback acessível         | Alta          | Médio   | Local server em porta 1455                      |
+| 7   | 19 MCPs quebram em updates                        | Média         | Médio   | Versioning + smoke tests por MCP                |
+| 8   | Time-to-market longo (5 meses)                    | Média         | Alto    | MVP focado em core (chat + knowledge + harness) |
 
 ---
 
 ## 9. Roadmap de Releases
 
 ### v1.0 (M6 — dia 136)
+
 - Chat multi-SDK
 - Sub-agents + Skills
 - 15 MCPs bundled
@@ -543,6 +586,7 @@ Open-source seletivo: extraction de libraries internas para npm público (`@wolf
 - DMG + NSIS + AppImage
 
 ### v1.1 (M6+30 dias)
+
 - Multi-workspace
 - Plugin marketplace (curated)
 - Hotkey global config
@@ -550,12 +594,14 @@ Open-source seletivo: extraction de libraries internas para npm público (`@wolf
 - Inbox Zero para Telegram
 
 ### v1.2 (M6+60 dias)
+
 - Mobile companion (iOS + Android via Expo)
 - Cloud sync opt-in
 - Screen awareness (Electron desktopCapturer)
 - Voice cloning
 
 ### v2.0 (M6+120 dias)
+
 - Cloud self-hosted (Docker + Helm)
 - Real-time collaboration (multi-user)
 - Fine-tuning de modelos (LoRA)
@@ -584,32 +630,32 @@ Para uma feature ser considerada "Done":
 
 ## 11. Stakeholders
 
-| Papel | Pessoa | Responsabilidade |
-|---|---|---|
+| Papel         | Pessoa       | Responsabilidade               |
+| ------------- | ------------ | ------------------------------ |
 | Product Owner | Junior Faria | Visão, priorização, acceptance |
-| Tech Lead | Junior Faria | Arquitetura, code review |
-| Dev Frontend | TBD | Next.js + shadcn |
-| Dev Backend | TBD | Worker + AI providers |
-| DevOps | TBD | CI/CD + distribuição |
-| QA | TBD | E2E + manual testing |
-| Designer | TBD | UI/UX polish |
+| Tech Lead     | Junior Faria | Arquitetura, code review       |
+| Dev Frontend  | TBD          | Next.js + shadcn               |
+| Dev Backend   | TBD          | Worker + AI providers          |
+| DevOps        | TBD          | CI/CD + distribuição           |
+| QA            | TBD          | E2E + manual testing           |
+| Designer      | TBD          | UI/UX polish                   |
 
 ---
 
 ## Apêndice A — Comparação com Concorrentes
 
-| Feature | Wolfkrow | ChatGPT | Claude.ai | Cursor | Devon | OpenHands |
-|---|---|---|---|---|---|---|
-| Self-hosted | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Terminal access | ✅ | ❌ | ❌ | ⚠️ limited | ✅ | ✅ |
-| Multi-agent orchestration | ✅ | ❌ | ❌ | ❌ | ⚠️ | ✅ |
-| Memory persistente | ✅ | ⚠️ limited | ⚠️ limited | ⚠️ project | ❌ | ❌ |
-| MCP support | ✅ | ❌ | ❌ | ⚠️ limited | ⚠️ | ⚠️ |
-| Voice conversation | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Knowledge RAG | ✅ | ⚠️ | ❌ | ⚠️ codebase | ❌ | ❌ |
-| Cron/scheduler | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Telegram integration | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Price | Free (self-hosted) | $20/m | $20/m | $20/m | $20/m | Free |
+| Feature                   | Wolfkrow           | ChatGPT    | Claude.ai  | Cursor      | Devon | OpenHands |
+| ------------------------- | ------------------ | ---------- | ---------- | ----------- | ----- | --------- |
+| Self-hosted               | ✅                 | ❌         | ❌         | ❌          | ❌    | ❌        |
+| Terminal access           | ✅                 | ❌         | ❌         | ⚠️ limited  | ✅    | ✅        |
+| Multi-agent orchestration | ✅                 | ❌         | ❌         | ❌          | ⚠️    | ✅        |
+| Memory persistente        | ✅                 | ⚠️ limited | ⚠️ limited | ⚠️ project  | ❌    | ❌        |
+| MCP support               | ✅                 | ❌         | ❌         | ⚠️ limited  | ⚠️    | ⚠️        |
+| Voice conversation        | ✅                 | ✅         | ❌         | ❌          | ❌    | ❌        |
+| Knowledge RAG             | ✅                 | ⚠️         | ❌         | ⚠️ codebase | ❌    | ❌        |
+| Cron/scheduler            | ✅                 | ❌         | ❌         | ❌          | ❌    | ❌        |
+| Telegram integration      | ✅                 | ❌         | ❌         | ❌          | ❌    | ❌        |
+| Price                     | Free (self-hosted) | $20/m      | $20/m      | $20/m       | $20/m | Free      |
 
 **Diferencial único**: Wolfkrow é o **único** que combina self-hosted + multi-agent + memory persistente + MCP ecosystem + voice.
 
@@ -617,12 +663,12 @@ Para uma feature ser considerada "Done":
 
 ## Apêndice B — Pricing Tiers (Futuro)
 
-| Tier | Preço | Features |
-|---|---|---|
-| **Community** | Free | Self-hosted, all features, community support |
-| **Pro** | $20/m | Cloud-hosted managed, priority support, cloud sync |
-| **Team** | $50/user/m | Multi-user, collaboration, SSO, audit logs |
-| **Enterprise** | Custom | On-premise, SLA, dedicated support, custom integrations |
+| Tier           | Preço      | Features                                                |
+| -------------- | ---------- | ------------------------------------------------------- |
+| **Community**  | Free       | Self-hosted, all features, community support            |
+| **Pro**        | $20/m      | Cloud-hosted managed, priority support, cloud sync      |
+| **Team**       | $50/user/m | Multi-user, collaboration, SSO, audit logs              |
+| **Enterprise** | Custom     | On-premise, SLA, dedicated support, custom integrations |
 
 ---
 

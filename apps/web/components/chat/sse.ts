@@ -9,7 +9,14 @@ export type SSEEvent =
   | { type: 'error'; message: string }
   | { type: 'tool_call'; id: string; name: string; input: Record<string, unknown> }
   | { type: 'tool_result'; callId: string; output: string; isError: boolean }
-  | { type: 'tool_permission'; id: string; name: string; input: Record<string, unknown>; prompt: string }
+  | {
+      type: 'tool_permission';
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+      prompt: string;
+    }
+  | { type: 'human_question'; questionId: string; question: string; options?: string[] }
   | { type: 'artifact'; artifact: ArtifactPayload };
 
 export interface ArtifactPayload {
@@ -26,11 +33,18 @@ export interface PendingPermission {
   prompt: string;
 }
 
+export interface PendingHumanQuestion {
+  questionId: string;
+  question: string;
+  options?: string[];
+}
+
 export interface SseCallbacks {
   onText: (t: string) => void;
   onToolCall?: (tc: ToolCall) => void;
   onToolResult?: (callId: string, output: string, isError: boolean) => void;
   onToolPermission?: (p: PendingPermission) => void;
+  onHumanQuestion?: (q: PendingHumanQuestion) => void;
   onArtifact?: (artifact: ArtifactPayload) => void;
 }
 
@@ -46,12 +60,39 @@ function parseSseLine(line: string): SSEEvent | null {
   }
 }
 
-const EVENT_DISPATCHERS: Record<SSEEvent['type'], ((ev: SSEEvent, cb: SseCallbacks) => void) | undefined> = {
+const EVENT_DISPATCHERS: Record<
+  SSEEvent['type'],
+  ((ev: SSEEvent, cb: SseCallbacks) => void) | undefined
+> = {
   ack: () => undefined,
   text: (ev, cb) => cb.onText((ev as Extract<SSEEvent, { type: 'text' }>).content),
-  tool_call: (ev, cb) => cb.onToolCall?.({ id: (ev as Extract<SSEEvent, { type: 'tool_call' }>).id, name: (ev as Extract<SSEEvent, { type: 'tool_call' }>).name, input: (ev as Extract<SSEEvent, { type: 'tool_call' }>).input, status: 'running' }),
-  tool_result: (ev, cb) => cb.onToolResult?.((ev as Extract<SSEEvent, { type: 'tool_result' }>).callId, (ev as Extract<SSEEvent, { type: 'tool_result' }>).output, (ev as Extract<SSEEvent, { type: 'tool_result' }>).isError),
-  tool_permission: (ev, cb) => cb.onToolPermission?.({ callId: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).id, name: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).name, prompt: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).prompt }),
+  tool_call: (ev, cb) =>
+    cb.onToolCall?.({
+      id: (ev as Extract<SSEEvent, { type: 'tool_call' }>).id,
+      name: (ev as Extract<SSEEvent, { type: 'tool_call' }>).name,
+      input: (ev as Extract<SSEEvent, { type: 'tool_call' }>).input,
+      status: 'running',
+    }),
+  tool_result: (ev, cb) =>
+    cb.onToolResult?.(
+      (ev as Extract<SSEEvent, { type: 'tool_result' }>).callId,
+      (ev as Extract<SSEEvent, { type: 'tool_result' }>).output,
+      (ev as Extract<SSEEvent, { type: 'tool_result' }>).isError
+    ),
+  tool_permission: (ev, cb) =>
+    cb.onToolPermission?.({
+      callId: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).id,
+      name: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).name,
+      prompt: (ev as Extract<SSEEvent, { type: 'tool_permission' }>).prompt,
+    }),
+  human_question: (ev, cb) =>
+    cb.onHumanQuestion?.({
+      questionId: (ev as Extract<SSEEvent, { type: 'human_question' }>).questionId,
+      question: (ev as Extract<SSEEvent, { type: 'human_question' }>).question,
+      ...(ev as Extract<SSEEvent, { type: 'human_question' }>).options !== undefined
+        ? { options: (ev as Extract<SSEEvent, { type: 'human_question' }>).options }
+        : {},
+    }),
   artifact: (ev, cb) => cb.onArtifact?.((ev as Extract<SSEEvent, { type: 'artifact' }>).artifact),
   done: () => undefined,
   error: () => undefined,
@@ -88,7 +129,12 @@ async function readSseStream(stream: ReadableStream<Uint8Array>, cb: SseCallback
   }
 }
 
-export async function streamSse(url: string, body: unknown, signal: AbortSignal, cb: SseCallbacks): Promise<void> {
+export async function streamSse(
+  url: string,
+  body: unknown,
+  signal: AbortSignal,
+  cb: SseCallbacks
+): Promise<void> {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

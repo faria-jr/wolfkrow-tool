@@ -29,14 +29,12 @@ describe('LoginResponseSchema', () => {
     });
 
     it('rejects requires_totp without userId', () => {
-      expect(() =>
-        LoginResponseSchema.parse({ status: 'requires_totp' }),
-      ).toThrow();
+      expect(() => LoginResponseSchema.parse({ status: 'requires_totp' })).toThrow();
     });
 
     it('rejects requires_totp with a non-UUID userId', () => {
       expect(() =>
-        LoginResponseSchema.parse({ status: 'requires_totp', userId: 'not-a-uuid' }),
+        LoginResponseSchema.parse({ status: 'requires_totp', userId: 'not-a-uuid' })
       ).toThrow();
     });
   });
@@ -57,9 +55,7 @@ describe('LoginResponseSchema', () => {
 
   describe('discrimination', () => {
     it('rejects an unknown status', () => {
-      expect(() =>
-        LoginResponseSchema.parse({ status: 'unknown', userId: uuid }),
-      ).toThrow();
+      expect(() => LoginResponseSchema.parse({ status: 'unknown', userId: uuid })).toThrow();
     });
 
     it('rejects a completely invalid payload', () => {
@@ -76,38 +72,36 @@ describe('SetupPasswordInputSchema (refine: password match)', () => {
   });
   it('rejects when passwords do not match', () => {
     expect(() =>
-      SetupPasswordInputSchema.parse({ password: 'secret123', confirmPassword: 'nope' }),
+      SetupPasswordInputSchema.parse({ password: 'secret123', confirmPassword: 'nope' })
     ).toThrow();
   });
   it('rejects password without a letter', () => {
     expect(() =>
-      SetupPasswordInputSchema.parse({ password: '12345678', confirmPassword: '12345678' }),
+      SetupPasswordInputSchema.parse({ password: '12345678', confirmPassword: '12345678' })
     ).toThrow();
   });
   it('rejects password without a number', () => {
     expect(() =>
-      SetupPasswordInputSchema.parse({ password: 'abcdefgh', confirmPassword: 'abcdefgh' }),
+      SetupPasswordInputSchema.parse({ password: 'abcdefgh', confirmPassword: 'abcdefgh' })
     ).toThrow();
   });
   it('rejects password under 8 chars', () => {
     expect(() =>
-      SetupPasswordInputSchema.parse({ password: 'ab1', confirmPassword: 'ab1' }),
+      SetupPasswordInputSchema.parse({ password: 'ab1', confirmPassword: 'ab1' })
     ).toThrow();
   });
 });
 
 describe('SetupRequestBodySchema (refine: optional confirmPassword)', () => {
   it('accepts when confirmPassword omitted', () => {
-    expect(() =>
-      SetupRequestBodySchema.parse({ password: 'secret123' }),
-    ).not.toThrow();
+    expect(() => SetupRequestBodySchema.parse({ password: 'secret123' })).not.toThrow();
   });
   it('accepts when confirmPassword matches', () => {
     expect(() =>
       SetupRequestBodySchema.parse({
         password: 'secret123',
         confirmPassword: 'secret123',
-      }),
+      })
     ).not.toThrow();
   });
   it('rejects when confirmPassword is present but does not match', () => {
@@ -115,7 +109,7 @@ describe('SetupRequestBodySchema (refine: optional confirmPassword)', () => {
       SetupRequestBodySchema.parse({
         password: 'secret123',
         confirmPassword: 'mismatch1',
-      }),
+      })
     ).toThrow();
   });
 });

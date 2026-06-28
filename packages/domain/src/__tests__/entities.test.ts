@@ -20,7 +20,12 @@ import { ValidationError } from '../errors/domain-error';
 // ─── GlobalRule ───────────────────────────────────────────────────────────────
 
 describe('GlobalRule', () => {
-  const base = { userId: 'u1', kind: 'behavior' as const, title: 'Be concise', body: 'Use short replies.' };
+  const base = {
+    userId: 'u1',
+    kind: 'behavior' as const,
+    title: 'Be concise',
+    body: 'Use short replies.',
+  };
 
   it('create sets defaults', () => {
     const r = GlobalRule.create(base);
@@ -31,7 +36,14 @@ describe('GlobalRule', () => {
   });
 
   it('roundtrip fromProps/toProps', () => {
-    const props = { id: 'r1', ...base, enabled: true, sortOrder: 5, createdAt: new Date(), updatedAt: new Date() };
+    const props = {
+      id: 'r1',
+      ...base,
+      enabled: true,
+      sortOrder: 5,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
     expect(GlobalRule.fromProps(props).toProps()).toEqual(props);
   });
 
@@ -133,11 +145,18 @@ describe('KnowledgeChunk', () => {
 
 describe('ScheduledTask', () => {
   const base = {
-    userId: 'u1', name: 'Daily reminder', description: undefined,
-    cronExpression: '0 9 * * *', timezone: 'America/Sao_Paulo',
-    prompt: 'Send daily report', agentId: undefined,
-    enabled: true, lastRunAt: undefined, nextRunAt: undefined,
-    config: {}, tags: [],
+    userId: 'u1',
+    name: 'Daily reminder',
+    description: undefined,
+    cronExpression: '0 9 * * *',
+    timezone: 'America/Sao_Paulo',
+    prompt: 'Send daily report',
+    agentId: undefined,
+    enabled: true,
+    lastRunAt: undefined,
+    nextRunAt: undefined,
+    config: {},
+    tags: [],
   };
 
   it('create sets id and timestamps', () => {
@@ -174,7 +193,12 @@ describe('ScheduledTask', () => {
 // ─── Secret ───────────────────────────────────────────────────────────────────
 
 describe('Secret', () => {
-  const base = { userId: 'u1', key: 'OPENAI_KEY', displayName: 'OpenAI API Key', category: 'ai' as const };
+  const base = {
+    userId: 'u1',
+    key: 'OPENAI_KEY',
+    displayName: 'OpenAI API Key',
+    category: 'ai' as const,
+  };
 
   it('create sets lastRotated and undefined lastAccessed', () => {
     const s = Secret.create(base);
@@ -211,9 +235,12 @@ describe('Secret', () => {
 
 describe('SemanticMemory', () => {
   const base = {
-    userId: 'u1', content: 'User prefers concise answers',
-    embedding: undefined, source: 'conversation' as const,
-    importance: 75, metadata: {},
+    userId: 'u1',
+    content: 'User prefers concise answers',
+    embedding: undefined,
+    source: 'conversation' as const,
+    importance: 75,
+    metadata: {},
   };
 
   it('create clamps importance 0-100', () => {
@@ -254,8 +281,15 @@ describe('SemanticMemory', () => {
 
 describe('HarnessProject', () => {
   const base = {
-    userId: 'u1', name: 'My Project', description: undefined,
-    specPath: '/specs/project.md', config: { maxRoundsPerFeature: 3, coderModel: 'claude-sonnet-4-6', plannerModel: 'claude-opus-4-8' },
+    userId: 'u1',
+    name: 'My Project',
+    description: undefined,
+    specPath: '/specs/project.md',
+    config: {
+      maxRoundsPerFeature: 3,
+      coderModel: 'claude-sonnet-4-6',
+      plannerModel: 'claude-opus-4-8',
+    },
   };
 
   it('create starts in planning with zero metrics', () => {
@@ -318,7 +352,9 @@ describe('HarnessRound', () => {
   });
 
   it('complete passes/fails', () => {
-    const passed = HarnessRound.create(base).withCoderOutput('x', 0).complete('passed', 'LGTM', 200);
+    const passed = HarnessRound.create(base)
+      .withCoderOutput('x', 0)
+      .complete('passed', 'LGTM', 200);
     expect(passed.status).toBe('passed');
     expect(passed.evaluatorFeedback).toBe('LGTM');
     expect(passed.metrics.evaluatorTokens).toBe(200);
@@ -480,7 +516,11 @@ describe('TaskRun', () => {
     const now = new Date();
     const tr = TaskRun.create({ taskId: 't1' })
       .start(now)
-      .complete('awaiting_review', { output: { result: 'ok' }, metrics: { tokens: 500, cost: 0.01 }, now });
+      .complete('awaiting_review', {
+        output: { result: 'ok' },
+        metrics: { tokens: 500, cost: 0.01 },
+        now,
+      });
     expect(tr.status).toBe('awaiting_review');
     expect(tr.output).toEqual({ result: 'ok' });
     expect(tr.metrics?.tokens).toBe(500);
@@ -550,8 +590,14 @@ describe('WorkflowRun', () => {
 
 describe('DailySummary', () => {
   const base = {
-    userId: 'u1', date: '2024-01-15', content: 'Productive day',
-    sessionCount: 3, messageCount: 42, tokensUsed: 15000, cost: 0.50, metadata: {},
+    userId: 'u1',
+    date: '2024-01-15',
+    content: 'Productive day',
+    sessionCount: 3,
+    messageCount: 42,
+    tokensUsed: 15000,
+    cost: 0.5,
+    metadata: {},
   };
 
   it('create sets id and createdAt', () => {
@@ -559,7 +605,7 @@ describe('DailySummary', () => {
     expect(s.id).toBeTruthy();
     expect(s.createdAt).toBeInstanceOf(Date);
     expect(s.date).toBe('2024-01-15');
-    expect(s.cost).toBe(0.50);
+    expect(s.cost).toBe(0.5);
   });
 
   it('roundtrip fromProps/toProps', () => {
@@ -572,7 +618,12 @@ describe('DailySummary', () => {
 // ─── EnrichSession ────────────────────────────────────────────────────────────
 
 describe('EnrichSession', () => {
-  const base = { userId: 'u1', specPath: '/specs/feat.md', validatorAgentId: 'va1', enricherAgentId: 'ea1' };
+  const base = {
+    userId: 'u1',
+    specPath: '/specs/feat.md',
+    validatorAgentId: 'va1',
+    enricherAgentId: 'ea1',
+  };
 
   it('create starts pending with zero metrics', () => {
     const s = EnrichSession.create(base);

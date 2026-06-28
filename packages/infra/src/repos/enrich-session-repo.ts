@@ -36,28 +36,42 @@ export class DrizzleEnrichSessionRepo implements EnrichSessionRepo {
   }
 
   async findByUserId(userId: string): Promise<EnrichSession[]> {
-    const rows = this.db.select().from(enrichSessions).where(eq(enrichSessions.userId, userId)).all();
+    const rows = this.db
+      .select()
+      .from(enrichSessions)
+      .where(eq(enrichSessions.userId, userId))
+      .all();
     return rows.map(toEntity);
   }
 
   async save(session: EnrichSession): Promise<EnrichSession> {
     const p = session.toProps();
-    this.db.insert(enrichSessions).values({
-      id: p.id, userId: p.userId, specPath: p.specPath, status: p.status,
-      validatorAgentId: p.validatorAgentId ?? null, enricherAgentId: p.enricherAgentId ?? null,
-      validatorMetrics: asJsonField(p.validatorMetrics),
-      enricherMetrics: asJsonField(p.enricherMetrics),
-      startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-      metadata: {},
-    }).onConflictDoUpdate({
-      target: enrichSessions.id,
-      set: {
+    this.db
+      .insert(enrichSessions)
+      .values({
+        id: p.id,
+        userId: p.userId,
+        specPath: p.specPath,
         status: p.status,
+        validatorAgentId: p.validatorAgentId ?? null,
+        enricherAgentId: p.enricherAgentId ?? null,
         validatorMetrics: asJsonField(p.validatorMetrics),
         enricherMetrics: asJsonField(p.enricherMetrics),
-        startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-      },
-    }).run();
+        startedAt: p.startedAt ?? null,
+        completedAt: p.completedAt ?? null,
+        metadata: {},
+      })
+      .onConflictDoUpdate({
+        target: enrichSessions.id,
+        set: {
+          status: p.status,
+          validatorMetrics: asJsonField(p.validatorMetrics),
+          enricherMetrics: asJsonField(p.enricherMetrics),
+          startedAt: p.startedAt ?? null,
+          completedAt: p.completedAt ?? null,
+        },
+      })
+      .run();
     return session;
   }
 

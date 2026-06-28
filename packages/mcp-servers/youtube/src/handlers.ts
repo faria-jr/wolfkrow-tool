@@ -3,12 +3,17 @@ import type { McpHandlers, McpTool, McpToolResult } from '@wolfkrow/mcp-shared';
 const tools: McpTool[] = [
   {
     name: 'youtube_search',
-    description: 'Search YouTube for videos matching a query. Returns video titles, IDs, and descriptions.',
+    description:
+      'Search YouTube for videos matching a query. Returns video titles, IDs, and descriptions.',
     inputSchema: {
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Search query.' },
-        maxResults: { type: 'number', default: 5, description: 'Max results to return (default 5).' },
+        maxResults: {
+          type: 'number',
+          default: 5,
+          description: 'Max results to return (default 5).',
+        },
       },
       required: ['query'],
     },
@@ -27,7 +32,11 @@ const tools: McpTool[] = [
 ];
 
 function text(data: unknown): McpToolResult {
-  return { content: [{ type: 'text', text: typeof data === 'string' ? data : JSON.stringify(data, null, 2) }] };
+  return {
+    content: [
+      { type: 'text', text: typeof data === 'string' ? data : JSON.stringify(data, null, 2) },
+    ],
+  };
 }
 
 function failure(message: string): McpToolResult {
@@ -57,12 +66,18 @@ async function getTranscript(videoId: string): Promise<McpToolResult> {
   const html = await res.text();
 
   const captionsMatch = html.match(/"captionTracks":\s*\[([^\]]+)\]/);
-  if (!captionsMatch) return text({ videoId, transcript: null, message: 'No captions found for this video.' });
+  if (!captionsMatch)
+    return text({ videoId, transcript: null, message: 'No captions found for this video.' });
 
   const baseUrlMatch = captionsMatch[1]?.match(/"baseUrl":"([^"]+)"/);
-  if (!baseUrlMatch) return text({ videoId, transcript: null, message: 'Could not extract caption URL.' });
+  if (!baseUrlMatch)
+    return text({ videoId, transcript: null, message: 'Could not extract caption URL.' });
 
-  return text({ videoId, captionUrl: baseUrlMatch[1]?.replace(/\\u0026/g, '&'), message: 'Use captionUrl to fetch the transcript XML.' });
+  return text({
+    videoId,
+    captionUrl: baseUrlMatch[1]?.replace(/\\u0026/g, '&'),
+    message: 'Use captionUrl to fetch the transcript XML.',
+  });
 }
 
 export const handlers: McpHandlers = {
@@ -70,12 +85,14 @@ export const handlers: McpHandlers = {
   callTool: async (name, args) => {
     try {
       if (name === 'youtube_search') {
-        const query = typeof args['query'] === 'string' ? args['query'] : String(args['query'] ?? '');
+        const query =
+          typeof args['query'] === 'string' ? args['query'] : String(args['query'] ?? '');
         const max = typeof args['maxResults'] === 'number' ? args['maxResults'] : 5;
         return searchYouTube(query, max);
       }
       if (name === 'youtube_get_transcript') {
-        const videoId = typeof args['videoId'] === 'string' ? args['videoId'] : String(args['videoId'] ?? '');
+        const videoId =
+          typeof args['videoId'] === 'string' ? args['videoId'] : String(args['videoId'] ?? '');
         return getTranscript(videoId);
       }
       return failure(`Unknown tool: ${name}`);

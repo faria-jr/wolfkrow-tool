@@ -2,21 +2,13 @@ import { randomUUID } from 'node:crypto';
 
 import { Artifact, type ArtifactData } from '@wolfkrow/domain';
 
-import {
-  asRecord,
-  findAudioInContent,
-  readAudioAsBase64,
-} from './artifact-detector-helpers';
+import { asRecord, findAudioInContent, readAudioAsBase64 } from './artifact-detector-helpers';
 import {
   buildExcalidrawFile,
   extractElements,
   isExcalidrawTool,
 } from './artifact-excalidraw-helpers';
-import {
-  findImageInContent,
-  findInlineImage,
-  readImageAsBase64,
-} from './artifact-image-helpers';
+import { findImageInContent, findInlineImage, readImageAsBase64 } from './artifact-image-helpers';
 
 export interface ArtifactDetectionResult {
   artifact: Artifact | null;
@@ -26,7 +18,7 @@ export interface ArtifactDetectionResult {
 
 function resolveMcpTool(
   toolName: string,
-  input: Record<string, unknown>,
+  input: Record<string, unknown>
 ): { toolName: string; input: Record<string, unknown> } {
   if (toolName === 'mcp_call') {
     const serverId = typeof input['server_id'] === 'string' ? input['server_id'] : '';
@@ -65,7 +57,10 @@ function createImageArtifact(match: {
   });
 }
 
-function createFileImageArtifact(image: { imagePath: string; title?: string }, content: string): Artifact | null {
+function createFileImageArtifact(
+  image: { imagePath: string; title?: string },
+  content: string
+): Artifact | null {
   const buf = readImageAsBase64(image.imagePath);
   if (!buf) return null;
   const promptMatch = content.match(/Prompt:\s*(.+?)(?:\n|\\n|$)/);
@@ -110,7 +105,7 @@ export class ArtifactDetector {
   detectFromToolUse(
     _toolUseId: string,
     toolName: string,
-    input: Record<string, unknown>,
+    input: Record<string, unknown>
   ): Artifact | null {
     const resolved = resolveMcpTool(toolName, input);
     if (!isExcalidrawTool(resolved.toolName)) return null;
@@ -136,7 +131,7 @@ export class ArtifactDetector {
   detectFromToolResult(
     _toolUseId: string,
     content: string,
-    isError: boolean,
+    isError: boolean
   ): ArtifactDetectionResult {
     if (isError) return { artifact: null, attempted: false };
 
@@ -166,7 +161,7 @@ export class ArtifactDetector {
   detect(
     toolName: string,
     input: Record<string, unknown>,
-    result: { output: string | null; isError: boolean; toolUseId?: string },
+    result: { output: string | null; isError: boolean; toolUseId?: string }
   ): Artifact | null {
     const toolUseId = result.toolUseId ?? randomUUID();
     const fromUse = this.detectFromToolUse(toolUseId, toolName, input);

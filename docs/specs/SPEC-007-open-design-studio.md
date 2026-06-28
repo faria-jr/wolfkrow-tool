@@ -11,9 +11,11 @@
 Sub-app Next.js independente para design de interfaces (wireframes, mockups, prototypes). Roda em porta 5000, gerenciado pelo Worker.
 
 ### Substitui
+
 `vendor/open-design/` (106MB versionado) → `apps/sidecar/` (independente)
 
 ### Funcionalidades
+
 - Canvas interativo (Excalidraw-like)
 - Design templates
 - Design systems registry
@@ -55,10 +57,10 @@ Sub-app Next.js independente para design de interfaces (wireframes, mockups, pro
 // apps/worker/src/pipeline/open-design-manager.ts
 export class OpenDesignManager {
   private process?: ChildProcess;
-  
+
   async start(): Promise<void> {
     const sidecarPath = path.resolve('apps/sidecar');
-    
+
     this.process = spawn('node', [path.join(sidecarPath, 'server.js')], {
       env: {
         ...process.env,
@@ -67,17 +69,17 @@ export class OpenDesignManager {
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    
+
     // Wait for health
     await this.waitForHealth(30_000);
   }
-  
+
   async stop(): Promise<void> {
     this.process?.kill('SIGTERM');
     await new Promise((r) => setTimeout(r, 1000));
     this.process?.kill('SIGKILL');
   }
-  
+
   private async waitForHealth(timeoutMs: number): Promise<void> {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
@@ -103,7 +105,7 @@ export function OpenDesignViewer({ projectId }: { projectId: string }) {
   return (
     <iframe
       src={`http://localhost:5000/?project=${projectId}&token=${getAuthToken()}`}
-      className="w-full h-full border-0"
+      className="h-full w-full border-0"
       sandbox="allow-scripts allow-same-origin allow-forms"
     />
   );
@@ -115,6 +117,7 @@ export function OpenDesignViewer({ projectId }: { projectId: string }) {
 ## 5. Features Detalhadas
 
 ### Canvas
+
 - Drag-and-drop shapes (rectangle, circle, arrow, text)
 - Layers (z-index, lock/unlock, hide/show)
 - Multi-select, group/ungroup
@@ -122,18 +125,21 @@ export function OpenDesignViewer({ projectId }: { projectId: string }) {
 - Pan, zoom, fit-to-screen
 
 ### Templates
+
 - Wireframe (low-fi)
 - Mockup (high-fi)
 - User Flow (with arrows)
 - IA (sitemap)
 
 ### Design Systems
+
 - Material UI tokens
 - shadcn/ui tokens
 - Wolfkrow tokens (default)
 - Custom user-defined
 
 ### Export
+
 - PNG / SVG
 - Markdown (ASCII wireframe + description)
 - Figma JSON (basic)

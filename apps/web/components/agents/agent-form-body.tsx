@@ -16,7 +16,9 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-interface Props { control: Control<AgentFormValues>; }
+interface Props {
+  control: Control<AgentFormValues>;
+}
 
 function NameField({ control }: Props) {
   return (
@@ -26,7 +28,9 @@ function NameField({ control }: Props) {
       render={({ field }) => (
         <FormItem>
           <FormLabel>Name</FormLabel>
-          <FormControl><Input aria-label="name" placeholder="my-agent" {...field} /></FormControl>
+          <FormControl>
+            <Input aria-label="name" placeholder="my-agent" {...field} />
+          </FormControl>
           <FormMessage />
         </FormItem>
       )}
@@ -62,16 +66,22 @@ function SystemPromptField({ control }: Props) {
 
 function ConfigTabs({ control }: Props) {
   return (
-    <ScrollArea className="h-72 pr-4 mt-4">
+    <ScrollArea className="mt-4 h-72 pr-4">
       <Tabs defaultValue="tools">
         <TabsList className="mb-4">
           <TabsTrigger value="tools">Tools</TabsTrigger>
           <TabsTrigger value="thinking">Thinking</TabsTrigger>
           <TabsTrigger value="skills">Skills</TabsTrigger>
         </TabsList>
-        <TabsContent value="tools"><ToolsSection control={control} /></TabsContent>
-        <TabsContent value="thinking"><ThinkingSection control={control} /></TabsContent>
-        <TabsContent value="skills"><SkillsSection control={control} /></TabsContent>
+        <TabsContent value="tools">
+          <ToolsSection control={control} />
+        </TabsContent>
+        <TabsContent value="thinking">
+          <ThinkingSection control={control} />
+        </TabsContent>
+        <TabsContent value="skills">
+          <SkillsSection control={control} />
+        </TabsContent>
       </Tabs>
     </ScrollArea>
   );
@@ -87,7 +97,7 @@ export function AgentFormBody({ control }: Props) {
     <div className="space-y-4">
       <NameField control={control} />
       <SystemPromptField control={control} />
-      <ModelSection control={control} providers={providers} />
+      <ModelSection control={control} {...(providers !== undefined ? { providers } : {})} />
       <ConfigTabs control={control} />
     </div>
   );

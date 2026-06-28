@@ -12,7 +12,10 @@ import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 const { nodes, edges, fakeGraphRepo } = vi.hoisted(() => {
   const nodes = new Map<string, { id: string; userId: string; label: string; type: string }>();
-  const edges = new Map<string, { id: string; userId: string; source: string; target: string; type: string }>();
+  const edges = new Map<
+    string,
+    { id: string; userId: string; source: string; target: string; type: string }
+  >();
   const fakeGraphRepo = {
     listNodes: (userId: string) => [...nodes.values()].filter((n) => n.userId === userId),
     listEdges: (userId: string) => [...edges.values()].filter((e) => e.userId === userId),
@@ -89,7 +92,9 @@ describe('graph GET /graph — full graph', () => {
 describe('graph POST /graph/ingest', () => {
   it('ingests text, extracts entities, returns 201 with counts', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/graph/ingest', headers: BEARER,
+      method: 'POST',
+      url: '/graph/ingest',
+      headers: BEARER,
       payload: { text: 'Acme and Globex are partnering on the Apollo project.' },
     });
     expect(res.statusCode).toBe(201);
@@ -101,7 +106,9 @@ describe('graph POST /graph/ingest', () => {
 
   it('accepts optional sourceId/sourceLabel', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/graph/ingest', headers: BEARER,
+      method: 'POST',
+      url: '/graph/ingest',
+      headers: BEARER,
       payload: { text: 'Hello world', sourceId: 'src-1', sourceLabel: 'note' },
     });
     expect(res.statusCode).toBe(201);

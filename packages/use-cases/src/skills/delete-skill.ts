@@ -3,7 +3,9 @@ import type { SkillRepo } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
-export interface DeleteSkillInput { id: string; }
+export interface DeleteSkillInput {
+  id: string;
+}
 
 export class DeleteSkillUseCase implements UseCase<DeleteSkillInput, void> {
   constructor(private readonly repo: SkillRepo) {}

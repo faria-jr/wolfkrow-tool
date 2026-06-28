@@ -9,7 +9,10 @@ export default function VoiceSettingsPage() {
   return (
     <SettingsShell>
       <PageShell variant="narrow">
-        <PageHeader title="Voice" description="Configure speech-to-text and text-to-speech engines used by the chat voice orb." />
+        <PageHeader
+          title="Voice"
+          description="Configure speech-to-text and text-to-speech engines used by the chat voice orb."
+        />
         <PageContent>
           <VoiceSettingsPanel />
         </PageContent>

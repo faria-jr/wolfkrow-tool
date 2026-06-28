@@ -5,10 +5,41 @@ import { describe, expect, it } from 'vitest';
 import { FindingsTable, type Finding } from '../findings-table';
 
 const baseFindings: Finding[] = [
-  { id: 'f1', scanId: 's1', severity: 'critical', dimension: 'secrets', file: 'src/auth/login.ts', line: 10, message: 'Hardcoded secret' },
-  { id: 'f2', scanId: 's1', severity: 'warning', dimension: 'auth', file: 'src/api/router.ts', line: 42, message: 'Missing rate limit' },
-  { id: 'f3', scanId: 's1', severity: 'blocker', dimension: 'secrets', file: 'src/config/env.ts', message: 'Plaintext token' },
-  { id: 'f4', scanId: 's1', severity: 'info', dimension: 'standards', file: 'src/utils/helpers.ts', line: 7, message: 'Long function' },
+  {
+    id: 'f1',
+    scanId: 's1',
+    severity: 'critical',
+    dimension: 'secrets',
+    file: 'src/auth/login.ts',
+    line: 10,
+    message: 'Hardcoded secret',
+  },
+  {
+    id: 'f2',
+    scanId: 's1',
+    severity: 'warning',
+    dimension: 'auth',
+    file: 'src/api/router.ts',
+    line: 42,
+    message: 'Missing rate limit',
+  },
+  {
+    id: 'f3',
+    scanId: 's1',
+    severity: 'blocker',
+    dimension: 'secrets',
+    file: 'src/config/env.ts',
+    message: 'Plaintext token',
+  },
+  {
+    id: 'f4',
+    scanId: 's1',
+    severity: 'info',
+    dimension: 'standards',
+    file: 'src/utils/helpers.ts',
+    line: 7,
+    message: 'Long function',
+  },
 ];
 
 describe('FindingsTable', () => {
