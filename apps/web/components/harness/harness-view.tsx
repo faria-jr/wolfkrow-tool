@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { MetricsChart } from './metrics-chart';
 import { MetricsPanel } from './metrics-panel';
 import { RoundsList } from './rounds-list';
 import { SprintMetricsTable } from './sprint-metrics-table';
@@ -256,6 +257,7 @@ function SprintCard({ sprint, projectId }: SprintCardProps) {
       </div>
       <RoundsList sprintId={sprint.id} />
       <SprintMetricsTable sprintId={sprint.id} />
+      <MetricsChart sprintId={sprint.id} />
     </div>
   );
 }
