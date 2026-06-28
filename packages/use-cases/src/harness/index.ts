@@ -20,3 +20,8 @@ export { RunCoderRoundUseCase } from './run-coder-round';
 export type { RunCoderRoundInput, RunCoderRoundOutput, CoderAgent } from './run-coder-round';
 export { EvaluateRoundUseCase } from './evaluate-round';
 export type { EvaluateRoundInput, EvaluateRoundOutput, EvaluatorAgent } from './evaluate-round';
+export { ContinueHarnessConversationUseCase } from './continue-harness-conversation';
+export type {
+  ContinueHarnessConversationInput,
+  ContinueHarnessConversationOptions,
+} from './continue-harness-conversation';

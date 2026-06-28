@@ -1,15 +1,15 @@
 /**
- * Consolidate a worker `/chat/send` SSE stream into a single assistant string.
+ * Consolidate a web `/api/chat/send` SSE stream into a single assistant string.
  *
  * The voice conversation hook needs the full reply text for TTS, so it cannot
  * consume the stream incrementally like the chat view does. This helper reads
  * the SSE events once and returns the concatenated `text` content.
  *
- * (FIX-011 — replaces the previous `fetch('/api/chat')` call that pointed at a
- * non-existent route.)
+ * Routes through the web proxy (`/api/chat/send`) — NOT the worker directly —
+ * so the session cookie is forwarded as `Authorization: Bearer` (FIX-011 /
+ * F1.1). The previous `${WORKER_URL}/chat/send` call hit the worker cross-origin
+ * without a usable credential → 401.
  */
-
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
 
 interface ChatSseEvent {
   type?: string;
@@ -56,10 +56,9 @@ function accumulateText(line: string, sink: { content: string }): void {
 }
 
 export async function readChatStream(message: string, agentId?: string): Promise<string> {
-  const res = await fetch(`${WORKER_URL}/chat/send`, {
+  const res = await fetch('/api/chat/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify({
       message,
       ...(agentId !== undefined ? { agentId } : {}),

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { PipelineTimeline } from './pipeline-timeline';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -366,60 +368,6 @@ function PhaseCard({ stage, phase, selected, isActive, canApprove, onApprove }: 
   );
 }
 
-function PipelineStageProgress({
-  stages,
-  currentStageIdx,
-  phases,
-}: {
-  stages: string[];
-  currentStageIdx: number;
-  phases: PhaseData[];
-}) {
-  return (
-    <div className="space-y-1.5">
-      {stages.map((stage, i) => {
-        const phase = phases.find((p) => p.stage === stage);
-        const isDone = i < currentStageIdx || phase?.status === 'completed';
-        const isActive = i === currentStageIdx;
-        const isFailed = phase?.status === 'failed';
-
-        return (
-          <div key={stage} className="flex items-center gap-2">
-            <div
-              className={`h-2 w-2 flex-shrink-0 rounded-full ${
-                isFailed
-                  ? 'bg-destructive'
-                  : isDone
-                    ? 'bg-success'
-                    : isActive
-                      ? 'bg-info'
-                      : 'bg-muted-foreground/30'
-              }`}
-            />
-            <span
-              className={`text-xs ${
-                isFailed
-                  ? 'text-destructive'
-                  : isDone
-                    ? 'text-success'
-                    : isActive
-                      ? 'font-medium text-info'
-                      : 'text-muted-foreground'
-              }`}
-            >
-              {STAGE_LABEL[stage]}
-            </span>
-            {phase?.status && phase.status !== 'pending' && (
-              <Badge variant={statusVariant(phase.status)} className="h-4 px-1 text-[10px]">
-                {phase.status}
-              </Badge>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 interface RightPanelProps {
   selected: ProjectData | null;
@@ -452,7 +400,13 @@ function PipelineRightPanel({ selected, phases, currentStageIdx, onApprove }: Ri
           </Button>
         </div>
       </div>
-      <PipelineStageProgress stages={STAGES} currentStageIdx={currentStageIdx} phases={phases} />
+      <PipelineTimeline
+        phases={phases}
+        selectedStage={currentStageIdx >= 0 ? (STAGES[currentStageIdx] ?? '') : ''}
+        onSelectStage={() => {
+          /* read-only listing timeline; selection lives in the run console */
+        }}
+      />
       {STAGES.map((stage) => {
         const phase = phases.find((p) => p.stage === stage);
         const idx = stageIndex(stage);

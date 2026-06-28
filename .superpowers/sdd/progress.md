@@ -38,3 +38,17 @@ Task 13 (F2.1): complete (commit 407c1f7, 15/15 tests, typecheck clean)
 Task 14 (F2.8): complete (commit 57b9208, typecheck clean)
 
 ALL TASKS COMPLETE — 606 worker tests passing, 0 typecheck errors in core packages
+
+## GLM Branch F3-F7 tasks
+
+- [x] F4.4 + F5.4: Provider UNIQUE constraint + timestamp_ms fix (commit 9b31fac)
+- [x] F4.5: Telegram test connection (commit 62c0d83)
+- [x] F3.4: Sidebar badges Agents/Skills/MCP (commit 882b4cf)
+- [x] F5.3: Auth owner resolution robust (commit 39e81d8)
+- [x] F4.2: Skills "Criar com Assistente" button (commit f55d92d)
+- [x] F6.4/F6.5: CHANGELOG + FEATURE_MATRIX updated (commit 489ab3e)
+- [x] F6.6: MIGRATION_FROM_LIONCLAW parity checklist (commit f27e467)
+- [x] F7.1: MVP Validation Report (commit c98f34f)
+- [x] Test fixes: sidebar/harness/pipeline tests updated (commit f27e467)
+
+549 web + 606 worker tests passing. 0 typecheck errors.

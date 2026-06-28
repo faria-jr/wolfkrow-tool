@@ -10,6 +10,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+
 import type { HarnessSprint, HarnessRound } from '@wolfkrow/domain';
 import { HarnessProject } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -136,14 +137,16 @@ describe('harness POST /projects — create', () => {
     expect(body.userId).toBe('u1');
   });
 
-  it('rejects a body missing specPath → 400', async () => {
+  it('accepts a body missing specPath → 201 (F1.5 — specPath is now optional)', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/projects',
       headers: BEARER,
-      payload: { name: 'x' },
+      payload: { name: 'No-spec project' },
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(200);
+    const body = res.json() as { specPath: string };
+    expect(body.specPath).toBe('');
   });
 
   it('rejects a non-existent specPath → 400 (F1.5 specPath validation)', async () => {
