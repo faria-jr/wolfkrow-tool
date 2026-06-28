@@ -16,18 +16,24 @@ import {
 import type { ValidatorAgent, EnricherAgent } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { getAdapters, getRepos } from '../container';
-import { getAnthropicApiKey } from '../lib/keychain';
+import { getRepos } from '../container';
+import { resolveAIProvider } from '../lib/provider-resolver';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, z } from '../validation';
 
-function createValidator(): ValidatorAgent {
+const DEFAULT_ENRICH_MODEL = 'claude-sonnet-4-6';
+
+function createValidator(userId: string, agentId: string | undefined): ValidatorAgent {
   return {
     async validate({ specContent }) {
-      const apiKey = await getAnthropicApiKey();
-      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
+      const agent = agentId ? await getRepos().agent.findById(agentId) : undefined;
+      const { provider } = await resolveAIProvider({
+        model: agent?.model ?? DEFAULT_ENRICH_MODEL,
+        userId,
+        ...(agent?.provider ? { providerId: agent.provider } : {}),
+      });
       const result = await provider.complete({
-        model: 'claude-sonnet-4-6',
+        model: agent?.model ?? DEFAULT_ENRICH_MODEL,
         system:
           'You are a spec validator. Analyze this specification and identify: (1) missing sections, (2) ambiguous requirements, (3) technical inconsistencies. Return a structured validation report.',
         messages: [{ role: 'user', content: `Validate this spec:\n\n${specContent}` }],
@@ -42,13 +48,17 @@ function createValidator(): ValidatorAgent {
   };
 }
 
-function createEnricher(): EnricherAgent {
+function createEnricher(userId: string, agentId: string | undefined): EnricherAgent {
   return {
     async enrich({ specContent, validatorOutput }) {
-      const apiKey = await getAnthropicApiKey();
-      const provider = getAdapters().aiFactory.create('anthropic', apiKey);
+      const agent = agentId ? await getRepos().agent.findById(agentId) : undefined;
+      const { provider } = await resolveAIProvider({
+        model: agent?.model ?? DEFAULT_ENRICH_MODEL,
+        userId,
+        ...(agent?.provider ? { providerId: agent.provider } : {}),
+      });
       const result = await provider.complete({
-        model: 'claude-sonnet-4-6',
+        model: agent?.model ?? DEFAULT_ENRICH_MODEL,
         system:
           "You are a spec enricher. Using the validator's feedback, improve and complete the specification. Fill gaps, clarify ambiguities, and add missing details.",
         messages: [
@@ -133,11 +143,11 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
   });
 
   server.post<{ Params: { id: string } }>('/sessions/:id/validate', auth, (req, reply) =>
-    runValidatorRoute(req, reply, makeRepo())
+    runValidatorRoute(req, reply, makeRepo(), uid(req))
   );
 
   server.post<{ Params: { id: string } }>('/sessions/:id/enrich', auth, (req, reply) =>
-    runEnricherRoute(req, reply, makeRepo())
+    runEnricherRoute(req, reply, makeRepo(), uid(req))
   );
 
   server.delete<{ Params: { id: string } }>('/sessions/:id', auth, async (req, reply) => {
@@ -157,7 +167,8 @@ export async function enrichRoutes(server: AuthFastifyInstance) {
 async function runValidatorRoute(
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
-  repo: ReturnType<typeof getRepos>['enrichSession']
+  repo: ReturnType<typeof getRepos>['enrichSession'],
+  userId: string
 ): Promise<unknown> {
   const body = validate(runValidatorBody, req.body ?? {});
   const session = await repo.findById(req.params.id);
@@ -165,7 +176,7 @@ async function runValidatorRoute(
   const specContent = await loadSpec(body.specContent, session.specPath);
   const { session: updated, output } = await new RunValidatorUseCase(
     repo,
-    createValidator()
+    createValidator(userId, session.validatorAgentId)
   ).execute({
     sessionId: session.id,
     specContent,
@@ -177,18 +188,20 @@ async function runValidatorRoute(
 async function runEnricherRoute(
   req: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
-  repo: ReturnType<typeof getRepos>['enrichSession']
+  repo: ReturnType<typeof getRepos>['enrichSession'],
+  userId: string
 ): Promise<unknown> {
   const body = validate(runEnricherBody, req.body);
   const session = await repo.findById(req.params.id);
   if (!session) return reply.status(404).send({ error: 'Not found' });
   const specContent = await loadSpec(body.specContent, session.specPath);
-  const { session: updated, output } = await new RunEnricherUseCase(repo, createEnricher()).execute(
-    {
-      sessionId: session.id,
-      specContent,
-      validatorOutput: body.validatorOutput,
-    }
-  );
+  const { session: updated, output } = await new RunEnricherUseCase(
+    repo,
+    createEnricher(userId, session.enricherAgentId)
+  ).execute({
+    sessionId: session.id,
+    specContent,
+    validatorOutput: body.validatorOutput,
+  });
   return { session: updated.toProps(), output };
 }
