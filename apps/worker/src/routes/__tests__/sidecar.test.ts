@@ -1,13 +1,9 @@
 /**
- * Sidecar lifecycle routes — happy paths.
- *
- * sidecar.ts wraps sidecarManager start/stop/getState. Mocking the manager
- * exercises the real route handlers (status shape, ok responses) without
- * spawning the sidecar process.
+ * Sidecar lifecycle routes — auth guard + happy paths.
  */
 
-import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
+import type { FastifyInstance } from 'fastify';
 
 const fakeManager = vi.hoisted(() => ({
   start: vi.fn(),
@@ -17,22 +13,42 @@ const fakeManager = vi.hoisted(() => ({
 
 vi.mock('../../sidecar/manager', () => ({ sidecarManager: fakeManager }));
 
-import type { AuthFastifyInstance } from '../../types/fastify';
 import { sidecarRoutes } from '../sidecar';
-
-import { setErrorHandler } from './helpers/app';
+import { buildAppWithRealAuth, buildAuthedApp, authed } from './helpers/app';
 
 let app: FastifyInstance;
+let unauthApp: FastifyInstance;
 
 beforeAll(async () => {
-  app = Fastify();
-  setErrorHandler(app);
-  await sidecarRoutes(app as unknown as AuthFastifyInstance);
-  await app.ready();
+  app = await buildAuthedApp(sidecarRoutes);
+  unauthApp = await buildAppWithRealAuth(sidecarRoutes);
 });
 
 afterAll(async () => {
   await app.close();
+  await unauthApp.close();
+});
+
+describe('sidecar auth guard', () => {
+  it('POST /start returns 401 without token', async () => {
+    const res = await unauthApp.inject({ method: 'POST', url: '/start' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('POST /stop returns 401 without token', async () => {
+    const res = await unauthApp.inject({ method: 'POST', url: '/stop' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('GET /status returns 401 without token', async () => {
+    const res = await unauthApp.inject({ method: 'GET', url: '/status' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('POST /start returns 200 with token', async () => {
+    const res = await unauthApp.inject(authed({ method: 'POST', url: '/start' }));
+    expect(res.statusCode).toBe(200);
+  });
 });
 
 describe('sidecar POST /start', () => {
