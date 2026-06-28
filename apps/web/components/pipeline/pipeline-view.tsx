@@ -427,7 +427,7 @@ export function PipelineView() {
   };
 
   return (
-    <div className="flex h-full gap-6 p-6">
+    <div className="flex h-full gap-6">
       <PipelineLeftPanel
         name={name}
         setName={setName}

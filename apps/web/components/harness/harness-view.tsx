@@ -388,7 +388,7 @@ export function HarnessView() {
   };
 
   return (
-    <div className="flex h-full gap-6 p-6">
+    <div className="flex h-full gap-6">
       <ProjectListPanel
         form={form}
         setForm={setForm}
