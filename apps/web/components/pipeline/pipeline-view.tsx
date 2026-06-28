@@ -10,6 +10,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
+interface CentralProject {
+  id: string;
+  name: string;
+  rootPath?: string;
+  specPath?: string;
+  description?: string;
+}
+
+function useCentralProjects() {
+  const [projects, setProjects] = useState<CentralProject[]>([]);
+  useEffect(() => {
+    fetch('/api/projects')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: CentralProject[]) => setProjects(data))
+      .catch(() => setProjects([]));
+  }, []);
+  return projects;
+}
+
 interface ProjectData {
   id: string;
   userId: string;
@@ -172,10 +191,33 @@ function PipelineLeftPanel({
   onSelect,
   onDelete,
 }: LeftPanelProps) {
+  const centralProjects = useCentralProjects();
   return (
     <div className="w-72 flex-shrink-0 space-y-4">
       <h2 className="text-lg font-semibold">Pipeline Projects</h2>
       <form onSubmit={onSubmit} className="space-y-2 rounded border p-3">
+        {centralProjects.length > 0 && (
+          <div>
+            <Label className="text-muted-foreground mb-1 block text-xs">Quick fill from project</Label>
+            <select
+              className="border-input bg-background text-foreground w-full rounded border px-2 py-1.5 text-sm"
+              onChange={(e) => {
+                const p = centralProjects.find((cp) => cp.id === e.target.value);
+                if (p) {
+                  setName(p.name);
+                  setDescription(p.description ?? '');
+                  setProjectPath(p.rootPath ?? '');
+                }
+              }}
+              defaultValue=""
+            >
+              <option value="">— select a project —</option>
+              {centralProjects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <Label htmlFor="pipeline-name" className="text-muted-foreground mb-1 block text-xs">
             Project name
