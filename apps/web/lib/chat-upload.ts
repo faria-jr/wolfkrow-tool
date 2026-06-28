@@ -1,4 +1,4 @@
-export const UPLOAD_MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+export const UPLOAD_MAX_BYTES = 20 * 1024 * 1024; // 20 MB (F3.6)
 
 export const UPLOAD_MIME_ALLOWLIST = [
   'image/jpeg',
@@ -38,7 +38,7 @@ export function processUploadedFile(
   buf: ArrayBuffer
 ): UploadedAttachment {
   if (buf.byteLength > UPLOAD_MAX_BYTES) {
-    throw new Error(`Arquivo excede o limite de 5 MB.`);
+    throw new Error(`Arquivo excede o limite de 20 MB.`);
   }
   if (!isAllowed(mimeType)) {
     throw new Error(`Tipo "${mimeType}" não suportado.`);

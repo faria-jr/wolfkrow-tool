@@ -15,7 +15,7 @@ describe('processUploadedFile', () => {
 
   it('throws when file exceeds MAX_BYTES', () => {
     const buf = new ArrayBuffer(UPLOAD_MAX_BYTES + 1);
-    expect(() => processUploadedFile('big.pdf', 'application/pdf', buf)).toThrow('5 MB');
+    expect(() => processUploadedFile('big.pdf', 'application/pdf', buf)).toThrow('20 MB');
   });
 
   it('throws when MIME type not in allowlist', () => {

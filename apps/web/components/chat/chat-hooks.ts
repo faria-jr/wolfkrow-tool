@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 
 import type { AttachmentData } from './attachment-dropzone';
 import type { DisplayMessage } from './chat-message';
+import { useTokenUsage } from './chat-token-usage';
 import type { ArtifactPayload, PendingHumanQuestion, PendingPermission, SseCallbacks } from './sse';
 import { streamSse } from './sse';
 import type { ToolCall } from './tool-call-inline';
@@ -129,12 +130,14 @@ interface ChatStreamOptions {
   state: ReturnType<typeof useMessageState>;
   onPermission: (p: PendingPermission) => void;
   onHumanQuestion: (q: PendingHumanQuestion) => void;
+  onDone: (usage: { inputTokens?: number; outputTokens?: number }) => void;
 }
 
 function buildSseCallbacks(
   state: ReturnType<typeof useMessageState>,
   onPermission: (p: PendingPermission) => void,
-  onHumanQuestion: (q: PendingHumanQuestion) => void
+  onHumanQuestion: (q: PendingHumanQuestion) => void,
+  onDone: (usage: { inputTokens?: number; outputTokens?: number }) => void
 ): SseCallbacks {
   return {
     onText: state.appendText,
@@ -143,10 +146,11 @@ function buildSseCallbacks(
     onToolPermission: onPermission,
     onHumanQuestion,
     onArtifact: state.appendArtifact,
+    onDone,
   };
 }
 
-export function useChatStream({ model, sessionId, state, onPermission, onHumanQuestion }: ChatStreamOptions) {
+export function useChatStream({ model, sessionId, state, onPermission, onHumanQuestion, onDone }: ChatStreamOptions) {
   const [isStreaming, setIsStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -171,7 +175,7 @@ export function useChatStream({ model, sessionId, state, onPermission, onHumanQu
       setIsStreaming(true);
       const ac = new AbortController();
       abortRef.current = ac;
-      const callbacks = buildSseCallbacks(state, onPermission, onHumanQuestion);
+      const callbacks = buildSseCallbacks(state, onPermission, onHumanQuestion, onDone);
       try {
         const body: Record<string, unknown> = { message: text, model, sessionId };
         if (attachments.length) body['attachments'] = attachments;
@@ -185,7 +189,7 @@ export function useChatStream({ model, sessionId, state, onPermission, onHumanQu
         bottomRef.current?.scrollIntoView?.({ behavior: 'smooth' });
       }
     },
-    [isStreaming, model, sessionId, state, onPermission, onHumanQuestion]
+    [isStreaming, model, sessionId, state, onPermission, onHumanQuestion, onDone]
   );
 
   const stop = useCallback(() => {
@@ -249,44 +253,30 @@ export function useChatSession(model: string, sessionId?: string) {
   const state = useMessageState();
   const permission = useToolPermission();
   const humanQuestion = useHumanQuestion();
+  const tokens = useTokenUsage();
   const [input, setInput] = useState('');
   const [sessionTitle, setSessionTitle] = useState('New Chat');
   const [pendingAttachments, setPendingAttachments] = useState<AttachmentData[]>([]);
   const stream = useChatStream({
-    model,
-    sessionId,
-    state,
+    model, sessionId, state,
     onPermission: permission.onPermission,
     onHumanQuestion: humanQuestion.onHumanQuestion,
+    onDone: tokens.onDone,
   });
   const { send, clear, answerQuestion } = useChatActions({
-    input,
-    state,
-    stream,
-    humanQuestion,
-    setSessionTitle,
-    pendingAttachments,
-    setInput,
-    setPendingAttachments,
+    input, state, stream, humanQuestion, setSessionTitle,
+    pendingAttachments, setInput, setPendingAttachments,
   });
+  const clearAll = useCallback(() => { clear(); tokens.reset(); }, [clear, tokens]);
 
   return {
-    messages: state.messages,
-    input,
-    setInput,
-    isStreaming: stream.isStreaming,
-    sessionTitle,
-    send,
-    stop: stream.stop,
-    clear,
-    appendMessage: state.appendMessage,
-    bottomRef: stream.bottomRef,
-    pendingAttachments,
-    setPendingAttachments,
-    pendingPermission: permission.pendingPermission,
-    resolvePermission: permission.resolvePermission,
-    pendingQuestion: humanQuestion.pendingQuestion,
-    answerQuestion,
+    messages: state.messages, input, setInput, isStreaming: stream.isStreaming,
+    sessionTitle, send, stop: stream.stop, clear: clearAll,
+    appendMessage: state.appendMessage, bottomRef: stream.bottomRef,
+    pendingAttachments, setPendingAttachments,
+    pendingPermission: permission.pendingPermission, resolvePermission: permission.resolvePermission,
+    pendingQuestion: humanQuestion.pendingQuestion, answerQuestion,
     dismissQuestion: humanQuestion.dismissQuestion,
+    lastUsage: tokens.lastUsage, totalTokens: tokens.totalTokens,
   };
 }

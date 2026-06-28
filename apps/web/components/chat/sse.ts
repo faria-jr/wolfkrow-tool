@@ -5,7 +5,6 @@ import type { ToolCall } from './tool-call-inline';
 export type SSEEvent =
   | { type: 'ack'; message?: string }
   | { type: 'text'; content: string }
-  | { type: 'done'; usage?: unknown }
   | { type: 'error'; message: string }
   | { type: 'tool_call'; id: string; name: string; input: Record<string, unknown> }
   | { type: 'tool_result'; callId: string; output: string; isError: boolean }
@@ -17,6 +16,10 @@ export type SSEEvent =
       prompt: string;
     }
   | { type: 'human_question'; questionId: string; question: string; options?: string[] }
+  | {
+      type: 'done';
+      usage?: { inputTokens?: number; outputTokens?: number };
+    }
   | { type: 'artifact'; artifact: ArtifactPayload };
 
 export interface ArtifactPayload {
@@ -46,6 +49,7 @@ export interface SseCallbacks {
   onToolPermission?: (p: PendingPermission) => void;
   onHumanQuestion?: (q: PendingHumanQuestion) => void;
   onArtifact?: (artifact: ArtifactPayload) => void;
+  onDone?: (usage: { inputTokens?: number; outputTokens?: number }) => void;
 }
 
 function parseSseLine(line: string): SSEEvent | null {
@@ -94,7 +98,8 @@ const EVENT_DISPATCHERS: Record<
         : {},
     }),
   artifact: (ev, cb) => cb.onArtifact?.((ev as Extract<SSEEvent, { type: 'artifact' }>).artifact),
-  done: () => undefined,
+  done: (ev, cb) =>
+    cb.onDone?.((ev as Extract<SSEEvent, { type: 'done' }>).usage ?? {}),
   error: (ev, cb) => cb.onText(`[Error: ${(ev as Extract<SSEEvent, { type: 'error' }>).message}]`),
 };
 

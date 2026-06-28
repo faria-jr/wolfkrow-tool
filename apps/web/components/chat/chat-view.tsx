@@ -14,6 +14,7 @@ import { HumanQuestionDialog } from './human-question-dialog';
 import { ModelPicker } from './model-picker';
 import { StreamIndicator } from './stream-indicator';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,10 +50,18 @@ interface ChatHeaderProps {
   onClear: () => void;
 }
 function ChatHeader({ title, model, onModelChange, onClear }: ChatHeaderProps) {
+  const provider = providerOfModel(model);
   return (
     <header className="flex h-14 items-center justify-between border-b px-6">
       <div className="min-w-0">
-        <h1 className="truncate text-lg font-semibold">{title}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="truncate text-lg font-semibold">{title}</h1>
+          {provider && (
+            <Badge variant="secondary" className="text-xs font-medium">
+              {provider}
+            </Badge>
+          )}
+        </div>
         <p className="text-muted-foreground text-xs">Multi-SDK AI conversation</p>
       </div>
       <div className="flex items-center gap-3">
@@ -68,6 +77,18 @@ function ChatHeader({ title, model, onModelChange, onClear }: ChatHeaderProps) {
       </div>
     </header>
   );
+}
+
+/** Derive an orchestrator/provider label from the model id (F3.6 badge). */
+function providerOfModel(model: string): string | null {
+  const m = model.toLowerCase();
+  if (m.includes('glm') || m.includes('zai')) return 'Z.ai';
+  if (m.includes('claude')) return 'Anthropic';
+  if (m.includes('gpt') || m.includes('o1') || m.includes('o3')) return 'OpenAI';
+  if (m.includes('kimi')) return 'Moonshot';
+  if (m.includes('minimax')) return 'MiniMax';
+  if (m.includes('qwen')) return 'Qwen';
+  return null;
 }
 
 interface ChatInputProps {
@@ -209,6 +230,8 @@ interface ChatFooterProps {
   pendingAttachments: AttachmentData[];
   onAttach: (items: AttachmentData[]) => void;
   onRemoveAttachment: (idx: number) => void;
+  lastUsage: { inputTokens?: number; outputTokens?: number } | null;
+  totalTokens: number;
 }
 function ChatFooter({
   input,
@@ -220,6 +243,8 @@ function ChatFooter({
   pendingAttachments,
   onAttach,
   onRemoveAttachment,
+  lastUsage,
+  totalTokens,
 }: ChatFooterProps) {
   const [attachError, setAttachError] = useState<string | null>(null);
   const toggleVoice = () => {
@@ -275,6 +300,16 @@ function ChatFooter({
           onError={(msg) => setAttachError(msg)}
         />
       </div>
+      {(lastUsage || totalTokens > 0) && (
+        <div className="text-muted-foreground mt-1 flex items-center justify-end gap-3 text-xs">
+          {lastUsage && (
+            <span>
+              last: {(lastUsage.inputTokens ?? 0) + (lastUsage.outputTokens ?? 0)} tok
+            </span>
+          )}
+          {totalTokens > 0 && <span>session: {totalTokens} tok</span>}
+        </div>
+      )}
     </div>
   );
 }
@@ -318,6 +353,8 @@ export function ChatView({ model: initialModel = DEFAULT_CHAT_MODEL, sessionId }
     pendingQuestion,
     answerQuestion,
     dismissQuestion,
+    lastUsage,
+    totalTokens,
   } = useChatSession(model, sessionId);
   const voice = useVoiceConversation({
     onMessage: (msg) => appendMessage(voiceMessageToDisplay(msg)),
@@ -357,6 +394,8 @@ export function ChatView({ model: initialModel = DEFAULT_CHAT_MODEL, sessionId }
         pendingAttachments={pendingAttachments}
         onAttach={handleAttach}
         onRemoveAttachment={handleRemoveAttachment}
+        lastUsage={lastUsage}
+        totalTokens={totalTokens}
       />
       <ConfirmDialog
         open={confirmOpen}

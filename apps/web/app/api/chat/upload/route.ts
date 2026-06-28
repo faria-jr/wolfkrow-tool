@@ -1,6 +1,6 @@
 /**
  * POST /api/chat/upload — receive multipart file, return base64 attachment data.
- * validates size (≤5 MB) and MIME type before returning AttachmentData.
+ * validates size (≤20 MB) and MIME type before returning AttachmentData.
  */
 
 import { cookies } from 'next/headers';
