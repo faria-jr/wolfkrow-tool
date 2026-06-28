@@ -7,6 +7,9 @@
  * real-behaving decorator (preHandler) so 401-without-session is genuine.
  */
 
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { HarnessSprint, HarnessRound } from '@wolfkrow/domain';
 import { HarnessProject } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -76,15 +79,21 @@ import { realAuthenticate, setErrorHandler } from './helpers/app';
 
 const BEARER = { authorization: 'Bearer test-token' };
 let app: FastifyInstance;
+let tmpDir: string;
+let realSpecPath: string;
 
 beforeAll(async () => {
+  tmpDir = mkdtempSync(join(tmpdir(), 'wolfkrow-harness-test-'));
+  realSpecPath = join(tmpDir, 'spec.md');
+  writeFileSync(realSpecPath, '# Test Spec');
+
   projects.clear();
   sprints.clear();
   rounds.clear();
   const seeded = HarnessProject.create({
     userId: 'u1',
     name: 'Acme harness',
-    specPath: '/tmp/spec.md',
+    specPath: realSpecPath,
     description: 'd',
     config: {
       maxRoundsPerFeature: 5,
@@ -103,6 +112,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await app.close();
+  rmSync(tmpDir, { recursive: true, force: true });
 });
 
 describe('harness routes — authentication', () => {
@@ -118,7 +128,7 @@ describe('harness POST /projects — create', () => {
       method: 'POST',
       url: '/projects',
       headers: BEARER,
-      payload: { name: 'New harness', specPath: '/tmp/x.md' },
+      payload: { name: 'New harness', specPath: realSpecPath },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { name: string; userId: string };
@@ -136,6 +146,17 @@ describe('harness POST /projects — create', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it('rejects a non-existent specPath → 400 (F1.5 specPath validation)', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/projects',
+      headers: BEARER,
+      payload: { name: 'Bad spec', specPath: '/definitely/not/a/real/spec.md' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body)).toMatchObject({ error: expect.stringContaining('specPath') });
+  });
+
   it('rejects a non-existent projectPath → 400 (EPIC 1.1 path safety)', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -143,7 +164,7 @@ describe('harness POST /projects — create', () => {
       headers: BEARER,
       payload: {
         name: 'Bad path',
-        specPath: '/tmp/x.md',
+        specPath: realSpecPath,
         projectPath: '/definitely/not/a/real/dir/xyz',
       },
     });

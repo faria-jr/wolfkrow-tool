@@ -26,7 +26,7 @@ import {
 } from '../container';
 import { recordFeedback } from '../harness/feedback-store';
 import { abortRun } from '../harness/run-registry';
-import { validateProjectPath } from '../lib/project-path';
+import { validateProjectPath, validateSpecPath } from '../lib/project-path';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, z } from '../validation';
 
@@ -182,6 +182,9 @@ async function roundsListHandler(req: FastifyRequest<{ Params: { sprintId: strin
 async function createProjectHandler(req: FastifyRequest, reply: FastifyReply) {
   const userId = req.user?.userId ?? 'anonymous';
   const body = validate(createProjectBody, req.body);
+  const checkedSpec = validateSpecPath(body.specPath);
+  if (!checkedSpec.ok) return reply.status(400).send({ error: checkedSpec.reason });
+  body.specPath = checkedSpec.path;
   if (body.projectPath !== undefined) {
     const checked = validateProjectPath(body.projectPath);
     if (!checked.ok) return reply.status(400).send({ error: checked.reason });
