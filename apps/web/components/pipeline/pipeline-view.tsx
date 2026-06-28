@@ -437,13 +437,20 @@ function PipelineRightPanel({ selected, phases, currentStageIdx, onApprove }: Ri
   return (
     <div className="flex-1 space-y-6 overflow-auto">
       <div>
-        <h2 className="text-xl font-semibold">{selected.name}</h2>
-        {selected.description && (
-          <p className="text-muted-foreground text-sm">{selected.description}</p>
-        )}
-        <p className="text-muted-foreground mt-1 text-sm">
-          Tokens: {selected.metrics.totalTokens} · Phases: {selected.metrics.phasesCompleted}
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-xl font-semibold">{selected.name}</h2>
+            {selected.description && (
+              <p className="text-muted-foreground text-sm">{selected.description}</p>
+            )}
+            <p className="text-muted-foreground mt-1 text-sm">
+              Tokens: {selected.metrics.totalTokens} · Phases: {selected.metrics.phasesCompleted}
+            </p>
+          </div>
+          <Button size="sm" variant="outline" asChild>
+            <Link href={`/pipeline/projects/${selected.id}/report`}>Report</Link>
+          </Button>
+        </div>
       </div>
       <PipelineStageProgress stages={STAGES} currentStageIdx={currentStageIdx} phases={phases} />
       {STAGES.map((stage) => {

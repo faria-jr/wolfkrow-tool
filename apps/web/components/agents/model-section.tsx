@@ -127,6 +127,7 @@ function EffortAndTurnsFields({ control }: Props) {
               <Input
                 type="number"
                 min={1}
+                max={100}
                 {...field}
                 onChange={(e) => field.onChange(Number(e.target.value))}
               />
