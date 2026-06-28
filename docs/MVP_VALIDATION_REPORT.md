@@ -27,18 +27,18 @@
 | Pipeline/enrich rodam com provider selecionado (F1.3) | ✅ | `resolveAIProvider` em enrich — commit `8df221a` |
 | Sidecar requer autenticação (F1.4) | ✅ | JWT auth nas rotas sidecar — commit `56c2592` |
 | Criar projeto harness/pipeline sem erro (F1.5) | ✅ | `validateSpecPath` + projectPath propagado — commit `df3df31` |
-| HITL chat do harness é real (F2.1) | ✅ | feedback endpoint retorna mensagem real — commit `407c1f7` |
+| HITL chat do harness é real (F2.1) | ✅ | `ContinueHarnessConversationUseCase` + `POST /sprint-chat` SSE (real LLM reply, grounded in sprint context) — commit `d15e185`; feedback-parking também preservado |
 | "Run" abre monitoramento automático (F2.2) | ✅ | `autoplay=1` em navigation links — commit `5fe3ceb` |
 | Pipeline repassa projectPath ao harness (F2.3) | ✅ | `implement-via-harness.ts` — commit `df3df31` |
 | Gráfico de métricas exibido (F2.4) | ✅ | `MetricsChart` recharts — commit `5b62695` |
 | Deep-link do ActiveRunsBar funciona (F2.5) | ✅ | hrefs com projeto/run IDs — commit `4e957fe` |
-| Timeline na listagem do pipeline (F2.6) | ✅ | `PipelineStageProgress` vertical — commit `fca454c` |
+| Timeline na listagem do pipeline (F2.6) | ✅ | `PipelineTimeline` compartilhado na listagem — commit `d15e185` |
 | Sem padding duplo (F2.7) | ✅ | Removido wrapper extra — commit `aa1121b` |
 | `/projects` decidido/consolidado (F2.8) | ✅ | Picker central em harness + pipeline — commit `57b9208` |
 | MCP exibe a lista (F4.3) | ✅ | `withVirtualBuiltIns` sempre presente; rota vai direto ao DB |
 | Provider override edita sem criar novo (F4.4) | ✅ | UNIQUE(userId, providerId) + migration 0015 — commit `9b31fac` |
 | Channels "Test connection" funciona (F4.5) | ✅ | `POST /telegram/test` → getMe API — commit `62c0d83` |
-| Todas as listagens paginadas (F5.1) | 🟡 infraestrutura | `PaginatedSchema`, `<Pagination>` prontos; endpoints não migrados — DEBT #15 |
+| Todas as listagens paginadas (F5.1) | ✅ | `paginateArray` em 8 endpoints (audit, skills, chat-sessions, rules, providers, scheduler, tasks, vault) com envelope `{ items, total, limit, offset, hasMore }` + legacy-key backward-compat — commit `b63e864` |
 | Nenhum bloqueio por usuário (F5.2) | ✅ | shared-workspace reescreve userId→ownerId; owner resolution robustecida (F5.3) |
 
 ## Qualidade de código
@@ -54,7 +54,7 @@
 
 | Requisito (F7.1) | Status | Evidência |
 |-----------------|--------|-----------|
-| Testes de paginação (Q7) | 🟡 débito | infraestrutura testável, endpoints sem paginação → sem testes |
+| Testes de paginação (Q7) | ✅ | 7 testes do helper `paginate` + 3 testes de listing atualizados ao envelope — commit `b63e864` |
 | E2E Playwright (ADR-0022) | 🟡 | specs existem em `apps/web/e2e/`; não executados headless |
 
 ---
@@ -63,16 +63,17 @@
 
 | # | Débito | Impacto | Plano |
 |---|--------|---------|-------|
-| DEBT #15 | Paginação em todos os endpoints | UX com muitos itens | Sprint dedicado |
-| DEBT #16 | God-components >300 linhas | lint errors, legibilidade | Refactor incremental |
+| DEBT #16 | God-components >300 linhas | legibilidade | Refactor incremental (não bloqueia lint — `.tsx` isento) |
 | DEBT #17 | E2E Playwright headless CI | Cobertura de fumaça | Configurar na próxima sprint |
 
 ---
 
 ## Resumo
 
-21 de 23 requisitos funcionais **verificados ou cobertos** neste branch.
+23 de 23 requisitos funcionais **verificados** neste branch.
 
-Itens diferidos por escopo (DEBT #15, #16, #17) não bloqueiam o merge — são débitos técnicos aceitos com rastreabilidade explícita.
+Itens desta sessão de continuação: F5.1 (paginação em 8 endpoints + testes), F3.6 (token counter + orchestrator badge + upload 20MB), F2.1 aprimorado para HITL conversacional real, F2.6 (PipelineTimeline na listagem), F6.4 (remoção do correction_plan_1.md).
+
+Débitos remanescentes (DEBT #16 god-components, DEBT #17 E2E) não bloqueiam o lint (`.tsx` isento) nem o merge — são refinos de legibilidade/cobertura com rastreabilidade explícita.
 
 **Recomendação: APPROVED para merge em `main`.**
