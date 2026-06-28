@@ -274,7 +274,10 @@ async function feedbackHandler(
 ) {
   const body = validate(feedbackBody, req.body);
   recordFeedback(req.params.id, body.featureIndex, body.text);
-  return reply.send({ accepted: true });
+  return reply.send({
+    accepted: true,
+    message: `Feedback received for feature ${body.featureIndex + 1}. It will guide the next coder round when the sprint resumes.`,
+  });
 }
 
 type IdParams = { Params: { id: string } };

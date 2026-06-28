@@ -113,9 +113,13 @@ function useExecutionChat(projectId: string, featureName: string | undefined) {
       body: JSON.stringify({ featureIndex: selectedFeatureIdx, text }),
     })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('feedback failed'))))
-      .then(() => {
+      .then((data: { message?: string }) => {
         setChatLogs((prev) =>
-          appendChatMessage(prev, selectedFeatureIdx, buildAgentReply(featureName))
+          appendChatMessage(prev, selectedFeatureIdx, {
+            sender: 'agent',
+            text: data.message ?? `Feedback recorded for "${featureName ?? 'the selected feature'}". It will steer the next coder round.`,
+            timestamp: new Date(),
+          })
         );
       })
       .catch(() => {
@@ -135,12 +139,4 @@ function useExecutionChat(projectId: string, featureName: string | undefined) {
 
 function appendChatMessage(logs: Record<number, ChatMsg[]>, index: number, message: ChatMsg) {
   return { ...logs, [index]: [...(logs[index] || []), message] };
-}
-
-function buildAgentReply(featureName: string | undefined): ChatMsg {
-  return {
-    sender: 'agent',
-    text: `Feedback recorded for "${featureName ?? 'the selected feature'}". It will steer the next coder round.`,
-    timestamp: new Date(),
-  };
 }
