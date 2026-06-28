@@ -8,10 +8,13 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionCookie = cookieStore.get('session')?.value ?? '';
+  const session = await getSession(sessionCookie);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const res = await fetch(`${WORKER}/harness/projects/${id}/sprints`);
+  const res = await fetch(`${WORKER}/harness/projects/${id}/sprints`, {
+    headers: { 'Authorization': `Bearer ${sessionCookie}` },
+  });
   return Response.json(await res.json(), { status: res.status });
 }

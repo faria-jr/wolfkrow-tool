@@ -12,11 +12,14 @@ const WORKER = process.env['WORKER_URL'] ?? 'http://localhost:4000';
  */
 export async function GET(_req: Request, { params }: { params: Promise<{ sprintId: string }> }) {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionCookie = cookieStore.get('session')?.value ?? '';
+  const session = await getSession(sessionCookie);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { sprintId } = await params;
-  const res = await fetch(`${WORKER}/harness/sprints/${encodeURIComponent(sprintId)}/rounds`);
+  const res = await fetch(`${WORKER}/harness/sprints/${encodeURIComponent(sprintId)}/rounds`, {
+    headers: { 'Authorization': `Bearer ${sessionCookie}` },
+  });
   const body = await res.text();
   return new Response(body, {
     status: res.status,
