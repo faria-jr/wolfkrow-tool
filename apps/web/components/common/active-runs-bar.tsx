@@ -38,13 +38,13 @@ async function fetchActiveRuns(): Promise<ActiveRun[]> {
   if (hRes?.ok) {
     for (const p of (await hRes.json()) as Array<{ id: string; name: string; status: string }>) {
       if (isActive(p.status))
-        runs.push({ id: p.id, name: p.name, status: p.status, href: '/harness' });
+        runs.push({ id: p.id, name: p.name, status: p.status, href: `/harness/${p.id}/run` });
     }
   }
   if (pRes?.ok) {
     for (const p of (await pRes.json()) as Array<{ id: string; name: string; status: string }>) {
       if (isActive(p.status))
-        runs.push({ id: p.id, name: p.name, status: p.status, href: '/pipeline' });
+        runs.push({ id: p.id, name: p.name, status: p.status, href: `/pipeline/${p.id}/run` });
     }
   }
   return runs;
