@@ -45,4 +45,19 @@ export async function telegramRoutes(server: AuthFastifyInstance) {
     const code = telegramBridge.generatePairingCode(uid(req));
     return reply.send({ code });
   });
+
+  // POST /telegram/test — verify bot token by calling Telegram getMe API
+  server.post('/test', auth, async (_req, reply) => {
+    const token = await getSecret('telegram-bot-token');
+    if (!token) return reply.status(503).send({ error: 'Telegram bot token not configured' });
+
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/getMe`);
+      const data = (await res.json()) as { ok: boolean; result?: { username?: string; first_name?: string } };
+      if (!data.ok) return reply.status(400).send({ error: 'Telegram rejected token', detail: data });
+      return reply.send({ ok: true, username: data.result?.username, name: data.result?.first_name });
+    } catch (err) {
+      return reply.status(502).send({ error: 'Failed to reach Telegram API', detail: String(err) });
+    }
+  });
 }
