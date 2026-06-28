@@ -10,6 +10,25 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
+interface CentralProject {
+  id: string;
+  name: string;
+  rootPath?: string;
+  specPath?: string;
+  description?: string;
+}
+
+function useCentralProjects() {
+  const [projects, setProjects] = useState<CentralProject[]>([]);
+  useEffect(() => {
+    fetch('/api/projects')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: CentralProject[]) => setProjects(data))
+      .catch(() => setProjects([]));
+  }, []);
+  return projects;
+}
+
 interface ProjectData {
   id: string;
   userId: string;
@@ -172,10 +191,33 @@ function PipelineLeftPanel({
   onSelect,
   onDelete,
 }: LeftPanelProps) {
+  const centralProjects = useCentralProjects();
   return (
     <div className="w-72 flex-shrink-0 space-y-4">
       <h2 className="text-lg font-semibold">Pipeline Projects</h2>
       <form onSubmit={onSubmit} className="space-y-2 rounded border p-3">
+        {centralProjects.length > 0 && (
+          <div>
+            <Label className="text-muted-foreground mb-1 block text-xs">Quick fill from project</Label>
+            <select
+              className="border-input bg-background text-foreground w-full rounded border px-2 py-1.5 text-sm"
+              onChange={(e) => {
+                const p = centralProjects.find((cp) => cp.id === e.target.value);
+                if (p) {
+                  setName(p.name);
+                  setDescription(p.description ?? '');
+                  setProjectPath(p.rootPath ?? '');
+                }
+              }}
+              defaultValue=""
+            >
+              <option value="">— select a project —</option>
+              {centralProjects.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <Label htmlFor="pipeline-name" className="text-muted-foreground mb-1 block text-xs">
             Project name
@@ -283,7 +325,7 @@ function PhaseHeader({ stage, phase, canRun, canApprove, projectId, onApprove }:
         )}
         {canRun && (
           <Button size="sm" asChild>
-            <Link href={`/pipeline/${projectId}/run?stage=${stage}`}>Run</Link>
+            <Link href={`/pipeline/${projectId}/run?stage=${stage}&autoplay=1`}>Run</Link>
           </Button>
         )}
         {canApprove && <ApproveButtons onApprove={onApprove} />}
@@ -324,6 +366,61 @@ function PhaseCard({ stage, phase, selected, isActive, canApprove, onApprove }: 
   );
 }
 
+function PipelineStageProgress({
+  stages,
+  currentStageIdx,
+  phases,
+}: {
+  stages: string[];
+  currentStageIdx: number;
+  phases: PhaseData[];
+}) {
+  return (
+    <div className="space-y-1.5">
+      {stages.map((stage, i) => {
+        const phase = phases.find((p) => p.stage === stage);
+        const isDone = i < currentStageIdx || phase?.status === 'completed';
+        const isActive = i === currentStageIdx;
+        const isFailed = phase?.status === 'failed';
+
+        return (
+          <div key={stage} className="flex items-center gap-2">
+            <div
+              className={`h-2 w-2 flex-shrink-0 rounded-full ${
+                isFailed
+                  ? 'bg-destructive'
+                  : isDone
+                    ? 'bg-success'
+                    : isActive
+                      ? 'bg-info'
+                      : 'bg-muted-foreground/30'
+              }`}
+            />
+            <span
+              className={`text-xs ${
+                isFailed
+                  ? 'text-destructive'
+                  : isDone
+                    ? 'text-success'
+                    : isActive
+                      ? 'font-medium text-info'
+                      : 'text-muted-foreground'
+              }`}
+            >
+              {STAGE_LABEL[stage]}
+            </span>
+            {phase?.status && phase.status !== 'pending' && (
+              <Badge variant={statusVariant(phase.status)} className="h-4 px-1 text-[10px]">
+                {phase.status}
+              </Badge>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 interface RightPanelProps {
   selected: ProjectData | null;
   phases: PhaseData[];
@@ -348,16 +445,7 @@ function PipelineRightPanel({ selected, phases, currentStageIdx, onApprove }: Ri
           Tokens: {selected.metrics.totalTokens} · Phases: {selected.metrics.phasesCompleted}
         </p>
       </div>
-      <div className="flex gap-1">
-        {STAGES.map((stage, i) => (
-          <div
-            key={stage}
-            className={`flex-1 rounded px-2 py-1.5 text-center text-xs font-medium ${i < currentStageIdx ? 'bg-success/15 text-success' : i === currentStageIdx ? 'bg-info/15 text-info ring-info ring-1' : 'bg-muted text-muted-foreground'}`}
-          >
-            {STAGE_LABEL[stage]}
-          </div>
-        ))}
-      </div>
+      <PipelineStageProgress stages={STAGES} currentStageIdx={currentStageIdx} phases={phases} />
       {STAGES.map((stage) => {
         const phase = phases.find((p) => p.stage === stage);
         const idx = stageIndex(stage);
@@ -427,7 +515,7 @@ export function PipelineView() {
   };
 
   return (
-    <div className="flex h-full gap-6 p-6">
+    <div className="flex h-full gap-6">
       <PipelineLeftPanel
         name={name}
         setName={setName}

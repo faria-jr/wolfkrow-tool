@@ -10,12 +10,12 @@ export const metadata = { title: 'Harness run' };
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ sprintId?: string }>;
+  searchParams: Promise<{ sprintId?: string; autoplay?: string }>;
 }
 
 export default async function HarnessRunPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { sprintId } = await searchParams;
+  const { sprintId, autoplay } = await searchParams;
   return (
     <PageShell>
       <PageHeader
@@ -32,7 +32,11 @@ export default async function HarnessRunPage({ params, searchParams }: PageProps
         }
       />
       <PageContent>
-        <HarnessRunConsole projectId={id} {...(sprintId ? { sprintId } : {})} />
+        <HarnessRunConsole
+          projectId={id}
+          {...(sprintId ? { sprintId } : {})}
+          autoplay={autoplay === '1'}
+        />
       </PageContent>
     </PageShell>
   );

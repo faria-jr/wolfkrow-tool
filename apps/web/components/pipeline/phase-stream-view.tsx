@@ -65,13 +65,14 @@ function StreamControls({
 }
 
 export interface PhaseStreamViewProps {
+  autoplay?: boolean;
   projectId: string;
   phaseId: string;
   stage: string;
   onComplete: (data: PhaseCompleteData) => void;
 }
 
-export function PhaseStreamView({ projectId, phaseId, stage, onComplete }: PhaseStreamViewProps) {
+export function PhaseStreamView({ autoplay, projectId, phaseId, stage, onComplete }: PhaseStreamViewProps) {
   const { state, output, error, run, abort, sendChat, chatBusy } = usePhaseStream(
     projectId,
     phaseId,
@@ -79,6 +80,12 @@ export function PhaseStreamView({ projectId, phaseId, stage, onComplete }: Phase
   );
   const [chatInput, setChatInput] = useState('');
   const logScrollRef = useRef<HTMLPreElement>(null);
+
+  useEffect(() => {
+    if (autoplay && state === 'idle') run();
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSendChat = () => {
     const msg = chatInput.trim();

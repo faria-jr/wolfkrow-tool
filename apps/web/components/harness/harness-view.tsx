@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 
+import { MetricsChart } from './metrics-chart';
 import { MetricsPanel } from './metrics-panel';
 import { RoundsList } from './rounds-list';
 import { SprintMetricsTable } from './sprint-metrics-table';
@@ -41,6 +42,25 @@ interface SprintData {
   description?: string;
   status: string;
   features: Array<{ name: string; description: string; acceptanceCriteria: string[] }>;
+}
+
+interface CentralProject {
+  id: string;
+  name: string;
+  rootPath?: string;
+  specPath?: string;
+  description?: string;
+}
+
+function useCentralProjects() {
+  const [projects, setProjects] = useState<CentralProject[]>([]);
+  useEffect(() => {
+    fetch('/api/projects')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: CentralProject[]) => setProjects(data))
+      .catch(() => setProjects([]));
+  }, []);
+  return projects;
 }
 
 interface NewProjectForm {
@@ -128,8 +148,35 @@ interface CreateFormProps {
   onSubmit: (e: React.FormEvent) => void;
 }
 function ProjectCreateForm({ form, setForm, creating, onSubmit }: CreateFormProps) {
+  const centralProjects = useCentralProjects();
   return (
     <form onSubmit={onSubmit} className="space-y-2 rounded border p-3">
+      {centralProjects.length > 0 && (
+        <div>
+          <label className="text-muted-foreground mb-1 block text-xs">Quick fill from project</label>
+          <select
+            className="border-input bg-background text-foreground w-full rounded border px-2 py-1.5 text-sm"
+            onChange={(e) => {
+              const p = centralProjects.find((cp) => cp.id === e.target.value);
+              if (p) {
+                setForm({
+                  ...form,
+                  name: p.name,
+                  specPath: p.specPath ?? form.specPath,
+                  projectPath: p.rootPath ?? form.projectPath,
+                  description: p.description ?? form.description,
+                });
+              }
+            }}
+            defaultValue=""
+          >
+            <option value="">— select a project —</option>
+            {centralProjects.map((p) => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <Input
         placeholder="Project name"
         value={form.name}
@@ -244,7 +291,7 @@ function SprintCard({ sprint, projectId }: SprintCardProps) {
             {sprint.status}
           </Badge>
           <Button size="sm" asChild>
-            <Link href={`/harness/${projectId}/run?sprintId=${sprint.id}`}>Run</Link>
+            <Link href={`/harness/${projectId}/run?sprintId=${sprint.id}&autoplay=1`}>Run</Link>
           </Button>
         </div>
       </div>
@@ -256,6 +303,7 @@ function SprintCard({ sprint, projectId }: SprintCardProps) {
       </div>
       <RoundsList sprintId={sprint.id} />
       <SprintMetricsTable sprintId={sprint.id} />
+      <MetricsChart sprintId={sprint.id} />
     </div>
   );
 }
@@ -388,7 +436,7 @@ export function HarnessView() {
   };
 
   return (
-    <div className="flex h-full gap-6 p-6">
+    <div className="flex h-full gap-6">
       <ProjectListPanel
         form={form}
         setForm={setForm}

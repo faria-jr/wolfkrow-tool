@@ -8,29 +8,38 @@
  * worker restarted.
  */
 
+import { cookies } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
+
+import { getSession } from '@/lib/auth';
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
 
-function forwardHeaders(req: NextRequest): HeadersInit {
-  return { Cookie: req.headers.get('cookie') ?? '' };
-}
-
 export async function GET(req: NextRequest) {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('session')?.value ?? '';
+  const session = await getSession(sessionCookie);
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const url = new URL(req.url);
   const params = url.searchParams.toString();
   const res = await fetch(`${WORKER_URL}/permissions/decisions${params ? '?' + params : ''}`, {
-    headers: forwardHeaders(req),
+    headers: { 'Authorization': `Bearer ${sessionCookie}` },
   });
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });
 }
 
 export async function PUT(req: NextRequest) {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('session')?.value ?? '';
+  const session = await getSession(sessionCookie);
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const body = await req.text();
   const res = await fetch(`${WORKER_URL}/permissions/decisions`, {
     method: 'PUT',
-    headers: { ...forwardHeaders(req), 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${sessionCookie}`, 'Content-Type': 'application/json' },
     body,
   });
   const data = await res.json();
@@ -38,10 +47,15 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get('session')?.value ?? '';
+  const session = await getSession(sessionCookie);
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
   const body = await req.text();
   const res = await fetch(`${WORKER_URL}/permissions/decisions`, {
     method: 'DELETE',
-    headers: { ...forwardHeaders(req), 'Content-Type': 'application/json' },
+    headers: { 'Authorization': `Bearer ${sessionCookie}`, 'Content-Type': 'application/json' },
     body,
   });
   const data = await res.json();

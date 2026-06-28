@@ -8,21 +8,28 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionCookie = cookieStore.get('session')?.value ?? '';
+  const session = await getSession(sessionCookie);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const res = await fetch(`${WORKER}/harness/projects/${id}`);
+  const res = await fetch(`${WORKER}/harness/projects/${id}`, {
+    headers: { 'Authorization': `Bearer ${sessionCookie}` },
+  });
   return Response.json(await res.json(), { status: res.status });
 }
 
 export async function DELETE(_req: Request, { params }: Params) {
   const cookieStore = await cookies();
-  const session = await getSession(cookieStore.get('session')?.value);
+  const sessionCookie = cookieStore.get('session')?.value ?? '';
+  const session = await getSession(sessionCookie);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;
-  const res = await fetch(`${WORKER}/harness/projects/${id}`, { method: 'DELETE' });
+  const res = await fetch(`${WORKER}/harness/projects/${id}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${sessionCookie}` },
+  });
   if (res.status === 204) return new Response(null, { status: 204 });
   return Response.json(await res.json(), { status: res.status });
 }

@@ -224,6 +224,38 @@ describe('ImplementViaHarnessUseCase (M5.7)', () => {
     expect(result.phase.toProps().metrics.tokens).toBe(result.artifact.length);
   });
 
+  it('propagates projectPath from pipeline project to harness project (F2.3)', async () => {
+    const project = PipelineProject.create({
+      userId: 'u1',
+      name: 'P',
+      projectPath: '/Users/me/my-repo',
+    });
+    await projectRepo.save(project);
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start()
+    );
+
+    const planner = new StubPlanner([{ name: 'S1', description: 'd', features: [] }]);
+    const uc = makeUc({ projectRepo, phaseRepo, harnessProjectRepo, harnessSprintRepo, planner });
+    const result = await uc.execute({ projectId: project.id, phaseId: phase.id });
+
+    expect(result.harness.toProps().projectPath).toBe('/Users/me/my-repo');
+  });
+
+  it('creates harness project without projectPath when pipeline project has none', async () => {
+    const project = PipelineProject.create({ userId: 'u1', name: 'P' });
+    await projectRepo.save(project);
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start()
+    );
+
+    const planner = new StubPlanner([{ name: 'S1', description: 'd', features: [] }]);
+    const uc = makeUc({ projectRepo, phaseRepo, harnessProjectRepo, harnessSprintRepo, planner });
+    const result = await uc.execute({ projectId: project.id, phaseId: phase.id });
+
+    expect(result.harness.toProps().projectPath).toBeUndefined();
+  });
+
   it('throws NotFoundError for unknown project', async () => {
     const planner = new StubPlanner([]);
     const uc = makeUc({ projectRepo, phaseRepo, harnessProjectRepo, harnessSprintRepo, planner });

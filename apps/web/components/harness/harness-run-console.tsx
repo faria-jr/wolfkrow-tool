@@ -35,6 +35,7 @@ interface RunData {
 interface HarnessRunConsoleProps {
   projectId: string;
   sprintId?: string;
+  autoplay?: boolean;
 }
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -82,7 +83,7 @@ function RunHeader({ project, sprints, activeSprintId }: RunHeaderProps) {
   );
 }
 
-export function HarnessRunConsole({ projectId, sprintId }: HarnessRunConsoleProps) {
+export function HarnessRunConsole({ projectId, sprintId, autoplay }: HarnessRunConsoleProps) {
   const router = useRouter();
   const [data, setData] = useState<RunData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -126,6 +127,7 @@ export function HarnessRunConsole({ projectId, sprintId }: HarnessRunConsoleProp
         sprintName={sprint.name}
         features={sprint.features}
         onClose={() => router.push('/harness')}
+        {...(autoplay ? { autoplay } : {})}
       />
       <div className="flex justify-end">
         <Button variant="outline" onClick={() => router.push('/harness')}>

@@ -10,12 +10,12 @@ export const metadata = { title: 'Pipeline run' };
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ stage?: string; phaseId?: string }>;
+  searchParams: Promise<{ stage?: string; phaseId?: string; autoplay?: string }>;
 }
 
 export default async function PipelineRunPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { stage, phaseId } = await searchParams;
+  const { stage, phaseId, autoplay } = await searchParams;
   return (
     <PageShell>
       <PageHeader
@@ -36,6 +36,7 @@ export default async function PipelineRunPage({ params, searchParams }: PageProp
           projectId={id}
           {...(stage ? { stage } : {})}
           {...(phaseId ? { phaseId } : {})}
+          autoplay={autoplay === '1'}
         />
       </PageContent>
     </PageShell>

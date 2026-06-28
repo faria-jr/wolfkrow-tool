@@ -16,7 +16,7 @@
  * convenience) — configure the allowlist in production to constrain writes.
  */
 
-import { realpathSync, statSync } from 'node:fs';
+import { accessSync, constants, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, resolve, sep } from 'node:path';
 
 export type ProjectPathResult = { ok: true; path: string } | { ok: false; reason: string };
@@ -72,6 +72,36 @@ export function validateProjectPath(raw: string): ProjectPathResult {
   const roots = parseAllowlist();
   if (roots && !isWithin(resolved, roots)) {
     return { ok: false, reason: 'projectPath is outside the configured allowlist' };
+  }
+
+  return { ok: true, path: resolved };
+}
+
+export function validateSpecPath(raw: string): ProjectPathResult {
+  if (!raw || !isAbsolute(raw)) {
+    return {
+      ok: false,
+      reason: 'specPath must be an absolute path to a .md/.txt/.json spec file',
+    };
+  }
+
+  let resolved: string;
+  let stats: ReturnType<typeof statSync>;
+  try {
+    resolved = realpathSync(raw);
+    stats = statSync(resolved);
+  } catch {
+    return { ok: false, reason: `specPath does not exist: ${raw}` };
+  }
+
+  if (!stats.isFile()) {
+    return { ok: false, reason: 'specPath must point to a file, not a directory' };
+  }
+
+  try {
+    accessSync(resolved, constants.R_OK);
+  } catch {
+    return { ok: false, reason: `specPath is not readable: ${raw}` };
   }
 
   return { ok: true, path: resolved };

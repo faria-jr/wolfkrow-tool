@@ -159,6 +159,7 @@ export class ImplementViaHarnessUseCase {
       specPath,
     };
     if (project.description !== undefined) input.description = project.description;
+    if (project.projectPath !== undefined) input.projectPath = project.projectPath;
     const { project: harnessProject } = await useCase.execute(input);
     return harnessProject;
   }

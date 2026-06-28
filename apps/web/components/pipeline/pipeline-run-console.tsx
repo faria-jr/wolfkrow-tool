@@ -39,6 +39,7 @@ interface PipelineRunConsoleProps {
   projectId: string;
   stage?: string;
   phaseId?: string;
+  autoplay?: boolean;
 }
 
 interface PipelineRunSessionArgs {
@@ -77,7 +78,7 @@ async function ensurePhase(
   });
 }
 
-export function PipelineRunConsole({ projectId, stage, phaseId }: PipelineRunConsoleProps) {
+export function PipelineRunConsole({ projectId, stage, phaseId, autoplay }: PipelineRunConsoleProps) {
   const router = useRouter();
   const session = usePipelineRunSession({ phaseId, projectId, stage });
 
@@ -94,6 +95,7 @@ export function PipelineRunConsole({ projectId, stage, phaseId }: PipelineRunCon
           selectedStage={session.selectedStage}
         />
         <PipelineStreamCard
+          {...(autoplay ? { autoplay } : {})}
           data={session.data}
           handleComplete={session.handleComplete}
           projectId={projectId}
@@ -200,10 +202,12 @@ function PipelineMetrics({ project }: { project: ProjectData }) {
 }
 
 function PipelineStreamCard({
+  autoplay,
   data,
   handleComplete,
   projectId,
 }: {
+  autoplay?: boolean;
   data: RunData;
   handleComplete: (complete: PhaseCompleteData) => void;
   projectId: string;
@@ -212,6 +216,7 @@ function PipelineStreamCard({
     <Card className="flex min-h-0 flex-col border-zinc-800 bg-zinc-950 lg:col-span-9">
       <div className="flex min-h-0 flex-1 flex-col">
         <PhaseStreamView
+          {...(autoplay ? { autoplay } : {})}
           onComplete={handleComplete}
           phaseId={data.phase.id}
           projectId={projectId}
