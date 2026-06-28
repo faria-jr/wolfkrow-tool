@@ -244,7 +244,7 @@ function SprintCard({ sprint, projectId }: SprintCardProps) {
             {sprint.status}
           </Badge>
           <Button size="sm" asChild>
-            <Link href={`/harness/${projectId}/run?sprintId=${sprint.id}`}>Run</Link>
+            <Link href={`/harness/${projectId}/run?sprintId=${sprint.id}&autoplay=1`}>Run</Link>
           </Button>
         </div>
       </div>

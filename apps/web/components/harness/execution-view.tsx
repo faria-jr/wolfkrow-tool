@@ -8,6 +8,7 @@ import { useHarnessRun } from './execution-run-hook';
 import { type ChatMsg, ExecutionViewShell } from './execution-view-shell';
 
 export interface ExecutionViewProps {
+  autoplay?: boolean;
   features: Feature[];
   onClose: () => void;
   projectId: string;
@@ -18,6 +19,12 @@ export interface ExecutionViewProps {
 export function ExecutionView(props: ExecutionViewProps) {
   const run = useHarnessRun(props.projectId, props.sprintId, props.features);
   const chat = useExecutionChat(props.projectId, run.featureStates[selectedFeatureIndex(run.featureStates)]?.name);
+
+  useEffect(() => {
+    if (props.autoplay && run.runState === 'idle') run.start();
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [selectedFeatureIdx, setSelectedFeatureIdx] = useState<number>(0);
   const coderScrollRef = useRef<HTMLPreElement>(null);
   const evalScrollRef = useRef<HTMLPreElement>(null);

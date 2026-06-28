@@ -283,7 +283,7 @@ function PhaseHeader({ stage, phase, canRun, canApprove, projectId, onApprove }:
         )}
         {canRun && (
           <Button size="sm" asChild>
-            <Link href={`/pipeline/${projectId}/run?stage=${stage}`}>Run</Link>
+            <Link href={`/pipeline/${projectId}/run?stage=${stage}&autoplay=1`}>Run</Link>
           </Button>
         )}
         {canApprove && <ApproveButtons onApprove={onApprove} />}
