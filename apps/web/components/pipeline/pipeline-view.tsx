@@ -324,6 +324,61 @@ function PhaseCard({ stage, phase, selected, isActive, canApprove, onApprove }: 
   );
 }
 
+function PipelineStageProgress({
+  stages,
+  currentStageIdx,
+  phases,
+}: {
+  stages: string[];
+  currentStageIdx: number;
+  phases: PhaseData[];
+}) {
+  return (
+    <div className="space-y-1.5">
+      {stages.map((stage, i) => {
+        const phase = phases.find((p) => p.stage === stage);
+        const isDone = i < currentStageIdx || phase?.status === 'completed';
+        const isActive = i === currentStageIdx;
+        const isFailed = phase?.status === 'failed';
+
+        return (
+          <div key={stage} className="flex items-center gap-2">
+            <div
+              className={`h-2 w-2 flex-shrink-0 rounded-full ${
+                isFailed
+                  ? 'bg-destructive'
+                  : isDone
+                    ? 'bg-success'
+                    : isActive
+                      ? 'bg-info'
+                      : 'bg-muted-foreground/30'
+              }`}
+            />
+            <span
+              className={`text-xs ${
+                isFailed
+                  ? 'text-destructive'
+                  : isDone
+                    ? 'text-success'
+                    : isActive
+                      ? 'font-medium text-info'
+                      : 'text-muted-foreground'
+              }`}
+            >
+              {STAGE_LABEL[stage]}
+            </span>
+            {phase?.status && phase.status !== 'pending' && (
+              <Badge variant={statusVariant(phase.status)} className="h-4 px-1 text-[10px]">
+                {phase.status}
+              </Badge>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 interface RightPanelProps {
   selected: ProjectData | null;
   phases: PhaseData[];
@@ -348,16 +403,7 @@ function PipelineRightPanel({ selected, phases, currentStageIdx, onApprove }: Ri
           Tokens: {selected.metrics.totalTokens} · Phases: {selected.metrics.phasesCompleted}
         </p>
       </div>
-      <div className="flex gap-1">
-        {STAGES.map((stage, i) => (
-          <div
-            key={stage}
-            className={`flex-1 rounded px-2 py-1.5 text-center text-xs font-medium ${i < currentStageIdx ? 'bg-success/15 text-success' : i === currentStageIdx ? 'bg-info/15 text-info ring-info ring-1' : 'bg-muted text-muted-foreground'}`}
-          >
-            {STAGE_LABEL[stage]}
-          </div>
-        ))}
-      </div>
+      <PipelineStageProgress stages={STAGES} currentStageIdx={currentStageIdx} phases={phases} />
       {STAGES.map((stage) => {
         const phase = phases.find((p) => p.stage === stage);
         const idx = stageIndex(stage);
