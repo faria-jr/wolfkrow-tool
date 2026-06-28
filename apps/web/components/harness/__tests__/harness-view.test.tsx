@@ -51,6 +51,10 @@ describe('HarnessView', () => {
       if (url.includes('/sprints')) {
         return Promise.resolve({ ok: true, json: async () => [] } as Response);
       }
+      // Central projects registry — return empty to avoid duplicate "Project Alpha" in picker
+      if ((url as string).endsWith('/api/projects')) {
+        return Promise.resolve({ ok: true, json: async () => [] } as Response);
+      }
       return Promise.resolve({ ok: true, json: async () => [makeProject()] } as Response);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -87,6 +91,9 @@ describe('HarnessView', () => {
       if (url.includes('/sprints')) {
         return Promise.resolve({ ok: true, json: async () => [makeSprint()] } as Response);
       }
+      if ((url as string).endsWith('/api/projects')) {
+        return Promise.resolve({ ok: true, json: async () => [] } as Response);
+      }
       return Promise.resolve({ ok: true, json: async () => [makeProject()] } as Response);
     });
 
@@ -95,6 +102,6 @@ describe('HarnessView', () => {
     await userEvent.click(screen.getByText('Project Alpha'));
 
     const runLink = await screen.findByRole('link', { name: 'Run' });
-    expect(runLink).toHaveAttribute('href', '/harness/p1/run?sprintId=s1');
+    expect(runLink).toHaveAttribute('href', '/harness/p1/run?sprintId=s1&autoplay=1');
   });
 });

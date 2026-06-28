@@ -189,3 +189,25 @@ A migração de `chat_messages` é válida a partir da **Task 18** (SendMessageU
 **"Schema mismatch"**: The migrator applies column-level mapping and can handle minor schema drift. If you see this error, open an issue with your LionClaw version.
 
 **Rollback fails**: If the backup file was deleted, recover from a Time Machine or system backup. The Wolfkrow DB is at `.wolfkrow/data/wolfkrow.db`.
+
+## Checklist de paridade pós-migração (GLM branch, 2026-06-28)
+
+Funcionalidades com parity validada após o branch `feat/mvp-glm-f1-f2`:
+
+| Funcionalidade LionClaw          | Status Wolfkrow        | Notas                                                               |
+| -------------------------------- | ---------------------- | ------------------------------------------------------------------- |
+| Chat com qualquer provider       | ✅ parity              | GLM/kimi/minimax/qwen via `claude-compat:*` (F1.1, F1.2)           |
+| Pipeline enriquece com provider  | ✅ parity              | `resolveAIProvider` no enrich (F1.3)                                |
+| Sidecar requer autenticação      | ✅ parity              | JWT auth em todas as rotas sidecar (F1.4)                           |
+| Criar projeto harness/pipeline   | ✅ parity              | `validateSpecPath` + `projectPath` propagado (F1.5)                 |
+| HITL — chat durante execução     | ✅ parity              | feedback endpoint retorna mensagem real (F2.1)                      |
+| Run abre console automaticamente | ✅ parity              | `autoplay=1` detectado em navegação (F2.2)                          |
+| Timeline de fases na listagem    | ✅ parity              | `PipelineStageProgress` vertical (F2.6)                             |
+| Métricas de tokens por round     | ✅ parity              | `MetricsChart` recharts com coder/evaluator (F2.4)                  |
+| Sidebar com contagens            | ✅ parity              | `SidebarMenuBadge` em Agents/Skills/MCP (F3.4)                      |
+| Channels — test connection       | ✅ parity              | Telegram `getMe` via `POST /telegram/test` (F4.5)                   |
+| Provider override (upsert)       | ✅ parity              | UNIQUE(userId, providerId) + migration 0015 (F4.4)                  |
+| Skills "Criar com Assistente"    | ✅ parity              | Botão abre `/chat?agent=skill-creator` (F4.2)                       |
+| Paginação nas listagens          | 🟡 infraestrutura      | `PaginatedSchema`, `<Pagination>` component prontos; endpoints TBD  |
+| God-components <300 linhas       | 🟡 débito              | DEBT #15: scheduler-view (487), pipeline-view (458), harness (412)  |
+| Zero lint errors                 | 🟡 débito              | DEBT #16: max-lines-per-function nos god-components acima            |
