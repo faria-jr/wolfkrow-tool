@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, KeyRound, RefreshCw, Send, Settings, ShieldAlert, User } from 'lucide-react';
-import type React from 'react';
+import { Check, KeyRound, RefreshCw, Send, Settings, ShieldAlert, User, Wifi } from 'lucide-react';
+import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 type Status = 'idle' | 'loading' | 'error';
+type TestStatus = 'idle' | 'testing' | 'ok' | 'fail';
 
 interface TelegramSetupViewProps {
   botToken: string;
@@ -22,6 +23,7 @@ interface TelegramSetupViewProps {
   onNotifySchedulerChange: (value: boolean) => void;
   onPair: () => Promise<void>;
   onSaveConfig: () => Promise<void>;
+  onTestConnection: () => Promise<{ ok: boolean; username?: string; name?: string; error?: string }>;
   onToggle: () => Promise<void>;
   onUserIdChange: (value: string) => void;
   onUserNameChange: (value: string) => void;
@@ -43,7 +45,28 @@ export function TelegramSetupView(props: TelegramSetupViewProps) {
 }
 
 function TelegramConfigCard(props: TelegramSetupViewProps) {
+  const [testStatus, setTestStatus] = React.useState<TestStatus>('idle');
+  const [testMessage, setTestMessage] = React.useState<string | null>(null);
+
   const canSave = props.saving || (!props.botToken && !props.userName && !props.userIdVal);
+
+  async function handleTest() {
+    setTestStatus('testing');
+    setTestMessage(null);
+    try {
+      const result = await props.onTestConnection();
+      if (result.ok) {
+        setTestStatus('ok');
+        setTestMessage(result.username ? `@${result.username} (${result.name ?? ''})` : 'Connected');
+      } else {
+        setTestStatus('fail');
+        setTestMessage(result.error ?? 'Connection failed');
+      }
+    } catch {
+      setTestStatus('fail');
+      setTestMessage('Unexpected error');
+    }
+  }
 
   return (
     <Card>
@@ -62,6 +85,27 @@ function TelegramConfigCard(props: TelegramSetupViewProps) {
           checked={props.notifyScheduler}
           onCheckedChange={props.onNotifySchedulerChange}
         />
+        <div className="flex gap-2">
+          <Button
+            className="flex-1"
+            disabled={!props.hasToken || testStatus === 'testing'}
+            onClick={handleTest}
+            size="sm"
+            variant="outline"
+          >
+            {testStatus === 'testing' ? (
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Wifi className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            Test connection
+          </Button>
+        </div>
+        {testStatus !== 'idle' && (
+          <p className={`text-xs ${testStatus === 'ok' ? 'text-green-500' : 'text-destructive'}`}>
+            {testStatus === 'ok' ? `✓ ${testMessage}` : `✗ ${testMessage}`}
+          </p>
+        )}
         <Button className="mt-2 w-full" disabled={canSave} onClick={props.onSaveConfig}>
           {props.saving ? 'Saving...' : 'Save Configurations'}
         </Button>

@@ -2,8 +2,8 @@
  * Sidecar lifecycle routes — auth guard + happy paths.
  */
 
-import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 import type { FastifyInstance } from 'fastify';
+import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
 const fakeManager = vi.hoisted(() => ({
   start: vi.fn(),
@@ -14,6 +14,7 @@ const fakeManager = vi.hoisted(() => ({
 vi.mock('../../sidecar/manager', () => ({ sidecarManager: fakeManager }));
 
 import { sidecarRoutes } from '../sidecar';
+
 import { buildAppWithRealAuth, buildAuthedApp, authed } from './helpers/app';
 
 let app: FastifyInstance;

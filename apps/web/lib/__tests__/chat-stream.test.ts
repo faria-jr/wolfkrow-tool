@@ -31,9 +31,11 @@ describe('readChatStream (FIX-011)', () => {
     const text = await readChatStream('hi');
 
     expect(text).toBe('Hello');
+    // F1.1 — routes through the web proxy /api/chat/send (cookie forwarded as
+    // Bearer server-side), not the worker directly.
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/chat/send'),
-      expect.objectContaining({ method: 'POST', credentials: 'include' })
+      '/api/chat/send',
+      expect.objectContaining({ method: 'POST' })
     );
   });
 

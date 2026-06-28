@@ -230,7 +230,7 @@ First production release of Wolfkrow Tool. Complete rewrite from LionClaw, built
 
 ### Known Issues (deferred to v1.1)
 
-- Harness AI execution loop (Planner→Coder→Evaluator) is UI-scaffolded only; no auto AI execution yet
+- ~~Harness AI execution loop (Planner→Coder→Evaluator) is UI-scaffolded only; no auto AI execution yet~~ — **RESOLVED in v1.2.0**: loop is fully functional (harness-coder, harness-evaluator, harness-planner agents, round-based sprints, run-control stop/pause/resume)
 - Memory search UI not implemented
 - Audit log advanced filters (date/type/agent) not implemented
 - Pipeline report (final execution summary) not implemented

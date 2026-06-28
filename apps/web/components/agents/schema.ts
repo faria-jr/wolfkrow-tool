@@ -7,7 +7,7 @@ export const agentSchema = z.object({
   effort: z.enum(['low', 'medium', 'high', 'max']),
   thinking: z.boolean(),
   thinkingBudget: z.number().int().positive().optional(),
-  maxTurns: z.number().int().min(1, 'maxTurns must be at least 1'),
+  maxTurns: z.number().int().min(1, 'maxTurns must be at least 1').max(100, 'maxTurns must be at most 100'),
   allowedTools: z.array(z.string()),
   mcpServers: z.array(z.string()),
   isActive: z.boolean(),

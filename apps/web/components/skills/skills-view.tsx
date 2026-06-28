@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Bot, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -29,7 +29,14 @@ export function SkillsView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          onClick={() => router.push('/chat?agent=skill-creator')}
+        >
+          <Bot className="mr-2 h-4 w-4" />
+          Criar com Assistente
+        </Button>
         <Button onClick={() => router.push('/skills/new')}>
           <Plus className="mr-2 h-4 w-4" />
           New skill

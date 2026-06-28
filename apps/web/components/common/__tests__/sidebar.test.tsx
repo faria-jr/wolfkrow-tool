@@ -13,6 +13,10 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
+vi.mock('@/hooks/use-sidebar-counts', () => ({
+  useSidebarCounts: () => ({ agents: 0, skills: 0, mcp: 0 }),
+}));
+
 vi.mock('@/components/ui/sidebar', () => ({
   SidebarContent: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   SidebarFooter: ({ children }: React.PropsWithChildren) => <footer>{children}</footer>,
@@ -21,6 +25,7 @@ vi.mock('@/components/ui/sidebar', () => ({
   SidebarGroupLabel: ({ children }: React.PropsWithChildren) => <span>{children}</span>,
   SidebarHeader: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   SidebarMenu: ({ children }: React.PropsWithChildren) => <ul>{children}</ul>,
+  SidebarMenuBadge: ({ children }: React.PropsWithChildren) => <span>{children}</span>,
   SidebarMenuButton: ({
     children,
     asChild: _a,

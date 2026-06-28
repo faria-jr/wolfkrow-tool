@@ -37,7 +37,7 @@ export class DrizzleProviderConfigRepo {
       .insert(providerConfigs)
       .values(row)
       .onConflictDoUpdate({
-        target: providerConfigs.id,
+        target: [providerConfigs.userId, providerConfigs.providerId],
         set: {
           displayName: row.displayName,
           protocol: row.protocol,

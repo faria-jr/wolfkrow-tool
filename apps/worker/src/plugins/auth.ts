@@ -32,17 +32,20 @@ async function resolveOwnerId(): Promise<string | null> {
   if (cachedOwnerId) return cachedOwnerId;
   try {
     const owner = await createRepoRegistry().user.findOwner();
-    cachedOwnerId = owner?.id ?? null;
-  } catch {
-    cachedOwnerId = null;
+    const id = owner?.id ?? null;
+    if (id) cachedOwnerId = id;
+    return id;
+  } catch (err) {
+    console.error('[auth] resolveOwnerId failed — shared workspace userId resolution degraded:', err);
+    return null;
   }
-  return cachedOwnerId;
 }
 
 async function resolveEffectiveUserId(sub: string): Promise<string> {
   if (config.WOLFKROW_SHARED_WORKSPACE !== 'false') {
     const ownerId = await resolveOwnerId();
     if (ownerId) return ownerId;
+    console.error('[auth] shared workspace ON but no owner found — falling back to sub:', sub);
   }
   return sub;
 }

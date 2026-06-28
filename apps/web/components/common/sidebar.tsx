@@ -11,27 +11,38 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
+import { useSidebarCounts } from '@/hooks/use-sidebar-counts';
 import { NAV_GROUPS, type NavItem } from '@/lib/nav';
 import { APP_VERSION } from '@/lib/version';
 
-/**
- * A nav item is active when the current pathname matches its route.
- * Top-level items use exact match; routes that own nested pages (e.g.
- * `/pipeline` owns `/pipeline/projects/[id]/report`, `/settings` owns
- * `/settings/voice`) stay highlighted while a descendant is shown.
- */
+const BADGE_KEYS: Record<string, string> = {
+  '/agents': 'agents',
+  '/skills': 'skills',
+  '/mcp-servers': 'mcp',
+};
+
 function isItemActive(pathname: string, url: string): boolean {
   if (pathname === url) return true;
-  // Prefix match so nested routes highlight their parent nav item.
-  // Guard against sibling collisions (e.g. /usage vs /users).
   return pathname.startsWith(`${url}/`);
 }
 
-function NavMenuItem({ item, pathname }: { item: NavItem; pathname: string }) {
+function NavMenuItem({
+  item,
+  pathname,
+  counts,
+}: {
+  item: NavItem;
+  pathname: string;
+  counts: Record<string, number>;
+}) {
+  const badgeKey = BADGE_KEYS[item.url];
+  const count = badgeKey !== undefined ? counts[badgeKey] : undefined;
+
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isItemActive(pathname, item.url)} tooltip={item.title}>
@@ -40,6 +51,7 @@ function NavMenuItem({ item, pathname }: { item: NavItem; pathname: string }) {
           <span>{item.title}</span>
         </Link>
       </SidebarMenuButton>
+      {count !== undefined && count > 0 && <SidebarMenuBadge>{count}</SidebarMenuBadge>}
     </SidebarMenuItem>
   );
 }
@@ -48,10 +60,12 @@ function NavGroup({
   label,
   items,
   pathname,
+  counts,
 }: {
   label: string;
   items: readonly NavItem[];
   pathname: string;
+  counts: Record<string, number>;
 }) {
   return (
     <SidebarGroup>
@@ -59,7 +73,7 @@ function NavGroup({
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (
-            <NavMenuItem key={item.url} item={item} pathname={pathname} />
+            <NavMenuItem key={item.url} item={item} pathname={pathname} counts={counts} />
           ))}
         </SidebarMenu>
       </SidebarGroupContent>
@@ -83,6 +97,7 @@ function SidebarBrand() {
 
 export function Sidebar() {
   const pathname = usePathname();
+  const counts = useSidebarCounts();
 
   return (
     <>
@@ -92,7 +107,13 @@ export function Sidebar() {
 
       <SidebarContent>
         {NAV_GROUPS.map((group) => (
-          <NavGroup key={group.label} label={group.label} items={group.items} pathname={pathname} />
+          <NavGroup
+            key={group.label}
+            label={group.label}
+            items={group.items}
+            pathname={pathname}
+            counts={counts}
+          />
         ))}
       </SidebarContent>
 

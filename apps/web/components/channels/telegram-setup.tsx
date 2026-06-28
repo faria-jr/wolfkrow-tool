@@ -72,6 +72,7 @@ function useTelegramSetupState() {
       setForm,
       setSaving,
     }),
+    onTestConnection: testTelegramConnection,
     onToggle: useToggleBot({ running, setError, setPairingCode, setRunning, setStatus }),
     pairingCode,
     running,
@@ -290,4 +291,30 @@ async function requestPairingCode() {
   if (!response.ok) throw new Error('Failed to generate code');
   const payload = (await response.json()) as { code: string };
   return payload.code;
+}
+
+async function testTelegramConnection(): Promise<{
+  ok: boolean;
+  username?: string;
+  name?: string;
+  error?: string;
+}> {
+  try {
+    const response = await fetch('/api/telegram/test', { method: 'POST' });
+    const payload = (await response.json()) as {
+      ok?: boolean;
+      username?: string;
+      name?: string;
+      error?: string;
+    };
+    if (!response.ok || !payload.ok) {
+      return { ok: false, error: payload.error ?? 'Connection failed' };
+    }
+    const result: { ok: boolean; username?: string; name?: string } = { ok: true };
+    if (payload.username) result.username = payload.username;
+    if (payload.name) result.name = payload.name;
+    return result;
+  } catch {
+    return { ok: false, error: 'Network error' };
+  }
 }

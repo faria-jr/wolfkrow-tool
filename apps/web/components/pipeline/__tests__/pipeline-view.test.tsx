@@ -25,6 +25,10 @@ describe('PipelineView', () => {
       if (url.includes('/phases')) {
         return Promise.resolve({ ok: true, json: async () => [] } as Response);
       }
+      // Central projects registry — return empty to avoid duplicate "Proj" in picker
+      if ((url as string).endsWith('/api/projects')) {
+        return Promise.resolve({ ok: true, json: async () => [] } as Response);
+      }
       return Promise.resolve({ ok: true, json: async () => [makeProject()] } as Response);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -85,6 +89,6 @@ describe('PipelineView', () => {
     await userEvent.click(screen.getByText('Proj'));
 
     const runLink = await screen.findByRole('link', { name: 'Run' });
-    expect(runLink).toHaveAttribute('href', '/pipeline/p1/run?stage=discovery');
+    expect(runLink).toHaveAttribute('href', '/pipeline/p1/run?stage=discovery&autoplay=1');
   });
 });

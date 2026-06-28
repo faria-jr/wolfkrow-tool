@@ -43,6 +43,32 @@ Status deltas vs reconciliation above. Cada linha referencia commit + EPIC do pl
 4. Smoke E2E Playwright specs existem (`apps/web/e2e/`) mas não foram executados headless nesta sessão
 5. `wolfkrow-audit` (4 auditores) não executado — fan-out pesado, fora do gate
 
+## GLM branch (2026-06-28) — `mvp_final_plan_glm.md` (F1-F6)
+
+| Item                                                            | Status | Evidência                                                              |
+| --------------------------------------------------------------- | ------ | ---------------------------------------------------------------------- |
+| Auth sidecar routes (F1.4)                                      | ✅     | commit `56c2592`                                                       |
+| Dead sidecar removed (F1.6)                                     | ✅     | commit `2cea220`                                                       |
+| Provider uses resolveAIProvider — enrich/pipeline (F1.3)        | ✅     | commit `8df221a`                                                       |
+| 13 proxy routes pass Authorization Bearer (F1.2)                | ✅     | commit `ce5dee8`                                                       |
+| /api/chat/send proxy + SSE fix (F1.1)                           | ✅     | commit `595d1ba`                                                       |
+| validateSpecPath + projectPath propagation (F1.5 + F2.3)        | ✅     | commit `df3df31`                                                       |
+| Vertical PipelineStageProgress (F2.6)                           | ✅     | commit `fca454c`                                                       |
+| MetricsChart recharts (F2.4)                                    | ✅     | commit `5b62695`                                                       |
+| HITL chat server message (F2.1)                                 | ✅     | commit `407c1f7`                                                       |
+| Central project picker (F2.8)                                   | ✅     | commit `57b9208`                                                       |
+| Remove double padding (F2.7)                                    | ✅     | commit `aa1121b`                                                       |
+| Deep-link ActiveRunsBar (F2.5)                                  | ✅     | commit `4e957fe`                                                       |
+| Autoplay=1 opens console (F2.2)                                 | ✅     | commit `5fe3ceb`                                                       |
+| maxTurns capped 100 + schema.ts max (F4.1)                      | ✅     | commit `6d30d83`                                                       |
+| testTimeout 10s in vitest.config (F6.1)                         | ✅     | commit `6d30d83`                                                       |
+| "Report" button in PipelineRightPanel (F3.7)                    | ✅     | commit `6d30d83`                                                       |
+| UNIQUE(userId, providerId) + timestamp_ms fix (F4.4 + F5.4)     | ✅     | commit `9b31fac` (migration 0015)                                      |
+| Telegram test connection (F4.5)                                 | ✅     | commit `62c0d83`                                                       |
+| Sidebar badges — Agents/Skills/MCP (F3.4)                       | ✅     | commit `882b4cf`                                                       |
+| Auth owner resolution robust (F5.3)                             | ✅     | commit `39e81d8`                                                       |
+| Skills "Criar com Assistente" button (F4.2)                     | ✅     | commit `f55d92d`                                                       |
+
 ---
 
 ## Chat & Orquestração (15)
