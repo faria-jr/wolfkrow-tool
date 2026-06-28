@@ -15,6 +15,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import { getRepos } from '../container';
+import { fromQuery, paginateArray } from '../lib/paginate';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
@@ -47,7 +48,8 @@ const buildUC = new BuildSystemPromptUseCase(_repo);
 
 async function listRulesHandler(req: { user?: { userId?: string } }, reply: FastifyReply) {
   const rules = await listUC.execute(getUserId(req));
-  return reply.send({ rules: rules.map((r) => r.toProps()) });
+  const items = rules.map((r) => r.toProps());
+  return reply.send(paginateArray(fromQuery((req as FastifyRequest).query), items, 'rules'));
 }
 
 async function createRuleHandler(

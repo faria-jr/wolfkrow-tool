@@ -93,7 +93,8 @@ describe('chat-session GET /sessions — list', () => {
 
     const res = await app.inject({ method: 'GET', url: '/sessions', headers: BEARER });
     expect(res.statusCode).toBe(200);
-    const body = res.json() as { id: string; title: string }[];
+    // F5.1 — list endpoint returns a paginated envelope { items, total, … }.
+    const body = (res.json() as { items: { id: string; title: string }[] }).items;
     expect(body.some((s) => s.title === 'New Chat')).toBe(true);
     expect(body.some((s) => s.title === 'Old')).toBe(false);
   });

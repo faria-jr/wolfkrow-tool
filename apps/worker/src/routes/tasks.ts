@@ -4,6 +4,7 @@
 import { z } from 'zod';
 
 import { getRepos } from '../container';
+import { fromQuery, paginateArray } from '../lib/paginate';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
@@ -63,7 +64,7 @@ export async function tasksRoutes(server: AuthFastifyInstance) {
         ...(status ? { status } : {}),
         ...(category ? { category } : {}),
       });
-      return reply.send({ tasks: tasksList });
+      return reply.send(paginateArray(fromQuery(req.query), tasksList, 'tasks'));
     }
   );
 

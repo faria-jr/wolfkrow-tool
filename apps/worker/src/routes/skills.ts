@@ -8,6 +8,7 @@
 import { ListSkillsUseCase } from '@wolfkrow/use-cases';
 
 import { getRepos } from '../container';
+import { fromQuery, paginateArray } from '../lib/paginate';
 import type { AuthFastifyInstance } from '../types/fastify';
 
 function userIdOf(req: { user?: { userId?: string } }): string {
@@ -22,6 +23,9 @@ export async function skillsRoutes(server: AuthFastifyInstance) {
   server.get('/', auth, async (req, reply) => {
     const userId = userIdOf(req);
     const result = await new ListSkillsUseCase(getRepos().skill).execute({ userId });
-    return reply.send({ skills: result.skills.map((s) => s.toProps()) });
+    const skills = result.skills.map((s) => s.toProps());
+    // F5.1 — paginated envelope { items, total, limit, offset, hasMore }.
+    // (Legacy callers reading `skills` are handled by the web proxy layer.)
+    return reply.send(paginateArray(fromQuery(req.query), skills, 'skills'));
   });
 }

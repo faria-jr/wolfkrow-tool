@@ -14,6 +14,7 @@ import {
 import { z } from 'zod';
 
 import { getAdapters, getRepos } from '../container';
+import { fromQuery, paginateArray } from '../lib/paginate';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
@@ -104,7 +105,8 @@ export async function vaultRoutes(server: AuthFastifyInstance) {
   server.get('/', auth, async (req, reply) => {
     const userId = getUserId(req as { user?: { userId?: string } });
     const { secrets } = await listUC.execute({ userId });
-    return reply.send({ secrets: secrets.map((s) => s.toProps()) });
+    const items = secrets.map((s) => s.toProps());
+    return reply.send(paginateArray(fromQuery(req.query), items, 'secrets'));
   });
 
   server.post<{ Body: SecretBody }>('/', auth, async (req, reply) => {

@@ -4,6 +4,7 @@ import { ListFindingsUseCase, ListScansUseCase, RunAuditUseCase } from '@wolfkro
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { getAdapters, getRepos } from '../container';
+import { fromQuery, paginateArray } from '../lib/paginate';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, z } from '../validation';
 
@@ -91,7 +92,8 @@ async function listScansHandler(request: FastifyRequest): Promise<unknown> {
   const userId = authUserId(request);
   const { scanRepo } = getAuditRepos();
   const useCase = new ListScansUseCase(scanRepo);
-  return useCase.execute({ userId });
+  const scans = await useCase.execute({ userId });
+  return paginateArray(fromQuery(request.query), scans, 'scans');
 }
 
 export async function auditRoutes(server: AuthFastifyInstance) {

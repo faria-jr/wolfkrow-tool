@@ -2,6 +2,7 @@ import { ChatSession } from '@wolfkrow/domain';
 
 import { config } from '../config';
 import { getRepos } from '../container';
+import { fromQuery, paginateArray } from '../lib/paginate';
 import type { AuthFastifyInstance } from '../types/fastify';
 
 interface SessionPatchBody {
@@ -18,10 +19,12 @@ async function listSessions(server: AuthFastifyInstance) {
     const sessions = sharedWorkspace()
       ? await repo.findAll()
       : await repo.findByUserId(requestUserId(req));
-    return sessions
+    const items = sessions
       .filter((s) => !s.archived)
       .sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime())
       .map((s) => s.toProps());
+    // F5.1 — paginated envelope { items, total, limit, offset, hasMore }.
+    return paginateArray(fromQuery(req.query), items, 'sessions');
   });
 }
 

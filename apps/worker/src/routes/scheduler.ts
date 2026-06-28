@@ -15,6 +15,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { createAgentExecutor } from '../agent-executor';
 import { getRepos } from '../container';
+import { fromQuery, paginateArray } from '../lib/paginate';
 import type { Logger } from '../logger';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate, z } from '../validation';
@@ -102,7 +103,8 @@ async function listTasksHandler(req: FastifyRequest, reply: FastifyReply) {
   const userId = (req as unknown as { user: { userId: string } }).user.userId;
   const { taskRepo } = makeRepos();
   const { tasks } = await new ListScheduledTasksUseCase(taskRepo).execute({ userId });
-  return reply.send({ tasks: tasks.map((t) => t.toProps()), count: tasks.length });
+  const items = tasks.map((t) => t.toProps());
+  return reply.send(paginateArray(fromQuery(req.query), items, 'tasks'));
 }
 
 async function updateTaskHandler(

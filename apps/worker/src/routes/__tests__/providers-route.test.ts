@@ -63,14 +63,15 @@ describe('GET /providers', () => {
 
     const res = await app.inject({ method: 'GET', url: '/providers' });
     expect(res.statusCode).toBe(200);
-    const body = JSON.parse(res.body);
-    expect(body).toBeInstanceOf(Array);
-    expect(body.some((p: { id: string }) => p.id === 'anthropic')).toBe(true);
-    const customRow = body.find((p: { id: string }) => p.id === 'custom1');
+    // F5.1 — paginated envelope.
+    const parsed = JSON.parse(res.body) as { items: { id: string; hasApiKey: boolean }[] };
+    const body = parsed.items;
+    expect(body.some((p) => p.id === 'anthropic')).toBe(true);
+    const customRow = body.find((p) => p.id === 'custom1');
     expect(customRow).toBeDefined();
-    expect(customRow.hasApiKey).toBe(true);
-    const builtIn = body.find((p: { id: string }) => p.id === 'anthropic');
-    expect(builtIn.hasApiKey).toBe(false);
+    expect(customRow?.hasApiKey).toBe(true);
+    const builtIn = body.find((p) => p.id === 'anthropic');
+    expect(builtIn?.hasApiKey).toBe(false);
   });
 });
 

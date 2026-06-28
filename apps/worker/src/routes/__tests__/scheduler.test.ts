@@ -104,9 +104,10 @@ describe('scheduler GET /tasks — list', () => {
   it('returns the seeded task with a count', async () => {
     const res = await app.inject({ method: 'GET', url: '/tasks', headers: BEARER });
     expect(res.statusCode).toBe(200);
-    const body = res.json() as { tasks: { name: string }[]; count: number };
-    expect(body.count).toBeGreaterThanOrEqual(1);
-    expect(body.tasks.some((t) => t.name === 'Daily digest')).toBe(true);
+    // F5.1 — paginated envelope { items, total, limit, offset, hasMore }.
+    const body = res.json() as { items: { name: string }[]; total: number };
+    expect(body.total).toBeGreaterThanOrEqual(1);
+    expect(body.items.some((t) => t.name === 'Daily digest')).toBe(true);
   });
 });
 

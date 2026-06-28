@@ -7,6 +7,7 @@ import {
 import { z } from 'zod';
 
 import { getAdapters, getRepos } from '../container';
+import { fromQuery, paginateArray } from '../lib/paginate';
 import type { AuthFastifyInstance } from '../types/fastify';
 import { validate } from '../validation';
 
@@ -66,7 +67,8 @@ async function saveProvider(
 
 export async function providerRoutes(server: AuthFastifyInstance) {
   server.get('/providers', { preHandler: [server.authenticate] }, async (req) => {
-    return listProviders(req);
+    const items = await listProviders(req);
+    return paginateArray(fromQuery(req.query), items, 'providers');
   });
 
   server.post<{ Body: ProviderBody }>(
