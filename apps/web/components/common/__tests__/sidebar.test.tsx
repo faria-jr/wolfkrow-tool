@@ -28,7 +28,9 @@ vi.mock('@/components/ui/sidebar', () => ({
     tooltip: _t,
     ...p
   }: React.PropsWithChildren<Record<string, unknown> & { isActive?: boolean }>) => (
-    <div data-active={isActive ? 'true' : undefined} {...p}>{children}</div>
+    <div data-active={isActive ? 'true' : undefined} {...p}>
+      {children}
+    </div>
   ),
   SidebarMenuItem: ({ children }: React.PropsWithChildren) => <li>{children}</li>,
   SidebarRail: () => <div />,
@@ -83,6 +85,7 @@ describe('Sidebar nav links', () => {
       '/memory',
       '/permissions',
       '/pipeline',
+      '/projects',
       '/rules',
       '/scheduler',
       '/settings',

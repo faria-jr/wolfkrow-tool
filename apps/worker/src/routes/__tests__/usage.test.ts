@@ -4,7 +4,6 @@ import type { UsageSummary } from '@wolfkrow/shared-types';
 import Fastify from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-
 // In-memory token usage repo so the route exercises the real use-case +
 // boundary parse without a database.
 const records: UsageRecord[] = [];
@@ -12,13 +11,10 @@ const records: UsageRecord[] = [];
 vi.mock('../../container', () => ({
   getRepos: () => ({
     tokenUsage: {
-      findMany: () =>
-        records.filter((r) => r.userId === 'u1'),
+      findMany: () => records.filter((r) => r.userId === 'u1'),
       insert: (rec: UsageRecord) => records.push(rec),
       totalCostCents: () =>
-        records
-          .filter((r) => r.userId === 'u1')
-          .reduce((sum, r) => sum + r.cost, 0),
+        records.filter((r) => r.userId === 'u1').reduce((sum, r) => sum + r.cost, 0),
     },
   }),
 }));
@@ -69,7 +65,7 @@ beforeAll(async () => {
       agentId: undefined,
       runtime: 'cloud',
       timestamp: today,
-    },
+    }
   );
 
   app = Fastify();
@@ -111,7 +107,12 @@ describe('GET /usage/summary', () => {
   it('returns the budget endpoint shape unchanged', async () => {
     const res = await app.inject({ method: 'GET', url: '/budget?budgetUSD=30' });
     expect(res.statusCode).toBe(200);
-    const body = res.json() as { spentUSD: number; budgetUSD: number; percentUsed: number; exceeded: boolean };
+    const body = res.json() as {
+      spentUSD: number;
+      budgetUSD: number;
+      percentUsed: number;
+      exceeded: boolean;
+    };
     expect(body.budgetUSD).toBe(30);
     // Both records fall inside the default 30-day window: $35 > $30 → exceeded.
     expect(body.spentUSD).toBeCloseTo(35, 2);
@@ -133,7 +134,7 @@ describe('GET /usage/summary boundary parse', () => {
         byModel: {},
         bySource: {},
         byDay: [],
-      }),
+      })
     ).toThrow();
   });
 
@@ -146,7 +147,7 @@ describe('GET /usage/summary boundary parse', () => {
         byModel: {},
         bySource: {},
         byDay: { '2024-01-01': { inputTokens: 1, outputTokens: 1, costUSD: 1 } },
-      }),
+      })
     ).toThrow();
   });
 });

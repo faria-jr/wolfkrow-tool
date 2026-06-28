@@ -15,7 +15,9 @@ import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
 import { validateBody } from '@/lib/validation';
 
-interface Ctx { params: Promise<{ id: string }>; }
+interface Ctx {
+  params: Promise<{ id: string }>;
+}
 
 export async function GET(_request: Request, ctx: Ctx) {
   const cookieStore = await cookies();
@@ -24,7 +26,10 @@ export async function GET(_request: Request, ctx: Ctx) {
 
   const { id } = await ctx.params;
   try {
-    const { agent } = await new GetAgentUseCase(getRepos().agent).execute({ id, userId: session.userId });
+    const { agent } = await new GetAgentUseCase(getRepos().agent).execute({
+      id,
+      userId: session.userId,
+    });
     return Response.json({ agent: agent.toProps() });
   } catch (err) {
     if (err instanceof NotFoundError) return Response.json({ error: err.message }, { status: 404 });
@@ -42,7 +47,11 @@ export async function PUT(request: Request, ctx: Ctx) {
   if (body instanceof Response) return body;
 
   try {
-    const { agent } = await new UpdateAgentUseCase(getRepos().agent).execute({ id, userId: session.userId, patch: parsePatchInput(body) });
+    const { agent } = await new UpdateAgentUseCase(getRepos().agent).execute({
+      id,
+      userId: session.userId,
+      patch: parsePatchInput(body),
+    });
     return Response.json({ agent: agent.toProps() });
   } catch (err) {
     if (err instanceof NotFoundError) return Response.json({ error: err.message }, { status: 404 });

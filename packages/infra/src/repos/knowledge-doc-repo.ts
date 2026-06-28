@@ -28,12 +28,20 @@ export class DrizzleKnowledgeDocRepo implements KnowledgeDocRepo {
   constructor(private readonly db = getDb()) {}
 
   async findById(id: string): Promise<KnowledgeDocument | null> {
-    const rows = this.db.select().from(knowledgeDocuments).where(eq(knowledgeDocuments.id, id)).all();
+    const rows = this.db
+      .select()
+      .from(knowledgeDocuments)
+      .where(eq(knowledgeDocuments.id, id))
+      .all();
     return rows[0] ? toEntity(rows[0]) : null;
   }
 
   async findByUserId(userId: string): Promise<KnowledgeDocument[]> {
-    const rows = this.db.select().from(knowledgeDocuments).where(eq(knowledgeDocuments.userId, userId)).all();
+    const rows = this.db
+      .select()
+      .from(knowledgeDocuments)
+      .where(eq(knowledgeDocuments.userId, userId))
+      .all();
     return rows.map(toEntity);
   }
 

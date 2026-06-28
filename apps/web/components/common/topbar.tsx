@@ -27,16 +27,12 @@ export function Topbar({ actions }: { actions?: ReactNode }) {
   const breadcrumb = segments.length === 0 ? 'Dashboard' : segments.map(formatSegment).join(' / ');
 
   return (
-    <header className="flex h-14 items-center justify-between border-b bg-background px-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <header className="bg-background flex h-14 items-center justify-between border-b px-4">
+      <div className="text-muted-foreground flex items-center gap-2 text-sm">
         <SidebarTrigger className="-ml-1" />
-        {!isFlush && <span className="font-medium text-foreground">{breadcrumb}</span>}
+        {!isFlush && <span className="text-foreground font-medium">{breadcrumb}</span>}
       </div>
-      {!isFlush && (
-        <div className="flex items-center gap-2">
-          {actions}
-        </div>
-      )}
+      {!isFlush && <div className="flex items-center gap-2">{actions}</div>}
     </header>
   );
 }

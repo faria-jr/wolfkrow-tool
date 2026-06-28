@@ -27,7 +27,9 @@ Knowledge graph: ingest de entidades/relações a partir de documentos e memóri
 ```typescript
 // apps/worker/src/knowledge/graph-ingest.ts  (LionClaw 1613 → módulos ≤300)
 export class GraphIngest {
-  ingest(doc: Document): { nodes: GraphNode[]; edges: GraphEdge[] } { /* extrai entidades+relações */ }
+  ingest(doc: Document): { nodes: GraphNode[]; edges: GraphEdge[] } {
+    /* extrai entidades+relações */
+  }
 }
 ```
 

@@ -11,18 +11,27 @@ import {
 
 class InMemoryWorkflowRepo implements WorkflowRunRepo {
   readonly store = new Map<string, WorkflowRun>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
   async findByUserId(userId: string, limit?: number) {
     const all = [...this.store.values()].filter((r) => r.userId === userId);
     return limit ? all.slice(0, limit) : all;
   }
-  async save(r: WorkflowRun) { this.store.set(r.id, r); return r; }
+  async save(r: WorkflowRun) {
+    this.store.set(r.id, r);
+    return r;
+  }
 }
 
 describe('CreateWorkflowRunUseCase', () => {
   it('creates run in pending state', async () => {
     const repo = new InMemoryWorkflowRepo();
-    const { run } = await new CreateWorkflowRunUseCase(repo).execute({ userId: 'u1', workflowName: 'test-flow', input: { key: 'value' } });
+    const { run } = await new CreateWorkflowRunUseCase(repo).execute({
+      userId: 'u1',
+      workflowName: 'test-flow',
+      input: { key: 'value' },
+    });
     expect(run.status).toBe('pending');
     expect(run.workflowName).toBe('test-flow');
   });
@@ -37,7 +46,9 @@ describe('GetWorkflowRunUseCase', () => {
   });
 
   it('throws NotFoundError', async () => {
-    await expect(new GetWorkflowRunUseCase(new InMemoryWorkflowRepo()).execute({ runId: 'x' })).rejects.toThrow(NotFoundError);
+    await expect(
+      new GetWorkflowRunUseCase(new InMemoryWorkflowRepo()).execute({ runId: 'x' })
+    ).rejects.toThrow(NotFoundError);
   });
 });
 
@@ -54,10 +65,16 @@ describe('ListWorkflowRunsUseCase', () => {
 describe('ExecuteWorkflowRunUseCase', () => {
   it('executes workflow and marks completed', async () => {
     const repo = new InMemoryWorkflowRepo();
-    const r = await repo.save(WorkflowRun.create({ userId: 'u1', workflowName: 'test', input: { x: 1 } }));
-    const mockExecutor = { execute: vi.fn().mockResolvedValue({ output: { result: 42 }, stepCount: 3 }) };
+    const r = await repo.save(
+      WorkflowRun.create({ userId: 'u1', workflowName: 'test', input: { x: 1 } })
+    );
+    const mockExecutor = {
+      execute: vi.fn().mockResolvedValue({ output: { result: 42 }, stepCount: 3 }),
+    };
 
-    const { run } = await new ExecuteWorkflowRunUseCase(repo, mockExecutor).execute({ runId: r.id });
+    const { run } = await new ExecuteWorkflowRunUseCase(repo, mockExecutor).execute({
+      runId: r.id,
+    });
     expect(run.status).toBe('completed');
     expect(run.output).toEqual({ result: 42 });
     expect(run.metrics.stepCount).toBe(3);
@@ -65,10 +82,14 @@ describe('ExecuteWorkflowRunUseCase', () => {
 
   it('marks run failed on executor error', async () => {
     const repo = new InMemoryWorkflowRepo();
-    const r = await repo.save(WorkflowRun.create({ userId: 'u1', workflowName: 'test', input: {} }));
+    const r = await repo.save(
+      WorkflowRun.create({ userId: 'u1', workflowName: 'test', input: {} })
+    );
     const mockExecutor = { execute: vi.fn().mockRejectedValue(new Error('Timeout')) };
 
-    const { run } = await new ExecuteWorkflowRunUseCase(repo, mockExecutor).execute({ runId: r.id });
+    const { run } = await new ExecuteWorkflowRunUseCase(repo, mockExecutor).execute({
+      runId: r.id,
+    });
     expect(run.status).toBe('failed');
     expect(run.error).toBe('Timeout');
   });

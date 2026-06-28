@@ -59,7 +59,9 @@ function toSimLinks(edges: GraphEdge[], idMap: Map<string, SimNode>): SimLink[] 
     }));
 }
 
-async function applyZoom(svg: SvgSel): Promise<d3.Selection<SVGGElement, unknown, null, undefined>> {
+async function applyZoom(
+  svg: SvgSel
+): Promise<d3.Selection<SVGGElement, unknown, null, undefined>> {
   const d3mod = await import('d3');
   const root = svg.append('g');
   const zoom = d3mod
@@ -71,7 +73,7 @@ async function applyZoom(svg: SvgSel): Promise<d3.Selection<SVGGElement, unknown
 }
 
 async function makeDragBehavior(
-  simulation: d3.Simulation<SimNode, undefined>,
+  simulation: d3.Simulation<SimNode, undefined>
 ): Promise<d3.DragBehavior<SVGGElement, SimNode, unknown>> {
   const d3mod = await import('d3');
   return d3mod
@@ -114,7 +116,7 @@ function styleNodes(node: GroupSel, selectedId: string | null): void {
 function attachTick(
   simulation: d3.Simulation<SimNode, undefined>,
   link: d3.Selection<SVGLineElement, SimLink, SVGGElement, unknown>,
-  node: GroupSel,
+  node: GroupSel
 ): void {
   simulation.on('tick', () => {
     link
@@ -154,7 +156,13 @@ async function renderGraph(opts: RenderOpts): Promise<void> {
 
   const simulation = d3mod
     .forceSimulation(simNodes)
-    .force('link', d3mod.forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(70))
+    .force(
+      'link',
+      d3mod
+        .forceLink<SimNode, SimLink>(simLinks)
+        .id((d) => d.id)
+        .distance(70)
+    )
     .force('charge', d3mod.forceManyBody().strength(-180))
     .force('center', d3mod.forceCenter(width / 2, height / 2))
     .force('collide', d3mod.forceCollide().radius(28));
@@ -177,7 +185,13 @@ async function renderGraph(opts: RenderOpts): Promise<void> {
   attachTick(simulation, link, node);
 }
 
-export function GraphCanvas({ nodes, edges, selectedId, onSelect, height = 560 }: GraphCanvasProps) {
+export function GraphCanvas({
+  nodes,
+  edges,
+  selectedId,
+  onSelect,
+  height = 560,
+}: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [width, setWidth] = useState(800);
@@ -197,20 +211,26 @@ export function GraphCanvas({ nodes, edges, selectedId, onSelect, height = 560 }
     const svgEl = svgRef.current;
     if (!svgEl) return;
     let cancelled = false;
-    void renderGraph({ svgEl, nodes, edges, width, height, selectedId: selectedId ?? null, onSelect }).then(
-      () => {
-        if (cancelled && svgRef.current) {
-          while (svgRef.current.firstChild) svgRef.current.removeChild(svgRef.current.firstChild);
-        }
-      },
-    );
+    void renderGraph({
+      svgEl,
+      nodes,
+      edges,
+      width,
+      height,
+      selectedId: selectedId ?? null,
+      onSelect,
+    }).then(() => {
+      if (cancelled && svgRef.current) {
+        while (svgRef.current.firstChild) svgRef.current.removeChild(svgRef.current.firstChild);
+      }
+    });
     return () => {
       cancelled = true;
     };
   }, [nodes, edges, width, height, selectedId, onSelect]);
 
   return (
-    <div ref={containerRef} className="w-full rounded-lg border border-border bg-slate-950">
+    <div ref={containerRef} className="border-border w-full rounded-lg border bg-slate-950">
       <svg
         ref={svgRef}
         role="img"

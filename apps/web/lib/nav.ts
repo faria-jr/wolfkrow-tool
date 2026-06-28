@@ -16,6 +16,7 @@ import {
   Database,
   FileText,
   Folder,
+  FolderKanban,
   FolderSearch,
   KeyRound,
   LayoutDashboard,
@@ -63,6 +64,7 @@ export const NAV_GROUPS: readonly NavGroup[] = [
   {
     label: 'Automation',
     items: [
+      { title: 'Projects', url: '/projects', icon: FolderKanban },
       { title: 'Scheduler', url: '/scheduler', icon: Calendar },
       { title: 'Harness', url: '/harness', icon: Wrench },
       { title: 'Pipeline', url: '/pipeline', icon: Workflow },

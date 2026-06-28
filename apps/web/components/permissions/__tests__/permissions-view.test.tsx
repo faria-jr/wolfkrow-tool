@@ -47,11 +47,19 @@ function parseBody(init?: RequestInit): unknown {
   }
 }
 
-function routeAgents(routes: RouteHandlers, method: string, body: unknown): Response | Promise<Response> | null {
+function routeAgents(
+  routes: RouteHandlers,
+  method: string,
+  body: unknown
+): Response | Promise<Response> | null {
   return routes.agents ? routes.agents({ method, body }) : null;
 }
 
-function routeDecisions(routes: RouteHandlers, method: string, body: unknown): Response | Promise<Response> | null {
+function routeDecisions(
+  routes: RouteHandlers,
+  method: string,
+  body: unknown
+): Response | Promise<Response> | null {
   const d = routes.decisions;
   if (!d) return null;
   if (method === 'GET' && d.GET) return d.GET();
@@ -88,7 +96,9 @@ function agentsPayload(agents: AgentData[]): Response {
   return jsonResponse({ agents });
 }
 
-function decisionsPayload(decisions: { agentId: string; tool: string; decision: 'allow' | 'deny' }[]): Response {
+function decisionsPayload(
+  decisions: { agentId: string; tool: string; decision: 'allow' | 'deny' }[]
+): Response {
   return jsonResponse({ decisions });
 }
 
@@ -159,7 +169,7 @@ describe('PermissionsView', () => {
         agentId: 'a1',
         tool: 'Bash:rm',
         decision: 'deny',
-      }),
+      })
     );
   });
 
@@ -179,7 +189,7 @@ describe('PermissionsView', () => {
       expect(deleteSpy).toHaveBeenCalledWith({
         agentId: 'a1',
         tool: 'Read',
-      }),
+      })
     );
   });
 
@@ -199,9 +209,7 @@ describe('PermissionsView', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
     render(<PermissionsView />);
-    await waitFor(() =>
-      expect(screen.getByText(/declares no tools/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/declares no tools/i)).toBeInTheDocument());
   });
 
   it('shows an error state when the agents load fails', async () => {

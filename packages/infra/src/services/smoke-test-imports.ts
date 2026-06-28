@@ -30,18 +30,14 @@ const RESOLVE_EXTENSIONS = [
 ];
 
 const IMPORT_RE = /(?:^|\n)\s*import\s+[^'"]*['"](\.\.?\/[^'"]+)['"]/g;
-const EXPORT_RE = /(?:^|\n)\s*(?:export\s+\*\s+from|export\s+\{[^}]*\}\s+from)\s*['"](\.\.?\/[^'"]+)['"]/g;
+const EXPORT_RE =
+  /(?:^|\n)\s*(?:export\s+\*\s+from|export\s+\{[^}]*\}\s+from)\s*['"](\.\.?\/[^'"]+)['"]/g;
 
 function shouldSkipDir(name: string): boolean {
   return SKIP_DIRS.has(name);
 }
 
-function tryCollectFile(
-  entry: Dirent,
-  fullPath: string,
-  name: string,
-  results: string[],
-): void {
+function tryCollectFile(entry: Dirent, fullPath: string, name: string, results: string[]): void {
   if (!entry.isFile() || !SOURCE_EXTENSIONS.has(extname(name))) return;
   try {
     if (statSync(fullPath).size <= MAX_FILE_SIZE) results.push(fullPath);
@@ -87,9 +83,7 @@ function resolveImport(fromDir: string, importPath: string): boolean {
 }
 
 function relativePath(filePath: string, projectPath: string): string {
-  return filePath.startsWith(projectPath + sep)
-    ? filePath.slice(projectPath.length + 1)
-    : filePath;
+  return filePath.startsWith(projectPath + sep) ? filePath.slice(projectPath.length + 1) : filePath;
 }
 
 function extractImports(content: string): string[] {
@@ -106,11 +100,7 @@ function extractImports(content: string): string[] {
   return out;
 }
 
-function scanFileForBroken(
-  filePath: string,
-  projectPath: string,
-  broken: BrokenImport[],
-): void {
+function scanFileForBroken(filePath: string, projectPath: string, broken: BrokenImport[]): void {
   let content: string;
   try {
     content = readFileSync(filePath, 'utf-8');

@@ -1,28 +1,56 @@
 import { NotFoundError, PipelinePhase, PipelineProject } from '@wolfkrow/domain';
-import type { AIStreamPort, ArtifactWriter, PipelineMessage, PipelineMessageRepo, PipelinePhaseRepo, PipelineProjectRepo } from '@wolfkrow/domain';
+import type {
+  AIStreamPort,
+  ArtifactWriter,
+  PipelineMessage,
+  PipelineMessageRepo,
+  PipelinePhaseRepo,
+  PipelineProjectRepo,
+} from '@wolfkrow/domain';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RunPhaseUseCase } from '../run-phase';
 
 class InMemoryProjectRepo implements PipelineProjectRepo {
   readonly store = new Map<string, PipelineProject>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByUserId(u: string) { return [...this.store.values()].filter((p) => p.userId === u); }
-  async save(p: PipelineProject) { this.store.set(p.id, p); return p; }
-  async delete(id: string) { this.store.delete(id); }
+  async findAll() {
+    return [...this.store.values()];
+  }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByUserId(u: string) {
+    return [...this.store.values()].filter((p) => p.userId === u);
+  }
+  async save(p: PipelineProject) {
+    this.store.set(p.id, p);
+    return p;
+  }
+  async delete(id: string) {
+    this.store.delete(id);
+  }
 }
 
 class InMemoryPhaseRepo implements PipelinePhaseRepo {
   readonly store = new Map<string, PipelinePhase>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByProjectId(pid: string) { return [...this.store.values()].filter((p) => p.projectId === pid); }
-  async save(p: PipelinePhase) { this.store.set(p.id, p); return p; }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByProjectId(pid: string) {
+    return [...this.store.values()].filter((p) => p.projectId === pid);
+  }
+  async save(p: PipelinePhase) {
+    this.store.set(p.id, p);
+    return p;
+  }
 }
 
 function makeAI(content = 'AI output', inputTokens = 10, outputTokens = 5): AIStreamPort {
   return {
     query: vi.fn(),
-    complete: vi.fn().mockResolvedValue({ content, usage: { inputTokens, outputTokens }, stopReason: 'end_turn' }),
+    complete: vi
+      .fn()
+      .mockResolvedValue({ content, usage: { inputTokens, outputTokens }, stopReason: 'end_turn' }),
   };
 }
 
@@ -37,10 +65,19 @@ function makePhase(projectId: string, stage: PipelinePhase['stage'] = 'discovery
 
 class InMemoryMessageRepo implements PipelineMessageRepo {
   readonly store = new Map<string, PipelineMessage>();
-  async save(m: PipelineMessage) { this.store.set(m.id, m); return m; }
-  async saveMany(msgs: PipelineMessage[]) { for (const m of msgs) this.store.set(m.id, m); }
-  async findByPhaseId(pid: string) { return [...this.store.values()].filter((m) => m.phaseId === pid); }
-  async findByProjectId(pid: string) { return [...this.store.values()].filter((m) => m.projectId === pid); }
+  async save(m: PipelineMessage) {
+    this.store.set(m.id, m);
+    return m;
+  }
+  async saveMany(msgs: PipelineMessage[]) {
+    for (const m of msgs) this.store.set(m.id, m);
+  }
+  async findByPhaseId(pid: string) {
+    return [...this.store.values()].filter((m) => m.phaseId === pid);
+  }
+  async findByProjectId(pid: string) {
+    return [...this.store.values()].filter((m) => m.projectId === pid);
+  }
 }
 
 function makeArtifactWriter(): ArtifactWriter & { written: Map<string, string> } {
@@ -83,7 +120,8 @@ describe('RunPhaseUseCase', () => {
     await phaseRepo.save(phase);
 
     await new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
-      projectId: project.id, phaseId: phase.id,
+      projectId: project.id,
+      phaseId: phase.id,
     });
 
     const callArgs = vi.mocked(ai.complete).mock.calls[0]?.[0];
@@ -101,7 +139,8 @@ describe('RunPhaseUseCase', () => {
     await phaseRepo.save(phase);
 
     await new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
-      projectId: project.id, phaseId: phase.id,
+      projectId: project.id,
+      phaseId: phase.id,
     });
 
     const callArgs = vi.mocked(ai.complete).mock.calls[0]?.[0];
@@ -119,7 +158,8 @@ describe('RunPhaseUseCase', () => {
     await phaseRepo.save(phase);
 
     const result = await new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
-      projectId: project.id, phaseId: phase.id,
+      projectId: project.id,
+      phaseId: phase.id,
     });
 
     expect(result.tokens).toBe(50);
@@ -138,7 +178,8 @@ describe('RunPhaseUseCase', () => {
     await phaseRepo.save(phase);
 
     const result = await new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
-      projectId: project.id, phaseId: phase.id,
+      projectId: project.id,
+      phaseId: phase.id,
     });
 
     expect(result.phase.metrics.cost).toBeGreaterThan(0);
@@ -155,7 +196,8 @@ describe('RunPhaseUseCase', () => {
     await phaseRepo.save(phase);
 
     const result = await new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
-      projectId: project.id, phaseId: phase.id,
+      projectId: project.id,
+      phaseId: phase.id,
     });
 
     expect(result.project.currentStage).toBe('spec_build');
@@ -172,7 +214,9 @@ describe('RunPhaseUseCase', () => {
     await phaseRepo.save(phase);
 
     await new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
-      projectId: project.id, phaseId: phase.id, userPrompt: 'custom user prompt here',
+      projectId: project.id,
+      phaseId: phase.id,
+      userPrompt: 'custom user prompt here',
     });
 
     const callArgs = vi.mocked(ai.complete).mock.calls[0]?.[0];
@@ -190,8 +234,9 @@ describe('RunPhaseUseCase', () => {
 
     await expect(
       new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
-        projectId: 'proj-missing', phaseId: phase.id,
-      }),
+        projectId: 'proj-missing',
+        phaseId: phase.id,
+      })
     ).rejects.toThrow(NotFoundError);
   });
 
@@ -205,8 +250,9 @@ describe('RunPhaseUseCase', () => {
 
     await expect(
       new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
-        projectId: project.id, phaseId: 'phase-missing',
-      }),
+        projectId: project.id,
+        phaseId: 'phase-missing',
+      })
     ).rejects.toThrow(NotFoundError);
   });
 
@@ -221,7 +267,8 @@ describe('RunPhaseUseCase', () => {
     await phaseRepo.save(phase);
 
     const result = await new RunPhaseUseCase(projectRepo, phaseRepo, ai).execute({
-      projectId: project.id, phaseId: phase.id,
+      projectId: project.id,
+      phaseId: phase.id,
     });
 
     expect(result.phase.status).toBe('completed');
@@ -240,7 +287,9 @@ describe('RunPhaseUseCase', () => {
     await phaseRepo.save(phase);
 
     await new RunPhaseUseCase(projectRepo, phaseRepo, ai, { messageRepo }).execute({
-      projectId: project.id, phaseId: phase.id, userPrompt: 'analyze this',
+      projectId: project.id,
+      phaseId: phase.id,
+      userPrompt: 'analyze this',
     });
 
     const msgs = await messageRepo.findByPhaseId(phase.id);
@@ -261,8 +310,12 @@ describe('RunPhaseUseCase', () => {
     await projectRepo.save(project);
     await phaseRepo.save(phase);
 
-    const result = await new RunPhaseUseCase(projectRepo, phaseRepo, ai, { messageRepo, artifactWriter: writer }).execute({
-      projectId: project.id, phaseId: phase.id,
+    const result = await new RunPhaseUseCase(projectRepo, phaseRepo, ai, {
+      messageRepo,
+      artifactWriter: writer,
+    }).execute({
+      projectId: project.id,
+      phaseId: phase.id,
     });
 
     expect(result.phase.artifactPath).toMatch(/\/artifacts\//);
@@ -281,8 +334,13 @@ describe('RunPhaseUseCase', () => {
     await projectRepo.save(project);
     await phaseRepo.save(phase);
 
-    await new RunPhaseUseCase(projectRepo, phaseRepo, ai, { messageRepo, artifactWriter: writer }).execute({
-      projectId: project.id, phaseId: phase.id, userPrompt: 'go',
+    await new RunPhaseUseCase(projectRepo, phaseRepo, ai, {
+      messageRepo,
+      artifactWriter: writer,
+    }).execute({
+      projectId: project.id,
+      phaseId: phase.id,
+      userPrompt: 'go',
     });
 
     const msgs = await messageRepo.findByPhaseId(phase.id);
@@ -303,7 +361,9 @@ describe('RunPhaseUseCase', () => {
     await phaseRepo.save(phase);
 
     await new RunPhaseUseCase(projectRepo, phaseRepo, ai, { messageRepo }).execute({
-      projectId: project.id, phaseId: phase.id, userPrompt: 'go',
+      projectId: project.id,
+      phaseId: phase.id,
+      userPrompt: 'go',
     });
 
     expect(saveMany).toHaveBeenCalledTimes(1);

@@ -7,7 +7,8 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@anthropic-ai/sdk', () => ({
   default: class MockAnthropicSdk {
     messages = {
-      stream: () => makeFakeAnthropicStream(['Agent', ' reply'], { input_tokens: 10, output_tokens: 5 }),
+      stream: () =>
+        makeFakeAnthropicStream(['Agent', ' reply'], { input_tokens: 10, output_tokens: 5 }),
     };
   },
 }));
@@ -47,7 +48,10 @@ describe('ClaudeAgentProvider', () => {
     const provider = new ClaudeAgentProvider('key');
     const chunks = await collect(provider.query(opts('claude-3-5-sonnet-20241022')));
 
-    const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
+    const text = chunks
+      .filter((c) => c.delta !== '')
+      .map((c) => c.delta)
+      .join('');
     expect(text).toBe('Agent reply');
     const last = chunks.at(-1);
     expect(last?.done).toBe(true);
@@ -56,7 +60,9 @@ describe('ClaudeAgentProvider', () => {
   });
 
   it('complete returns accumulated content', async () => {
-    const result = await new ClaudeAgentProvider('key').complete(opts('claude-3-5-sonnet-20241022'));
+    const result = await new ClaudeAgentProvider('key').complete(
+      opts('claude-3-5-sonnet-20241022')
+    );
     expect(result.content).toBe('Agent reply');
   });
 
@@ -73,7 +79,10 @@ describe('ClaudeCompatProvider', () => {
     const provider = new ClaudeCompatProvider('key', 'zai');
     const chunks = await collect(provider.query(opts('claude-3-5-sonnet-20241022')));
 
-    const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
+    const text = chunks
+      .filter((c) => c.delta !== '')
+      .map((c) => c.delta)
+      .join('');
     expect(text).toBe('Agent reply');
     const done = chunks.find((c) => c.done);
     expect(done?.done).toBe(true);
@@ -82,7 +91,9 @@ describe('ClaudeCompatProvider', () => {
   });
 
   it('complete accumulates content', async () => {
-    const result = await new ClaudeCompatProvider('key', 'minimax').complete(opts('claude-3-5-sonnet-20241022'));
+    const result = await new ClaudeCompatProvider('key', 'minimax').complete(
+      opts('claude-3-5-sonnet-20241022')
+    );
     expect(result.content).toBe('Agent reply');
   });
 });
@@ -92,7 +103,10 @@ describe('CodexProvider', () => {
     const provider = new CodexProvider('key');
     const chunks = await collect(provider.query(opts('gpt-4o')));
 
-    const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
+    const text = chunks
+      .filter((c) => c.delta !== '')
+      .map((c) => c.delta)
+      .join('');
     expect(text).toBe('Codex reply');
   });
 
@@ -116,21 +130,30 @@ describe('LionProvider', () => {
   it('routes claude-* to AnthropicProvider', async () => {
     const lion = new LionProvider({ anthropicApiKey: 'key' });
     const chunks = await collect(lion.query(opts('claude-3-5-sonnet-20241022')));
-    const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
+    const text = chunks
+      .filter((c) => c.delta !== '')
+      .map((c) => c.delta)
+      .join('');
     expect(text).toBe('Agent reply');
   });
 
   it('routes gpt-* to CodexProvider', async () => {
     const lion = new LionProvider({ openaiApiKey: 'key' });
     const chunks = await collect(lion.query(opts('gpt-4o')));
-    const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
+    const text = chunks
+      .filter((c) => c.delta !== '')
+      .map((c) => c.delta)
+      .join('');
     expect(text).toBe('Codex reply');
   });
 
   it('routes llama-* to Ollama (CodexProvider with local URL)', async () => {
     const lion = new LionProvider({ ollamaBaseUrl: 'http://localhost:11434/v1' });
     const chunks = await collect(lion.query(opts('llama-3.2')));
-    const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
+    const text = chunks
+      .filter((c) => c.delta !== '')
+      .map((c) => c.delta)
+      .join('');
     expect(text).toBe('Codex reply');
   });
 
@@ -196,7 +219,10 @@ describe('ProviderAIProviderFactory — A.2 providers', () => {
   });
 });
 
-function makeFakeAnthropicStream(parts: string[], usage: { input_tokens: number; output_tokens: number }) {
+function makeFakeAnthropicStream(
+  parts: string[],
+  usage: { input_tokens: number; output_tokens: number }
+) {
   const events = parts.map((text) => ({
     type: 'content_block_delta' as const,
     delta: { type: 'text_delta' as const, text },
@@ -211,7 +237,11 @@ function makeFakeAnthropicStream(parts: string[], usage: { input_tokens: number;
   };
 }
 
-async function* makeFakeOpenAIStream(parts: string[], promptTokens: number, completionTokens: number) {
+async function* makeFakeOpenAIStream(
+  parts: string[],
+  promptTokens: number,
+  completionTokens: number
+) {
   for (const content of parts) {
     yield { choices: [{ delta: { content }, finish_reason: null }], usage: null };
   }

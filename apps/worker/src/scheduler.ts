@@ -18,7 +18,12 @@ export interface Task {
 }
 
 export interface TaskExecutor {
-  execute(task: { id: string; name: string; prompt: string; agentId: string | undefined }): Promise<{
+  execute(task: {
+    id: string;
+    name: string;
+    prompt: string;
+    agentId: string | undefined;
+  }): Promise<{
     status: 'awaiting_review' | 'validated' | 'rejected';
     output?: Record<string, unknown>;
     error?: string;
@@ -135,7 +140,10 @@ export class Scheduler {
   }
 
   private getNextRunAt(cronExpression: string, startDate: Date): Date {
-    const interval = cronParser.parseExpression(cronExpression, { utc: true, currentDate: startDate });
+    const interval = cronParser.parseExpression(cronExpression, {
+      utc: true,
+      currentDate: startDate,
+    });
     return interval.next().toDate();
   }
 }

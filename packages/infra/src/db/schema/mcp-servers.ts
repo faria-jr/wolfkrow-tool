@@ -30,7 +30,7 @@ export const mcpServers = sqliteTable(
   (t) => ({
     isActiveIdx: index('mcp_servers_is_active_idx').on(t.isActive),
     visibilityIdx: index('mcp_servers_visibility_idx').on(t.visibility),
-  }),
+  })
 );
 
 export const mcpToolRegistry = sqliteTable(
@@ -47,5 +47,5 @@ export const mcpToolRegistry = sqliteTable(
   },
   (t) => ({
     mcpServerIdIdx: index('mcp_tool_registry_server_id_idx').on(t.mcpServerId),
-  }),
+  })
 );

@@ -41,15 +41,15 @@ async function makeEngine(): Promise<MgraphEngine> {
   return engine;
 }
 
-async function createHandler(
-  request: FastifyRequest,
-  reply: FastifyReply,
-) {
+async function createHandler(request: FastifyRequest, reply: FastifyReply) {
   const body = validate(createNoteBody, request.body);
   const engine = await makeEngine();
   try {
     const note = await engine.createNote({
-      path: body.path, kind: body.kind, title: body.title, body: body.body,
+      path: body.path,
+      kind: body.kind,
+      title: body.title,
+      body: body.body,
       ...(body.tags !== undefined ? { tags: body.tags } : {}),
       ...(body.source !== undefined ? { source: body.source } : {}),
     });
@@ -59,20 +59,14 @@ async function createHandler(
   }
 }
 
-async function readHandler(
-  request: FastifyRequest,
-  reply: FastifyReply,
-) {
+async function readHandler(request: FastifyRequest, reply: FastifyReply) {
   const engine = await makeEngine();
   const note = await engine.readNote(decodeURIComponent((request.params as { path: string }).path));
   if (!note) return reply.status(404).send({ error: 'Note not found' });
   return reply.send(note.toJSON());
 }
 
-async function updateHandler(
-  request: FastifyRequest,
-  reply: FastifyReply,
-) {
+async function updateHandler(request: FastifyRequest, reply: FastifyReply) {
   const body = validate(updateNoteBody, request.body);
   const engine = await makeEngine();
   try {
@@ -80,7 +74,7 @@ async function updateHandler(
       decodeURIComponent((request.params as { path: string }).path),
       body.body,
       body.title,
-      body.tags,
+      body.tags
     );
     return reply.send(note.toJSON());
   } catch (err) {
@@ -88,10 +82,7 @@ async function updateHandler(
   }
 }
 
-async function deleteHandler(
-  request: FastifyRequest,
-  reply: FastifyReply,
-) {
+async function deleteHandler(request: FastifyRequest, reply: FastifyReply) {
   const engine = await makeEngine();
   await engine.deleteNote(decodeURIComponent((request.params as { path: string }).path));
   return reply.send({ ok: true });
@@ -103,15 +94,16 @@ async function graphHandler(_request: FastifyRequest, reply: FastifyReply) {
   return reply.send(data);
 }
 
-async function searchHandler(
-  request: FastifyRequest,
-  reply: FastifyReply,
-) {
+async function searchHandler(request: FastifyRequest, reply: FastifyReply) {
   const q = validate(searchQuery, request.query);
   const limit = q.limit ? parseInt(q.limit, 10) : 20;
   const kind = q.kind as VaultKind | undefined;
   const engine = await makeEngine();
-  const results = await engine.searchVault({ query: q.q ?? '', limit, ...(kind !== undefined ? { kind } : {}) });
+  const results = await engine.searchVault({
+    query: q.q ?? '',
+    limit,
+    ...(kind !== undefined ? { kind } : {}),
+  });
   return reply.send(results);
 }
 

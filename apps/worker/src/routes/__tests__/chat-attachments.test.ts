@@ -50,7 +50,7 @@ describe('processAttachments', () => {
     expect(mockParse).toHaveBeenCalledWith(
       Buffer.from('cGRmZGF0YQ==', 'base64'),
       'application/pdf',
-      'report.pdf',
+      'report.pdf'
     );
     expect(result.imageParts).toEqual([]);
     expect(result.content).toContain('summarize this');

@@ -5,25 +5,25 @@ import { useEffect, useState } from 'react';
 import { DiffViewer } from './diff-viewer';
 
 interface RoundData {
- id: string;
- sprintId: string;
- featureIndex: number;
- roundNumber: number;
- coderOutput: string | null;
- evaluatorFeedback: string | null;
- passed: boolean;
- tokens: number;
- startedAt: string | null;
- completedAt: string | null;
+  id: string;
+  sprintId: string;
+  featureIndex: number;
+  roundNumber: number;
+  coderOutput: string | null;
+  evaluatorFeedback: string | null;
+  passed: boolean;
+  tokens: number;
+  startedAt: string | null;
+  completedAt: string | null;
 }
 
 interface RoundsListProps {
- sprintId: string;
+  sprintId: string;
 }
 
 type FetchState = {
- rounds: RoundData[] | null;
- error: string | null;
+  rounds: RoundData[] | null;
+  error: string | null;
 };
 
 const INITIAL: FetchState = { rounds: null, error: null };
@@ -35,125 +35,122 @@ const INITIAL: FetchState = { rounds: null, error: null };
  * per round, and a `<DiffViewer>` comparing each round to the previous.
  */
 export function RoundsList({ sprintId }: RoundsListProps) {
- const [state, setState] = useState<FetchState>(INITIAL);
+  const [state, setState] = useState<FetchState>(INITIAL);
 
- useEffect(() => {
- let cancelled = false;
- void loadRounds(sprintId).then((next) => {
- if (!cancelled) setState(next);
- });
- return () => {
- cancelled = true;
- };
- }, [sprintId]);
+  useEffect(() => {
+    let cancelled = false;
+    void loadRounds(sprintId).then((next) => {
+      if (!cancelled) setState(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sprintId]);
 
- if (state.rounds === null) {
- return <p className="text-xs text-muted-foreground">Loading rounds...</p>;
- }
- if (state.error) {
- return <p className="text-xs text-destructive">{state.error}</p>;
- }
- if (state.rounds.length === 0) {
- return <p className="text-xs text-muted-foreground">No rounds yet. Run the harness to start the Coder-&gt;Evaluator loop.</p>;
- }
- return <RoundsBody rounds={state.rounds} />;
+  if (state.rounds === null) {
+    return <p className="text-muted-foreground text-xs">Loading rounds...</p>;
+  }
+  if (state.error) {
+    return <p className="text-destructive text-xs">{state.error}</p>;
+  }
+  if (state.rounds.length === 0) {
+    return (
+      <p className="text-muted-foreground text-xs">
+        No rounds yet. Run the harness to start the Coder-&gt;Evaluator loop.
+      </p>
+    );
+  }
+  return <RoundsBody rounds={state.rounds} />;
 }
 
 async function loadRounds(sprintId: string): Promise<FetchState> {
- try {
- const res = await fetch(
- `/api/harness/sprints/${encodeURIComponent(sprintId)}/rounds`,
- { credentials: 'include' },
- );
- if (!res.ok) {
- return { rounds: [], error: `Failed to load rounds: ${res.status}` };
- }
- return { rounds: (await res.json()) as RoundData[], error: null };
- } catch (err) {
- return { rounds: [], error: err instanceof Error ? err.message : 'Error' };
- }
+  try {
+    const res = await fetch(`/api/harness/sprints/${encodeURIComponent(sprintId)}/rounds`, {
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      return { rounds: [], error: `Failed to load rounds: ${res.status}` };
+    }
+    return { rounds: (await res.json()) as RoundData[], error: null };
+  } catch (err) {
+    return { rounds: [], error: err instanceof Error ? err.message : 'Error' };
+  }
 }
 
 function RoundsBody({ rounds }: { rounds: RoundData[] }) {
- return (
- <div className="mt-4 space-y-3 border-t pt-3">
- <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rounds</h4>
- {rounds.map((round, idx) => (
- <RoundCard
- key={round.id}
- round={round}
- prev={idx > 0 ? rounds[idx - 1] : undefined}
- />
- ))}
- </div>
- );
+  return (
+    <div className="mt-4 space-y-3 border-t pt-3">
+      <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wide">
+        Rounds
+      </h4>
+      {rounds.map((round, idx) => (
+        <RoundCard key={round.id} round={round} prev={idx > 0 ? rounds[idx - 1] : undefined} />
+      ))}
+    </div>
+  );
 }
 
 function RoundCard({ round, prev }: { round: RoundData; prev: RoundData | undefined }) {
- const showDiff = canShowDiff(prev, round);
- return (
- <div className="rounded border bg-card p-3">
- <div className="flex items-center justify-between text-xs">
- <RoundHeader round={round} />
- {round.completedAt && (
- <span className="text-muted-foreground">
- {new Date(round.completedAt).toLocaleString()}
- </span>
- )}
- </div>
- {round.evaluatorFeedback && (
- <p className="mt-2 rounded bg-muted px-2 py-1 text-xs text-muted-foreground">
- <strong>Evaluator:</strong> {round.evaluatorFeedback}
- </p>
- )}
- {round.coderOutput && <CoderOutputBlock output={round.coderOutput} />}
- {showDiff && prev && (
- <details className="mt-2" data-testid="round-diff">
- <summary className="cursor-pointer text-xs text-info hover:underline">
- Show diff vs round {prev.roundNumber}
- </summary>
- <div className="mt-2">
- <DiffViewer
- before={prev.coderOutput ?? ''}
- after={round.coderOutput ?? ''}
- title={`Round ${prev.roundNumber} -> ${round.roundNumber}`}
- maxLines={200}
- />
- </div>
- </details>
- )}
- </div>
- );
+  const showDiff = canShowDiff(prev, round);
+  return (
+    <div className="bg-card rounded border p-3">
+      <div className="flex items-center justify-between text-xs">
+        <RoundHeader round={round} />
+        {round.completedAt && (
+          <span className="text-muted-foreground">
+            {new Date(round.completedAt).toLocaleString()}
+          </span>
+        )}
+      </div>
+      {round.evaluatorFeedback && (
+        <p className="bg-muted text-muted-foreground mt-2 rounded px-2 py-1 text-xs">
+          <strong>Evaluator:</strong> {round.evaluatorFeedback}
+        </p>
+      )}
+      {round.coderOutput && <CoderOutputBlock output={round.coderOutput} />}
+      {showDiff && prev && (
+        <details className="mt-2" data-testid="round-diff">
+          <summary className="text-info cursor-pointer text-xs hover:underline">
+            Show diff vs round {prev.roundNumber}
+          </summary>
+          <div className="mt-2">
+            <DiffViewer
+              before={prev.coderOutput ?? ''}
+              after={round.coderOutput ?? ''}
+              title={`Round ${prev.roundNumber} -> ${round.roundNumber}`}
+              maxLines={200}
+            />
+          </div>
+        </details>
+      )}
+    </div>
+  );
 }
 
 function canShowDiff(prev: RoundData | undefined, round: RoundData): boolean {
- return prev !== undefined
- && prev.coderOutput !== null
- && round.coderOutput !== null;
+  return prev !== undefined && prev.coderOutput !== null && round.coderOutput !== null;
 }
 
 function RoundHeader({ round }: { round: RoundData }) {
- return (
- <div className="flex items-center gap-2">
- <span className="font-mono">Round {round.roundNumber}</span>
- <span
- className={`rounded px-1.5 py-0.5 ${
- round.passed
- ? 'bg-success/15 text-success'
- : 'bg-warning/15 text-warning'
- }`}
- >
- {round.passed ? 'passed' : 'failed'}
- </span>
- <span className="text-muted-foreground">{round.tokens} tokens</span>
- </div>
- );
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-mono">Round {round.roundNumber}</span>
+      <span
+        className={`rounded px-1.5 py-0.5 ${
+          round.passed ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'
+        }`}
+      >
+        {round.passed ? 'passed' : 'failed'}
+      </span>
+      <span className="text-muted-foreground">{round.tokens} tokens</span>
+    </div>
+  );
 }
 
 function CoderOutputBlock({ output }: { output: string }) {
- return (
- <pre className="mt-2 max-h-48 overflow-auto rounded bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
- {output}
- </pre>
- );
+  return (
+    <pre className="bg-muted text-muted-foreground mt-2 max-h-48 overflow-auto rounded px-2 py-1 font-mono text-xs">
+      {output}
+    </pre>
+  );
 }

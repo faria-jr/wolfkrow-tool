@@ -23,7 +23,7 @@ import type { AuthFastifyInstance } from '../../../types/fastify';
  */
 export const realAuthenticate = async (
   request: FastifyRequest,
-  reply: FastifyReply,
+  reply: FastifyReply
 ): Promise<void> => {
   const auth = request.headers.authorization;
   if (!auth?.startsWith('Bearer ')) {
@@ -40,13 +40,17 @@ export const authedDecorator = async (request: { user?: { userId?: string } }): 
 /** Production-aligned error handler mapping error.statusCode → HTTP status. */
 export function setErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler(
-    (error: Error, _request: unknown, reply: { status: (c: number) => { send: (b: unknown) => void } }) => {
+    (
+      error: Error,
+      _request: unknown,
+      reply: { status: (c: number) => { send: (b: unknown) => void } }
+    ) => {
       const err = error as Error & { statusCode?: number; code?: string };
       reply.status(err.statusCode ?? 500).send({
         error: err.message,
         code: err.code ?? 'INTERNAL_ERROR',
       });
-    },
+    }
   );
 }
 
@@ -57,7 +61,7 @@ const BEARER = { authorization: 'Bearer test-token' };
  * authenticate decorator. Used for routes guarded by preHandler/onRequest auth.
  */
 export async function buildAppWithRealAuth(
-  register: (server: AuthFastifyInstance) => Promise<void>,
+  register: (server: AuthFastifyInstance) => Promise<void>
 ): Promise<FastifyInstance> {
   const app = Fastify();
   await app.register(async (instance) => {
@@ -74,7 +78,7 @@ export async function buildAppWithRealAuth(
  * happy/error-path tests where the 401 case is covered separately.
  */
 export async function buildAuthedApp(
-  register: (server: AuthFastifyInstance) => Promise<void>,
+  register: (server: AuthFastifyInstance) => Promise<void>
 ): Promise<FastifyInstance> {
   const app = Fastify();
   await app.register(async (instance) => {
@@ -87,8 +91,6 @@ export async function buildAuthedApp(
 }
 
 /** Inject a request with the Bearer header present (for real-auth apps). */
-export function authed(
-  injectOpts: Record<string, unknown>,
-): Record<string, unknown> {
+export function authed(injectOpts: Record<string, unknown>): Record<string, unknown> {
   return { ...injectOpts, headers: { ...(injectOpts.headers as object | undefined), ...BEARER } };
 }

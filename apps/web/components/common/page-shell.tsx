@@ -54,5 +54,5 @@ export interface PageContentProps {
 
 export function PageContent({ className, as, children }: PageContentProps) {
   const Tag = (as ?? 'div') as ElementType;
-  return <Tag className={cn('flex-1 min-h-0 overflow-auto', className)}>{children}</Tag>;
+  return <Tag className={cn('min-h-0 flex-1 overflow-auto', className)}>{children}</Tag>;
 }

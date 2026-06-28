@@ -28,35 +28,38 @@ export function useTts(options: UseTtsOptions = {}): UseTtsReturn {
     setIsSpeaking(false);
   }, []);
 
-  const speak = useCallback(async (text: string) => {
-    stop();
-    setError(null);
-    setIsSpeaking(true);
-    try {
-      const res = await fetch('/api/voice/synthesize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: options.voice, provider: options.provider }),
-      });
-      if (!res.ok) throw new Error('TTS failed');
+  const speak = useCallback(
+    async (text: string) => {
+      stop();
+      setError(null);
+      setIsSpeaking(true);
+      try {
+        const res = await fetch('/api/voice/synthesize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, voice: options.voice, provider: options.provider }),
+        });
+        if (!res.ok) throw new Error('TTS failed');
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      urlRef.current = url;
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        urlRef.current = url;
 
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-        urlRef.current = null;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          urlRef.current = null;
+          setIsSpeaking(false);
+        };
+        await audio.play();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'TTS error');
         setIsSpeaking(false);
-      };
-      await audio.play();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'TTS error');
-      setIsSpeaking(false);
-    }
-  }, [options.voice, options.provider, stop]);
+      }
+    },
+    [options.voice, options.provider, stop]
+  );
 
   return { isSpeaking, speak, stop, error };
 }

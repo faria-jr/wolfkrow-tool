@@ -41,9 +41,7 @@ export const Default: Story = {
         </DropdownMenuItem>
         <DropdownMenuItem>Settings</DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem checked>
-          Show status bar
-        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem checked>Show status bar</DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>
   ),

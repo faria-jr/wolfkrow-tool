@@ -8,7 +8,14 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { ApiClientError, login } from '@/lib/api-client';
 
@@ -53,7 +60,11 @@ export function LoginForm() {
         setLockedUntil(data.lockedUntil.toISOString());
         return;
       }
-      if (data.status === 'requires_totp') { setPendingUserId(data.userId); setStep('totp'); return; }
+      if (data.status === 'requires_totp') {
+        setPendingUserId(data.userId);
+        setStep('totp');
+        return;
+      }
       router.push(redirectTo);
       router.refresh();
     } catch (err) {
@@ -75,7 +86,10 @@ export function LoginForm() {
       body: JSON.stringify({ userId: pendingUserId, code }),
     });
     const data = (await res.json()) as Record<string, string>;
-    if (!res.ok) { setSubmitError(data.error ?? 'Invalid code'); return; }
+    if (!res.ok) {
+      setSubmitError(data.error ?? 'Invalid code');
+      return;
+    }
     router.push(redirectTo);
     router.refresh();
   }
@@ -85,7 +99,12 @@ export function LoginForm() {
   }
   if (step === 'totp') {
     return (
-      <TotpStep form={totpForm} error={submitError} onSubmit={onTotpSubmit} onBack={() => setStep('password')} />
+      <TotpStep
+        form={totpForm}
+        error={submitError}
+        onSubmit={onTotpSubmit}
+        onBack={() => setStep('password')}
+      />
     );
   }
   return <PasswordStep form={passwordForm} error={submitError} onSubmit={onPasswordSubmit} />;
@@ -108,17 +127,33 @@ function PasswordStep({ form, error, onSubmit }: PasswordStepProps) {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input {...field} type="password" placeholder="Enter your password" autoComplete="current-password" autoFocus />
+                <Input
+                  {...field}
+                  type="password"
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  autoFocus
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-        <SubmitButton isLoading={form.formState.isSubmitting} label="Sign in" loadingLabel="Signing in…" />
-        <p className="text-center text-sm text-muted-foreground">
+        {error && (
+          <p className="text-destructive text-sm" role="alert">
+            {error}
+          </p>
+        )}
+        <SubmitButton
+          isLoading={form.formState.isSubmitting}
+          label="Sign in"
+          loadingLabel="Signing in…"
+        />
+        <p className="text-muted-foreground text-center text-sm">
           First time?{' '}
-          <a href="/onboarding" className="underline hover:text-foreground">Set up your account</a>
+          <a href="/onboarding" className="hover:text-foreground underline">
+            Set up your account
+          </a>
         </p>
       </form>
     </Form>
@@ -143,15 +178,32 @@ function TotpStep({ form, error, onSubmit, onBack }: TotpStepProps) {
             <FormItem>
               <FormLabel>Authenticator Code</FormLabel>
               <FormControl>
-                <Input {...field} type="text" inputMode="numeric" placeholder="000000" autoFocus maxLength={6} />
+                <Input
+                  {...field}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="000000"
+                  autoFocus
+                  maxLength={6}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
-        <SubmitButton isLoading={form.formState.isSubmitting} label="Verify" loadingLabel="Verifying…" />
-        <Button type="button" variant="ghost" className="w-full" onClick={onBack}>Back</Button>
+        {error && (
+          <p className="text-destructive text-sm" role="alert">
+            {error}
+          </p>
+        )}
+        <SubmitButton
+          isLoading={form.formState.isSubmitting}
+          label="Verify"
+          loadingLabel="Verifying…"
+        />
+        <Button type="button" variant="ghost" className="w-full" onClick={onBack}>
+          Back
+        </Button>
       </form>
     </Form>
   );
@@ -163,10 +215,12 @@ function LockedMessage({ lockedUntil, onRetry }: LockedMessageProps) {
   const until = new Date(lockedUntil).toLocaleTimeString();
   return (
     <div className="space-y-4 text-center">
-      <p className="text-sm text-destructive" role="alert">
+      <p className="text-destructive text-sm" role="alert">
         Too many failed attempts. Try again after {until}.
       </p>
-      <Button variant="outline" onClick={onRetry} className="w-full">Try again</Button>
+      <Button variant="outline" onClick={onRetry} className="w-full">
+        Try again
+      </Button>
     </div>
   );
 }
@@ -176,7 +230,14 @@ type SubmitButtonProps = { isLoading: boolean; label: string; loadingLabel: stri
 function SubmitButton({ isLoading, label, loadingLabel }: SubmitButtonProps) {
   return (
     <Button type="submit" className="w-full" disabled={isLoading}>
-      {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{loadingLabel}</> : label}
+      {isLoading ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          {loadingLabel}
+        </>
+      ) : (
+        label
+      )}
     </Button>
   );
 }

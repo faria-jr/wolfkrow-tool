@@ -7,7 +7,9 @@ import { VoiceOrb } from '../voice-orb';
 describe('VoiceOrb', () => {
   it('renders idle state with aria label', () => {
     render(<VoiceOrb state="idle" />);
-    expect(screen.getByRole('button', { name: /click to start voice conversation/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /click to start voice conversation/i })
+    ).toBeInTheDocument();
   });
 
   it('renders listening aria label', () => {

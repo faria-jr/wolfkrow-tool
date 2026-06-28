@@ -27,7 +27,7 @@ import { container } from '@wolfkrow/infra/di/container';
 export default async function AgentsPage() {
   const session = await requireSession();
   const agents = await container.get(ListAgents).execute({ userId: session.userId });
-  
+
   return (
     <div>
       <h1>Agents</h1>
@@ -44,7 +44,7 @@ import { useState } from 'react';
 export function AgentList({ agents: initialAgents }: { agents: Agent[] }) {
   const [filter, setFilter] = useState('');
   const agents = initialAgents.filter(/* ... */);
-  
+
   return <DataTable data={agents} />;
 }
 ```
@@ -74,6 +74,7 @@ export function AgentList({ agents: initialAgents }: { agents: Agent[] }) {
 ## Quando Usar Server Components
 
 ### ✅ Server Component
+
 - Read-only data display
 - Database queries diretas
 - Heavy computation
@@ -81,6 +82,7 @@ export function AgentList({ agents: initialAgents }: { agents: Agent[] }) {
 - Pages com pouco ou zero interactivity
 
 **Exemplos no Wolfkrow**:
+
 - `/knowledge` — lista de documents
 - `/usage` — analytics com charts
 - `/vault` — lista de secrets
@@ -89,6 +91,7 @@ export function AgentList({ agents: initialAgents }: { agents: Agent[] }) {
 - `/scheduler` — calendar view
 
 ### ✅ Client Component
+
 - Interatividade (forms, modals, drag-drop)
 - State local (useState, useReducer)
 - Effects (useEffect, event listeners)
@@ -96,6 +99,7 @@ export function AgentList({ agents: initialAgents }: { agents: Agent[] }) {
 - SSE streaming (EventSource)
 
 **Exemplos**:
+
 - `/chat` — streaming SSE + input
 - `AgentFormModal` — form interativo
 - `VoiceOrb` — Web Audio API
@@ -167,7 +171,9 @@ export function AgentList() {
 export function ChatView() {
   useEffect(() => {
     const es = new EventSource('/api/chat/stream');
-    es.onmessage = (e) => { /* ... */ };
+    es.onmessage = (e) => {
+      /* ... */
+    };
     return () => es.close();
   }, []);
 }

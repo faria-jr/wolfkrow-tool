@@ -17,22 +17,16 @@ const ts = '2024-01-01T00:00:00Z';
 
 describe('settings schemas', () => {
   describe('enums', () => {
-    it.each(['elevenlabs', 'cartesia'] as const)(
-      'VoiceProviderSchema accepts %s',
-      (v) => {
-        expect(VoiceProviderSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each(['elevenlabs', 'cartesia'] as const)('VoiceProviderSchema accepts %s', (v) => {
+      expect(VoiceProviderSchema.parse(v)).toBe(v);
+    });
     it('VoiceProviderSchema rejects invalid', () => {
       expect(() => VoiceProviderSchema.parse('nope')).toThrow();
     });
 
-    it.each(['whisper-local', 'openai-whisper'] as const)(
-      'STTProviderSchema accepts %s',
-      (v) => {
-        expect(STTProviderSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each(['whisper-local', 'openai-whisper'] as const)('STTProviderSchema accepts %s', (v) => {
+      expect(STTProviderSchema.parse(v)).toBe(v);
+    });
     it('STTProviderSchema rejects invalid', () => {
       expect(() => STTProviderSchema.parse('nope')).toThrow();
     });
@@ -41,7 +35,7 @@ describe('settings schemas', () => {
       'CompactionModelSchema accepts %s',
       (v) => {
         expect(CompactionModelSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('CompactionModelSchema rejects invalid', () => {
       expect(() => CompactionModelSchema.parse('nope')).toThrow();
@@ -60,13 +54,11 @@ describe('settings schemas', () => {
     });
     it('rejects speed out of [0.5, 2]', () => {
       expect(() =>
-        VoiceSettingsSchema.parse({ provider: 'elevenlabs', voiceId: 'v1', speed: 3 }),
+        VoiceSettingsSchema.parse({ provider: 'elevenlabs', voiceId: 'v1', speed: 3 })
       ).toThrow();
     });
     it('rejects invalid provider', () => {
-      expect(() =>
-        VoiceSettingsSchema.parse({ provider: 'nope', voiceId: 'v1' }),
-      ).toThrow();
+      expect(() => VoiceSettingsSchema.parse({ provider: 'nope', voiceId: 'v1' })).toThrow();
     });
   });
 
@@ -93,20 +85,14 @@ describe('settings schemas', () => {
     it.each(['claude-agent', 'claude-compat', 'codex', 'lion'] as const)(
       'accepts sdk %s',
       (sdk) => {
-        expect(() =>
-          OrchestratorConfigSchema.parse({ sdk, model: 'm' }),
-        ).not.toThrow();
-      },
+        expect(() => OrchestratorConfigSchema.parse({ sdk, model: 'm' })).not.toThrow();
+      }
     );
     it('rejects invalid sdk', () => {
-      expect(() =>
-        OrchestratorConfigSchema.parse({ sdk: 'nope', model: 'm' }),
-      ).toThrow();
+      expect(() => OrchestratorConfigSchema.parse({ sdk: 'nope', model: 'm' })).toThrow();
     });
     it('rejects empty model', () => {
-      expect(() =>
-        OrchestratorConfigSchema.parse({ sdk: 'codex', model: '' }),
-      ).toThrow();
+      expect(() => OrchestratorConfigSchema.parse({ sdk: 'codex', model: '' })).toThrow();
     });
   });
 
@@ -120,9 +106,7 @@ describe('settings schemas', () => {
       expect(parsed.preserveLastMessages).toBe(10);
     });
     it('rejects non-positive tokenThreshold', () => {
-      expect(() =>
-        CompactionSettingsSchema.parse({ tokenThreshold: 0 }),
-      ).toThrow();
+      expect(() => CompactionSettingsSchema.parse({ tokenThreshold: 0 })).toThrow();
     });
   });
 
@@ -148,7 +132,7 @@ describe('settings schemas', () => {
           ...valid,
           voice: { provider: 'elevenlabs', voiceId: 'v1' },
           stt: { provider: 'whisper-local' },
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects missing compaction (required)', () => {

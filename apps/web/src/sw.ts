@@ -8,13 +8,7 @@
  */
 
 import { defaultCache } from '@serwist/next/worker';
-import {
-  CacheFirst,
-  ExpirationPlugin,
-  NetworkFirst,
-  Serwist,
-  StaleWhileRevalidate,
-} from 'serwist';
+import { CacheFirst, ExpirationPlugin, NetworkFirst, Serwist, StaleWhileRevalidate } from 'serwist';
 
 interface SerwistSelf {
   __SW_MANIFEST: Array<{ url: string; revision: string | null }>;
@@ -32,27 +26,21 @@ const serwist = new Serwist({
       handler: new NetworkFirst({
         cacheName: 'wolfkrow-api',
         networkTimeoutSeconds: 10,
-        plugins: [
-          new ExpirationPlugin({ maxEntries: 256, maxAgeSeconds: 60 * 60 }),
-        ],
+        plugins: [new ExpirationPlugin({ maxEntries: 256, maxAgeSeconds: 60 * 60 })],
       }),
     },
     {
       matcher: ({ url }: { url: URL }) => url.pathname.startsWith('/_next/static/'),
       handler: new CacheFirst({
         cacheName: 'wolfkrow-static',
-        plugins: [
-          new ExpirationPlugin({ maxEntries: 512, maxAgeSeconds: 60 * 60 * 24 * 365 }),
-        ],
+        plugins: [new ExpirationPlugin({ maxEntries: 512, maxAgeSeconds: 60 * 60 * 24 * 365 })],
       }),
     },
     {
       matcher: ({ url }: { url: URL }) => url.pathname.startsWith('/_next/image'),
       handler: new StaleWhileRevalidate({
         cacheName: 'wolfkrow-images',
-        plugins: [
-          new ExpirationPlugin({ maxEntries: 128, maxAgeSeconds: 60 * 60 * 24 * 7 }),
-        ],
+        plugins: [new ExpirationPlugin({ maxEntries: 128, maxAgeSeconds: 60 * 60 * 24 * 7 })],
       }),
     },
     ...defaultCache,

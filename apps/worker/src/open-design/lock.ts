@@ -49,7 +49,10 @@ function rejected(reason: string, problems: LockProblem[] = []): LockResult {
   return { locked: false, reason, contract: null, problems, artifacts: null };
 }
 
-async function writeArtifacts(outputDir: string, files: { html: string; contractJson: string; brief: string; manifestJson: string }): Promise<LockArtifacts> {
+async function writeArtifacts(
+  outputDir: string,
+  files: { html: string; contractJson: string; brief: string; manifestJson: string }
+): Promise<LockArtifacts> {
   const artifactDir = join(outputDir, 'artifact');
   await mkdir(artifactDir, { recursive: true });
   const html = join(artifactDir, 'index.html');
@@ -67,7 +70,8 @@ async function writeArtifacts(outputDir: string, files: { html: string; contract
 
 export async function lockDesign(input: LockInput): Promise<LockResult> {
   const snap = await captureDesignArtifact(input.client, input.odProjectId);
-  if (!snap.html) return rejected('no design artifact found — generate a design in the studio first');
+  if (!snap.html)
+    return rejected('no design artifact found — generate a design in the studio first');
 
   const parsed = parseContractFromHtml(snap.html);
   if (!parsed) return rejected('design contract not embedded in the HTML artifact');
@@ -76,17 +80,21 @@ export async function lockDesign(input: LockInput): Promise<LockResult> {
   if (!contract) {
     return rejected(
       'design contract failed schema validation',
-      problems.map((hint) => ({ rule: 'contract-schema', hint })),
+      problems.map((hint) => ({ rule: 'contract-schema', hint }))
     );
   }
 
   const brief = buildBrief(contract);
-  const manifestJson = JSON.stringify({
-    odProjectId: input.odProjectId,
-    artifactPath: snap.artifactPath,
-    version: contract.version,
-    lockedAt: new Date().toISOString(),
-  }, null, 2);
+  const manifestJson = JSON.stringify(
+    {
+      odProjectId: input.odProjectId,
+      artifactPath: snap.artifactPath,
+      version: contract.version,
+      lockedAt: new Date().toISOString(),
+    },
+    null,
+    2
+  );
 
   const artifacts = await writeArtifacts(input.outputDir, {
     html: snap.html,

@@ -1,12 +1,5 @@
-import type {
-  PlainPassword} from '@wolfkrow/domain';
-import {
-  ConflictError,
-  Id,
-  type PasswordHasher,
-  type UserRepo,
-  User,
-} from '@wolfkrow/domain';
+import type { PlainPassword } from '@wolfkrow/domain';
+import { ConflictError, Id, type PasswordHasher, type UserRepo, User } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
@@ -24,7 +17,7 @@ export interface RegisterOutput {
 export class RegisterUseCase implements UseCase<RegisterInput, RegisterOutput> {
   constructor(
     private readonly userRepo: UserRepo,
-    private readonly hasher: PasswordHasher,
+    private readonly hasher: PasswordHasher
   ) {}
 
   async execute(input: RegisterInput): Promise<RegisterOutput> {

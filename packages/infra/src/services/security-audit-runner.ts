@@ -27,7 +27,8 @@ export const SECURITY_AUDIT_AGENTS: readonly SecurityAuditAgentDef[] = [
     name: 'Secrets Scanner',
     dimension: 'secrets',
     tags: ['config', 'migration'],
-    systemPrompt: 'You are a security auditor scanning for hardcoded secrets, API keys, tokens, and credentials. Output one finding per issue using the JSON schema.',
+    systemPrompt:
+      'You are a security auditor scanning for hardcoded secrets, API keys, tokens, and credentials. Output one finding per issue using the JSON schema.',
     promptTemplate: (_files, list) =>
       `Scan the following files for hardcoded secrets, API keys, tokens, and credentials.\n\n${list}\n\nRespond with a JSON array of findings. Each finding: {"severity":"critical|warning|major|info","file":"relative/path","line":42,"message":"...","rule":"hardcoded-secret"}. Empty array if clean.`,
   },
@@ -36,7 +37,8 @@ export const SECURITY_AUDIT_AGENTS: readonly SecurityAuditAgentDef[] = [
     name: 'Auth Auditor',
     dimension: 'auth',
     tags: ['auth', 'route', 'middleware'],
-    systemPrompt: 'You are a security auditor specializing in authentication and authorization. Look for missing auth checks, broken access controls, and IDOR.',
+    systemPrompt:
+      'You are a security auditor specializing in authentication and authorization. Look for missing auth checks, broken access controls, and IDOR.',
     promptTemplate: (_files, list) =>
       `Review these files for authentication and authorization flaws (missing checks, IDOR, broken access control).\n\n${list}\n\nRespond with JSON array: {"severity":"critical|warning|major|info","file":"...","line":N,"message":"...","rule":"auth-bypass"}.`,
   },
@@ -45,7 +47,8 @@ export const SECURITY_AUDIT_AGENTS: readonly SecurityAuditAgentDef[] = [
     name: 'OWASP Scanner',
     dimension: 'owasp',
     tags: ['route', 'query', 'template'],
-    systemPrompt: 'You are a security auditor applying the OWASP Top 10. Look for injection, XSS, SSRF, insecure deserialization.',
+    systemPrompt:
+      'You are a security auditor applying the OWASP Top 10. Look for injection, XSS, SSRF, insecure deserialization.',
     promptTemplate: (_files, list) =>
       `Apply the OWASP Top 10 to these files. Focus on injection, XSS, SSRF, insecure deserialization.\n\n${list}\n\nRespond with JSON array of findings: {"severity":"critical|warning|major|info","file":"...","line":N,"message":"...","rule":"owasp-top10"}.`,
   },
@@ -67,9 +70,8 @@ export interface RunAgentOptions {
 }
 
 export async function runSecurityAgent(opts: RunAgentOptions): Promise<ParsedFinding[]> {
-  const fileList = opts.files.length > 0
-    ? opts.files.map((f) => `- ${f}`).join('\n')
-    : '(no files matched tags)';
+  const fileList =
+    opts.files.length > 0 ? opts.files.map((f) => `- ${f}`).join('\n') : '(no files matched tags)';
   const userPrompt = opts.agent.promptTemplate(opts.files, fileList);
   const result = await opts.provider.complete({
     model: opts.model,
@@ -99,7 +101,7 @@ export interface SecurityAuditResult {
 function toSecurityFinding(
   parsed: ParsedFinding,
   agent: SecurityAuditAgentDef,
-  scanId: string,
+  scanId: string
 ): SecurityFinding {
   return SecurityFinding.create({
     scanId,
@@ -127,7 +129,7 @@ export class SecurityAuditRunner {
     const agentResults = await runInBatches(
       slice,
       (agent) => this.runAgent(agent, opts),
-      this.maxConcurrency,
+      this.maxConcurrency
     );
     const findings = agentResults.flat();
 
@@ -140,11 +142,16 @@ export class SecurityAuditRunner {
 
   private async runAgent(
     agent: SecurityAuditAgentDef,
-    opts: SecurityAuditOptions,
+    opts: SecurityAuditOptions
   ): Promise<SecurityFinding[]> {
     const files = this.resolveFilesForAgent(opts.filesByRole, agent.tags);
     try {
-      const parsed = await runSecurityAgent({ agent, files, model: opts.model, provider: opts.provider });
+      const parsed = await runSecurityAgent({
+        agent,
+        files,
+        model: opts.model,
+        provider: opts.provider,
+      });
       return parsed.map((p) => toSecurityFinding(p, agent, opts.scanId));
     } catch {
       return [];

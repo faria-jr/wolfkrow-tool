@@ -3,8 +3,13 @@ import { NotFoundError } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
-export interface GetAgentInput { id: string; userId: string; }
-export interface GetAgentOutput { agent: Agent; }
+export interface GetAgentInput {
+  id: string;
+  userId: string;
+}
+export interface GetAgentOutput {
+  agent: Agent;
+}
 
 /**
  * EPIC 1.1 — fetch a single agent by id. Throws NotFoundError when missing.

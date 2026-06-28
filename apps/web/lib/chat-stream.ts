@@ -17,7 +17,10 @@ interface ChatSseEvent {
 }
 
 /** Drive an SSE body, invoking `onLine` for each raw line buffered from chunks. */
-async function readSseLines(body: ReadableStream<Uint8Array>, onLine: (line: string) => void): Promise<void> {
+async function readSseLines(
+  body: ReadableStream<Uint8Array>,
+  onLine: (line: string) => void
+): Promise<void> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buf = '';

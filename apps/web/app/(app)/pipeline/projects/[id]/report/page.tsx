@@ -6,7 +6,9 @@ import { PipelineReportView } from '@/components/pipeline/pipeline-report-view';
 
 export const metadata = { title: 'Pipeline Report — Wolfkrow' };
 
-interface PageProps { params: Promise<{ id: string }>; }
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
 export default async function PipelineReportPage({ params }: PageProps) {
   const { id } = await params;

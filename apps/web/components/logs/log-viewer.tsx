@@ -39,13 +39,35 @@ interface LogFiltersProps {
   onTogglePause: () => void;
   onClear: () => void;
 }
-function LogFilters({ levelFilter, moduleFilter, paused, onLevelChange, onModuleChange, onTogglePause, onClear }: LogFiltersProps) {
+function LogFilters({
+  levelFilter,
+  moduleFilter,
+  paused,
+  onLevelChange,
+  onModuleChange,
+  onTogglePause,
+  onClear,
+}: LogFiltersProps) {
   return (
     <div className="flex items-center gap-2">
-      <Input placeholder="level (info/warn/error)" value={levelFilter} onChange={(e) => onLevelChange(e.target.value)} className="w-40" />
-      <Input placeholder="module filter" value={moduleFilter} onChange={(e) => onModuleChange(e.target.value)} className="w-40" />
-      <Button size="sm" variant="outline" onClick={onTogglePause}>{paused ? 'Resume' : 'Pause'}</Button>
-      <Button size="sm" variant="outline" onClick={onClear}>Clear</Button>
+      <Input
+        placeholder="level (info/warn/error)"
+        value={levelFilter}
+        onChange={(e) => onLevelChange(e.target.value)}
+        className="w-40"
+      />
+      <Input
+        placeholder="module filter"
+        value={moduleFilter}
+        onChange={(e) => onModuleChange(e.target.value)}
+        className="w-40"
+      />
+      <Button size="sm" variant="outline" onClick={onTogglePause}>
+        {paused ? 'Resume' : 'Pause'}
+      </Button>
+      <Button size="sm" variant="outline" onClick={onClear}>
+        Clear
+      </Button>
     </div>
   );
 }
@@ -55,7 +77,10 @@ function LogRow({ index, style, data }: ListChildComponentProps<{ entries: LogEn
   const e = data.entries[index];
   if (!e) return null;
   return (
-    <div style={style} className={`whitespace-pre-wrap py-0.5 ${LEVEL_COLORS[e.level] ?? 'text-muted-foreground'}`}>
+    <div
+      style={style}
+      className={`whitespace-pre-wrap py-0.5 ${LEVEL_COLORS[e.level] ?? 'text-muted-foreground'}`}
+    >
       <span className="text-muted-foreground">{fmtTime(e.time)} </span>
       <span className="font-semibold uppercase">[{e.level}] </span>
       {e.module && <span className="text-info">[{e.module}] </span>}
@@ -88,7 +113,7 @@ function useLogStream(
   levelFilter: string,
   moduleFilter: string,
   paused: boolean,
-  onEntry: (entry: LogEntry) => void,
+  onEntry: (entry: LogEntry) => void
 ) {
   const esRef = useRef<EventSource | null>(null);
 
@@ -105,7 +130,9 @@ function useLogStream(
       onEntry(JSON.parse(ev.data as string) as LogEntry);
     };
 
-    return () => { es.close(); };
+    return () => {
+      es.close();
+    };
   }, [levelFilter, moduleFilter, paused, onEntry]);
 }
 
@@ -140,7 +167,10 @@ export function LogViewer() {
         onClear={() => setEntries([])}
       />
 
-      <div ref={containerRef} className="flex-1 min-h-0 overflow-hidden rounded border bg-black p-2 font-mono text-xs">
+      <div
+        ref={containerRef}
+        className="min-h-0 flex-1 overflow-hidden rounded border bg-black p-2 font-mono text-xs"
+      >
         <List
           ref={listRef}
           height={height}

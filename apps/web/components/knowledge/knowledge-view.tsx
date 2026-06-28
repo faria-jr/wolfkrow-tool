@@ -44,15 +44,13 @@ function DocumentsTabBar({ tab, onChange, docCount }: TabBarProps) {
           className={[
             'px-4 py-2 text-sm font-medium capitalize transition-colors',
             tab === t
-              ? 'border-b-2 border-primary text-primary'
+              ? 'border-primary text-primary border-b-2'
               : 'text-muted-foreground hover:text-foreground',
           ].join(' ')}
         >
           {t}
           {t === 'documents' && docCount > 0 && (
-            <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs">
-              {docCount}
-            </span>
+            <span className="bg-muted ml-1.5 rounded-full px-1.5 py-0.5 text-xs">{docCount}</span>
           )}
         </button>
       ))}
@@ -72,20 +70,25 @@ export function KnowledgeView() {
         const data = (await res.json()) as { documents: DocumentData[] };
         setDocuments(data.documents ?? []);
       }
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { void loadDocs(); }, [loadDocs]);
+  useEffect(() => {
+    void loadDocs();
+  }, [loadDocs]);
 
   return (
     <div className="space-y-6">
       <UploadDropZone onUploaded={() => void loadDocs()} />
       <DocumentsTabBar tab={tab} onChange={setTab} docCount={documents.length} />
-      {tab === 'documents' && (
-        loading ? <DocumentsSkeleton /> : (
+      {tab === 'documents' &&
+        (loading ? (
+          <DocumentsSkeleton />
+        ) : (
           <DocumentList documents={documents} onDeleted={() => void loadDocs()} />
-        )
-      )}
+        ))}
       {tab === 'search' && <SearchPanel />}
     </div>
   );

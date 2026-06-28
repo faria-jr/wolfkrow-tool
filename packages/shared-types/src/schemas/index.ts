@@ -7,6 +7,7 @@ export * from './scheduler';
 export * from './knowledge';
 export * from './harness';
 export * from './pipeline';
+export * from './projects';
 export * from './memory';
 export * from './vault';
 export * from './auth';

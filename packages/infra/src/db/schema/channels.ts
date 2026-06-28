@@ -30,7 +30,9 @@ export const channels = sqliteTable('channels', {
 
 export const channelPairings = sqliteTable('channel_pairings', {
   id: id(),
-  channelType: text('channel_type', { enum: ['telegram', 'discord', 'slack', 'whatsapp'] }).notNull(),
+  channelType: text('channel_type', {
+    enum: ['telegram', 'discord', 'slack', 'whatsapp'],
+  }).notNull(),
   code: text('code').notNull(),
   userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
   expiresAt: timestamp('expires_at').notNull(),

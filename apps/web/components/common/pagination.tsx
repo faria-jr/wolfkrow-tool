@@ -1,7 +1,8 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 
 interface PaginationProps {
   currentPage: number;
@@ -13,8 +14,8 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between px-2 py-4 mt-2 shrink-0">
-      <div className="text-xs text-muted-foreground font-mono">
+    <div className="mt-2 flex shrink-0 items-center justify-between px-2 py-4">
+      <div className="text-muted-foreground font-mono text-xs">
         Page {currentPage} of {totalPages}
       </div>
       <div className="flex items-center gap-2">

@@ -14,24 +14,18 @@ const ts = '2024-01-01T00:00:00Z';
 
 describe('channels schemas', () => {
   describe('ChannelTypeSchema', () => {
-    it.each(['telegram', 'discord', 'slack', 'whatsapp'] as const)(
-      'accepts %s',
-      (v) => {
-        expect(ChannelTypeSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each(['telegram', 'discord', 'slack', 'whatsapp'] as const)('accepts %s', (v) => {
+      expect(ChannelTypeSchema.parse(v)).toBe(v);
+    });
     it('rejects invalid', () => {
       expect(() => ChannelTypeSchema.parse('nope')).toThrow();
     });
   });
 
   describe('ChannelStatusSchema', () => {
-    it.each(['connected', 'disconnected', 'error', 'pairing'] as const)(
-      'accepts %s',
-      (v) => {
-        expect(ChannelStatusSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each(['connected', 'disconnected', 'error', 'pairing'] as const)('accepts %s', (v) => {
+      expect(ChannelStatusSchema.parse(v)).toBe(v);
+    });
     it('rejects invalid', () => {
       expect(() => ChannelStatusSchema.parse('nope')).toThrow();
     });
@@ -82,9 +76,7 @@ describe('channels schemas', () => {
       expect(parsed.enabled).toBe(true);
     });
     it('rejects missing name', () => {
-      expect(() =>
-        CreateChannelInputSchema.parse({ type: 'slack' }),
-      ).toThrow();
+      expect(() => CreateChannelInputSchema.parse({ type: 'slack' })).toThrow();
     });
   });
 
@@ -109,9 +101,7 @@ describe('channels schemas', () => {
       expect(() => ChannelPairingSchema.parse(valid)).not.toThrow();
     });
     it('rejects a code with wrong length', () => {
-      expect(() =>
-        ChannelPairingSchema.parse({ ...valid, code: '12345' }),
-      ).toThrow();
+      expect(() => ChannelPairingSchema.parse({ ...valid, code: '12345' })).toThrow();
     });
     it('rejects missing channelType', () => {
       const { channelType: _omit, ...rest } = valid;

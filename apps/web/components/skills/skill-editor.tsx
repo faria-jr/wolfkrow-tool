@@ -8,7 +8,14 @@ import { z } from 'zod';
 import { MarkdownEditor } from '@/components/common/markdown-editor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
@@ -37,32 +44,67 @@ interface TagFieldProps {
 }
 
 function TagField({ tags, onChange, disabled }: TagFieldProps) {
-  const remove = useCallback((tag: string) => onChange(tags.filter((t) => t !== tag)), [tags, onChange]);
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    const input = e.currentTarget;
-    const v = input.value.trim();
-    if (v && !tags.includes(v)) { onChange([...tags, v]); input.value = ''; }
-  }, [tags, onChange]);
+  const remove = useCallback(
+    (tag: string) => onChange(tags.filter((t) => t !== tag)),
+    [tags, onChange]
+  );
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const input = e.currentTarget;
+      const v = input.value.trim();
+      if (v && !tags.includes(v)) {
+        onChange([...tags, v]);
+        input.value = '';
+      }
+    },
+    [tags, onChange]
+  );
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-1">
-        {tags.map((t) => <Badge key={t} variant="secondary" className="cursor-pointer gap-1" onClick={() => remove(t)}>{t} ×</Badge>)}
+        {tags.map((t) => (
+          <Badge
+            key={t}
+            variant="secondary"
+            className="cursor-pointer gap-1"
+            onClick={() => remove(t)}
+          >
+            {t} ×
+          </Badge>
+        ))}
       </div>
       <Input placeholder="Type tag + Enter" onKeyDown={handleKeyDown} disabled={disabled} />
     </div>
   );
 }
 
-interface ActionsProps { onSave: () => void; onCancel: () => void; loading: boolean | undefined; }
-interface ActionsLabels { saveLabel?: string; savingLabel?: string; }
+interface ActionsProps {
+  onSave: () => void;
+  onCancel: () => void;
+  loading: boolean | undefined;
+}
+interface ActionsLabels {
+  saveLabel?: string;
+  savingLabel?: string;
+}
 
-function SkillFormActions({ onSave, onCancel, loading, saveLabel = 'Save skill', savingLabel = 'Saving…' }: ActionsProps & ActionsLabels) {
+function SkillFormActions({
+  onSave,
+  onCancel,
+  loading,
+  saveLabel = 'Save skill',
+  savingLabel = 'Saving…',
+}: ActionsProps & ActionsLabels) {
   return (
     <div className="flex justify-end gap-2">
-      <Button variant="outline" onClick={onCancel}>Cancel</Button>
-      <Button onClick={onSave} disabled={loading}>{loading ? savingLabel : saveLabel}</Button>
+      <Button variant="outline" onClick={onCancel}>
+        Cancel
+      </Button>
+      <Button onClick={onSave} disabled={loading}>
+        {loading ? savingLabel : saveLabel}
+      </Button>
     </div>
   );
 }
@@ -76,7 +118,14 @@ interface SkillFormFieldsProps {
   onContentChange: (value: string) => void;
 }
 
-function SkillFormFields({ control, readOnly, tags, content, onTagsChange, onContentChange }: SkillFormFieldsProps) {
+function SkillFormFields({
+  control,
+  readOnly,
+  tags,
+  content,
+  onTagsChange,
+  onContentChange,
+}: SkillFormFieldsProps) {
   return (
     <>
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -86,7 +135,9 @@ function SkillFormFields({ control, readOnly, tags, content, onTagsChange, onCon
           render={({ field }) => (
             <FormItem>
               <FormLabel>Name</FormLabel>
-              <FormControl><Input placeholder="e.g. pdf-processing" disabled={readOnly} {...field} /></FormControl>
+              <FormControl>
+                <Input placeholder="e.g. pdf-processing" disabled={readOnly} {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -97,7 +148,9 @@ function SkillFormFields({ control, readOnly, tags, content, onTagsChange, onCon
           render={({ field }) => (
             <FormItem>
               <FormLabel>Description</FormLabel>
-              <FormControl><Input placeholder="Brief description" disabled={readOnly} {...field} /></FormControl>
+              <FormControl>
+                <Input placeholder="Brief description" disabled={readOnly} {...field} />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -105,9 +158,18 @@ function SkillFormFields({ control, readOnly, tags, content, onTagsChange, onCon
       </div>
       <div className="space-y-1">
         <Label>Tags</Label>
-        <TagField tags={tags} onChange={readOnly ? () => undefined : onTagsChange} disabled={readOnly} />
+        <TagField
+          tags={tags}
+          onChange={readOnly ? () => undefined : onTagsChange}
+          disabled={readOnly}
+        />
       </div>
-      <MarkdownEditor value={content} onChange={onContentChange} disabled={readOnly ?? false} label="Skill content" />
+      <MarkdownEditor
+        value={content}
+        onChange={onContentChange}
+        disabled={readOnly ?? false}
+        label="Skill content"
+      />
     </>
   );
 }
@@ -121,7 +183,14 @@ interface Props {
   saveLabel?: string;
 }
 
-export function SkillEditor({ initialValues, onSave, onCancel, loading, readOnly, saveLabel }: Props) {
+export function SkillEditor({
+  initialValues,
+  onSave,
+  onCancel,
+  loading,
+  readOnly,
+  saveLabel,
+}: Props) {
   const form = useForm<SkillEditorValues>({
     resolver: zodResolver(skillSchema),
     defaultValues: buildDefaults(initialValues),
@@ -152,7 +221,9 @@ export function SkillEditor({ initialValues, onSave, onCancel, loading, readOnly
         />
         {!readOnly && (
           <SkillFormActions
-            onSave={handleSubmit((v) => { void onSave(v); })}
+            onSave={handleSubmit((v) => {
+              void onSave(v);
+            })}
             onCancel={onCancel}
             loading={Boolean(loading)}
             {...actionLabels}

@@ -19,7 +19,11 @@ export const Default: Story = {
 };
 
 export const WithIcon: Story = {
-  args: { title: 'No agents yet', description: 'Create one to get started.', icon: <FolderOpen className="h-6 w-6" /> },
+  args: {
+    title: 'No agents yet',
+    description: 'Create one to get started.',
+    icon: <FolderOpen className="h-6 w-6" />,
+  },
 };
 
 export const WithAction: Story = {

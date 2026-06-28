@@ -34,33 +34,52 @@ export class DrizzleHarnessRoundRepo implements HarnessRoundRepo {
   }
 
   async findBySprintId(sprintId: string): Promise<HarnessRound[]> {
-    const rows = this.db.select().from(harnessRounds).where(eq(harnessRounds.sprintId, sprintId)).all();
+    const rows = this.db
+      .select()
+      .from(harnessRounds)
+      .where(eq(harnessRounds.sprintId, sprintId))
+      .all();
     return rows.map(toEntity);
   }
 
   async findBySprintAndFeature(sprintId: string, featureIndex: number): Promise<HarnessRound[]> {
-    const rows = this.db.select().from(harnessRounds)
-      .where(and(eq(harnessRounds.sprintId, sprintId), eq(harnessRounds.featureIndex, featureIndex)))
+    const rows = this.db
+      .select()
+      .from(harnessRounds)
+      .where(
+        and(eq(harnessRounds.sprintId, sprintId), eq(harnessRounds.featureIndex, featureIndex))
+      )
       .all();
     return rows.map(toEntity);
   }
 
   async save(round: HarnessRound): Promise<HarnessRound> {
     const p = round.toProps();
-    this.db.insert(harnessRounds).values({
-      id: p.id, sprintId: p.sprintId, featureIndex: p.featureIndex, roundNumber: p.roundNumber,
-      status: p.status, coderOutput: p.coderOutput ?? null, evaluatorFeedback: p.evaluatorFeedback ?? null,
-      metrics: asJsonField(p.metrics),
-      startedAt: p.startedAt, completedAt: p.completedAt ?? null,
-    }).onConflictDoUpdate({
-      target: harnessRounds.id,
-      set: {
-        status: p.status, coderOutput: p.coderOutput ?? null,
+    this.db
+      .insert(harnessRounds)
+      .values({
+        id: p.id,
+        sprintId: p.sprintId,
+        featureIndex: p.featureIndex,
+        roundNumber: p.roundNumber,
+        status: p.status,
+        coderOutput: p.coderOutput ?? null,
         evaluatorFeedback: p.evaluatorFeedback ?? null,
         metrics: asJsonField(p.metrics),
+        startedAt: p.startedAt,
         completedAt: p.completedAt ?? null,
-      },
-    }).run();
+      })
+      .onConflictDoUpdate({
+        target: harnessRounds.id,
+        set: {
+          status: p.status,
+          coderOutput: p.coderOutput ?? null,
+          evaluatorFeedback: p.evaluatorFeedback ?? null,
+          metrics: asJsonField(p.metrics),
+          completedAt: p.completedAt ?? null,
+        },
+      })
+      .run();
     return round;
   }
 }

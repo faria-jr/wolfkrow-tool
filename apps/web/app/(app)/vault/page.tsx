@@ -7,7 +7,11 @@ import { VaultView } from '@/components/vault/vault-view';
 export default function VaultPage() {
   return (
     <PageShell>
-      <PageHeader title="Vault" description="Encrypted API keys and secrets" icon={<KeyRound className="h-6 w-6" />} />
+      <PageHeader
+        title="Vault"
+        description="Encrypted API keys and secrets"
+        icon={<KeyRound className="h-6 w-6" />}
+      />
       <PageContent>
         <VaultView />
       </PageContent>

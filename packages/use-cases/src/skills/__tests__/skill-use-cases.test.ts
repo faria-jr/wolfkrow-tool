@@ -1,5 +1,11 @@
-
-import { Skill, ValidationError, NotFoundError, Agent, type SkillProps, type SkillCreateInput } from '@wolfkrow/domain';
+import {
+  Skill,
+  ValidationError,
+  NotFoundError,
+  Agent,
+  type SkillProps,
+  type SkillCreateInput,
+} from '@wolfkrow/domain';
 import type { SkillRepo, AgentRepo } from '@wolfkrow/domain';
 import { describe, expect, it, beforeEach } from 'vitest';
 
@@ -14,7 +20,9 @@ import { UpdateSkillUseCase } from '../update-skill';
 class InMemorySkillRepo implements SkillRepo {
   private store = new Map<string, Skill>();
 
-  async findById(id: string) { return this.store.get(id) ?? null; }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
   async findByUserId(userId: string) {
     return [...this.store.values()].filter((s) => s.userId === userId);
   }
@@ -24,32 +32,73 @@ class InMemorySkillRepo implements SkillRepo {
   async findByName(userId: string, name: string) {
     return [...this.store.values()].find((s) => s.userId === userId && s.name === name) ?? null;
   }
-  async save(skill: Skill) { this.store.set(skill.id, skill); return skill; }
-  async delete(id: string) { this.store.delete(id); }
-  seed(skills: Skill[]) { for (const s of skills) this.store.set(s.id, s); }
+  async save(skill: Skill) {
+    this.store.set(skill.id, skill);
+    return skill;
+  }
+  async delete(id: string) {
+    this.store.delete(id);
+  }
+  seed(skills: Skill[]) {
+    for (const s of skills) this.store.set(s.id, s);
+  }
 }
 
 class InMemoryAgentRepo implements AgentRepo {
   private store = new Map<string, Agent>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByUserId(userId: string) { return [...this.store.values()].filter((a) => a.userId === userId); }
-  async findActiveByUserId(userId: string) { return [...this.store.values()].filter((a) => a.userId === userId && a.isActive); }
-  async save(agent: Agent) { this.store.set(agent.id, agent); return agent; }
-  async delete(id: string) { this.store.delete(id); }
-  seed(agents: Agent[]) { for (const a of agents) this.store.set(a.id, a); }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByUserId(userId: string) {
+    return [...this.store.values()].filter((a) => a.userId === userId);
+  }
+  async findActiveByUserId(userId: string) {
+    return [...this.store.values()].filter((a) => a.userId === userId && a.isActive);
+  }
+  async save(agent: Agent) {
+    this.store.set(agent.id, agent);
+    return agent;
+  }
+  async delete(id: string) {
+    this.store.delete(id);
+  }
+  seed(agents: Agent[]) {
+    for (const a of agents) this.store.set(a.id, a);
+  }
 }
 
 const USER = 'user-1';
 
 function makeSkill(overrides: Partial<SkillProps> = {}) {
-  return Skill.create({ userId: USER, name: 'pdf', description: 'PDF proc', content: '# PDF', tags: ['docs'], isBuiltIn: false, ...overrides } as SkillCreateInput);
+  return Skill.create({
+    userId: USER,
+    name: 'pdf',
+    description: 'PDF proc',
+    content: '# PDF',
+    tags: ['docs'],
+    isBuiltIn: false,
+    ...overrides,
+  } as SkillCreateInput);
 }
 
 function makeAgent() {
   return Agent.create({
-    userId: USER, name: 'my-agent', description: undefined, model: 'claude-sonnet-4-6', effort: 'medium',
-    thinking: false, thinkingBudget: undefined, maxTurns: 80, allowedTools: [], mcpServers: [],
-    isActive: true, skills: [], runtime: 'cloud', provider: undefined, squad: undefined, systemPrompt: undefined,
+    userId: USER,
+    name: 'my-agent',
+    description: undefined,
+    model: 'claude-sonnet-4-6',
+    effort: 'medium',
+    thinking: false,
+    thinkingBudget: undefined,
+    maxTurns: 80,
+    allowedTools: [],
+    mcpServers: [],
+    isActive: true,
+    skills: [],
+    runtime: 'cloud',
+    provider: undefined,
+    squad: undefined,
+    systemPrompt: undefined,
   });
 }
 
@@ -57,16 +106,35 @@ describe('CreateSkillUseCase', () => {
   let repo: InMemorySkillRepo;
   let useCase: CreateSkillUseCase;
 
-  beforeEach(() => { repo = new InMemorySkillRepo(); useCase = new CreateSkillUseCase(repo); });
+  beforeEach(() => {
+    repo = new InMemorySkillRepo();
+    useCase = new CreateSkillUseCase(repo);
+  });
 
   it('creates and persists skill', async () => {
-    const { skill } = await useCase.execute({ userId: USER, name: 'pdf', description: 'PDF', content: '# PDF', tags: [], isBuiltIn: false });
+    const { skill } = await useCase.execute({
+      userId: USER,
+      name: 'pdf',
+      description: 'PDF',
+      content: '# PDF',
+      tags: [],
+      isBuiltIn: false,
+    });
     expect(skill.name).toBe('pdf');
     expect(await repo.findById(skill.id)).not.toBeNull();
   });
 
   it('throws ValidationError for empty name', async () => {
-    await expect(useCase.execute({ userId: USER, name: '', description: 'x', content: 'y', tags: [], isBuiltIn: false })).rejects.toThrow(ValidationError);
+    await expect(
+      useCase.execute({
+        userId: USER,
+        name: '',
+        description: 'x',
+        content: 'y',
+        tags: [],
+        isBuiltIn: false,
+      })
+    ).rejects.toThrow(ValidationError);
   });
 });
 
@@ -126,7 +194,16 @@ describe('ListSkillsUseCase', () => {
     await repo.save(makeSkill({ name: 'skill-a' }));
     await repo.save(makeSkill({ name: 'skill-b' }));
     await repo.save(makeSkill({ name: 'other-user-skill', userId: 'user-2' }));
-    await repo.save(Skill.create({ userId: USER, name: 'builtin', description: 'x', content: 'y', tags: [], isBuiltIn: true }));
+    await repo.save(
+      Skill.create({
+        userId: USER,
+        name: 'builtin',
+        description: 'x',
+        content: 'y',
+        tags: [],
+        isBuiltIn: true,
+      })
+    );
   });
 
   it('lists all skills for user', async () => {
@@ -199,11 +276,15 @@ describe('AttachSkillToAgentUseCase', () => {
   });
 
   it('throws NotFoundError for unknown skill', async () => {
-    await expect(useCase.execute({ skillId: 'nope', agentId: agent.id })).rejects.toThrow(NotFoundError);
+    await expect(useCase.execute({ skillId: 'nope', agentId: agent.id })).rejects.toThrow(
+      NotFoundError
+    );
   });
 
   it('throws NotFoundError for unknown agent', async () => {
-    await expect(useCase.execute({ skillId: skill.id, agentId: 'nope' })).rejects.toThrow(NotFoundError);
+    await expect(useCase.execute({ skillId: skill.id, agentId: 'nope' })).rejects.toThrow(
+      NotFoundError
+    );
   });
 });
 
@@ -235,6 +316,8 @@ describe('DetachSkillFromAgentUseCase', () => {
   });
 
   it('throws NotFoundError for unknown agent', async () => {
-    await expect(useCase.execute({ skillId: skill.id, agentId: 'nope' })).rejects.toThrow(NotFoundError);
+    await expect(useCase.execute({ skillId: skill.id, agentId: 'nope' })).rejects.toThrow(
+      NotFoundError
+    );
   });
 });

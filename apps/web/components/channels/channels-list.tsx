@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Hash,
-  MessageCircle,
-  MessageSquare,
-  Phone,
-  Settings,
-} from 'lucide-react';
+import { Hash, MessageCircle, MessageSquare, Phone, Settings } from 'lucide-react';
 import type { ComponentType, SVGProps } from 'react';
 import { useMemo, useState } from 'react';
 
@@ -14,7 +8,14 @@ import { TelegramSetup } from './telegram-setup';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { CHANNEL_CATALOG, type ChannelCatalogEntry } from '@/lib/channels';
 
 type ChannelType = ChannelCatalogEntry['type'];
@@ -51,15 +52,17 @@ function getChannelEntry(type: ChannelType): ChannelCatalogEntry {
 function ChannelConfigPanel({ entry }: { entry: ChannelCatalogEntry }) {
   const available = entry.status === 'available';
   return (
-    <section className="rounded-lg border bg-card p-4" aria-label={`${entry.label} settings`}>
+    <section className="bg-card rounded-lg border p-4" aria-label={`${entry.label} settings`}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-muted text-muted-foreground">
+          <span className="bg-muted text-muted-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded">
             <ChannelIcon type={entry.type} />
           </span>
           <div>
             <h3 className="font-semibold">{entry.label}</h3>
-            <p className="text-sm text-muted-foreground">{available ? 'Channel bridge configuration' : 'Bridge not enabled yet'}</p>
+            <p className="text-muted-foreground text-sm">
+              {available ? 'Channel bridge configuration' : 'Bridge not enabled yet'}
+            </p>
           </div>
         </div>
         <Badge variant={available ? 'default' : 'outline'}>{availabilityLabel(entry)}</Badge>
@@ -67,7 +70,7 @@ function ChannelConfigPanel({ entry }: { entry: ChannelCatalogEntry }) {
       {entry.type === 'telegram' ? (
         <TelegramSetup />
       ) : (
-        <p className="rounded border border-dashed p-4 text-sm text-muted-foreground">
+        <p className="text-muted-foreground rounded border border-dashed p-4 text-sm">
           Configuration UI is prepared for this channel. The bridge is still coming soon.
         </p>
       )}
@@ -87,7 +90,7 @@ function ChannelRow({ entry, isSelected, onSelect }: ChannelRowProps) {
     <TableRow data-state={isSelected ? 'selected' : undefined}>
       <TableCell>
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded bg-muted text-muted-foreground">
+          <span className="bg-muted text-muted-foreground flex h-8 w-8 items-center justify-center rounded">
             <ChannelIcon type={entry.type} />
           </span>
           <span className="font-medium">{entry.label}</span>

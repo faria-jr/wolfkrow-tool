@@ -22,7 +22,11 @@ async function collect(stream: AsyncIterable<StreamChunk>): Promise<StreamChunk[
   return out;
 }
 
-function makeTextStream(texts: string[], stopReason = 'end_turn', usage = { input_tokens: 5, output_tokens: 3 }) {
+function makeTextStream(
+  texts: string[],
+  stopReason = 'end_turn',
+  usage = { input_tokens: 5, output_tokens: 3 }
+) {
   return {
     async *[Symbol.asyncIterator]() {
       for (const text of texts) {
@@ -39,20 +43,31 @@ function makeTextStream(texts: string[], stopReason = 'end_turn', usage = { inpu
 
 function makeToolUseStream(
   toolCalls: { id: string; name: string; input: Record<string, unknown> }[],
-  usage = { input_tokens: 10, output_tokens: 5 },
+  usage = { input_tokens: 10, output_tokens: 5 }
 ) {
   return {
     async *[Symbol.asyncIterator]() {
       for (const tc of toolCalls) {
-        yield { type: 'content_block_start', content_block: { type: 'tool_use', id: tc.id, name: tc.name } };
-        yield { type: 'content_block_delta', delta: { type: 'input_json_delta', partial_json: JSON.stringify(tc.input) } };
+        yield {
+          type: 'content_block_start',
+          content_block: { type: 'tool_use', id: tc.id, name: tc.name },
+        };
+        yield {
+          type: 'content_block_delta',
+          delta: { type: 'input_json_delta', partial_json: JSON.stringify(tc.input) },
+        };
         yield { type: 'content_block_stop' };
       }
     },
     finalMessage: async () => ({
       usage,
       stop_reason: 'tool_use',
-      content: toolCalls.map((tc) => ({ type: 'tool_use', id: tc.id, name: tc.name, input: tc.input })),
+      content: toolCalls.map((tc) => ({
+        type: 'tool_use',
+        id: tc.id,
+        name: tc.name,
+        input: tc.input,
+      })),
     }),
   };
 }
@@ -78,20 +93,27 @@ function makeAbortingStream(texts: string[]) {
 const opts = { model: 'm', messages: [{ role: 'user' as const, content: 'hi' }] };
 
 describe('ClaudeAgentProvider', () => {
-  beforeEach(() => { streamMock.mockClear(); });
+  beforeEach(() => {
+    streamMock.mockClear();
+  });
   it('streams text deltas and done chunk (no tools called)', async () => {
     streamMock.mockReturnValueOnce(makeTextStream(['Hello', ' world']));
     const provider = new ClaudeAgentProvider('key');
     const chunks = await collect(provider.query(opts));
 
-    const textOut = chunks.filter((c) => c.delta && !c.done).map((c) => c.delta).join('');
+    const textOut = chunks
+      .filter((c) => c.delta && !c.done)
+      .map((c) => c.delta)
+      .join('');
     expect(textOut).toBe('Hello world');
     expect(chunks.at(-1)?.done).toBe(true);
   });
 
   it('emits tool_call chunk when AI calls a tool', async () => {
     streamMock
-      .mockReturnValueOnce(makeToolUseStream([{ id: 'tc1', name: 'bash', input: { command: 'ls' } }]))
+      .mockReturnValueOnce(
+        makeToolUseStream([{ id: 'tc1', name: 'bash', input: { command: 'ls' } }])
+      )
       .mockReturnValueOnce(makeTextStream(['done']));
 
     const registry = new ToolRegistry([new BashTool()]);
@@ -105,7 +127,9 @@ describe('ClaudeAgentProvider', () => {
 
   it('emits tool_result chunk after tool execution', async () => {
     streamMock
-      .mockReturnValueOnce(makeToolUseStream([{ id: 'tc1', name: 'bash', input: { command: 'echo hi' } }]))
+      .mockReturnValueOnce(
+        makeToolUseStream([{ id: 'tc1', name: 'bash', input: { command: 'echo hi' } }])
+      )
       .mockReturnValueOnce(makeTextStream(['done']));
 
     const registry = new ToolRegistry([new BashTool()]);
@@ -120,7 +144,9 @@ describe('ClaudeAgentProvider', () => {
 
   it('loops when stop_reason is tool_use and stops at end_turn', async () => {
     streamMock
-      .mockReturnValueOnce(makeToolUseStream([{ id: 'tc1', name: 'bash', input: { command: 'ls' } }]))
+      .mockReturnValueOnce(
+        makeToolUseStream([{ id: 'tc1', name: 'bash', input: { command: 'ls' } }])
+      )
       .mockReturnValueOnce(makeTextStream(['final answer']));
 
     const registry = new ToolRegistry([new BashTool()]);
@@ -128,7 +154,10 @@ describe('ClaudeAgentProvider', () => {
     const chunks = await collect(provider.query(opts));
 
     expect(streamMock).toHaveBeenCalledTimes(2);
-    const textOut = chunks.filter((c) => c.delta && !c.done).map((c) => c.delta).join('');
+    const textOut = chunks
+      .filter((c) => c.delta && !c.done)
+      .map((c) => c.delta)
+      .join('');
     expect(textOut).toContain('final answer');
     expect(chunks.at(-1)?.done).toBe(true);
   });
@@ -178,7 +207,10 @@ describe('ClaudeAgentProvider', () => {
     };
 
     const registry = new ToolRegistry([spyTool]);
-    const provider = new ClaudeAgentProvider('key', registry, undefined, { maxTurns: 80, workDir: '/my/workspace' });
+    const provider = new ClaudeAgentProvider('key', registry, undefined, {
+      maxTurns: 80,
+      workDir: '/my/workspace',
+    });
     await collect(provider.query(opts));
 
     expect(capturedCtx[0]?.workDir).toBe('/my/workspace');
@@ -284,7 +316,10 @@ describe('ClaudeAgentProvider', () => {
     const chunks = await collect(provider.query(opts));
 
     expect(chunks.some((c) => c.done)).toBe(true);
-    const text = chunks.filter((c) => c.delta && !c.done).map((c) => c.delta).join('');
+    const text = chunks
+      .filter((c) => c.delta && !c.done)
+      .map((c) => c.delta)
+      .join('');
     expect(text).toBe('partial');
   });
 });

@@ -3,7 +3,9 @@ import type { SkillRepo } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
-export interface CreateSkillOutput { skill: Skill; }
+export interface CreateSkillOutput {
+  skill: Skill;
+}
 
 export class CreateSkillUseCase implements UseCase<SkillCreateInput, CreateSkillOutput> {
   constructor(private readonly repo: SkillRepo) {}

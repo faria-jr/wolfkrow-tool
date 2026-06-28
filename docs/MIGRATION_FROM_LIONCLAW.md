@@ -4,18 +4,18 @@ This guide walks through migrating your data from LionClaw v3.0 to Wolfkrow.
 
 ## What migrates automatically
 
-| LionClaw table | Wolfkrow table | Notes |
-|---|---|---|
-| `users` | `users` | All user accounts |
-| `agents` | `agents` | Agent configurations |
-| `chat_sessions` | `chat_sessions` | Conversation sessions |
-| `chat_messages` | `chat_messages` | Full message history |
-| `knowledge_documents` | `knowledge_documents` | Document index |
-| `knowledge_chunks` | `knowledge_chunks` | Chunked knowledge |
-| `memory` | `semantic_memories` | Long-term memories |
-| `secrets` | `vault_secrets` | Keys are migrated; values must be re-entered (security) |
-| `mcp_servers` | `mcp_servers` | MCP server configs |
-| `scheduled_tasks` | `scheduled_tasks` | Cron tasks |
+| LionClaw table        | Wolfkrow table        | Notes                                                   |
+| --------------------- | --------------------- | ------------------------------------------------------- |
+| `users`               | `users`               | All user accounts                                       |
+| `agents`              | `agents`              | Agent configurations                                    |
+| `chat_sessions`       | `chat_sessions`       | Conversation sessions                                   |
+| `chat_messages`       | `chat_messages`       | Full message history                                    |
+| `knowledge_documents` | `knowledge_documents` | Document index                                          |
+| `knowledge_chunks`    | `knowledge_chunks`    | Chunked knowledge                                       |
+| `memory`              | `semantic_memories`   | Long-term memories                                      |
+| `secrets`             | `vault_secrets`       | Keys are migrated; values must be re-entered (security) |
+| `mcp_servers`         | `mcp_servers`         | MCP server configs                                      |
+| `scheduled_tasks`     | `scheduled_tasks`     | Cron tasks                                              |
 
 > **Vault values**: Secret values and encrypted payloads are intentionally skipped during migration. After migrating, re-enter API keys via **Settings → Vault**.
 
@@ -53,6 +53,7 @@ pnpm migrate:lionclaw --from ~/.lionclaw/data.db
 ```
 
 A backup of your Wolfkrow database is created automatically at:
+
 ```
 .wolfkrow/data/wolfkrow.db.backup-pre-migration-<timestamp>
 ```
@@ -68,6 +69,7 @@ pnpm migrate:lionclaw --from ~/.lionclaw/data.db --tables agents,chat_sessions,c
 ### 5. Verify
 
 After migration, start Wolfkrow and confirm:
+
 - Agents appear in **Settings → Agents**
 - Chat history appears in the **Chat** sidebar
 - Knowledge documents appear in **Knowledge → Documents**
@@ -76,6 +78,7 @@ After migration, start Wolfkrow and confirm:
 ### 6. Re-enter vault secrets
 
 Vault values cannot be migrated automatically (they are end-to-end encrypted in LionClaw). Go to **Settings → Vault** and re-enter:
+
 - Anthropic API key
 - Any other API keys or credentials
 
@@ -105,13 +108,13 @@ It contains per-table statistics: total rows, migrated rows, skipped rows (dupli
 
 LionClaw tinha executors separados por provider (`zai-executor`, `google-genai-executor`, `minimax-executor`, etc.). No Wolfkrow, esses foram **consolidados via OpenRouter**:
 
-| LionClaw executor | Wolfkrow equivalente |
-|---|---|
-| `zai-executor` | OpenRouter com prefix `openrouter/` |
-| `google-genai-executor` | OpenRouter com `google/gemini-*` |
-| `minimax-executor` | OpenRouter com `minimax/*` |
-| `codex-executor` | `CodexProvider` (mantido, OAuth próprio) |
-| `anthropic-executor` | `AnthropicProvider` (mantido, SDK direto) |
+| LionClaw executor       | Wolfkrow equivalente                      |
+| ----------------------- | ----------------------------------------- |
+| `zai-executor`          | OpenRouter com prefix `openrouter/`       |
+| `google-genai-executor` | OpenRouter com `google/gemini-*`          |
+| `minimax-executor`      | OpenRouter com `minimax/*`                |
+| `codex-executor`        | `CodexProvider` (mantido, OAuth próprio)  |
+| `anthropic-executor`    | `AnthropicProvider` (mantido, SDK direto) |
 
 Para usar providers via OpenRouter, configure o prefixo correto no vault e selecione `openrouter` como provider no onboarding.
 
@@ -119,12 +122,12 @@ Para usar providers via OpenRouter, configure o prefixo correto no vault e selec
 
 O Wolfkrow v1.0 adiciona `ClaudeCompatProvider` (ADR-0030), que cobre APIs OpenAI-compatíveis que aceitam o prefixo `claude-` nos modelos (ex: OpenRouter). Permite usar modelos Anthropic via proxy sem SDK direto.
 
-| Provider LionClaw | Provider Wolfkrow | Notas |
-|---|---|---|
-| anthropic-executor | `AnthropicProvider` | SDK direto — mantido |
-| (sem equivalente) | `ClaudeCompatProvider` | OpenAI-compat com modelos claude-* via proxy |
-| codex-executor | `CodexProvider` | Mantido — OpenAI + Ollama |
-| (sem equivalente) | `OpenRouterProvider` | openrouter/\* prefix — 100+ modelos |
+| Provider LionClaw  | Provider Wolfkrow      | Notas                                         |
+| ------------------ | ---------------------- | --------------------------------------------- |
+| anthropic-executor | `AnthropicProvider`    | SDK direto — mantido                          |
+| (sem equivalente)  | `ClaudeCompatProvider` | OpenAI-compat com modelos claude-\* via proxy |
+| codex-executor     | `CodexProvider`        | Mantido — OpenAI + Ollama                     |
+| (sem equivalente)  | `OpenRouterProvider`   | openrouter/\* prefix — 100+ modelos           |
 
 Para migrar agentes que usavam `anthropic-executor` em LionClaw: selecione `anthropic` como provider no onboarding e configure `ANTHROPIC_API_KEY` no Vault.
 
@@ -137,6 +140,7 @@ node --version  # Deve mostrar v24.x.x ou superior
 ```
 
 Se necessário, instale via nvm:
+
 ```bash
 nvm install 24 && nvm use 24
 ```
@@ -145,32 +149,32 @@ nvm install 24 && nvm use 24
 
 As tabelas abaixo não existem no LionClaw e não são migradas — são inicializadas vazias:
 
-| Tabela Wolfkrow | Descrição |
-|---|---|
-| `audit_events` | Log de todas as tool calls dos agentes |
-| `knowledge_chunks_vec` | Índice vetorial sqlite-vec (se disponível) |
-| `usage_records` | Histórico de uso de tokens por sessão |
-| `workflow_runs` / `workflow_steps` | Runs do sistema de workflow (Harness/Pipeline) |
-| `harness_projects` / `harness_sprints` / `harness_rounds` | Projetos e sprints do Harness |
-| `pipeline_projects` / `pipeline_stages` | Projetos e etapas do Pipeline |
-| `enrichments` | Resultados do pipeline Enrich |
-| `permissions` | Permissões de tool calls por agente |
-| `skills` | Skills (Markdown instructions) — sem equivalente direto |
+| Tabela Wolfkrow                                           | Descrição                                               |
+| --------------------------------------------------------- | ------------------------------------------------------- |
+| `audit_events`                                            | Log de todas as tool calls dos agentes                  |
+| `knowledge_chunks_vec`                                    | Índice vetorial sqlite-vec (se disponível)              |
+| `usage_records`                                           | Histórico de uso de tokens por sessão                   |
+| `workflow_runs` / `workflow_steps`                        | Runs do sistema de workflow (Harness/Pipeline)          |
+| `harness_projects` / `harness_sprints` / `harness_rounds` | Projetos e sprints do Harness                           |
+| `pipeline_projects` / `pipeline_stages`                   | Projetos e etapas do Pipeline                           |
+| `enrichments`                                             | Resultados do pipeline Enrich                           |
+| `permissions`                                             | Permissões de tool calls por agente                     |
+| `skills`                                                  | Skills (Markdown instructions) — sem equivalente direto |
 
 ### Adições não presentes no LionClaw
 
 Funcionalidades novas adicionadas durante o desenvolvimento do Wolfkrow:
 
-| Feature | Decisão |
-|---|---|
-| OpenRouter | Substitui integração direta zai/google/minimax — um key, acesso a 100+ modelos |
-| ClaudeCompatProvider | Novo provider OpenAI-compat para claude-* via proxy (ADR-0030) |
-| Storybook | Design system documentation — sem equivalente no LionClaw |
-| Design tokens (Tailwind v4) | Sistema de tokens CSS — sem equivalente no LionClaw |
-| Pipeline run phases (T26) | Fase de execução IA por estágio — feature nova |
-| Auto-compaction (T29) | Threshold-based session compaction — feature nova |
-| Whisper.cpp subprocess (T28) | STT local sem custo por token — feature nova |
-| EventBus de domínio | `message.turn.completed` e outros domain events — sem equivalente |
+| Feature                      | Decisão                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------ |
+| OpenRouter                   | Substitui integração direta zai/google/minimax — um key, acesso a 100+ modelos |
+| ClaudeCompatProvider         | Novo provider OpenAI-compat para claude-\* via proxy (ADR-0030)                |
+| Storybook                    | Design system documentation — sem equivalente no LionClaw                      |
+| Design tokens (Tailwind v4)  | Sistema de tokens CSS — sem equivalente no LionClaw                            |
+| Pipeline run phases (T26)    | Fase de execução IA por estágio — feature nova                                 |
+| Auto-compaction (T29)        | Threshold-based session compaction — feature nova                              |
+| Whisper.cpp subprocess (T28) | STT local sem custo por token — feature nova                                   |
+| EventBus de domínio          | `message.turn.completed` e outros domain events — sem equivalente              |
 
 ### Histórico de mensagens
 

@@ -19,7 +19,7 @@ describe('DrizzleAuthAuditRepo (FIX-027)', () => {
     const repo = new DrizzleAuthAuditRepo(db as never);
 
     expect(() =>
-      repo.log({ userId: undefined, action: 'login.fail', ip: undefined, userAgent: undefined }),
+      repo.log({ userId: undefined, action: 'login.fail', ip: undefined, userAgent: undefined })
     ).not.toThrow();
     expect(chain.run).toHaveBeenCalledTimes(1);
   });

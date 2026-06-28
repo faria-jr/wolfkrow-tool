@@ -6,6 +6,7 @@
 ## Contexto
 
 O LionClaw v3 não tem lint, format, ou pre-commit hooks. Problemas:
+
 1. **Inconsistência**: cada dev formata diferente
 2. **Bugs comuns**: `any`, unused vars, console.log esquecidos
 3. **Sem quality gate**: PRs merged com erros básicos
@@ -50,28 +51,31 @@ export default [
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
-      
+
       // React
-      'react/react-in-jsx-scope': 'off',  // Not needed with React 17+
+      'react/react-in-jsx-scope': 'off', // Not needed with React 17+
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error',
-      
+
       // Clean Code
       'max-lines-per-function': ['error', { max: 50, skipComments: true }],
       'max-params': ['error', { max: 4 }],
-      'complexity': ['error', { max: 10 }],
+      complexity: ['error', { max: 10 }],
       'max-depth': ['error', { max: 3 }],
       'max-nested-callbacks': ['error', { max: 3 }],
       'no-else-return': ['error', { allowElseIf: false }],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'prefer-const': 'error',
-      
+
       // Imports
-      'import/order': ['error', {
-        groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'type'],
-        'newlines-between': 'always',
-        alphabetize: { order: 'asc' },
-      }],
+      'import/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'type'],
+          'newlines-between': 'always',
+          alphabetize: { order: 'asc' },
+        },
+      ],
       'import/no-duplicates': 'error',
     },
   },
@@ -107,13 +111,8 @@ pnpm exec husky init
 // package.json
 {
   "lint-staged": {
-    "*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md,yml,yaml}": [
-      "prettier --write"
-    ]
+    "*.{ts,tsx,js,jsx}": ["eslint --fix", "prettier --write"],
+    "*.{json,md,yml,yaml}": ["prettier --write"]
   }
 }
 ```
@@ -135,10 +134,23 @@ pnpm exec commitlint --edit "$1"
 export default {
   extends: ['@commitlint/config-conventional'],
   rules: {
-    'type-enum': [2, 'always', [
-      'feat', 'fix', 'docs', 'style', 'refactor',
-      'perf', 'test', 'chore', 'revert', 'build', 'ci'
-    ]],
+    'type-enum': [
+      2,
+      'always',
+      [
+        'feat',
+        'fix',
+        'docs',
+        'style',
+        'refactor',
+        'perf',
+        'test',
+        'chore',
+        'revert',
+        'build',
+        'ci',
+      ],
+    ],
     'subject-max-length': [2, 'always', 72],
   },
 };

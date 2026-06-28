@@ -4,18 +4,20 @@
 
 import { z } from 'zod';
 
-import {
-  MetadataSchema,
-  ShortStringSchema,
-  TimestampSchema,
-  UuidSchema,
-} from './common';
+import { MetadataSchema, ShortStringSchema, TimestampSchema, UuidSchema } from './common';
 
 export const TaskStatusSchema = z.enum(['todo', 'in_progress', 'blocked', 'done', 'cancelled']);
 
 export type TaskStatus = z.infer<typeof TaskStatusSchema>;
 
-export const TaskCategorySchema = z.enum(['work', 'personal', 'learning', 'health', 'finance', 'other']);
+export const TaskCategorySchema = z.enum([
+  'work',
+  'personal',
+  'learning',
+  'health',
+  'finance',
+  'other',
+]);
 
 export type TaskCategory = z.infer<typeof TaskCategorySchema>;
 

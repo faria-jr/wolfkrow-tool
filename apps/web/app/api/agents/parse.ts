@@ -68,9 +68,7 @@ function parsePatchExtra(b: Body): AgentUpdateInput {
 }
 
 function parseProvider(b: Body): Pick<AgentUpdateInput, 'provider'> {
-  return b.provider !== undefined
-    ? { provider: b.provider ? String(b.provider) : undefined }
-    : {};
+  return b.provider !== undefined ? { provider: b.provider ? String(b.provider) : undefined } : {};
 }
 
 export function parsePatchInput(b: Body): AgentUpdateInput {

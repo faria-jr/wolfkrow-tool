@@ -10,16 +10,16 @@ import { searchKnowledge, type KnowledgeSearchItem } from '@/lib/api-client';
 function SearchResultCard({ r, i }: { r: KnowledgeSearchItem; i: number }) {
   const meta = r.metadata as { sourceType?: string; heading?: string };
   return (
-    <div className="rounded-lg border p-4 space-y-1">
+    <div className="space-y-1 rounded-lg border p-4">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           [{i + 1}] {meta.sourceType ?? 'text'}
           {meta.heading ? ` — ${meta.heading}` : ''}
         </p>
-        <span className="shrink-0 text-xs text-muted-foreground">score: {r.score.toFixed(3)}</span>
+        <span className="text-muted-foreground shrink-0 text-xs">score: {r.score.toFixed(3)}</span>
       </div>
-      <p className="text-sm line-clamp-4">{r.content}</p>
-      <p className="text-xs text-muted-foreground font-mono">doc:{r.documentId.slice(0, 8)}…</p>
+      <p className="line-clamp-4 text-sm">{r.content}</p>
+      <p className="text-muted-foreground font-mono text-xs">doc:{r.documentId.slice(0, 8)}…</p>
     </div>
   );
 }
@@ -51,7 +51,9 @@ export function SearchPanel() {
           placeholder="Search your documents…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') void handleSearch(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void handleSearch();
+          }}
           className="flex-1"
         />
         <Button onClick={() => void handleSearch()} disabled={loading || !query.trim()}>
@@ -61,11 +63,13 @@ export function SearchPanel() {
       </div>
 
       {searched && results.length === 0 && (
-        <p className="text-center text-sm text-muted-foreground">No results found.</p>
+        <p className="text-muted-foreground text-center text-sm">No results found.</p>
       )}
 
       <div className="space-y-3">
-        {results.map((r, i) => <SearchResultCard key={r.chunkId} r={r} i={i} />)}
+        {results.map((r, i) => (
+          <SearchResultCard key={r.chunkId} r={r} i={i} />
+        ))}
       </div>
     </div>
   );

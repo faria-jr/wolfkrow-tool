@@ -53,7 +53,7 @@ function baseElement(id: string, type: string, props: BaseProps): Record<string,
 export function rectangle(
   id: string,
   props: BaseProps,
-  options: { strokeColor?: string; backgroundColor?: string; seed?: number } = {},
+  options: { strokeColor?: string; backgroundColor?: string; seed?: number } = {}
 ): Record<string, unknown> {
   return {
     ...baseElement(id, 'rectangle', props),
@@ -67,7 +67,7 @@ export function rectangle(
 export function ellipse(
   id: string,
   props: BaseProps,
-  options: { strokeColor?: string; backgroundColor?: string; seed?: number } = {},
+  options: { strokeColor?: string; backgroundColor?: string; seed?: number } = {}
 ): Record<string, unknown> {
   return {
     ...baseElement(id, 'ellipse', props),
@@ -81,7 +81,7 @@ export function text(
   id: string,
   props: BaseProps,
   textValue: string,
-  options: { strokeColor?: string; fontSize?: number; seed?: number } = {},
+  options: { strokeColor?: string; fontSize?: number; seed?: number } = {}
 ): Record<string, unknown> {
   const fontSize = options.fontSize ?? 16;
   return {
@@ -105,7 +105,7 @@ export function arrow(
   id: string,
   origin: { x: number; y: number },
   points: Array<[number, number]>,
-  options: { strokeColor?: string; strokeStyle?: 'solid' | 'dashed'; seed?: number } = {},
+  options: { strokeColor?: string; strokeStyle?: 'solid' | 'dashed'; seed?: number } = {}
 ): Record<string, unknown> {
   return {
     ...baseElement(id, 'arrow', { x: origin.x, y: origin.y, width: 0, height: 0 }),
@@ -131,7 +131,7 @@ export function line(
   id: string,
   origin: { x: number; y: number },
   points: Array<[number, number]>,
-  options: LineOptions = {},
+  options: LineOptions = {}
 ): Record<string, unknown> {
   return {
     ...baseElement(id, 'line', { x: origin.x, y: origin.y, width: 0, height: 0 }),

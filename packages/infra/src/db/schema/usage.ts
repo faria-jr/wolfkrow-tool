@@ -36,5 +36,5 @@ export const tokenUsage = sqliteTable(
     timestampIdx: index('token_usage_timestamp_idx').on(t.timestamp),
     sourceIdx: index('token_usage_source_idx').on(t.source),
     runtimeIdx: index('token_usage_runtime_idx').on(t.runtime),
-  }),
+  })
 );

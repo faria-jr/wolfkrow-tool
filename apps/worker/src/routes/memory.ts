@@ -87,7 +87,10 @@ async function handleSearchMemories(req: FastifyRequest, reply: FastifyReply) {
   });
 }
 
-async function handleDeleteMemory(req: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+async function handleDeleteMemory(
+  req: FastifyRequest<{ Params: { id: string } }>,
+  reply: FastifyReply
+) {
   const userId = (req as unknown as { user: { userId: string } }).user.userId;
   const { memoryRepo } = makeRepos();
   await new DeleteMemoryUseCase(memoryRepo).execute({ memoryId: req.params.id, userId });

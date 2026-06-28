@@ -9,19 +9,54 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_COMMAND_LENGTH = 4096;
 
 const ALLOWED_BINARIES = new Set([
-  'ls', 'cat', 'head', 'tail', 'wc', 'echo', 'pwd', 'env',
-  'grep', 'find', 'sort', 'uniq', 'tr', 'cut', 'sed', 'awk',
-  'node', 'npm', 'pnpm', 'npx', 'yarn',
-  'git', 'mkdir', 'rmdir', 'touch', 'cp', 'mv', 'ln',
-  'tar', 'gzip', 'gunzip', 'zip', 'unzip',
-  'curl', 'wget', 'jq',
+  'ls',
+  'cat',
+  'head',
+  'tail',
+  'wc',
+  'echo',
+  'pwd',
+  'env',
+  'grep',
+  'find',
+  'sort',
+  'uniq',
+  'tr',
+  'cut',
+  'sed',
+  'awk',
+  'node',
+  'npm',
+  'pnpm',
+  'npx',
+  'yarn',
+  'git',
+  'mkdir',
+  'rmdir',
+  'touch',
+  'cp',
+  'mv',
+  'ln',
+  'tar',
+  'gzip',
+  'gunzip',
+  'zip',
+  'unzip',
+  'curl',
+  'wget',
+  'jq',
   // Shells (bash/sh/dash/zsh) intentionally excluded: allowing them lets an
   // agent run `bash -c '<arbitrary>'`, bypassing FORBIDDEN_PATTERNS (which are
   // only matched against the top-level tokens). spawn() uses shell:false, so
   // pipes/redirects/&& are unusable anyway except via a shell — agents must use
   // the allowed binaries directly instead.
-  'make', 'cmake', 'gcc', 'clang',
-  'test', 'true', 'false',
+  'make',
+  'cmake',
+  'gcc',
+  'clang',
+  'test',
+  'true',
+  'false',
 ]);
 
 function isPathWithinWorkspace(workDir: string, resolved: string): boolean {
@@ -59,14 +94,19 @@ function parseCommand(raw: unknown): string[] | { error: string } {
 
 export class BashTool implements ToolExecutor {
   readonly name = 'bash';
-  readonly description = 'Execute a shell command in the project workspace. Dangerous commands require explicit permission.';
+  readonly description =
+    'Execute a shell command in the project workspace. Dangerous commands require explicit permission.';
   readonly inputSchema = {
     type: 'object',
     properties: {
       command: {
         oneOf: [
           { type: 'string', description: 'Shell command tokens separated by whitespace' },
-          { type: 'array', items: { type: 'string' }, description: 'Shell command as array of tokens (preferred)' },
+          {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Shell command as array of tokens (preferred)',
+          },
         ],
         description: 'Command to execute (string or array of tokens)',
       },
@@ -99,14 +139,20 @@ export class BashTool implements ToolExecutor {
     for (const token of tokens) {
       for (const pattern of FORBIDDEN_PATTERNS) {
         if (pattern.test(token)) {
-          return ToolResult.error(callId, `Command blocked: contains forbidden pattern (${pattern.source})`);
+          return ToolResult.error(
+            callId,
+            `Command blocked: contains forbidden pattern (${pattern.source})`
+          );
         }
       }
     }
     return null;
   }
 
-  private resolveExecution(input: Record<string, unknown>, ctx: ToolExecutionContext): { binary: string; args: string[]; cwd: string; timeoutMs: number } | { error: string } {
+  private resolveExecution(
+    input: Record<string, unknown>,
+    ctx: ToolExecutionContext
+  ): { binary: string; args: string[]; cwd: string; timeoutMs: number } | { error: string } {
     const tokens = parseCommand(input['command']) as string[];
     const binary = tokens[0] ?? '';
     const args = tokens.slice(1);
@@ -126,7 +172,7 @@ export class BashTool implements ToolExecutor {
   private runProcess(
     callId: string,
     exec: { binary: string; args: string[]; cwd: string; timeoutMs: number },
-    signal?: AbortSignal,
+    signal?: AbortSignal
   ): Promise<ToolResult> {
     return new Promise<ToolResult>((resolve) => {
       let stdout = '';
@@ -147,8 +193,12 @@ export class BashTool implements ToolExecutor {
         if (signal.aborted) onAbort();
         else signal.addEventListener('abort', onAbort, { once: true });
       }
-      child.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
-      child.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+      child.stdout.on('data', (d: Buffer) => {
+        stdout += d.toString();
+      });
+      child.stderr.on('data', (d: Buffer) => {
+        stderr += d.toString();
+      });
       child.on('close', (code: number | null) => {
         clearTimeout(timer);
         if (signal) signal.removeEventListener('abort', onAbort);

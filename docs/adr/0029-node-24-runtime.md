@@ -16,6 +16,7 @@ NODE_MODULE_VERSION 127.
 ```
 
 Além disso, o LionClaw v1.0 já recomendava Node 24+ para módulos nativos, e o Wolfkrow Tool utiliza:
+
 - `better-sqlite3` (bindings nativos)
 - `sqlite-vec` (extensão nativa de vetores)
 - `keytar` (keychain nativo)

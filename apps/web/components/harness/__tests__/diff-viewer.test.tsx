@@ -45,7 +45,9 @@ describe('computeLineDiff (M5.3)', () => {
 
   it('handles large inputs without blowing up', () => {
     const before = Array.from({ length: 500 }, (_, i) => `line-${i}`).join('\n');
-    const after = Array.from({ length: 500 }, (_, i) => (i % 2 === 0 ? `line-${i}` : `changed-${i}`)).join('\n');
+    const after = Array.from({ length: 500 }, (_, i) =>
+      i % 2 === 0 ? `line-${i}` : `changed-${i}`
+    ).join('\n');
     const ops = computeLineDiff(before, after);
     const summary = summarizeDiff(ops);
     expect(summary.unchanged).toBe(250);
@@ -63,9 +65,7 @@ describe('DiffViewer (M5.3)', () => {
   });
 
   it('renders the prefix character per row type', () => {
-    const { container } = render(
-      <DiffViewer before={'keep\ndrop'} after={'keep\nadd'} />,
-    );
+    const { container } = render(<DiffViewer before={'keep\ndrop'} after={'keep\nadd'} />);
     const cells = container.querySelectorAll('tbody tr');
     expect(cells).toHaveLength(3);
     expect(cells[0]?.textContent).toMatch(/keep/);

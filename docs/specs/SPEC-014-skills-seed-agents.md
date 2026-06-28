@@ -11,6 +11,7 @@
 ## 1. Visão Geral
 
 Duas partes:
+
 1. **Skills**: arquivos Markdown com frontmatter que adicionam capability/context ao agent. CRUD + attach a agents.
 2. **Seed-agents**: migrar 67 agents `.ts` (9610 linhas) → `.wolfkrow/agents/*.yaml` com **loader único + validator Zod** (DRY, −80% linhas).
 

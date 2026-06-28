@@ -16,7 +16,12 @@ function resolveSkillsDir(): string {
 
 function parseTagsValue(val: string): string[] {
   const captured = /^\[([^\]]*)\]$/.exec(val)?.[1] ?? '';
-  return captured ? captured.split(',').map((s) => s.trim()).filter(Boolean) : [];
+  return captured
+    ? captured
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
 }
 
 function applyMetaLine(meta: Record<string, unknown>, line: string): void {
@@ -95,7 +100,9 @@ export async function loadBuiltInSkills(dir?: string): Promise<LoadedSkill[]> {
       results.push({ name: skill.name, filePath, skill });
     } catch (err) {
       // Skip malformed files so one bad skill doesn't abort the whole load.
-      console.warn(`[skill-loader] Skipping ${file}: ${err instanceof Error ? err.message : String(err)}`);
+      console.warn(
+        `[skill-loader] Skipping ${file}: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
   return results;

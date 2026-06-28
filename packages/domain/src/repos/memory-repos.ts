@@ -32,7 +32,7 @@ export interface SemanticMemoryRepo {
   hybridSearch(
     embedding: number[],
     userId: string,
-    limit: number,
+    limit: number
   ): Promise<HybridMemorySearchResult[]>;
 }
 

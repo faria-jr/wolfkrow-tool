@@ -27,17 +27,17 @@ O LionClaw v3 tem 158 testes cobrindo ~5% do código (apenas adapters, sem teste
 
 ### Coverage Targets por Camada
 
-| Camada | Target | Razão |
-|---|---|---|
-| `packages/domain/` | ≥95% | Pure logic, fácil testar |
-| `packages/use-cases/` | ≥90% | Application logic crítica |
-| `packages/infra/repos/` | ≥85% | Drizzle adapters |
-| `packages/infra/ai-providers/` | ≥85% | AI providers |
-| `apps/web/components/` | ≥70% | UI components |
-| `apps/web/components/forms/` | ≥80% | Forms (alta interação) |
-| `apps/web/components/auth/` | ≥80% | Security-critical |
-| `apps/web/components/payment/` | ≥80% | Money-related |
-| `apps/worker/` | ≥85% | Background tasks |
+| Camada                         | Target | Razão                     |
+| ------------------------------ | ------ | ------------------------- |
+| `packages/domain/`             | ≥95%   | Pure logic, fácil testar  |
+| `packages/use-cases/`          | ≥90%   | Application logic crítica |
+| `packages/infra/repos/`        | ≥85%   | Drizzle adapters          |
+| `packages/infra/ai-providers/` | ≥85%   | AI providers              |
+| `apps/web/components/`         | ≥70%   | UI components             |
+| `apps/web/components/forms/`   | ≥80%   | Forms (alta interação)    |
+| `apps/web/components/auth/`    | ≥80%   | Security-critical         |
+| `apps/web/components/payment/` | ≥80%   | Money-related             |
+| `apps/worker/`                 | ≥85%   | Background tasks          |
 
 ### Pirâmide de Testes
 
@@ -74,16 +74,18 @@ describe('SendMessage', () => {
     const mockAgentRepo = {
       findById: vi.fn().mockResolvedValue(null),
     };
-    
+
     const useCase = new SendMessage(
-      mockAgentRepo as any,
+      mockAgentRepo as any
       // ...
     );
-    
-    await expect(useCase.execute({
-      agentId: 'non-existent',
-      content: 'Hello',
-    })).rejects.toThrow(AgentNotFoundError);
+
+    await expect(
+      useCase.execute({
+        agentId: 'non-existent',
+        content: 'Hello',
+      })
+    ).rejects.toThrow(AgentNotFoundError);
   });
 });
 ```
@@ -93,8 +95,8 @@ describe('SendMessage', () => {
 ```typescript
 // packages/use-cases/src/chat/send-message.ts
 export class SendMessage {
-  constructor(private agentRepo: AgentRepo, /* ... */) {}
-  
+  constructor(private agentRepo: AgentRepo /* ... */) {}
+
   async execute(input: SendMessageInput): AsyncIterable<StreamChunk> {
     const agent = await this.agentRepo.findById(input.agentId);
     if (!agent) throw new AgentNotFoundError(input.agentId);
@@ -113,21 +115,21 @@ export class SendMessage {
     private sessionRepo: SessionRepo,
     private messageRepo: MessageRepo,
     private providers: AIProviderFactory,
-    private events: EventBus,
+    private events: EventBus
   ) {}
-  
+
   async *execute(input: SendMessageInput): AsyncIterable<StreamChunk> {
     const agent = await this.agentRepo.findById(input.agentId);
     if (!agent) throw new AgentNotFoundError(input.agentId);
-    
+
     const session = await this.sessionRepo.getOrCreate(input.sessionId, agent);
     const userMessage = Message.createUser(input.content, input.attachments);
-    
+
     await this.messageRepo.save(session.id, userMessage);
     this.events.publish(new MessageSentEvent(session.id, userMessage.id));
-    
+
     const provider = this.providers.forRuntime(agent.runtime);
-    
+
     for await (const chunk of provider.query(agent.buildPrompt(session, userMessage))) {
       yield chunk;
     }

@@ -8,7 +8,9 @@ import { Button } from '@/components/ui/button';
 
 export const metadata = { title: 'Edit rule' };
 
-interface PageProps { params: Promise<{ id: string }>; }
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
 export default async function EditRulePage({ params }: PageProps) {
   const { id } = await params;
@@ -18,7 +20,14 @@ export default async function EditRulePage({ params }: PageProps) {
         title="Edit rule"
         description="Update the rule metadata and markdown body."
         icon={<ScrollText className="h-6 w-6" />}
-        actions={<Button asChild variant="outline"><Link href="/rules"><ArrowLeft className="mr-2 h-4 w-4" />Back to rules</Link></Button>}
+        actions={
+          <Button asChild variant="outline">
+            <Link href="/rules">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to rules
+            </Link>
+          </Button>
+        }
       />
       <PageContent>
         <RuleEditScreen ruleId={id} />

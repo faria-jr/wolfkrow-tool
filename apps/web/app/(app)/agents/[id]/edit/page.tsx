@@ -12,7 +12,9 @@ export const metadata: Metadata = {
   description: 'Edit an AI agent',
 };
 
-interface PageProps { params: Promise<{ id: string }>; }
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
 export default async function AgentEditPage({ params }: PageProps) {
   const { id } = await params;

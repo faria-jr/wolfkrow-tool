@@ -23,7 +23,9 @@ describe('EmptyState', () => {
   it('renders and triggers the action button', async () => {
     const onAction = vi.fn();
     const user = userEvent.setup();
-    render(<EmptyState title="No agents yet" action={{ label: 'Create agent', onClick: onAction }} />);
+    render(
+      <EmptyState title="No agents yet" action={{ label: 'Create agent', onClick: onAction }} />
+    );
 
     await user.click(screen.getByRole('button', { name: 'Create agent' }));
     expect(onAction).toHaveBeenCalledOnce();

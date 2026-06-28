@@ -33,9 +33,7 @@ describe('loadOrCreateKeyPair', () => {
     const { publicKey, privateKey } = await generateKeyPair();
     const publicJwk = await exportJWK(publicKey);
     const privateJwk = await exportJWK(privateKey);
-    vi.mocked(keytar.getPassword).mockResolvedValue(
-      JSON.stringify({ publicJwk, privateJwk }),
-    );
+    vi.mocked(keytar.getPassword).mockResolvedValue(JSON.stringify({ publicJwk, privateJwk }));
 
     const pair = await loadOrCreateKeyPair('test-svc', 'jwt');
 

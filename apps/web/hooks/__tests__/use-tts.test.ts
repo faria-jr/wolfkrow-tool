@@ -19,8 +19,15 @@ describe('useTts', () => {
       blob: async () => new Blob(['audio'], { type: 'audio/mpeg' }),
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
-    vi.stubGlobal('Audio', vi.fn(() => new FakeAudio()));
-    vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn().mockReturnValue('blob:fake'), revokeObjectURL: vi.fn() });
+    vi.stubGlobal(
+      'Audio',
+      vi.fn(() => new FakeAudio())
+    );
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn().mockReturnValue('blob:fake'),
+      revokeObjectURL: vi.fn(),
+    });
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -33,8 +40,13 @@ describe('useTts', () => {
 
   it('speak sets isSpeaking and calls fetch', async () => {
     const { result } = renderHook(() => useTts());
-    await act(async () => { await result.current.speak('hello'); });
-    expect(fetchMock).toHaveBeenCalledWith('/api/voice/synthesize', expect.objectContaining({ method: 'POST' }));
+    await act(async () => {
+      await result.current.speak('hello');
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/voice/synthesize',
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 
   it('stop pauses audio without throwing', () => {
@@ -45,7 +57,9 @@ describe('useTts', () => {
   it('sets error when synth fails', async () => {
     fetchMock.mockResolvedValue({ ok: false } as Response);
     const { result } = renderHook(() => useTts());
-    await act(async () => { await result.current.speak('hi'); });
+    await act(async () => {
+      await result.current.speak('hi');
+    });
     await waitFor(() => expect(result.current.error).toBe('TTS failed'));
   });
 });

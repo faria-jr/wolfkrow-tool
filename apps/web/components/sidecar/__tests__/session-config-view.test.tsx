@@ -10,7 +10,9 @@ describe('SessionConfigView', () => {
   beforeEach(() => {
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ studioUrl: 'http://127.0.0.1:7460/projects/wolfkrow-acme?host=wolfkrow' }),
+      json: async () => ({
+        studioUrl: 'http://127.0.0.1:7460/projects/wolfkrow-acme?host=wolfkrow',
+      }),
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -27,7 +29,7 @@ describe('SessionConfigView', () => {
         name="Acme CRM"
         specContent="Build a CRM."
         onStudioUrl={() => {}}
-      />,
+      />
     );
     expect(screen.getByText('Design session')).toBeInTheDocument();
     expect(screen.getByLabelText(/model/i)).toBeInTheDocument();
@@ -42,7 +44,7 @@ describe('SessionConfigView', () => {
         name="Acme CRM"
         specContent="Build a CRM."
         onStudioUrl={onStudioUrl}
-      />,
+      />
     );
 
     await userEvent.click(screen.getByRole('button', { name: /start session/i }));
@@ -57,7 +59,7 @@ describe('SessionConfigView', () => {
       specContent: 'Build a CRM.',
     });
     expect(onStudioUrl).toHaveBeenCalledWith(
-      'http://127.0.0.1:7460/projects/wolfkrow-acme?host=wolfkrow',
+      'http://127.0.0.1:7460/projects/wolfkrow-acme?host=wolfkrow'
     );
   });
 
@@ -73,7 +75,7 @@ describe('SessionConfigView', () => {
         name="Acme"
         specContent="x"
         onStudioUrl={() => {}}
-      />,
+      />
     );
     await userEvent.click(screen.getByRole('button', { name: /start session/i }));
     await waitFor(() => expect(screen.getByText(/Engine unavailable/i)).toBeInTheDocument());

@@ -11,7 +11,7 @@ export class CohereReranker implements RerankerPort {
   constructor(
     private readonly apiKey: string,
     private readonly model = 'rerank-multilingual-v3.0',
-    private readonly endpoint = 'https://api.cohere.ai/v2/rerank',
+    private readonly endpoint = 'https://api.cohere.ai/v2/rerank'
   ) {}
 
   async rerank(query: string, documents: string[], topN: number): Promise<RerankHit[]> {

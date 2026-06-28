@@ -18,7 +18,10 @@ let testDir: string;
 beforeAll(async () => {
   testDir = join(tmpdir(), `profiler-route-test-${Date.now()}`);
   mkdirSync(join(testDir, 'src'), { recursive: true });
-  writeFileSync(join(testDir, 'package.json'), JSON.stringify({ name: 'test', dependencies: { fastify: '*' } }));
+  writeFileSync(
+    join(testDir, 'package.json'),
+    JSON.stringify({ name: 'test', dependencies: { fastify: '*' } })
+  );
   writeFileSync(join(testDir, 'src', 'index.ts'), 'export {}');
 
   app = Fastify();

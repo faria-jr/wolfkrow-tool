@@ -30,7 +30,9 @@ describe('ensureBuiltInSkills', () => {
     mockRepo.findBuiltIn.mockReset();
     mockRepo.save.mockReset();
     mockSkill.fromProps.mockReset();
-    mockSkill.fromProps.mockImplementation((props: { name: string }) => ({ id: `owned-${props.name}` }));
+    mockSkill.fromProps.mockImplementation((props: { name: string }) => ({
+      id: `owned-${props.name}`,
+    }));
   });
 
   it('returns 0 and skips writes when built-in skills already exist', async () => {

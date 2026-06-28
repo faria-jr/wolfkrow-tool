@@ -13,7 +13,9 @@ describe('DeleteAgentDialog', () => {
   });
 
   it('disables confirm button while loading', () => {
-    render(<DeleteAgentDialog open agentName="Alpha" onClose={vi.fn()} onConfirm={vi.fn()} loading />);
+    render(
+      <DeleteAgentDialog open agentName="Alpha" onClose={vi.fn()} onConfirm={vi.fn()} loading />
+    );
     expect(screen.getByRole('button', { name: /deleting/i })).toBeDisabled();
   });
 

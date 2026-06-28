@@ -12,7 +12,18 @@ describe('SearchPanel', () => {
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      text: async () => JSON.stringify({ results: [{ chunkId: 'c1', documentId: 'doc-1234567890', content: 'hello', score: 0.9, metadata: { sourceType: 'text' } }] }),
+      text: async () =>
+        JSON.stringify({
+          results: [
+            {
+              chunkId: 'c1',
+              documentId: 'doc-1234567890',
+              content: 'hello',
+              score: 0.9,
+              metadata: { sourceType: 'text' },
+            },
+          ],
+        }),
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -34,7 +45,11 @@ describe('SearchPanel', () => {
   });
 
   it('shows no results message when empty', async () => {
-    fetchMock.mockResolvedValueOnce({ ok: true, status: 200, text: async () => JSON.stringify({ results: [] }) } as Response);
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ results: [] }),
+    } as Response);
     render(<SearchPanel />);
     await userEvent.type(screen.getByPlaceholderText(/search your documents/i), 'zzz');
     await userEvent.click(screen.getByRole('button', { name: /search/i }));

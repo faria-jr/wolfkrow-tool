@@ -59,7 +59,11 @@ describe('logs GET /history — level + module filters', () => {
   });
 
   it('combines level + module filters', async () => {
-    const res = await app.inject({ method: 'GET', url: '/history?level=error&module=mod-a', headers: BEARER });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/history?level=error&module=mod-a',
+      headers: BEARER,
+    });
     expect(res.statusCode).toBe(200);
     const entries = (res.json() as { entries: { level: string; module: string }[] }).entries;
     expect(entries.every((e) => e.level === 'error' && e.module === 'mod-a')).toBe(true);

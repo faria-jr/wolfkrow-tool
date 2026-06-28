@@ -132,15 +132,19 @@ export function getAgenticStreamPort(opts: {
   requestPermission: (callId: string, tool: string) => Promise<boolean>;
   workDir?: string;
 }): AIStreamPort {
-  const provider = new ClaudeAgentProvider(opts.apiKey, getToolRegistry(), defaultPermissionResolver, {
-    agent: { allowedTools: [...opts.allowedTools] },
-    requestPermission: (e) => opts.requestPermission(e.callId, e.name),
-    ...(opts.workDir !== undefined ? { workDir: opts.workDir } : {}),
-  });
+  const provider = new ClaudeAgentProvider(
+    opts.apiKey,
+    getToolRegistry(),
+    defaultPermissionResolver,
+    {
+      agent: { allowedTools: [...opts.allowedTools] },
+      requestPermission: (e) => opts.requestPermission(e.callId, e.name),
+      ...(opts.workDir !== undefined ? { workDir: opts.workDir } : {}),
+    }
+  );
   return {
     query: (o: AICompletionOptions) => provider.query(o) as AsyncIterable<AIStreamChunk>,
-    complete: (o: AICompletionOptions) =>
-      provider.complete(o) as Promise<AICompletionResult>,
+    complete: (o: AICompletionOptions) => provider.complete(o) as Promise<AICompletionResult>,
   };
 }
 
@@ -154,14 +158,18 @@ export function getCompatAgenticStreamPort(opts: {
 }): AIStreamPort {
   const filteredTools = getToolRegistry().forAgent([...opts.allowedTools]);
   const registry = new ToolRegistry(filteredTools);
-  const provider = new ClaudeCompatProvider(opts.apiKey, { baseUrl: opts.cfg.baseUrl }, {
-    supportsTools: true,
-    toolRegistry: registry,
-    permissionResolver: defaultPermissionResolver,
-    agent: { allowedTools: [...opts.allowedTools] },
-    requestPermission: (e) => opts.requestPermission(e.callId, e.name),
-    ...(opts.workDir !== undefined ? { workDir: opts.workDir } : {}),
-  });
+  const provider = new ClaudeCompatProvider(
+    opts.apiKey,
+    { baseUrl: opts.cfg.baseUrl },
+    {
+      supportsTools: true,
+      toolRegistry: registry,
+      permissionResolver: defaultPermissionResolver,
+      agent: { allowedTools: [...opts.allowedTools] },
+      requestPermission: (e) => opts.requestPermission(e.callId, e.name),
+      ...(opts.workDir !== undefined ? { workDir: opts.workDir } : {}),
+    }
+  );
   return {
     query: (o: AICompletionOptions) => provider.query(o) as AsyncIterable<AIStreamChunk>,
     complete: (o: AICompletionOptions) => provider.complete(o) as Promise<AICompletionResult>,
@@ -193,8 +201,8 @@ export async function resolveAgentStreamPort({
   const provCfg = await resolveProviderConfig(provId, userId);
 
   if (provCfg.supportsTools && provId !== ANTHROPIC_BUILTIN_ID) {
-    const apiKey = (await getAdapters().secrets.get(provCfg.apiKeyAccount))
-      ?? (await getProviderApiKey(provId));
+    const apiKey =
+      (await getAdapters().secrets.get(provCfg.apiKeyAccount)) ?? (await getProviderApiKey(provId));
     return getCompatAgenticStreamPort({
       cfg: provCfg,
       apiKey,
@@ -213,6 +221,6 @@ export function getHarnessProjectWorkDir(projectId: string): string {
   return path.join(
     process.env['HARNESS_WORKSPACE_DIR'] ?? os.tmpdir(),
     'wolfkrow-harness',
-    projectId,
+    projectId
   );
 }

@@ -97,7 +97,7 @@ export async function seedAgents(opts: SeedAgentsOptions): Promise<number> {
 export async function ensureSeedAgents(
   repo: AgentRepo,
   userId: string,
-  dir: string,
+  dir: string
 ): Promise<number> {
   const existing = await repo.findByUserId(userId);
   if (existing.length > 0) return 0;

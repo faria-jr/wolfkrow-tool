@@ -28,7 +28,13 @@ import { expect, test } from './helpers/test-fixtures';
 
 async function fillProviderForm(
   page: Page,
-  values: { displayName: string; baseUrl: string; apiKeyAccount: string; model: string; apiKey?: string },
+  values: {
+    displayName: string;
+    baseUrl: string;
+    apiKeyAccount: string;
+    model: string;
+    apiKey?: string;
+  }
 ): Promise<void> {
   const dialog = page.getByRole('dialog');
   await dialog.locator('input[name="displayName"]').fill(values.displayName);
@@ -42,17 +48,28 @@ async function fillProviderForm(
 }
 
 test.describe('Complete scenario — onboarding to chat', () => {
-  test('login → settings (provider) → vault (secret) → chat (use it) → lock', async ({ authedPage }) => {
+  test('login → settings (provider) → vault (secret) → chat (use it) → lock', async ({
+    authedPage,
+  }) => {
     // ===== 1) Chat começa vazio =====
     await authedPage.route('**/api/chat/sessions', async (route) => {
       if (route.request().method() === 'GET') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
       } else {
         const id = `sess-${Math.random().toString(36).slice(2, 10)}`;
         await route.fulfill({
           status: 201,
           contentType: 'application/json',
-          body: JSON.stringify({ id, title: 'New Chat', lastActivity: new Date().toISOString(), archived: false }),
+          body: JSON.stringify({
+            id,
+            title: 'New Chat',
+            lastActivity: new Date().toISOString(),
+            archived: false,
+          }),
         });
       }
     });
@@ -60,7 +77,11 @@ test.describe('Complete scenario — onboarding to chat', () => {
     let providerList: Array<Record<string, unknown>> = [];
     await authedPage.route('**/api/providers', async (route) => {
       if (route.request().method() === 'GET') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(providerList) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(providerList),
+        });
       } else if (route.request().method() === 'POST') {
         const body = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
         providerList = [
@@ -75,7 +96,11 @@ test.describe('Complete scenario — onboarding to chat', () => {
             supportsTools: body['supportsTools'],
           },
         ];
-        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true }),
+        });
       } else {
         await route.continue();
       }
@@ -84,12 +109,20 @@ test.describe('Complete scenario — onboarding to chat', () => {
     let secrets: Array<Record<string, unknown>> = [];
     await authedPage.route('**/api/vault', async (route) => {
       if (route.request().method() === 'GET') {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ secrets }) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ secrets }),
+        });
       } else if (route.request().method() === 'POST') {
         const body = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
         const next = { id: `sec-${Date.now()}`, ...body };
         secrets = [...secrets, next];
-        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify({ ok: true }),
+        });
       } else {
         await route.continue();
       }
@@ -168,10 +201,12 @@ test.describe('Complete scenario — onboarding to chat', () => {
     await authedPage.locator(SELECTORS.chat.messageInput).fill('Use the new provider please');
     await authedPage.locator(SELECTORS.chat.sendButton).click();
 
-    await expect(authedPage.locator(SELECTORS.chat.userMessage)).toContainText('Use the new provider please');
+    await expect(authedPage.locator(SELECTORS.chat.userMessage)).toContainText(
+      'Use the new provider please'
+    );
     await expect(authedPage.locator(SELECTORS.chat.assistantMessage)).toContainText(
       /configurou.*provider custom|como posso ajudar/i,
-      { timeout: 10_000 },
+      { timeout: 10_000 }
     );
 
     // ===== 7) Cria mais uma sessão, alterna e deleta a primeira =====
@@ -180,8 +215,13 @@ test.describe('Complete scenario — onboarding to chat', () => {
     await expect(authedPage.locator(SELECTORS.chat.userMessage)).toHaveCount(0);
 
     // Volta para a primeira sessão
-    await authedPage.getByRole('button', { name: /use the new provider/i }).first().click();
-    await expect(authedPage.locator(SELECTORS.chat.userMessage)).toContainText('Use the new provider please');
+    await authedPage
+      .getByRole('button', { name: /use the new provider/i })
+      .first()
+      .click();
+    await expect(authedPage.locator(SELECTORS.chat.userMessage)).toContainText(
+      'Use the new provider please'
+    );
 
     // Delete a primeira sessão via janela de confirmação
     let deletedId: string | null = null;

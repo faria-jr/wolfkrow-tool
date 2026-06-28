@@ -1,7 +1,6 @@
 import { BUILT_IN_MCP_SERVERS, PLANNED_MCP_SERVERS } from '@wolfkrow/infra';
 import { cookies } from 'next/headers';
 
-
 import { getSession } from '@/lib/auth';
 
 /**
@@ -17,12 +16,12 @@ import { getSession } from '@/lib/auth';
  * (back-end for the `source` field in `McpServerData`.)
  */
 export async function GET() {
- const cookieStore = await cookies();
- const session = await getSession(cookieStore.get('session')?.value);
- if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  const cookieStore = await cookies();
+  const session = await getSession(cookieStore.get('session')?.value);
+  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
- return Response.json({
- builtIn: BUILT_IN_MCP_SERVERS.map((s) => s.name),
- planned: PLANNED_MCP_SERVERS.map((s) => s.name),
- });
+  return Response.json({
+    builtIn: BUILT_IN_MCP_SERVERS.map((s) => s.name),
+    planned: PLANNED_MCP_SERVERS.map((s) => s.name),
+  });
 }

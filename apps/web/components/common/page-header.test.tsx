@@ -28,8 +28,12 @@ describe('PageHeader', () => {
     render(
       <PageHeader
         title="Agents"
-        actions={<button type="button" onClick={vi.fn()}>New</button>}
-      />,
+        actions={
+          <button type="button" onClick={vi.fn()}>
+            New
+          </button>
+        }
+      />
     );
     expect(screen.getByRole('button', { name: 'New' })).toBeDefined();
   });

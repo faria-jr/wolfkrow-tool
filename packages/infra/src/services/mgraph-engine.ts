@@ -72,7 +72,7 @@ function buildGraphEdges(notes: VaultNote[]): VaultGraphEdge[] {
     for (const target of note.wikilinks) {
       const targetSlug = sanitizeFilename(target);
       const match = nodes.find(
-        (n) => sanitizeFilename(n.title) === targetSlug || n.path.endsWith(`/${targetSlug}.md`),
+        (n) => sanitizeFilename(n.title) === targetSlug || n.path.endsWith(`/${targetSlug}.md`)
       );
       if (!match) continue;
       const edgeKey = `${note.path}->${match.path}`;
@@ -152,7 +152,12 @@ export class MgraphEngine {
     });
   }
 
-  async updateNote(path: string, body: string, title?: string, tags?: string[]): Promise<VaultNote> {
+  async updateNote(
+    path: string,
+    body: string,
+    title?: string,
+    tags?: string[]
+  ): Promise<VaultNote> {
     const existing = await this.readNote(path);
     if (!existing) throw new Error(`Note not found: ${path}`);
     const abs = this.resolveSafe(path);
@@ -221,9 +226,10 @@ export class MgraphEngine {
       const bodyHit = note.body.toLowerCase().includes(lower);
       if (!titleHit && !bodyHit) continue;
       const idx = note.body.toLowerCase().indexOf(lower);
-      const snippet = idx >= 0
-        ? note.body.slice(Math.max(0, idx - 30), idx + lower.length + 30)
-        : note.body.slice(0, 80);
+      const snippet =
+        idx >= 0
+          ? note.body.slice(Math.max(0, idx - 30), idx + lower.length + 30)
+          : note.body.slice(0, 80);
       out.push({ path: note.path, title: note.title, snippet });
       if (out.length >= limit) break;
     }
@@ -233,7 +239,11 @@ export class MgraphEngine {
   async getStats(): Promise<MgraphStats> {
     const notes = await this.listAllNotes();
     const byKind: Record<VaultKind, number> = {
-      entity: 0, meeting: 0, decision: 0, project: 0, reference: 0,
+      entity: 0,
+      meeting: 0,
+      decision: 0,
+      project: 0,
+      reference: 0,
     };
     for (const n of notes) byKind[n.kind]++;
     const graph = await this.buildGraphData();

@@ -13,7 +13,7 @@ export interface SearchMemoryOutput {
 export class SearchMemoryUseCase {
   constructor(
     private readonly repo: SemanticMemoryRepo,
-    private readonly embedder: EmbeddingPort,
+    private readonly embedder: EmbeddingPort
   ) {}
 
   async execute(input: SearchMemoryInput): Promise<SearchMemoryOutput> {

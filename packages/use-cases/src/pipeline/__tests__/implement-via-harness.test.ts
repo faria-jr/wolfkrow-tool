@@ -3,14 +3,10 @@ import type {
   HarnessSprintRepo,
   PipelinePhaseRepo,
   PipelineProjectRepo,
-
   HarnessProject,
-  HarnessSprint} from '@wolfkrow/domain';
-import {
-  PipelinePhase,
-  PipelineProject,
-  type SprintFeature,
+  HarnessSprint,
 } from '@wolfkrow/domain';
+import { PipelinePhase, PipelineProject, type SprintFeature } from '@wolfkrow/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { HarnessPlanner, PlannerSprintData } from '../../harness/plan-sprints';
@@ -18,38 +14,80 @@ import { ImplementViaHarnessUseCase } from '../implement-via-harness';
 
 class InMemoryPipelineProjectRepo implements PipelineProjectRepo {
   readonly store = new Map<string, PipelineProject>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByUserId(u: string) { return [...this.store.values()].filter((p) => p.userId === u); }
-  async save(p: PipelineProject) { this.store.set(p.id, p); return p; }
-  async delete(id: string) { this.store.delete(id); }
+  async findAll() {
+    return [...this.store.values()];
+  }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByUserId(u: string) {
+    return [...this.store.values()].filter((p) => p.userId === u);
+  }
+  async save(p: PipelineProject) {
+    this.store.set(p.id, p);
+    return p;
+  }
+  async delete(id: string) {
+    this.store.delete(id);
+  }
 }
 
 class InMemoryPipelinePhaseRepo implements PipelinePhaseRepo {
   readonly store = new Map<string, PipelinePhase>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByProjectId(pid: string) { return [...this.store.values()].filter((p) => p.projectId === pid); }
-  async save(p: PipelinePhase) { this.store.set(p.id, p); return p; }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByProjectId(pid: string) {
+    return [...this.store.values()].filter((p) => p.projectId === pid);
+  }
+  async save(p: PipelinePhase) {
+    this.store.set(p.id, p);
+    return p;
+  }
 }
 
 class InMemoryHarnessProjectRepo implements HarnessProjectRepo {
   readonly store = new Map<string, HarnessProject>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByUserId(u: string) { return [...this.store.values()].filter((p) => p.userId === u); }
-  async save(p: HarnessProject) { this.store.set(p.id, p); return p; }
-  async delete(id: string) { this.store.delete(id); }
+  async findAll() {
+    return [...this.store.values()];
+  }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByUserId(u: string) {
+    return [...this.store.values()].filter((p) => p.userId === u);
+  }
+  async save(p: HarnessProject) {
+    this.store.set(p.id, p);
+    return p;
+  }
+  async delete(id: string) {
+    this.store.delete(id);
+  }
 }
 
 class InMemoryHarnessSprintRepo implements HarnessSprintRepo {
   readonly store = new Map<string, HarnessSprint>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByProjectId(pid: string) { return [...this.store.values()].filter((s) => s.toProps().projectId === pid); }
-  async save(s: HarnessSprint) { this.store.set(s.id, s); return s; }
-  async delete(id: string) { this.store.delete(id); }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByProjectId(pid: string) {
+    return [...this.store.values()].filter((s) => s.toProps().projectId === pid);
+  }
+  async save(s: HarnessSprint) {
+    this.store.set(s.id, s);
+    return s;
+  }
+  async delete(id: string) {
+    this.store.delete(id);
+  }
 }
 
 class StubPlanner implements HarnessPlanner {
   constructor(private readonly sprintData: PlannerSprintData[]) {}
-  async plan() { return this.sprintData; }
+  async plan() {
+    return this.sprintData;
+  }
 }
 
 function makeFeature(name: string): SprintFeature {
@@ -91,10 +129,16 @@ describe('ImplementViaHarnessUseCase (M5.7)', () => {
       specEdits: '# Final Spec\n\nUse Postgres + TypeScript.',
     });
     await projectRepo.save(project);
-    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start());
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start()
+    );
 
     const planner = new StubPlanner([
-      { name: 'Sprint 1', description: 'auth', features: [makeFeature('login'), makeFeature('logout')] },
+      {
+        name: 'Sprint 1',
+        description: 'auth',
+        features: [makeFeature('login'), makeFeature('logout')],
+      },
       { name: 'Sprint 2', description: 'billing', features: [makeFeature('stripe')] },
     ]);
     const uc = makeUc({ projectRepo, phaseRepo, harnessProjectRepo, harnessSprintRepo, planner });
@@ -118,11 +162,16 @@ describe('ImplementViaHarnessUseCase (M5.7)', () => {
       specEdits: '# Old spec',
     });
     await projectRepo.save(project);
-    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start());
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start()
+    );
 
     let captured = '';
     const planner: HarnessPlanner = {
-      async plan(specContent) { captured = specContent; return []; },
+      async plan(specContent) {
+        captured = specContent;
+        return [];
+      },
     };
     const uc = makeUc({ projectRepo, phaseRepo, harnessProjectRepo, harnessSprintRepo, planner });
 
@@ -135,16 +184,24 @@ describe('ImplementViaHarnessUseCase (M5.7)', () => {
   });
 
   it('falls back to discovery notes + name when no spec available', async () => {
-    const project = PipelineProject.create({ userId: 'u1', name: 'Phoenix' }).withStage('approval', {
-      status: 'awaiting_approval',
-      discoveryNotes: 'Key user: solo founder.',
-    });
+    const project = PipelineProject.create({ userId: 'u1', name: 'Phoenix' }).withStage(
+      'approval',
+      {
+        status: 'awaiting_approval',
+        discoveryNotes: 'Key user: solo founder.',
+      }
+    );
     await projectRepo.save(project);
-    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start());
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start()
+    );
 
     let captured = '';
     const planner: HarnessPlanner = {
-      async plan(specContent: string) { captured = specContent; return []; },
+      async plan(specContent: string) {
+        captured = specContent;
+        return [];
+      },
     };
     const uc = makeUc({ projectRepo, phaseRepo, harnessProjectRepo, harnessSprintRepo, planner });
     await uc.execute({ projectId: project.id, phaseId: phase.id });
@@ -155,7 +212,9 @@ describe('ImplementViaHarnessUseCase (M5.7)', () => {
   it('marks the implementation phase as completed with artifact path', async () => {
     const project = PipelineProject.create({ userId: 'u1', name: 'P' });
     await projectRepo.save(project);
-    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start());
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: project.id, stage: 'implementation' }).start()
+    );
 
     const planner = new StubPlanner([{ name: 'S1', description: 'd', features: [] }]);
     const uc = makeUc({ projectRepo, phaseRepo, harnessProjectRepo, harnessSprintRepo, planner });
@@ -168,8 +227,8 @@ describe('ImplementViaHarnessUseCase (M5.7)', () => {
   it('throws NotFoundError for unknown project', async () => {
     const planner = new StubPlanner([]);
     const uc = makeUc({ projectRepo, phaseRepo, harnessProjectRepo, harnessSprintRepo, planner });
-    await expect(
-      uc.execute({ projectId: 'ghost', phaseId: 'p1' }),
-    ).rejects.toThrow(/PipelineProject/);
+    await expect(uc.execute({ projectId: 'ghost', phaseId: 'p1' })).rejects.toThrow(
+      /PipelineProject/
+    );
   });
 });

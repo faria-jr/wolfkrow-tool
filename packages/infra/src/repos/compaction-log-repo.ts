@@ -25,7 +25,9 @@ export class DrizzleCompactionLogRepo implements CompactionLogRepo {
   constructor(private readonly db = getDb()) {}
 
   async findByUserId(userId: string, limit = 50): Promise<CompactionLog[]> {
-    const q = this.db.select().from(compactionLog)
+    const q = this.db
+      .select()
+      .from(compactionLog)
       .where(eq(compactionLog.userId, userId))
       .orderBy(desc(compactionLog.createdAt));
     const rows = limit ? q.limit(limit).all() : q.all();
@@ -34,17 +36,20 @@ export class DrizzleCompactionLogRepo implements CompactionLogRepo {
 
   async save(log: CompactionLog): Promise<CompactionLog> {
     const p = log.toProps();
-    this.db.insert(compactionLog).values({
-      id: p.id,
-      userId: p.userId,
-      sessionId: p.sessionId,
-      trigger: p.trigger,
-      beforeTokens: p.beforeTokens,
-      afterTokens: p.afterTokens,
-      tokensSaved: p.tokensSaved,
-      summary: p.summary,
-      createdAt: p.createdAt,
-    }).run();
+    this.db
+      .insert(compactionLog)
+      .values({
+        id: p.id,
+        userId: p.userId,
+        sessionId: p.sessionId,
+        trigger: p.trigger,
+        beforeTokens: p.beforeTokens,
+        afterTokens: p.afterTokens,
+        tokensSaved: p.tokensSaved,
+        summary: p.summary,
+        createdAt: p.createdAt,
+      })
+      .run();
     return log;
   }
 }

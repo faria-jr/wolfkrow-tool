@@ -33,9 +33,16 @@ export class PtyServer {
     const pty = spawn(opts.shell, [], { cols: opts.cols, rows: opts.rows, cwd: opts.cwd });
     this.sessions.set(id, pty);
   }
-  write(id: string, data: string) { this.sessions.get(id)?.write(data); }
-  resize(id: string, cols: number, rows: number) { this.sessions.get(id)?.resize(cols, rows); }
-  kill(id: string) { this.sessions.get(id)?.kill(); this.sessions.delete(id); }
+  write(id: string, data: string) {
+    this.sessions.get(id)?.write(data);
+  }
+  resize(id: string, cols: number, rows: number) {
+    this.sessions.get(id)?.resize(cols, rows);
+  }
+  kill(id: string) {
+    this.sessions.get(id)?.kill();
+    this.sessions.delete(id);
+  }
 }
 ```
 

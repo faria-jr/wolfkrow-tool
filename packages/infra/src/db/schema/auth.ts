@@ -11,7 +11,9 @@ export const users = sqliteTable('users', {
   email: text('email').unique(),
   displayName: text('display_name'),
   passwordHash: text('password_hash').notNull(),
-  role: text('role', { enum: ['owner'] }).notNull().default('owner'),
+  role: text('role', { enum: ['owner'] })
+    .notNull()
+    .default('owner'),
   totpEnabled: integer('totp_enabled', { mode: 'boolean' }).notNull().default(false),
   totpSecret: text('totp_secret'),
   failedAttempts: integer('failed_attempts').notNull().default(0),
@@ -49,5 +51,5 @@ export const authAuditLog = sqliteTable(
   (t) => ({
     userIdIdx: index('auth_audit_log_user_id_idx').on(t.userId),
     timestampIdx: index('auth_audit_log_timestamp_idx').on(t.timestamp),
-  }),
+  })
 );

@@ -16,7 +16,9 @@ const BASE_SPRINT_PROPS = {
   number: 1,
   name: 'Sprint 1',
   description: 'desc',
-  features: [{ name: 'Auth', description: 'login flow', acceptanceCriteria: ['must authenticate'] }],
+  features: [
+    { name: 'Auth', description: 'login flow', acceptanceCriteria: ['must authenticate'] },
+  ],
   status: 'pending' as const,
   startedAt: undefined,
   completedAt: undefined,
@@ -58,12 +60,16 @@ function makeEvaluator(eval_: EvaluatorAgent['evaluate']): EvaluatorAgent {
 describe('runHarnessFeature', () => {
   it('returns passed=true after 1 round when evaluator passes', async () => {
     const coder = makeCoder(async () => ({ output: 'code output', tokens: 10 }));
-    const evaluator = makeEvaluator(async () => ({ passed: true, feedback: 'looks good', tokens: 5 }));
+    const evaluator = makeEvaluator(async () => ({
+      passed: true,
+      feedback: 'looks good',
+      tokens: 5,
+    }));
 
     const result = await runHarnessFeature(
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 5 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
-      { coder, evaluator },
+      { coder, evaluator }
     );
 
     expect(result.passed).toBe(true);
@@ -79,12 +85,15 @@ describe('runHarnessFeature', () => {
         ? { passed: false, feedback: 'needs work', tokens: 5 }
         : { passed: true, feedback: 'ok', tokens: 5 };
     });
-    const coder = makeCoder(async (input) => ({ output: `out${input.previousFeedback ?? ''}`, tokens: 10 }));
+    const coder = makeCoder(async (input) => ({
+      output: `out${input.previousFeedback ?? ''}`,
+      tokens: 10,
+    }));
 
     const result = await runHarnessFeature(
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 5 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
-      { coder, evaluator },
+      { coder, evaluator }
     );
 
     expect(result.passed).toBe(true);
@@ -99,7 +108,7 @@ describe('runHarnessFeature', () => {
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 5 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
       { coder, evaluator },
-      { shouldAbort: () => true },
+      { shouldAbort: () => true }
     );
 
     expect(result.passed).toBe(false);
@@ -119,7 +128,7 @@ describe('runHarnessFeature', () => {
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 5 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
       { coder, evaluator },
-      { onCoderChunk: (d) => deltas.push(d) },
+      { onCoderChunk: (d) => deltas.push(d) }
     );
 
     expect(deltas).toEqual(['Hel', 'lo']);
@@ -142,7 +151,7 @@ describe('runHarnessFeature', () => {
     await runHarnessFeature(
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 5 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
-      { coder, evaluator },
+      { coder, evaluator }
     );
 
     expect(coderInputs[0]).toBe('');
@@ -151,12 +160,16 @@ describe('runHarnessFeature', () => {
 
   it('exhausts maxRounds and returns passed=false', async () => {
     const coder = makeCoder(async () => ({ output: 'code', tokens: 10 }));
-    const evaluator = makeEvaluator(async () => ({ passed: false, feedback: 'still broken', tokens: 5 }));
+    const evaluator = makeEvaluator(async () => ({
+      passed: false,
+      feedback: 'still broken',
+      tokens: 5,
+    }));
 
     const result = await runHarnessFeature(
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 3 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
-      { coder, evaluator },
+      { coder, evaluator }
     );
 
     expect(result.passed).toBe(false);
@@ -172,7 +185,7 @@ describe('runHarnessFeature', () => {
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 5 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
       { coder, evaluator },
-      { onProgress: (msg) => progress.push(msg) },
+      { onProgress: (msg) => progress.push(msg) }
     );
 
     expect(progress).toHaveLength(1);
@@ -209,7 +222,7 @@ describe('runHarnessFeature — smoke gate', () => {
       },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
       { coder, evaluator, smokeRunner },
-      undefined,
+      undefined
     );
 
     expect(result.passed).toBe(false);
@@ -229,7 +242,7 @@ describe('runHarnessFeature — smoke gate', () => {
       { sprintId: 'sprint-1', featureIndex: 0, coderModel: 'claude-sonnet-4-6', maxRounds: 2 },
       { sprintRepo: makeSprintRepo(), roundRepo: makeRoundRepo() },
       { coder, evaluator, smokeRunner },
-      undefined,
+      undefined
     );
 
     expect(result.passed).toBe(true);

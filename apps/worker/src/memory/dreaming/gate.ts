@@ -29,7 +29,7 @@ export class DreamingGate {
     summaryRepo: DailySummaryRepo,
     compactionLogRepo: CompactionLogRepo,
     private readonly options: DreamingGateOptions,
-    private readonly logger?: Logger,
+    private readonly logger?: Logger
   ) {
     this.idleThresholdMs = options.idleThresholdMs ?? 5 * 60 * 1000;
     this.generateSummary = new GenerateDailySummaryUseCase(summaryRepo);
@@ -77,7 +77,10 @@ export class DreamingGate {
       return;
     }
 
-    this.logger?.info({ userId: this.options.userId }, 'Dreaming gate: idle threshold reached, consolidating');
+    this.logger?.info(
+      { userId: this.options.userId },
+      'Dreaming gate: idle threshold reached, consolidating'
+    );
     await this.consolidate('idle');
   }
 
@@ -102,7 +105,10 @@ export class DreamingGate {
         tokensSaved: 0,
         summary: `Daily summary for ${today}`,
       });
-      this.logger?.info({ userId: this.options.userId, trigger, date: today }, 'Dreaming gate: consolidation complete');
+      this.logger?.info(
+        { userId: this.options.userId, trigger, date: today },
+        'Dreaming gate: consolidation complete'
+      );
     } catch (err) {
       this.logger?.info({ err }, 'Dreaming gate: consolidation failed (non-critical)');
     }

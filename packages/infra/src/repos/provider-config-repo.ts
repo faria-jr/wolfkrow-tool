@@ -12,7 +12,11 @@ export class DrizzleProviderConfigRepo {
   constructor(private readonly db: Db = getDb()) {}
 
   async findAll(userId: string): Promise<ProviderConfig[]> {
-    const rows = this.db.select().from(providerConfigs).where(eq(providerConfigs.userId, userId)).all();
+    const rows = this.db
+      .select()
+      .from(providerConfigs)
+      .where(eq(providerConfigs.userId, userId))
+      .all();
     return rows.map((r) => this.toConfig(r));
   }
 

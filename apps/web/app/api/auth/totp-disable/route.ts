@@ -20,7 +20,9 @@ function getClientInfo(request: NextRequest): { ip: string | undefined; ua: stri
   return { ip, ua };
 }
 
-async function parsePasswordFromBody(request: NextRequest): Promise<{ password: PlainPassword; code: string | undefined } | Response> {
+async function parsePasswordFromBody(
+  request: NextRequest
+): Promise<{ password: PlainPassword; code: string | undefined } | Response> {
   const body = validateBody(DisableTotpRequestBodySchema, await request.json().catch(() => null));
   if (body instanceof Response) return body;
   try {
@@ -44,12 +46,13 @@ export async function POST(request: NextRequest) {
       getRepos().user,
       getAdapters().hasher,
       getAdapters().totp,
-      new LockoutPolicy(),
+      new LockoutPolicy()
     ).execute({ userId: session.userId, password: parsed.password, code: parsed.code });
     audit.log({ userId: session.userId, action: 'totp.disable', ip, userAgent: ua });
     return Response.json({ disabled: true });
   } catch (error) {
-    if (error instanceof UnauthorizedError) return Response.json({ error: error.message }, { status: 401 });
+    if (error instanceof UnauthorizedError)
+      return Response.json({ error: error.message }, { status: 401 });
     throw error;
   }
 }

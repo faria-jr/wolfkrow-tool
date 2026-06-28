@@ -25,9 +25,7 @@ describe('skill schemas', () => {
       expect(parsed.metadata).toEqual({});
     });
     it('rejects missing name', () => {
-      expect(() =>
-        SkillFrontmatterSchema.parse({ description: 'desc' }),
-      ).toThrow();
+      expect(() => SkillFrontmatterSchema.parse({ description: 'desc' })).toThrow();
     });
     it('rejects missing description', () => {
       expect(() => SkillFrontmatterSchema.parse({ name: 's' })).toThrow();
@@ -37,7 +35,7 @@ describe('skill schemas', () => {
         SkillFrontmatterSchema.parse({
           name: 's',
           description: 'a'.repeat(501),
-        }),
+        })
       ).toThrow();
     });
   });
@@ -82,9 +80,7 @@ describe('skill schemas', () => {
       expect(parsed.isBuiltIn).toBe(false);
     });
     it('rejects missing content', () => {
-      expect(() =>
-        CreateSkillInputSchema.parse({ name: 's', description: 'd' }),
-      ).toThrow();
+      expect(() => CreateSkillInputSchema.parse({ name: 's', description: 'd' })).toThrow();
     });
   });
 
@@ -106,9 +102,7 @@ describe('skill schemas', () => {
       expect(parsed.tags).toEqual([]);
     });
     it('rejects name over 255 chars', () => {
-      expect(() =>
-        CreateSkillRequestBodySchema.parse({ name: 'a'.repeat(256) }),
-      ).toThrow();
+      expect(() => CreateSkillRequestBodySchema.parse({ name: 'a'.repeat(256) })).toThrow();
     });
   });
 
@@ -117,9 +111,7 @@ describe('skill schemas', () => {
       expect(UpdateSkillRequestBodySchema.parse({})).toEqual({});
     });
     it('rejects name over 255 when provided', () => {
-      expect(() =>
-        UpdateSkillRequestBodySchema.parse({ name: 'a'.repeat(256) }),
-      ).toThrow();
+      expect(() => UpdateSkillRequestBodySchema.parse({ name: 'a'.repeat(256) })).toThrow();
     });
   });
 });

@@ -33,7 +33,10 @@ const tools: McpTool[] = [
       type: 'object',
       properties: {
         text: { type: 'string', description: 'Text to synthesize' },
-        voice_id: { type: 'string', description: 'Voice id (default from ELEVENLABS_VOICE_ID env)' },
+        voice_id: {
+          type: 'string',
+          description: 'Voice id (default from ELEVENLABS_VOICE_ID env)',
+        },
         model_id: {
           type: 'string',
           description: 'Model id (default "eleven_multilingual_v2")',
@@ -67,7 +70,7 @@ async function elevenGet(path: string): Promise<unknown> {
 
 async function elevenPostAudio(
   path: string,
-  body: Record<string, unknown>,
+  body: Record<string, unknown>
 ): Promise<{ contentType: string; audioBase64: string; sizeBytes: number }> {
   const key = getApiKey();
   if (!key) throw new Error('ELEVENLABS_API_KEY not set');
@@ -102,13 +105,9 @@ export const handlers: McpHandlers = {
       if (name === 'text_to_speech') {
         const inputText = String(args['text'] ?? '');
         if (!inputText) return failure('text_to_speech requires a "text" argument');
-        const voiceId = String(
-          args['voice_id'] ?? process.env['ELEVENLABS_VOICE_ID'] ?? '',
-        );
+        const voiceId = String(args['voice_id'] ?? process.env['ELEVENLABS_VOICE_ID'] ?? '');
         if (!voiceId) {
-          return failure(
-            'voice_id argument missing and ELEVENLABS_VOICE_ID env not set',
-          );
+          return failure('voice_id argument missing and ELEVENLABS_VOICE_ID env not set');
         }
         const modelId = String(args['model_id'] ?? 'eleven_multilingual_v2');
         const audio = await elevenPostAudio(`/text-to-speech/${encodeURIComponent(voiceId)}`, {

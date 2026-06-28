@@ -62,7 +62,8 @@ describe('auth plugin — authenticate decorator', () => {
   it('returns 401 when the token fails verification', async () => {
     vi.mocked(jwtVerify).mockRejectedValueOnce(new Error('bad signature'));
     const res = await app.inject({
-      method: 'GET', url: '/probe',
+      method: 'GET',
+      url: '/probe',
       headers: { authorization: 'Bearer malformed.token.here' },
     });
     expect(res.statusCode).toBe(401);
@@ -74,7 +75,8 @@ describe('auth plugin — authenticate decorator', () => {
       payload: { sub: 'user-42', iss: 'wolfkrow', aud: 'wolfkrow-worker' },
     } as never);
     const res = await app.inject({
-      method: 'GET', url: '/probe',
+      method: 'GET',
+      url: '/probe',
       headers: { authorization: 'Bearer valid.token.here' },
     });
     expect(res.statusCode).toBe(200);
@@ -84,7 +86,7 @@ describe('auth plugin — authenticate decorator', () => {
     expect(jwtVerify).toHaveBeenCalledWith(
       'valid.token.here',
       expect.anything(),
-      expect.objectContaining({ issuer: 'wolfkrow', audience: 'wolfkrow-worker' }),
+      expect.objectContaining({ issuer: 'wolfkrow', audience: 'wolfkrow-worker' })
     );
   });
 
@@ -94,7 +96,8 @@ describe('auth plugin — authenticate decorator', () => {
     } as never);
     config.WOLFKROW_SHARED_WORKSPACE = 'false';
     const res = await app.inject({
-      method: 'GET', url: '/probe',
+      method: 'GET',
+      url: '/probe',
       headers: { authorization: 'Bearer valid.token.here' },
     });
     expect(res.statusCode).toBe(200);

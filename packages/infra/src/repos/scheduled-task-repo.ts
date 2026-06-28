@@ -36,32 +36,61 @@ export class DrizzleScheduledTaskRepo implements ScheduledTaskRepo {
   }
 
   async findByUserId(userId: string): Promise<ScheduledTask[]> {
-    return this.db.select().from(scheduledTasks).where(eq(scheduledTasks.userId, userId)).all().map(toEntity);
+    return this.db
+      .select()
+      .from(scheduledTasks)
+      .where(eq(scheduledTasks.userId, userId))
+      .all()
+      .map(toEntity);
   }
 
   async findEnabledDueBy(now: Date): Promise<ScheduledTask[]> {
-    return this.db.select().from(scheduledTasks)
+    return this.db
+      .select()
+      .from(scheduledTasks)
       .where(and(eq(scheduledTasks.enabled, true), lte(scheduledTasks.nextRunAt, now)))
-      .all().map(toEntity);
+      .all()
+      .map(toEntity);
   }
 
   async save(task: ScheduledTask): Promise<ScheduledTask> {
     const p = task.toProps();
-    this.db.insert(scheduledTasks).values({
-      id: p.id, userId: p.userId, name: p.name,
-      description: p.description ?? null, cronExpression: p.cronExpression,
-      timezone: p.timezone, prompt: p.prompt, agentId: p.agentId ?? null,
-      enabled: p.enabled, lastRunAt: p.lastRunAt ?? null, nextRunAt: p.nextRunAt ?? null,
-      config: p.config, tags: p.tags, createdAt: p.createdAt, updatedAt: p.updatedAt,
-    }).onConflictDoUpdate({
-      target: scheduledTasks.id,
-      set: {
-        name: p.name, description: p.description ?? null, cronExpression: p.cronExpression,
-        prompt: p.prompt, agentId: p.agentId ?? null, enabled: p.enabled,
-        lastRunAt: p.lastRunAt ?? null, nextRunAt: p.nextRunAt ?? null,
-        config: p.config, tags: p.tags, updatedAt: p.updatedAt,
-      },
-    }).run();
+    this.db
+      .insert(scheduledTasks)
+      .values({
+        id: p.id,
+        userId: p.userId,
+        name: p.name,
+        description: p.description ?? null,
+        cronExpression: p.cronExpression,
+        timezone: p.timezone,
+        prompt: p.prompt,
+        agentId: p.agentId ?? null,
+        enabled: p.enabled,
+        lastRunAt: p.lastRunAt ?? null,
+        nextRunAt: p.nextRunAt ?? null,
+        config: p.config,
+        tags: p.tags,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+      })
+      .onConflictDoUpdate({
+        target: scheduledTasks.id,
+        set: {
+          name: p.name,
+          description: p.description ?? null,
+          cronExpression: p.cronExpression,
+          prompt: p.prompt,
+          agentId: p.agentId ?? null,
+          enabled: p.enabled,
+          lastRunAt: p.lastRunAt ?? null,
+          nextRunAt: p.nextRunAt ?? null,
+          config: p.config,
+          tags: p.tags,
+          updatedAt: p.updatedAt,
+        },
+      })
+      .run();
     return task;
   }
 

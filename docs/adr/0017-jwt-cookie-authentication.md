@@ -14,6 +14,7 @@ O Wolfkrow Tool precisa de autenticação robusta:
 - SSE (streaming)
 
 Opções:
+
 1. **JWT em localStorage**: vulnerável a XSS
 2. **Session cookies (server-side)**: precisa de Redis/DB lookup
 3. **JWT em HttpOnly cookies**: seguro contra XSS, stateless
@@ -58,7 +59,7 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export async function createSession(userId: string) {
   const token = await createToken({ sub: userId, userId }, privateKey);
-  
+
   cookies().set(COOKIE_NAME, token, {
     httpOnly: true,
     secure: false,
@@ -98,13 +99,13 @@ export async function createSession(userId: string) {
 // apps/web/app/api/auth/login/route.ts
 export async function POST(req: NextRequest) {
   const { password } = LoginInputSchema.parse(await req.json());
-  
+
   const user = await container.get(AuthenticateUser).execute({ password });
-  
+
   if (user.requiresTotp) {
     return Response.json({ requiresTotp: true });
   }
-  
+
   await createSession(user.id);
   return Response.json({ success: true });
 }
@@ -116,11 +117,11 @@ export async function POST(req: NextRequest) {
 // apps/web/app/api/auth/totp/route.ts
 export async function POST(req: NextRequest) {
   const { code } = TotpInputSchema.parse(await req.json());
-  
+
   const user = await container.get(VerifyTotp).execute({ code });
-  
+
   if (!user) return Response.json({ error: 'Invalid code' }, { status: 401 });
-  
+
   await createSession(user.id);
   return Response.json({ success: true });
 }
@@ -145,22 +146,22 @@ function isValidSession(token: string | undefined): boolean {
 
 export async function middleware(req: NextRequest) {
   const token = req.cookies.get('session')?.value;
-  
+
   // Public routes
-  const isPublic = 
+  const isPublic =
     req.nextUrl.pathname.startsWith('/login') ||
     req.nextUrl.pathname.startsWith('/onboarding') ||
     req.nextUrl.pathname.startsWith('/unlock') ||
     req.nextUrl.pathname.startsWith('/api/auth/') ||
     req.nextUrl.pathname.startsWith('/_next') ||
     req.nextUrl.pathname.startsWith('/api/health');
-  
+
   if (isPublic) return NextResponse.next();
-  
+
   if (!isValidSession(token)) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
-  
+
   return NextResponse.next();
 }
 
@@ -175,10 +176,12 @@ export const config = {
 // apps/worker/src/middleware/auth.ts
 import { verifyJWT } from '@wolfkrow/infra/auth/jwt';
 
-export async function authenticateWorkerRequest(req: IncomingMessage): Promise<{ userId: string } | null> {
+export async function authenticateWorkerRequest(
+  req: IncomingMessage
+): Promise<{ userId: string } | null> {
   const auth = req.headers.authorization;
   if (!auth?.startsWith('Bearer ')) return null;
-  
+
   return verifyJWT(auth.slice(7));
 }
 ```
@@ -193,26 +196,28 @@ import { useEffect } from 'react';
 export function useAutoLock(timeoutMs = 5 * 60 * 1000) {
   useEffect(() => {
     let lastActivity = Date.now();
-    
-    const updateActivity = () => { lastActivity = Date.now(); };
+
+    const updateActivity = () => {
+      lastActivity = Date.now();
+    };
     const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
     events.forEach((e) => window.addEventListener(e, updateActivity, { passive: true }));
-    
+
     const checkIdle = () => {
       if (Date.now() - lastActivity > timeoutMs) {
         fetch('/api/auth/lock', { method: 'POST' });
       }
     };
-    
+
     const handleVisibility = () => {
       if (document.hidden) {
         fetch('/api/auth/lock', { method: 'POST' });
       }
     };
-    
+
     const interval = setInterval(checkIdle, 30 * 1000);
     document.addEventListener('visibilitychange', handleVisibility);
-    
+
     return () => {
       events.forEach((e) => window.removeEventListener(e, updateActivity));
       document.removeEventListener('visibilitychange', handleVisibility);
@@ -310,7 +315,7 @@ const CSRF_HEADER = 'x-csrf-token';
 export async function getCsrfToken(): Promise<string> {
   const existing = cookies().get(CSRF_COOKIE)?.value;
   if (existing) return existing;
-  
+
   const token = crypto.randomBytes(32).toString('hex');
   cookies().set(CSRF_COOKIE, token, {
     httpOnly: true,
@@ -318,14 +323,14 @@ export async function getCsrfToken(): Promise<string> {
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 30,
   });
-  
+
   return token;
 }
 
 export async function requireCsrf(req: NextRequest): Promise<void> {
   const cookieToken = req.cookies.get(CSRF_COOKIE)?.value;
   const headerToken = req.headers.get(CSRF_HEADER);
-  
+
   if (!cookieToken || !headerToken || cookieToken !== headerToken) {
     throw new ForbiddenError('Invalid CSRF token');
   }

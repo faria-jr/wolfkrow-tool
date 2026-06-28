@@ -43,9 +43,13 @@ describe('McpServerEditScreen (EPIC 1.4)', () => {
 
     render(<McpServerEditScreen serverId="s1" />);
 
-    await waitFor(() => expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe('filesystem'));
+    await waitFor(() =>
+      expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe('filesystem')
+    );
     expect((screen.getByLabelText(/command/i) as HTMLInputElement).value).toBe('npx');
-    expect((screen.getByLabelText(/args/i) as HTMLTextAreaElement).value).toContain('server-filesystem');
+    expect((screen.getByLabelText(/args/i) as HTMLTextAreaElement).value).toContain(
+      'server-filesystem'
+    );
     expect((screen.getByLabelText(/env/i) as HTMLTextAreaElement).value).toContain('ROOT=/tmp');
   });
 
@@ -61,7 +65,10 @@ describe('McpServerEditScreen (EPIC 1.4)', () => {
     await userEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/mcp-servers/s1', expect.objectContaining({ method: 'PATCH' }));
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/mcp-servers/s1',
+        expect.objectContaining({ method: 'PATCH' })
+      );
     });
     expect(push).toHaveBeenCalledWith('/mcp-servers');
   });
@@ -76,7 +83,10 @@ describe('McpServerEditScreen (EPIC 1.4)', () => {
     await userEvent.click(screen.getByRole('button', { name: /create server/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/mcp-servers', expect.objectContaining({ method: 'POST' }));
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/mcp-servers',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
     expect(push).toHaveBeenCalledWith('/mcp-servers');
   });

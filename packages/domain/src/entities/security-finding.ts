@@ -42,16 +42,36 @@ export class SecurityFinding {
     return new SecurityFinding(props);
   }
 
-  get id(): string | undefined { return this.props.id; }
-  get scanId(): string { return this.props.scanId; }
-  get severity(): SecuritySeverity { return this.props.severity; }
-  get dimension(): SecurityDimension { return this.props.dimension; }
-  get file(): string { return this.props.file; }
-  get line(): number | undefined { return this.props.line; }
-  get message(): string { return this.props.message; }
-  get rule(): string | undefined { return this.props.rule; }
-  get agentId(): string | undefined { return this.props.agentId; }
-  get createdAt(): Date { return this.props.createdAt ?? new Date(); }
+  get id(): string | undefined {
+    return this.props.id;
+  }
+  get scanId(): string {
+    return this.props.scanId;
+  }
+  get severity(): SecuritySeverity {
+    return this.props.severity;
+  }
+  get dimension(): SecurityDimension {
+    return this.props.dimension;
+  }
+  get file(): string {
+    return this.props.file;
+  }
+  get line(): number | undefined {
+    return this.props.line;
+  }
+  get message(): string {
+    return this.props.message;
+  }
+  get rule(): string | undefined {
+    return this.props.rule;
+  }
+  get agentId(): string | undefined {
+    return this.props.agentId;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt ?? new Date();
+  }
 
   toJSON(): SecurityFindingProps {
     return { ...this.props, createdAt: this.createdAt };
@@ -66,11 +86,21 @@ export interface SecurityScanSummary {
 
 export function summarizeFindings(findings: readonly SecurityFinding[]): SecurityScanSummary {
   const bySeverity: Record<SecuritySeverity, number> = {
-    info: 0, warning: 0, major: 0, critical: 0, blocker: 0,
+    info: 0,
+    warning: 0,
+    major: 0,
+    critical: 0,
+    blocker: 0,
   };
   const byDimension: Record<SecurityDimension, number> = {
-    secrets: 0, auth: 0, isolation: 0, duplication: 0, logic: 0,
-    standards: 0, owasp: 0, general: 0,
+    secrets: 0,
+    auth: 0,
+    isolation: 0,
+    duplication: 0,
+    logic: 0,
+    standards: 0,
+    owasp: 0,
+    general: 0,
   };
   for (const f of findings) {
     bySeverity[f.severity] += 1;

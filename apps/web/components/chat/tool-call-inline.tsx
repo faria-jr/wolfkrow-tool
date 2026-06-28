@@ -19,9 +19,13 @@ export function ToolCallInline({ toolCall }: Props) {
   const artifactType = toolCall.output ? detectArtifact(toolCall.output) : undefined;
 
   return (
-    <div className="my-1 rounded border border-border bg-muted/30 px-3 py-2 text-xs font-mono" role="article" aria-label={`Tool call: ${toolCall.name}`}>
+    <div
+      className="border-border bg-muted/30 my-1 rounded border px-3 py-2 font-mono text-xs"
+      role="article"
+      aria-label={`Tool call: ${toolCall.name}`}
+    >
       <div className="flex items-center gap-2">
-        <span className="font-semibold text-foreground">{toolCall.name}</span>
+        <span className="text-foreground font-semibold">{toolCall.name}</span>
         <StatusBadge status={toolCall.status} />
       </div>
       {toolCall.output && artifactType && (

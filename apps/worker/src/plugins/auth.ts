@@ -55,7 +55,10 @@ async function verifyBearer(request: FastifyRequest): Promise<string | null> {
   // via `credentials: 'include'` instead of an Authorization header.
   const cookie = request.headers.cookie;
   if (cookie) {
-    const match = cookie.split(';').map(c => c.trim()).find(c => c.startsWith('session='));
+    const match = cookie
+      .split(';')
+      .map((c) => c.trim())
+      .find((c) => c.startsWith('session='));
     if (match) return match.slice('session='.length);
   }
 
@@ -63,10 +66,7 @@ async function verifyBearer(request: FastifyRequest): Promise<string | null> {
 }
 
 export const authPlugin = fp(async function (fastify: FastifyInstance) {
-  fastify.decorate('authenticate', async function (
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ) {
+  fastify.decorate('authenticate', async function (request: FastifyRequest, reply: FastifyReply) {
     const token = await verifyBearer(request);
     if (!token) {
       return reply.status(401).send({ error: 'Missing authorization header' });

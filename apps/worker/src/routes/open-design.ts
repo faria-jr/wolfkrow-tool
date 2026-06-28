@@ -11,12 +11,16 @@
  *                                 project + seed the design-brief prompt
  *   POST /open-design/snapshot  — capture the design HTML artifact
  *
- * Like sidecar, lifecycle is a privileged global op (no per-user data) — auth
- * hardening tracked alongside sidecar.
+ * All lifecycle + session routes are privileged operations that spawn/stop
+ * processes and write to the filesystem, so every route requires an
+ * authenticated session. The actor is recorded via the worker audit log.
  */
 
+import { RecordAuditEntryUseCase } from '@wolfkrow/use-cases';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import { getRepos } from '../container';
+import { validateProjectPath } from '../lib/project-path';
 import { bootstrapDesignSession } from '../open-design/bootstrap';
 import { OpenDesignClient } from '../open-design/client';
 import { lockDesign } from '../open-design/lock';
@@ -39,8 +43,35 @@ const lockBody = z.object({
   outputDir: z.string().min(1).max(4096),
 });
 
+function actorId(req: FastifyRequest): string {
+  return req.user?.userId ?? 'unknown';
+}
+
+/** Records an open-design lifecycle event in the audit log (best-effort). */
+function auditOpenDesign(
+  req: FastifyRequest,
+  action: string,
+  resourceId?: string,
+  metadata?: Record<string, unknown>
+): void {
+  try {
+    const repo = getRepos().auditLog;
+    new RecordAuditEntryUseCase(repo).execute({
+      userId: actorId(req),
+      action,
+      resourceType: 'open-design',
+      ...(resourceId !== undefined ? { resourceId } : {}),
+      metadata: metadata ?? {},
+    });
+  } catch {
+    // Audit must never break the lifecycle op itself.
+  }
+}
+
 /** Returns the daemon client + web URL, or sends 409 when the engine isn't up. */
-async function resolveEngine(reply: FastifyReply): Promise<{ client: OpenDesignClient; webUrl: string } | null> {
+async function resolveEngine(
+  reply: FastifyReply
+): Promise<{ client: OpenDesignClient; webUrl: string } | null> {
   const { daemonUrl, webUrl, status } = openDesignManager.getState();
   if (status !== 'running' || !daemonUrl || !webUrl) {
     reply.status(409).send({ error: 'Open Design engine is not running' });
@@ -60,6 +91,7 @@ async function bootstrapHandler(req: FastifyRequest, reply: FastifyReply) {
     webUrl: engine.webUrl,
     ...(body.designSystemId !== undefined ? { designSystemId: body.designSystemId } : {}),
   });
+  auditOpenDesign(req, 'bootstrap', body.wolfkrowProjectId, { name: body.name });
   return result;
 }
 
@@ -67,32 +99,50 @@ async function snapshotHandler(req: FastifyRequest, reply: FastifyReply) {
   const engine = await resolveEngine(reply);
   if (!engine) return;
   const body = validate(snapshotBody, req.body);
-  return captureDesignArtifact(engine.client, body.odProjectId);
+  const result = captureDesignArtifact(engine.client, body.odProjectId);
+  auditOpenDesign(req, 'snapshot', body.odProjectId);
+  return result;
 }
 
 async function lockHandler(req: FastifyRequest, reply: FastifyReply) {
   const engine = await resolveEngine(reply);
   if (!engine) return;
   const body = validate(lockBody, req.body);
-  return lockDesign({ client: engine.client, odProjectId: body.odProjectId, outputDir: body.outputDir });
+  const checkedDir = validateProjectPath(body.outputDir);
+  if (!checkedDir.ok) {
+    return reply.status(422).send({ error: checkedDir.reason });
+  }
+  const result = await lockDesign({
+    client: engine.client,
+    odProjectId: body.odProjectId,
+    outputDir: checkedDir.path,
+  });
+  auditOpenDesign(req, 'lock', body.odProjectId, { outputDir: checkedDir.path });
+  return result;
 }
 
 export async function openDesignRoutes(server: AuthFastifyInstance) {
-  server.post('/start', async (_req, reply) => {
+  // Every route spawns/stops a process or writes to the filesystem, so all
+  // require an authenticated session. The actor is recorded via audit log.
+  const auth = { onRequest: [server.authenticate] };
+
+  server.post('/start', auth, async (req, reply) => {
     openDesignManager.start();
+    auditOpenDesign(req, 'start');
     return reply.send({ ok: true, state: openDesignManager.getState() });
   });
 
-  server.post('/stop', async (_req, reply) => {
+  server.post('/stop', auth, async (req, reply) => {
     openDesignManager.stop();
+    auditOpenDesign(req, 'stop');
     return reply.send({ ok: true });
   });
 
-  server.get('/status', async (_req, reply) => {
+  server.get('/status', auth, async (_req, reply) => {
     return reply.send({ state: openDesignManager.getState() });
   });
 
-  server.post('/bootstrap', bootstrapHandler);
-  server.post('/snapshot', snapshotHandler);
-  server.post('/lock', lockHandler);
+  server.post('/bootstrap', auth, bootstrapHandler);
+  server.post('/snapshot', auth, snapshotHandler);
+  server.post('/lock', auth, lockHandler);
 }

@@ -61,7 +61,9 @@ describe('LoginForm', () => {
   });
 
   it('shows TOTP step when requires_totp', async () => {
-    mockFetch.mockResolvedValueOnce(mockResponse(200, { status: 'requires_totp', userId: VALID_UUID }));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(200, { status: 'requires_totp', userId: VALID_UUID })
+    );
 
     render(<LoginForm />);
     await userEvent.type(screen.getByLabelText(/password/i), 'Password1');
@@ -72,7 +74,9 @@ describe('LoginForm', () => {
   });
 
   it('shows locked message on 423 response', async () => {
-    mockFetch.mockResolvedValueOnce(mockResponse(423, { status: 'locked', lockedUntil: '2099-01-01T12:05:00Z' }));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(423, { status: 'locked', lockedUntil: '2099-01-01T12:05:00Z' })
+    );
 
     render(<LoginForm />);
     await userEvent.type(screen.getByLabelText(/password/i), 'Password1');
@@ -120,7 +124,9 @@ describe('LoginForm', () => {
   });
 
   it('back button returns to password step from TOTP', async () => {
-    mockFetch.mockResolvedValueOnce(mockResponse(200, { status: 'requires_totp', userId: VALID_UUID }));
+    mockFetch.mockResolvedValueOnce(
+      mockResponse(200, { status: 'requires_totp', userId: VALID_UUID })
+    );
 
     render(<LoginForm />);
     await userEvent.type(screen.getByLabelText(/password/i), 'Password1');

@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 
-
 export function GraphView() {
   const g = useGraphData();
 
@@ -99,7 +98,7 @@ function GraphBoard({
         {loading ? (
           <Skeleton className="h-[560px] w-full rounded-lg" />
         ) : nodes.length === 0 ? (
-          <div className="flex h-[560px] items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
+          <div className="border-border text-muted-foreground flex h-[560px] items-center justify-center rounded-lg border border-dashed text-sm">
             No nodes yet. Ingest text to build the graph.
           </div>
         ) : (

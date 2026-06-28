@@ -32,7 +32,10 @@ describe('SkillCreateScreen (EPIC 1.2)', () => {
     await userEvent.click(screen.getByRole('button', { name: /create skill/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/skills', expect.objectContaining({ method: 'POST' }));
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/skills',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
     expect(push).toHaveBeenCalledWith('/skills');
   });

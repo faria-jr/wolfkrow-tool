@@ -1,7 +1,6 @@
 import type { TotpVerifier } from '@wolfkrow/domain';
 import { authenticator } from 'otplib';
 
-
 /**
  * TotpVerifier via otplib (RFC 6238). Implementa o port do domínio.
  * authenticator usa SHA-1/30s/6 dígitos (padrão Google Authenticator).

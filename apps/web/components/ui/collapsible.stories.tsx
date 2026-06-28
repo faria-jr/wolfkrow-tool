@@ -18,9 +18,7 @@ export const Expanded: Story = {
       <div className="rounded-md border px-4 py-3 font-medium">Always visible</div>
       <CollapsibleTrigger className="text-sm underline">Toggle</CollapsibleTrigger>
       <CollapsibleContent className="space-y-2">
-        <div className="rounded-md border px-4 py-3 font-mono text-sm">
-          Hidden until expanded.
-        </div>
+        <div className="rounded-md border px-4 py-3 font-mono text-sm">Hidden until expanded.</div>
       </CollapsibleContent>
     </Collapsible>
   ),
@@ -32,9 +30,7 @@ export const Collapsed: Story = {
       <div className="rounded-md border px-4 py-3 font-medium">Always visible</div>
       <CollapsibleTrigger className="text-sm underline">Toggle</CollapsibleTrigger>
       <CollapsibleContent className="space-y-2">
-        <div className="rounded-md border px-4 py-3 font-mono text-sm">
-          Hidden until expanded.
-        </div>
+        <div className="rounded-md border px-4 py-3 font-mono text-sm">Hidden until expanded.</div>
       </CollapsibleContent>
     </Collapsible>
   ),

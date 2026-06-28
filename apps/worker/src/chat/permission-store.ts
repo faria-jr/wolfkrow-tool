@@ -53,7 +53,7 @@ const pending = new Map<string, PendingEntry>();
  */
 export function requestToolPermission(
   callId: string,
-  ctx: { userId: string; agentId: string; tool: string },
+  ctx: { userId: string; agentId: string; tool: string }
 ): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
     const timer = setTimeout(() => {
@@ -130,7 +130,7 @@ function repo(): DrizzleToolPermissionRepo | null {
 export function getDecision(
   userId: string,
   agentId: string,
-  tool: string,
+  tool: string
 ): ToolPermissionDecision | null {
   return decisionCache.get(decisionKey(userId, agentId, tool)) ?? null;
 }
@@ -144,7 +144,7 @@ export function recordDecision(
   userId: string,
   agentId: string,
   tool: string,
-  decision: ToolPermissionDecision,
+  decision: ToolPermissionDecision
 ): void {
   decisionCache.set(decisionKey(userId, agentId, tool), decision);
   const r = repo();

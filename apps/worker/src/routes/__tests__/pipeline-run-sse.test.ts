@@ -17,13 +17,21 @@ const { fakePhaseRepo, fakeProjectRepo } = vi.hoisted(() => {
     fakePhaseRepo: {
       findById: async (id: string) => phases.get(id) ?? null,
       findByProjectId: async () => [...phases.values()],
-      save: async (p: PipelinePhase) => { phases.set(p.id, p); return p; },
+      save: async (p: PipelinePhase) => {
+        phases.set(p.id, p);
+        return p;
+      },
     },
     fakeProjectRepo: {
       findById: async (id: string) => projects.get(id) ?? null,
       findByUserId: async () => [...projects.values()],
-      save: async (p: PipelineProject) => { projects.set(p.id, p); return p; },
-      delete: async (id: string) => { projects.delete(id); },
+      save: async (p: PipelineProject) => {
+        projects.set(p.id, p);
+        return p;
+      },
+      delete: async (id: string) => {
+        projects.delete(id);
+      },
     },
   };
 });
@@ -32,7 +40,11 @@ vi.mock('@wolfkrow/use-cases', () => {
   const phase = { toProps: () => ({ stage: 'discovery', status: 'completed' }) };
   const project = { toProps: () => ({ currentStage: 'discovery', status: 'active' }) };
   return {
-    RunPhaseUseCase: class { async execute() { return { phase, project, output: 'AI output', tokens: 10 }; } },
+    RunPhaseUseCase: class {
+      async execute() {
+        return { phase, project, output: 'AI output', tokens: 10 };
+      }
+    },
     ImplementViaHarnessUseCase: class {
       async execute() {
         return {
@@ -44,14 +56,46 @@ vi.mock('@wolfkrow/use-cases', () => {
         };
       }
     },
-    ApprovePipelinePhaseUseCase: class { async execute() { return { project, phase }; } },
-    BuildSystemPromptUseCase: class { async execute() { return 'sys-prompt'; } },
-    CreatePipelineProjectUseCase: class { async execute() { return { project }; } },
-    DeletePipelineProjectUseCase: class { async execute() { /* noop */ } },
-    GeneratePipelineReportUseCase: class { async execute() { return { report: '# r' }; } },
-    GetPipelineProjectUseCase: class { async execute() { return { project }; } },
-    ListPipelineProjectsUseCase: class { async execute() { return { projects: [] }; } },
-    StartPhaseUseCase: class { async execute() { return { phase }; } },
+    ApprovePipelinePhaseUseCase: class {
+      async execute() {
+        return { project, phase };
+      }
+    },
+    BuildSystemPromptUseCase: class {
+      async execute() {
+        return 'sys-prompt';
+      }
+    },
+    CreatePipelineProjectUseCase: class {
+      async execute() {
+        return { project };
+      }
+    },
+    DeletePipelineProjectUseCase: class {
+      async execute() {
+        /* noop */
+      }
+    },
+    GeneratePipelineReportUseCase: class {
+      async execute() {
+        return { report: '# r' };
+      }
+    },
+    GetPipelineProjectUseCase: class {
+      async execute() {
+        return { project };
+      }
+    },
+    ListPipelineProjectsUseCase: class {
+      async execute() {
+        return { projects: [] };
+      }
+    },
+    StartPhaseUseCase: class {
+      async execute() {
+        return { phase };
+      }
+    },
   };
 });
 
@@ -66,10 +110,26 @@ vi.mock('../../container', () => ({
   }),
   getArtifactWriter: () => ({ write: vi.fn() }),
   getHarnessAgents: vi.fn().mockResolvedValue({ planner: { plan: async () => ({ sprints: [] }) } }),
-  getAdapters: () => ({ aiFactory: { create: () => ({ query: vi.fn(), complete: async () => ({ content: 'ok', usage: { inputTokens: 1, outputTokens: 1 } }) }) } }),
+  getAdapters: () => ({
+    aiFactory: {
+      create: () => ({
+        query: vi.fn(),
+        complete: async () => ({ content: 'ok', usage: { inputTokens: 1, outputTokens: 1 } }),
+      }),
+      createFromConfig: () => ({
+        query: vi.fn(),
+        complete: async () => ({ content: 'ok', usage: { inputTokens: 1, outputTokens: 1 } }),
+      }),
+    },
+    secrets: { get: vi.fn(async () => null) },
+  }),
 }));
 
-vi.mock('../../lib/keychain', () => ({ getAnthropicApiKey: vi.fn(async () => 'sk-test') }));
+vi.mock('../../lib/keychain', () => ({
+  KEYTAR_SERVICE: 'wolfkrow',
+  getProviderApiKey: vi.fn(async () => 'sk-test'),
+  getAnthropicApiKey: vi.fn(async () => 'sk-test'),
+}));
 
 import type { AuthFastifyInstance } from '../../types/fastify';
 import { pipelineRoutes } from '../pipeline';
@@ -107,38 +167,50 @@ beforeAll(async () => {
   await app.ready();
 });
 
-beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe('POST /projects/:id/phases/:phaseId/run/stream SSE route', () => {
   it('returns 404 when the phase does not exist', async () => {
     const res = await app.inject({
-      method: 'POST', url: `/projects/${projectId}/phases/unknown/run/stream`, payload: {},
+      method: 'POST',
+      url: `/projects/${projectId}/phases/unknown/run/stream`,
+      payload: {},
     });
     expect(res.statusCode).toBe(404);
   });
 
   it('streams phase-start, phase-complete and done for an AI phase', async () => {
     const res = await app.inject({
-      method: 'POST', url: `/projects/${projectId}/phases/${discoveryPhaseId}/run/stream`, payload: {},
+      method: 'POST',
+      url: `/projects/${projectId}/phases/${discoveryPhaseId}/run/stream`,
+      payload: {},
     });
 
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('text/event-stream');
 
     const events = parseSSE(res.body);
-    expect(events).toContainEqual(expect.objectContaining({ type: 'phase-start', stage: 'discovery' }));
+    expect(events).toContainEqual(
+      expect.objectContaining({ type: 'phase-start', stage: 'discovery' })
+    );
     expect(events).toContainEqual(expect.objectContaining({ type: 'phase-complete' }));
     expect(events).toContainEqual(expect.objectContaining({ type: 'done' }));
   });
 
   it('streams phase-complete with harness linkage for the implementation phase', async () => {
     const res = await app.inject({
-      method: 'POST', url: `/projects/${projectId}/phases/${implPhaseId}/run/stream`, payload: {},
+      method: 'POST',
+      url: `/projects/${projectId}/phases/${implPhaseId}/run/stream`,
+      payload: {},
     });
 
     expect(res.statusCode).toBe(200);
     const events = parseSSE(res.body);
-    expect(events).toContainEqual(expect.objectContaining({ type: 'phase-complete', harnessProjectId: 'hp-1', sprintCount: 2 }));
+    expect(events).toContainEqual(
+      expect.objectContaining({ type: 'phase-complete', harnessProjectId: 'hp-1', sprintCount: 2 })
+    );
     expect(events).toContainEqual(expect.objectContaining({ type: 'done' }));
   });
 });

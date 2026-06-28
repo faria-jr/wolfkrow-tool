@@ -3,7 +3,9 @@ import { cookies } from 'next/headers';
 import { getSession } from '@/lib/auth';
 import { workerFetch } from '@/lib/worker-fetch';
 
-interface Params { params: Promise<{ id: string }>; }
+interface Params {
+  params: Promise<{ id: string }>;
+}
 
 async function getSessionCookie() {
   const cookieStore = await cookies();

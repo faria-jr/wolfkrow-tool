@@ -17,18 +17,18 @@
 export type PhaseKind = 'auto' | 'conversation' | 'loop';
 
 const STAGE_KINDS: Readonly<Record<PipelineStage, PhaseKind>> = {
- discovery: 'auto',
- spec_build: 'auto',
- spec_validate: 'auto',
- approval: 'conversation',
- design: 'conversation',
- design_lock: 'auto',
- implementation: 'auto',
- completed: 'auto',
+  discovery: 'auto',
+  spec_build: 'auto',
+  spec_validate: 'auto',
+  approval: 'conversation',
+  design: 'conversation',
+  design_lock: 'auto',
+  implementation: 'auto',
+  completed: 'auto',
 };
 
 export function phaseKindFor(stage: PipelineStage): PhaseKind {
- return STAGE_KINDS[stage];
+  return STAGE_KINDS[stage];
 }
 
 import type { PipelineStage } from './pipeline-project';

@@ -30,6 +30,7 @@ import { openDesignRoutes } from './routes/open-design';
 import { permissionsRoutes } from './routes/permissions';
 import { pipelineRoutes } from './routes/pipeline';
 import { profilerRoutes } from './routes/profiler';
+import { projectRoutes } from './routes/project-routes';
 import { providerRoutes } from './routes/providers';
 import { ptyRoutes } from './routes/pty';
 import { rulesRoutes } from './routes/rules';
@@ -49,6 +50,7 @@ async function registerRoutes(server: FastifyInstance) {
   await server.register(schedulerRoutes, { prefix: '/scheduler' });
   await server.register(harnessRoutes, { prefix: '/harness' });
   await server.register(pipelineRoutes, { prefix: '/pipeline' });
+  await server.register(projectRoutes, { prefix: '/projects' });
   await server.register(enrichRoutes, { prefix: '/enrich' });
   await server.register(voiceRoutes, { prefix: '/voice' });
   await server.register(chatRoutes, { prefix: '/chat' });

@@ -102,13 +102,13 @@ pnpm --filter @wolfkrow/web test:e2e:ui
 
 ## Variáveis de ambiente
 
-| Var | Default | Descrição |
-|---|---|---|
-| `WORKER_URL` | `http://localhost:4000` | URL do worker (Route Handlers BFF) |
-| `NEXT_PUBLIC_WORKER_URL` | — | URL exposta ao browser quando necessário |
-| `VOYAGE_API_KEY` | — | Embeddings (search Knowledge client-side). Opcional |
-| `WOLFKROW_DB_PATH` | `.wolfkrow/data/wolfkrow.db` | SQLite — use o **mesmo** path do worker |
-| `NODE_ENV` | — | `development\|production` |
+| Var                      | Default                      | Descrição                                           |
+| ------------------------ | ---------------------------- | --------------------------------------------------- |
+| `WORKER_URL`             | `http://localhost:4000`      | URL do worker (Route Handlers BFF)                  |
+| `NEXT_PUBLIC_WORKER_URL` | —                            | URL exposta ao browser quando necessário            |
+| `VOYAGE_API_KEY`         | —                            | Embeddings (search Knowledge client-side). Opcional |
+| `WOLFKROW_DB_PATH`       | `.wolfkrow/data/wolfkrow.db` | SQLite — use o **mesmo** path do worker             |
+| `NODE_ENV`               | —                            | `development\|production`                           |
 
 ---
 
@@ -140,26 +140,26 @@ apps/web/
 
 ## Páginas / Funcionalidades
 
-| Rota | Feature |
-|---|---|
-| `/chat` | Chat com streaming SSE (markdown, tool calls inline, attachments) |
-| `/agents` | CRUD de sub-agentes + runtime |
-| `/skills` | Editor de skills (markdown + frontmatter) |
-| `/mcp-servers` | Lifecycle de MCP servers (start/stop/restart) + catalog |
-| `/knowledge` | Ingest de docs + busca semântica híbrida |
-| `/memory` | Memória semântica (compaction, daily, dreaming) |
-| `/scheduler` | Tarefas cron (engine + preview) |
-| `/tasks` | Board kanban de tarefas |
-| `/harness` | Sprints/rounds (Planner→Coder→Evaluator) |
-| `/pipeline` | BuildPlan multi-fase + aprovações |
-| `/terminal` | CodeBurn — terminal PTY interativo (xterm) |
-| `/vault` | Segredos via keytar (mascarados) |
-| `/usage` | Analytics de tokens + pricing |
-| `/logs` | Live-tail de logs (filtros) |
-| `/permissions` | Whitelist/blacklist de tools + audit |
-| `/rules` | Regras globais (injetadas no prompt) |
-| `/channels` | Gestão de canais (Telegram) |
-| `/graph` | Knowledge graph (D3 force-directed) |
+| Rota           | Feature                                                           |
+| -------------- | ----------------------------------------------------------------- |
+| `/chat`        | Chat com streaming SSE (markdown, tool calls inline, attachments) |
+| `/agents`      | CRUD de sub-agentes + runtime                                     |
+| `/skills`      | Editor de skills (markdown + frontmatter)                         |
+| `/mcp-servers` | Lifecycle de MCP servers (start/stop/restart) + catalog           |
+| `/knowledge`   | Ingest de docs + busca semântica híbrida                          |
+| `/memory`      | Memória semântica (compaction, daily, dreaming)                   |
+| `/scheduler`   | Tarefas cron (engine + preview)                                   |
+| `/tasks`       | Board kanban de tarefas                                           |
+| `/harness`     | Sprints/rounds (Planner→Coder→Evaluator)                          |
+| `/pipeline`    | BuildPlan multi-fase + aprovações                                 |
+| `/terminal`    | CodeBurn — terminal PTY interativo (xterm)                        |
+| `/vault`       | Segredos via keytar (mascarados)                                  |
+| `/usage`       | Analytics de tokens + pricing                                     |
+| `/logs`        | Live-tail de logs (filtros)                                       |
+| `/permissions` | Whitelist/blacklist de tools + audit                              |
+| `/rules`       | Regras globais (injetadas no prompt)                              |
+| `/channels`    | Gestão de canais (Telegram)                                       |
+| `/graph`       | Knowledge graph (D3 force-directed)                               |
 
 ---
 

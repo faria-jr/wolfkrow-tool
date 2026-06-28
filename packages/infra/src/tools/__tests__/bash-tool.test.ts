@@ -13,9 +13,19 @@ const ctx = { userId: 'u1', workDir: '/tmp/test-workspace' };
 
 function mockSpawn(stdout: string, stderr: string, code: number) {
   const mock = {
-    stdout: { on: vi.fn((ev, cb) => { if (ev === 'data') cb(Buffer.from(stdout)); }) },
-    stderr: { on: vi.fn((ev, cb) => { if (ev === 'data') cb(Buffer.from(stderr)); }) },
-    on: vi.fn((ev, cb) => { if (ev === 'close') cb(code); }),
+    stdout: {
+      on: vi.fn((ev, cb) => {
+        if (ev === 'data') cb(Buffer.from(stdout));
+      }),
+    },
+    stderr: {
+      on: vi.fn((ev, cb) => {
+        if (ev === 'data') cb(Buffer.from(stderr));
+      }),
+    },
+    on: vi.fn((ev, cb) => {
+      if (ev === 'close') cb(code);
+    }),
   };
   (spawn as ReturnType<typeof vi.fn>).mockReturnValue(mock);
   return mock;
@@ -159,7 +169,9 @@ describe('BashTool', () => {
     const mock = {
       stdout: { on: vi.fn() },
       stderr: { on: vi.fn() },
-      on: vi.fn((ev: string, cb: (...args: unknown[]) => void) => { listeners[ev] = cb; }),
+      on: vi.fn((ev: string, cb: (...args: unknown[]) => void) => {
+        listeners[ev] = cb;
+      }),
       kill,
     };
     (spawn as ReturnType<typeof vi.fn>).mockReturnValue(mock);

@@ -7,7 +7,16 @@ describe('ProviderRegistry', () => {
   it('ships built-in providers including anthropic and claude-compat presets', () => {
     const ids = BUILT_IN_PROVIDERS.map((p) => p.id);
     expect(ids).toEqual(
-      expect.arrayContaining(['anthropic', 'zai', 'minimax', 'moonshot', 'qwen', 'openrouter', 'openai', 'ollama']),
+      expect.arrayContaining([
+        'anthropic',
+        'zai',
+        'minimax',
+        'moonshot',
+        'qwen',
+        'openrouter',
+        'openai',
+        'ollama',
+      ])
     );
   });
 

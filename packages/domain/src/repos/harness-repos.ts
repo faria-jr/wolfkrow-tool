@@ -3,6 +3,7 @@ import type { HarnessRound } from '../entities/harness-round';
 import type { HarnessSprint } from '../entities/harness-sprint';
 
 export interface HarnessProjectRepo {
+  findAll(): Promise<HarnessProject[]>;
   findById(id: string): Promise<HarnessProject | null>;
   findByUserId(userId: string): Promise<HarnessProject[]>;
   save(project: HarnessProject): Promise<HarnessProject>;

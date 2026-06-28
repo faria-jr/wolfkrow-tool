@@ -33,8 +33,8 @@ const fakeTaskRepo = {
       (t) =>
         t.userId === opts.userId &&
         (!opts.status || t.status === opts.status) &&
-        (!opts.category || t.category === opts.category),
-    ),
+        (!opts.category || t.category === opts.category)
+    )
   ),
   create: vi.fn((input: Partial<StoredTask> & { userId: string; title: string }) => {
     const task: StoredTask = {
@@ -154,7 +154,7 @@ describe('tasks GET / — list with filters', () => {
     fakeTaskRepo.findMany.mockClear();
     await app.inject({ method: 'GET', url: '/?status=in_progress&category=work' });
     expect(fakeTaskRepo.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'in_progress', category: 'work' }),
+      expect.objectContaining({ status: 'in_progress', category: 'work' })
     );
   });
 });
@@ -223,7 +223,8 @@ describe('tasks routes — authentication required (default-user leak fix)', () 
   it('GET / WITH credentials → 200 (real user, not default)', async () => {
     const a = await buildRealAuthApp();
     const res = await a.inject({
-      method: 'GET', url: '/',
+      method: 'GET',
+      url: '/',
       headers: { authorization: 'Bearer test-token' },
     });
     expect(res.statusCode).toBe(200);

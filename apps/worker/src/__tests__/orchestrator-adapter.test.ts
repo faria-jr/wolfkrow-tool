@@ -6,7 +6,6 @@
 import { DEFAULT_AGENT_MODEL } from '@wolfkrow/shared-types';
 import { describe, expect, it, vi } from 'vitest';
 
-
 import type { OrchestratorService } from '../orchestrator';
 import { OrchestratorChatAdapter } from '../telegram/orchestrator-adapter';
 

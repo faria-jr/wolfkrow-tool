@@ -73,7 +73,7 @@ class InMemoryChunkRepo implements KnowledgeChunkRepo {
   async hybridSearch(
     query: string,
     _embedding: number[],
-    limit: number,
+    limit: number
   ): Promise<HybridChunkSearchResult[]> {
     const vecResults = await this.vectorSearch(_embedding, limit);
     const kwResults = await this.keywordSearch(query, limit);
@@ -151,7 +151,7 @@ describe('IngestDocumentUseCase', () => {
   it('throws ValidationError for empty filename', async () => {
     const uc = new IngestDocumentUseCase(docRepo, chunkRepo, embedder);
     await expect(
-      uc.execute({ userId: 'u1', filename: '', mimeType: 'text/plain', size: 0, chunks: [] }),
+      uc.execute({ userId: 'u1', filename: '', mimeType: 'text/plain', size: 0, chunks: [] })
     ).rejects.toThrow(ValidationError);
   });
 });
@@ -212,15 +212,17 @@ describe('SearchKnowledgeUseCase', () => {
     const reranker: RerankerPort = {
       enabled: true,
       rerank: async (_q, docs, topN) =>
-        docs
-          .map((_, i) => ({ index: docs.length - 1 - i, score: 1 - i * 0.1 }))
-          .slice(0, topN),
+        docs.map((_, i) => ({ index: docs.length - 1 - i, score: 1 - i * 0.1 })).slice(0, topN),
     };
     const uc = new SearchKnowledgeUseCase(chunkRepo, embedder, reranker);
     const result = await uc.execute({ userId: 'u1', query: 'hello', limit: 5 });
     expect(result.results.length).toBeGreaterThan(0);
     // reranker inverts order — verify the fused list was actually reordered.
-    const plain = await new SearchKnowledgeUseCase(chunkRepo, embedder).execute({ userId: 'u1', query: 'hello', limit: 5 });
+    const plain = await new SearchKnowledgeUseCase(chunkRepo, embedder).execute({
+      userId: 'u1',
+      query: 'hello',
+      limit: 5,
+    });
     if (plain.results.length > 1) {
       expect(result.results[0]?.chunk.id).not.toBe(plain.results[0]?.chunk.id);
     }
@@ -245,13 +247,28 @@ describe('ListDocumentsUseCase', () => {
   beforeEach(async () => {
     docRepo = new InMemoryDocRepo();
     await docRepo.save(
-      KnowledgeDocument.create({ userId: 'u1', filename: 'a.pdf', mimeType: 'application/pdf', size: 1000 }),
+      KnowledgeDocument.create({
+        userId: 'u1',
+        filename: 'a.pdf',
+        mimeType: 'application/pdf',
+        size: 1000,
+      })
     );
     await docRepo.save(
-      KnowledgeDocument.create({ userId: 'u1', filename: 'b.md', mimeType: 'text/markdown', size: 200 }),
+      KnowledgeDocument.create({
+        userId: 'u1',
+        filename: 'b.md',
+        mimeType: 'text/markdown',
+        size: 200,
+      })
     );
     await docRepo.save(
-      KnowledgeDocument.create({ userId: 'u2', filename: 'c.pdf', mimeType: 'application/pdf', size: 500 }),
+      KnowledgeDocument.create({
+        userId: 'u2',
+        filename: 'c.pdf',
+        mimeType: 'application/pdf',
+        size: 500,
+      })
     );
   });
 

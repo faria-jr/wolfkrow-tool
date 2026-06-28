@@ -18,11 +18,14 @@ describe('PipelineReportView (M5.6)', () => {
       ok: true,
       status: 200,
       json: async () => ({
-        report: '# Project Phoenix\n\nDiscovery: complete\n\n- Item one\n- Item two\n\n```ts\nconst x = 1;\n```',
+        report:
+          '# Project Phoenix\n\nDiscovery: complete\n\n- Item one\n- Item two\n\n```ts\nconst x = 1;\n```',
       }),
     });
     const { container } = render(<PipelineReportView projectId="proj-1" />);
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Project Phoenix/ })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /Project Phoenix/ })).toBeInTheDocument()
+    );
     // Heading rendered as <h1>, not escaped inside a single <pre>
     expect(container.querySelector('h1')).not.toBeNull();
     // List rendered as <ul>
@@ -30,9 +33,12 @@ describe('PipelineReportView (M5.6)', () => {
     expect(screen.getByText('Item one')).toBeInTheDocument();
     // Code block rendered as <pre><code>
     expect(container.querySelector('pre > code')).not.toBeNull();
-    expect(fetchMock).toHaveBeenCalledWith('/api/pipeline/projects/proj-1/report', expect.objectContaining({
-      credentials: 'include',
-    }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/pipeline/projects/proj-1/report',
+      expect.objectContaining({
+        credentials: 'include',
+      })
+    );
   });
 
   it('sanitizes raw HTML in the report (no script/img element rendered)', async () => {
@@ -44,7 +50,9 @@ describe('PipelineReportView (M5.6)', () => {
       }),
     });
     const { container } = render(<PipelineReportView projectId="proj-sec" />);
-    await waitFor(() => expect(screen.getByRole('heading', { name: /Report/ })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /Report/ })).toBeInTheDocument()
+    );
     expect(container.querySelector('script')).toBeNull();
     expect(container.querySelector('img')).toBeNull();
   });

@@ -50,12 +50,14 @@ registrada para que o comportamento seja auditável e reversível.
 ## Rationale
 
 ### 1. Custo de schema vs. valor em v1.0
+
 Um vault estruturado exige schemas tipados, migrations, UI de CRUD para cada
 tipo de nó, validação de relações e regras de integridade referencial.
 Estimativa conservadora: 2-3 semanas de engenharia (domain + infra + UI +
 testes) para alcançar paridade mínima com o LionClaw.
 
 ### 2. Graph view cobre o caso de uso central
+
 O usuário que migrava do LionClaw buscando "ver como as coisas se conectam"
 tem essa necessidade atendida pela graph view D3, que é **automática**
 (extração de entidades) em vez de **manual** (curadoria de nós tipados). Para
@@ -63,11 +65,13 @@ o público self-hosted do Wolfkrow (devs/researchers), a extração automática
 tem ROI mais alto que a curadoria manual.
 
 ### 3. Manutenção de schemas tipados é contínua
+
 Cada tipo de nó estruturado precisa de evolução de schema, migração de dados
 existentes e suporte a backlinks bidirecionais. Sem uma base de usuários
 pedindo isso explicitamente, o custo de manutenção supera o benefício.
 
 ### 4. Paridade não é meta do Wolfkrow
+
 O Wolfkrow não busca paridade 1:1 com o LionClaw (ver ADR-0031, que deferiu
 Higgsfield/Blotato pelo mesmo princípio). Features são portadas quando há
 valor proporcional; o vault estruturado não atingiu esse limiar em v1.0.
@@ -93,6 +97,7 @@ valor proporcional; o vault estruturado não atingiu esse limiar em v1.0.
 ## Consequences
 
 ### Positivas
+
 - Escopo v1.0 fica focado na graph view (D3) + MCP Graph search, que cobrem
   visualização de relações com extração automática.
 - Evita ~2-3 semanas de engenharia em schema/UI sem demanda registrada.
@@ -101,6 +106,7 @@ valor proporcional; o vault estruturado não atingiu esse limiar em v1.0.
 - Decisão transparente e reversível documentada em ADR.
 
 ### Negativas / Riscos
+
 - Usuários vindos do LionClaw que dependiam dos tipos estruturados
   (especialmente meetings/decisions com integridade referencial) perdem essa
   capacidade. Mitigação: changelog e migration notes deixam claro que o vault
@@ -126,6 +132,7 @@ valor proporcional; o vault estruturado não atingiu esse limiar em v1.0.
 ## Trigger para reverter (revogar este ADR)
 
 Reabrir este ADR (adotar Decision A — implementar) se:
+
 1. ≥ 3 usuários pedirem os tipos estruturados (entities/meetings/decisions/
    projects/references) explicitamente no Wolfkrow.
 2. OU um caso de uso de compliance/auditoria exigir integridade referencial

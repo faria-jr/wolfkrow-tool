@@ -19,6 +19,9 @@ for (const { name, path } of PAGES) {
       .analyze();
 
     const critical = results.violations.filter((v) => v.impact === 'critical');
-    expect(critical, `Critical a11y violations on ${name}:\n${JSON.stringify(critical, null, 2)}`).toHaveLength(0);
+    expect(
+      critical,
+      `Critical a11y violations on ${name}:\n${JSON.stringify(critical, null, 2)}`
+    ).toHaveLength(0);
   });
 }

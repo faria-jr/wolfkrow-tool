@@ -34,13 +34,17 @@ describe('usePty', () => {
 
   it('connect sets sessionId via fetch', async () => {
     const { result } = renderHook(() => usePty());
-    await act(async () => { await result.current.connect(80, 24); });
+    await act(async () => {
+      await result.current.connect(80, 24);
+    });
     await waitFor(() => expect(result.current.sessionId).toBe('sess-1'));
   });
 
   it('disconnect resets state', async () => {
     const { result } = renderHook(() => usePty());
-    await act(async () => { await result.current.connect(80, 24); });
+    await act(async () => {
+      await result.current.connect(80, 24);
+    });
     act(() => result.current.disconnect());
     expect(result.current.state).toBe('disconnected');
   });

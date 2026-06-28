@@ -1,14 +1,23 @@
 import { ChatSession } from '@wolfkrow/domain';
 
+import { config } from '../config';
 import { getRepos } from '../container';
 import type { AuthFastifyInstance } from '../types/fastify';
 
-interface SessionPatchBody { title?: string; archived?: boolean; }
+interface SessionPatchBody {
+  title?: string;
+  archived?: boolean;
+}
+
+const sharedWorkspace = () => config.WOLFKROW_SHARED_WORKSPACE !== 'false';
+const requestUserId = (req: { user?: { userId?: string } }) => req.user?.userId ?? 'anonymous';
 
 async function listSessions(server: AuthFastifyInstance) {
   server.get('/sessions', { preHandler: [server.authenticate] }, async (req) => {
-    const userId = req.user?.userId ?? 'anonymous';
-    const sessions = await getRepos().chatSession.findByUserId(userId);
+    const repo = getRepos().chatSession;
+    const sessions = sharedWorkspace()
+      ? await repo.findAll()
+      : await repo.findByUserId(requestUserId(req));
     return sessions
       .filter((s) => !s.archived)
       .sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime())
@@ -18,8 +27,12 @@ async function listSessions(server: AuthFastifyInstance) {
 
 async function createSession(server: AuthFastifyInstance) {
   server.post('/sessions', { preHandler: [server.authenticate] }, async (req) => {
-    const userId = req.user?.userId ?? 'anonymous';
-    const session = ChatSession.create({ userId, agentId: undefined, title: 'New Chat', archived: false });
+    const session = ChatSession.create({
+      userId: requestUserId(req),
+      agentId: undefined,
+      title: 'New Chat',
+      archived: false,
+    });
     await getRepos().chatSession.save(session);
     return session.toProps();
   });
@@ -32,7 +45,8 @@ async function patchSession(server: AuthFastifyInstance) {
     async (req, reply) => {
       const userId = req.user?.userId ?? 'anonymous';
       const s = await getRepos().chatSession.findById(req.params.id);
-      if (!s || s.userId !== userId) return reply.status(404).send({ error: 'Not found' });
+      if (!s || (!sharedWorkspace() && s.userId !== userId))
+        return reply.status(404).send({ error: 'Not found' });
       const updated = ChatSession.fromProps({
         ...s.toProps(),
         ...(req.body.title !== undefined ? { title: req.body.title } : {}),
@@ -41,7 +55,7 @@ async function patchSession(server: AuthFastifyInstance) {
       });
       await getRepos().chatSession.save(updated);
       return updated.toProps();
-    },
+    }
   );
 }
 
@@ -52,11 +66,12 @@ async function deleteSession(server: AuthFastifyInstance) {
     async (req, reply) => {
       const userId = req.user?.userId ?? 'anonymous';
       const s = await getRepos().chatSession.findById(req.params.id);
-      if (!s || s.userId !== userId) return reply.status(404).send({ error: 'Not found' });
+      if (!s || (!sharedWorkspace() && s.userId !== userId))
+        return reply.status(404).send({ error: 'Not found' });
       await getRepos().message.deleteBySessionId(req.params.id);
       await getRepos().chatSession.delete(req.params.id);
       return { deleted: true };
-    },
+    }
   );
 }
 
@@ -67,10 +82,11 @@ async function getMessages(server: AuthFastifyInstance) {
     async (req, reply) => {
       const userId = req.user?.userId ?? 'anonymous';
       const s = await getRepos().chatSession.findById(req.params.id);
-      if (!s || s.userId !== userId) return reply.status(404).send({ error: 'Not found' });
+      if (!s || (!sharedWorkspace() && s.userId !== userId))
+        return reply.status(404).send({ error: 'Not found' });
       const messages = await getRepos().message.findBySessionId(req.params.id);
       return messages.map((m) => m.toProps());
-    },
+    }
   );
 }
 

@@ -24,10 +24,10 @@ Duas features que estavam **órfãs** (schema sem feature/SPEC no plano v1):
 
 ## 2. Decisão Workflow (P0 deste SPEC)
 
-| Opção | Critério | Ação |
-|---|---|---|
-| **Vivo** | LionClaw usa `workflow_runs` em runtime ativo | Domain `WorkflowRun` + use-cases `StartWorkflow`/`AdvanceStep` + UI mínima |
-| **Morto** | Schema legado sem uso real | Remover `schema/workflow.ts` + `schemas/workflow.ts`; registrar em ADR-0027 |
+| Opção     | Critério                                      | Ação                                                                        |
+| --------- | --------------------------------------------- | --------------------------------------------------------------------------- |
+| **Vivo**  | LionClaw usa `workflow_runs` em runtime ativo | Domain `WorkflowRun` + use-cases `StartWorkflow`/`AdvanceStep` + UI mínima  |
+| **Morto** | Schema legado sem uso real                    | Remover `schema/workflow.ts` + `schemas/workflow.ts`; registrar em ADR-0027 |
 
 > Auditar `lionclawv1.0` por referências a `workflow_runs` antes de implementar. Default: tratar como **vivo** com UI mínima até prova de morto.
 
@@ -38,8 +38,12 @@ Duas features que estavam **órfãs** (schema sem feature/SPEC no plano v1):
 ```typescript
 // packages/domain/src/entities/enrich-session.ts
 export class EnrichSession {
-  validate(spec: SpecDoc): ValidationReport { /* completude, AC mensuráveis */ }
-  enrich(spec: SpecDoc, report: ValidationReport): SpecDoc { /* preenche lacunas */ }
+  validate(spec: SpecDoc): ValidationReport {
+    /* completude, AC mensuráveis */
+  }
+  enrich(spec: SpecDoc, report: ValidationReport): SpecDoc {
+    /* preenche lacunas */
+  }
 }
 ```
 

@@ -12,7 +12,11 @@ export interface WorkflowExecutor {
 
 // ── CreateWorkflowRun ─────────────────────────────────────────────────────────
 
-export interface CreateWorkflowRunInput { userId: string; workflowName: string; input: Record<string, unknown>; }
+export interface CreateWorkflowRunInput {
+  userId: string;
+  workflowName: string;
+  input: Record<string, unknown>;
+}
 export class CreateWorkflowRunUseCase {
   constructor(private readonly repo: WorkflowRunRepo) {}
   async execute(input: CreateWorkflowRunInput): Promise<{ run: WorkflowRun }> {
@@ -44,7 +48,10 @@ export class ListWorkflowRunsUseCase {
 // ── ExecuteWorkflowRun ────────────────────────────────────────────────────────
 
 export class ExecuteWorkflowRunUseCase {
-  constructor(private readonly repo: WorkflowRunRepo, private readonly executor: WorkflowExecutor) {}
+  constructor(
+    private readonly repo: WorkflowRunRepo,
+    private readonly executor: WorkflowExecutor
+  ) {}
 
   async execute(input: { runId: string }): Promise<{ run: WorkflowRun }> {
     const run = await this.repo.findById(input.runId);
@@ -52,11 +59,17 @@ export class ExecuteWorkflowRunUseCase {
 
     const started = await this.repo.save(run.start());
     try {
-      const result = await this.executor.execute({ id: run.id, workflowName: run.workflowName, input: run.input });
+      const result = await this.executor.execute({
+        id: run.id,
+        workflowName: run.workflowName,
+        input: run.input,
+      });
       const completed = await this.repo.save(started.complete(result.output, result.stepCount));
       return { run: completed };
     } catch (err) {
-      const failed = await this.repo.save(started.fail(err instanceof Error ? err.message : String(err)));
+      const failed = await this.repo.save(
+        started.fail(err instanceof Error ? err.message : String(err))
+      );
       return { run: failed };
     }
   }

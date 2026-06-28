@@ -18,7 +18,13 @@ interface ServerActionsProps {
   onHealthCheck: (id: string) => void;
 }
 
-function DeleteServerButton({ server, onDelete }: { server: McpServerData; onDelete: (id: string) => void | Promise<void> }) {
+function DeleteServerButton({
+  server,
+  onDelete,
+}: {
+  server: McpServerData;
+  onDelete: (id: string) => void | Promise<void>;
+}) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -34,7 +40,13 @@ function DeleteServerButton({ server, onDelete }: { server: McpServerData; onDel
 
   return (
     <>
-      <Button size="icon" variant="ghost" onClick={() => setConfirmDelete(true)} disabled={deleting} aria-label="Delete server">
+      <Button
+        size="icon"
+        variant="ghost"
+        onClick={() => setConfirmDelete(true)}
+        disabled={deleting}
+        aria-label="Delete server"
+      >
         <TrashIcon className="h-4 w-4" />
       </Button>
       <ConfirmDialog
@@ -49,23 +61,51 @@ function DeleteServerButton({ server, onDelete }: { server: McpServerData; onDel
   );
 }
 
-export function ServerActions({ server, onToggle, onDelete, onEdit, onRestart, onHealthCheck }: ServerActionsProps) {
+export function ServerActions({
+  server,
+  onToggle,
+  onDelete,
+  onEdit,
+  onRestart,
+  onHealthCheck,
+}: ServerActionsProps) {
   const showRestart = server.source === 'built-in';
   return (
     <div className="flex shrink-0 items-center gap-2">
       {onEdit && (
-        <Button size="icon" variant="ghost" onClick={() => onEdit(server.id)} aria-label="Edit server">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => onEdit(server.id)}
+          aria-label="Edit server"
+        >
           <Pencil className="h-4 w-4" />
         </Button>
       )}
-      <Switch checked={server.isActive} onCheckedChange={(v) => onToggle(server.id, v)} aria-label="Toggle active" />
+      <Switch
+        checked={server.isActive}
+        onCheckedChange={(v) => onToggle(server.id, v)}
+        aria-label="Toggle active"
+      />
       {showRestart && (
-        <Button size="icon" variant="ghost" onClick={() => onHealthCheck(server.id)} aria-label="Check health" title="Run health check">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => onHealthCheck(server.id)}
+          aria-label="Check health"
+          title="Run health check"
+        >
           <RefreshCw className="h-4 w-4" />
         </Button>
       )}
       {showRestart && (
-        <Button size="icon" variant="ghost" onClick={() => onRestart(server.id)} aria-label="Restart server" title="Restart MCP server">
+        <Button
+          size="icon"
+          variant="ghost"
+          onClick={() => onRestart(server.id)}
+          aria-label="Restart server"
+          title="Restart MCP server"
+        >
           <RotateCw className="h-4 w-4" />
         </Button>
       )}

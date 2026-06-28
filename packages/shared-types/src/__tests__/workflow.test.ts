@@ -11,7 +11,7 @@ describe('workflow schemas', () => {
       'accepts %s',
       (v) => {
         expect(WorkflowStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('rejects invalid', () => {
       expect(() => WorkflowStatusSchema.parse('nope')).toThrow();
@@ -40,13 +40,11 @@ describe('workflow schemas', () => {
           error: 'none',
           startedAt: ts,
           completedAt: ts,
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects invalid status', () => {
-      expect(() =>
-        WorkflowRunSchema.parse({ ...valid, status: 'nope' }),
-      ).toThrow();
+      expect(() => WorkflowRunSchema.parse({ ...valid, status: 'nope' })).toThrow();
     });
     it('rejects missing workflowName', () => {
       const { workflowName: _omit, ...rest } = valid;

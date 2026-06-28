@@ -39,7 +39,9 @@ describe('useStt', () => {
 
   it('startRecording sets recording true', async () => {
     const { result } = renderHook(() => useStt());
-    await act(async () => { await result.current.startRecording(); });
+    await act(async () => {
+      await result.current.startRecording();
+    });
     expect(result.current.isRecording).toBe(true);
   });
 

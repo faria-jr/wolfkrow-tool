@@ -36,7 +36,9 @@ export function ChatSessions({ activeSessionId, onSelectSession, onNewSession }:
     setDeleting,
   });
 
-  useEffect(() => { void loadSessions(); }, [loadSessions]);
+  useEffect(() => {
+    void loadSessions();
+  }, [loadSessions]);
 
   return (
     <SessionsAside
@@ -67,13 +69,13 @@ function SessionsAside(props: {
   onCancelDelete: () => void;
 }): ReactNode {
   return (
-    <aside className="flex w-56 flex-col gap-1 border-r bg-muted/30 p-2">
+    <aside className="bg-muted/30 flex w-56 flex-col gap-1 border-r p-2">
       <Button size="sm" className="mb-1 w-full" disabled={props.creating} onClick={props.onNew}>
         {props.creating ? 'Creating…' : '+ New Chat'}
       </Button>
       <div className="flex flex-col gap-0.5 overflow-y-auto">
         {props.sessions.length === 0 && (
-          <p className="px-2 py-4 text-center text-xs text-muted-foreground">No sessions yet</p>
+          <p className="text-muted-foreground px-2 py-4 text-center text-xs">No sessions yet</p>
         )}
         {props.sessions.map((s) => (
           <SessionItem
@@ -95,7 +97,11 @@ function SessionsAside(props: {
           onCancel={props.onCancelDelete}
         />
       )}
-      {props.deleting && <span className="sr-only" role="status">Deleting chat…</span>}
+      {props.deleting && (
+        <span className="sr-only" role="status">
+          Deleting chat…
+        </span>
+      )}
     </aside>
   );
 }
@@ -121,8 +127,17 @@ function SessionItem({ session, active, onSelect, onDelete }: ItemProps) {
         role="button"
         tabIndex={0}
         aria-label="Delete session"
-        onClick={(e) => { e.stopPropagation(); onDelete(); }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onDelete(); } }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }
+        }}
         className={`ml-1 hidden shrink-0 rounded p-0.5 text-xs opacity-60 hover:opacity-100 group-hover:flex ${
           active ? 'text-primary-foreground' : 'hover:bg-destructive/10 hover:text-destructive'
         }`}
@@ -137,15 +152,22 @@ function useHandleNew(
   createSession: () => Promise<string | null>,
   onSelectSession: (id: string) => void,
   onNewSession: () => void,
-  setCreating: (v: boolean) => void,
+  setCreating: (v: boolean) => void
 ) {
   return useCallback(async () => {
     setCreating(true);
     try {
       const id = await createSession();
-      if (id) { onSelectSession(id); onNewSession(); toast.success('New chat created'); }
-      else { toast.error('Failed to create chat'); }
-    } finally { setCreating(false); }
+      if (id) {
+        onSelectSession(id);
+        onNewSession();
+        toast.success('New chat created');
+      } else {
+        toast.error('Failed to create chat');
+      }
+    } finally {
+      setCreating(false);
+    }
   }, [createSession, onSelectSession, onNewSession, setCreating]);
 }
 
@@ -179,7 +201,7 @@ function useSessions() {
 
   const loadSessions = useCallback(async () => {
     const res = await fetch('/api/chat/sessions');
-    if (res.ok) setSessions(((await res.json()) as ChatSessionData[]));
+    if (res.ok) setSessions((await res.json()) as ChatSessionData[]);
   }, []);
 
   const createSession = useCallback(async (): Promise<string | null> => {

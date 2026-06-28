@@ -5,12 +5,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [
-        "dist/**",
-        ".next/**",
-        "!.next/cache/**",
-        "build/**"
-      ]
+      "outputs": ["dist/**", ".next/**", "!.next/cache/**", "build/**"]
     },
     "lint": {
       "outputs": []
@@ -25,12 +20,7 @@
     "test": {
       "dependsOn": ["^build"],
       "outputs": ["coverage/**"],
-      "inputs": [
-        "src/**",
-        "tests/**",
-        "vitest.config.ts",
-        "tsconfig.json"
-      ]
+      "inputs": ["src/**", "tests/**", "vitest.config.ts", "tsconfig.json"]
     },
     "test:cov": {
       "dependsOn": ["^build"],

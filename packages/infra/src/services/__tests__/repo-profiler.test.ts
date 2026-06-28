@@ -10,9 +10,15 @@ function makeFixture(name: string): string {
   const dir = join(tmpdir(), `profiler-test-${name}-${Date.now()}`);
   mkdirSync(join(dir, 'src', 'routes'), { recursive: true });
   mkdirSync(join(dir, 'src', 'components'), { recursive: true });
-  writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'my-app', dependencies: { next: '*', fastify: '*' } }));
+  writeFileSync(
+    join(dir, 'package.json'),
+    JSON.stringify({ name: 'my-app', dependencies: { next: '*', fastify: '*' } })
+  );
   writeFileSync(join(dir, 'src', 'routes', 'chat.ts'), `export function chatHandler() {}`);
-  writeFileSync(join(dir, 'src', 'components', 'Button.tsx'), `export function Button() { return null; }`);
+  writeFileSync(
+    join(dir, 'src', 'components', 'Button.tsx'),
+    `export function Button() { return null; }`
+  );
   writeFileSync(join(dir, 'src', 'index.ts'), `console.log('hello')`);
   return dir;
 }

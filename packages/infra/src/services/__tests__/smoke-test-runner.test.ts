@@ -7,7 +7,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { SmokeTestRunner } from '../smoke-test-runner';
 
 function makeFixture(name: string, files: Record<string, string>): string {
-  const dir = join(tmpdir(), `smoke-test-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const dir = join(
+    tmpdir(),
+    `smoke-test-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
   mkdirSync(dir, { recursive: true });
   for (const [rel, content] of Object.entries(files)) {
     const full = join(dir, rel);
@@ -99,8 +102,11 @@ describe('SmokeTestRunner', () => {
 });
 
 describe('SmokeTestRunner typecheck integration', () => {
-  it.skipIf(!existsSync('/tmp/wolfkrow-smoke-integration-test'))('runs tsc when typescript dep present', async () => {
-    // This is a long-running test that would invoke actual tsc; skipped by default
-    // to keep CI fast. Enable by setting up a fixture with TS errors.
-  });
+  it.skipIf(!existsSync('/tmp/wolfkrow-smoke-integration-test'))(
+    'runs tsc when typescript dep present',
+    async () => {
+      // This is a long-running test that would invoke actual tsc; skipped by default
+      // to keep CI fast. Enable by setting up a fixture with TS errors.
+    }
+  );
 });

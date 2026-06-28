@@ -11,7 +11,9 @@ import { getSession } from '@/lib/auth';
 import { getRepos } from '@/lib/container';
 import { validateBody } from '@/lib/validation';
 
-interface Ctx { params: Promise<{ id: string }>; }
+interface Ctx {
+  params: Promise<{ id: string }>;
+}
 
 export async function POST(request: Request, ctx: Ctx) {
   const cookieStore = await cookies();
@@ -19,12 +21,19 @@ export async function POST(request: Request, ctx: Ctx) {
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await ctx.params;
-  const body = validateBody(DuplicateAgentRequestBodySchema, await request.json().catch(() => null));
+  const body = validateBody(
+    DuplicateAgentRequestBodySchema,
+    await request.json().catch(() => null)
+  );
   if (body instanceof Response) return body;
   const newName = body.newName.trim();
 
   try {
-    const { agent } = await new DuplicateAgentUseCase(getRepos().agent).execute({ id, userId: session.userId, newName });
+    const { agent } = await new DuplicateAgentUseCase(getRepos().agent).execute({
+      id,
+      userId: session.userId,
+      newName,
+    });
     return Response.json({ agent: agent.toProps() }, { status: 201 });
   } catch (err) {
     if (err instanceof NotFoundError) return Response.json({ error: err.message }, { status: 404 });

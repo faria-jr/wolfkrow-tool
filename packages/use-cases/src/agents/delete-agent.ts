@@ -3,8 +3,13 @@ import { NotFoundError } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
-export interface DeleteAgentInput { id: string; userId: string; }
-export interface DeleteAgentOutput { deleted: boolean; }
+export interface DeleteAgentInput {
+  id: string;
+  userId: string;
+}
+export interface DeleteAgentOutput {
+  deleted: boolean;
+}
 
 export class DeleteAgentUseCase implements UseCase<DeleteAgentInput, DeleteAgentOutput> {
   constructor(private readonly repo: AgentRepo) {}

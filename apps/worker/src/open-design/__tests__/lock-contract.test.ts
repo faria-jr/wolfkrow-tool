@@ -10,7 +10,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildBrief } from '../brief-builder';
 import type { OpenDesignClient } from '../client';
-import { collectDesignContractIssues, isValidDesignContract, parseContractFromHtml, validateContract, type DesignContract } from '../contract';
+import {
+  collectDesignContractIssues,
+  isValidDesignContract,
+  parseContractFromHtml,
+  validateContract,
+  type DesignContract,
+} from '../contract';
 import { lockDesign } from '../lock';
 
 const validContract: DesignContract = {
@@ -18,9 +24,16 @@ const validContract: DesignContract = {
   visual: {
     direction: 'minimal',
     density: 'balanced',
-    tokens: { colors: { bg: '#fff' }, typography: { body: '14px' }, spacing: { md: '8px' }, radii: { sm: '4px' } },
+    tokens: {
+      colors: { bg: '#fff' },
+      typography: { body: '14px' },
+      spacing: { md: '8px' },
+      radii: { sm: '4px' },
+    },
   },
-  navigation: { primary: [{ id: 'home', label: 'Home', targetScreenId: 's1', userStoryIds: ['u1'] }] },
+  navigation: {
+    primary: [{ id: 'home', label: 'Home', targetScreenId: 's1', userStoryIds: ['u1'] }],
+  },
   screens: [{ id: 's1', title: 'Home', route: '/', userStoryIds: ['u1'] }],
   components: [{ id: 'c1', name: 'Button', type: 'form' }],
 };
@@ -46,7 +59,9 @@ describe('contract extraction + validation', () => {
   });
 
   it('returns null on invalid JSON', () => {
-    expect(parseContractFromHtml('<script id="lionclaw-design-contract">{bad}</script>')).toBeNull();
+    expect(
+      parseContractFromHtml('<script id="lionclaw-design-contract">{bad}</script>')
+    ).toBeNull();
   });
 
   it('validates a well-formed contract', () => {
@@ -64,7 +79,11 @@ describe('contract extraction + validation', () => {
   it('flags per-field problems on malformed items (DEBT #4.2 validator depth)', () => {
     const problems = collectDesignContractIssues({
       version: '1.0',
-      visual: { direction: 'x', density: 'dense', tokens: { colors: {}, typography: {}, spacing: {}, radii: {} } },
+      visual: {
+        direction: 'x',
+        density: 'dense',
+        tokens: { colors: {}, typography: {}, spacing: {}, radii: {} },
+      },
       navigation: { primary: [{ id: 'n1', targetScreenId: 's1', userStoryIds: [] }] }, // missing label
       screens: [{ id: 's1', title: 'Home', userStoryIds: [] }], // missing route
       components: [{ id: 'c1', name: 'Btn' }], // missing type
@@ -89,8 +108,12 @@ describe('buildBrief', () => {
 describe('lockDesign', () => {
   let dir: string;
 
-  beforeEach(async () => { dir = await mkdtemp(join(tmpdir(), 'wk-lock-')); });
-  afterEach(async () => { await rm(dir, { recursive: true, force: true }); });
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'wk-lock-'));
+  });
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
 
   it('locks + writes artifacts when the contract is valid', async () => {
     const client = mockClient(htmlWithContract(validContract));

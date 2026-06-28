@@ -28,7 +28,10 @@ export interface HarnessSprintProps {
   metrics: SprintMetrics;
 }
 
-export type HarnessSprintCreateInput = Omit<HarnessSprintProps, 'id' | 'status' | 'startedAt' | 'completedAt' | 'metrics'>;
+export type HarnessSprintCreateInput = Omit<
+  HarnessSprintProps,
+  'id' | 'status' | 'startedAt' | 'completedAt' | 'metrics'
+>;
 
 export class HarnessSprint {
   readonly id: string;
@@ -62,7 +65,12 @@ export class HarnessSprint {
       status: 'pending',
       startedAt: undefined,
       completedAt: undefined,
-      metrics: { roundCount: 0, featuresPassed: 0, featuresTotal: input.features.length, durationMs: 0 },
+      metrics: {
+        roundCount: 0,
+        featuresPassed: 0,
+        featuresTotal: input.features.length,
+        durationMs: 0,
+      },
     });
   }
 
@@ -72,15 +80,23 @@ export class HarnessSprint {
 
   toProps(): HarnessSprintProps {
     return {
-      id: this.id, projectId: this.projectId, number: this.number, name: this.name,
-      description: this.description, status: this.status, features: this.features,
-      startedAt: this.startedAt, completedAt: this.completedAt, metrics: this.metrics,
+      id: this.id,
+      projectId: this.projectId,
+      number: this.number,
+      name: this.name,
+      description: this.description,
+      status: this.status,
+      features: this.features,
+      startedAt: this.startedAt,
+      completedAt: this.completedAt,
+      metrics: this.metrics,
     };
   }
 
   withStatus(status: SprintStatus, now = new Date()): HarnessSprint {
     return HarnessSprint.fromProps({
-      ...this.toProps(), status,
+      ...this.toProps(),
+      status,
       ...(status === 'in_progress' ? { startedAt: now } : {}),
       ...(status === 'completed' || status === 'failed' ? { completedAt: now } : {}),
     });

@@ -23,12 +23,14 @@ export function TasksCalendarView() {
   const load = useCallback(async () => {
     const res = await fetch('/api/tasks', { credentials: 'include' });
     if (res.ok) {
-      const data = await res.json() as { tasks?: Task[] } | Task[];
+      const data = (await res.json()) as { tasks?: Task[] } | Task[];
       setTasks(Array.isArray(data) ? data : (data.tasks ?? []));
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const year = current.getFullYear();
   const month = current.getMonth() + 1;
@@ -40,20 +42,20 @@ export function TasksCalendarView() {
         <div className="flex gap-1">
           <button
             onClick={() => setCurrent((d) => subMonths(d, 1))}
-            className="rounded p-1 hover:bg-accent"
+            className="hover:bg-accent rounded p-1"
             aria-label="Previous month"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={() => setCurrent(new Date())}
-            className="rounded px-2 py-1 text-xs hover:bg-accent"
+            className="hover:bg-accent rounded px-2 py-1 text-xs"
           >
             Today
           </button>
           <button
             onClick={() => setCurrent((d) => addMonths(d, 1))}
-            className="rounded p-1 hover:bg-accent"
+            className="hover:bg-accent rounded p-1"
             aria-label="Next month"
           >
             <ChevronRight className="h-4 w-4" />

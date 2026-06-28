@@ -27,16 +27,19 @@ export class DrizzleSecurityScanRepo {
   create(input: { userId: string; projectPath: string }): SecurityScanRecord {
     const id = randomUUID();
     const now = new Date();
-    this.db.insert(securityScans).values({
-      id,
-      userId: input.userId,
-      projectPath: input.projectPath,
-      status: 'pending',
-      summary: {},
-      startedAt: now,
-      completedAt: null,
-      error: null,
-    }).run();
+    this.db
+      .insert(securityScans)
+      .values({
+        id,
+        userId: input.userId,
+        projectPath: input.projectPath,
+        status: 'pending',
+        summary: {},
+        startedAt: now,
+        completedAt: null,
+        error: null,
+      })
+      .run();
     return {
       id,
       userId: input.userId,
@@ -61,12 +64,15 @@ export class DrizzleSecurityScanRepo {
       .where(eq(securityScans.userId, userId))
       .orderBy(securityScans.startedAt)
       .all();
-    return rows.slice(-limit).reverse().map((r) => this.toRecord(r));
+    return rows
+      .slice(-limit)
+      .reverse()
+      .map((r) => this.toRecord(r));
   }
 
   update(
     scanId: string,
-    patch: Partial<Pick<SecurityScanRecord, 'status' | 'summary' | 'completedAt' | 'error'>>,
+    patch: Partial<Pick<SecurityScanRecord, 'status' | 'summary' | 'completedAt' | 'error'>>
   ): void {
     const set: Record<string, unknown> = {};
     if (patch.status !== undefined) set['status'] = patch.status;

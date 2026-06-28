@@ -6,14 +6,23 @@ import { getDb } from '../db/client';
 import { scheduledTasks, taskRuns } from '../db/schema/scheduler';
 
 type DbRow = typeof taskRuns.$inferSelect;
-type TaskRunMetricsRow = { tokens?: number; cost?: number; durationMs?: number; toolUses?: number } | null;
+type TaskRunMetricsRow = {
+  tokens?: number;
+  cost?: number;
+  durationMs?: number;
+  toolUses?: number;
+} | null;
 
 function toRunRow(p: ReturnType<TaskRun['toProps']>): typeof taskRuns.$inferInsert {
   return {
-    id: p.id, taskId: p.taskId, status: p.status,
-    startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
+    id: p.id,
+    taskId: p.taskId,
+    status: p.status,
+    startedAt: p.startedAt ?? null,
+    completedAt: p.completedAt ?? null,
     output: (p.output ?? null) as Record<string, unknown> | null,
-    error: p.error ?? null, reviewNote: p.reviewNote ?? null,
+    error: p.error ?? null,
+    reviewNote: p.reviewNote ?? null,
     reviewedAt: p.reviewedAt ?? null,
     metrics: (p.metrics ?? null) as TaskRunMetricsRow,
   };
@@ -30,7 +39,9 @@ function toEntity(row: DbRow): TaskRun {
     error: row.error ?? undefined,
     reviewNote: row.reviewNote ?? undefined,
     reviewedAt: row.reviewedAt ?? undefined,
-    metrics: (row.metrics ?? undefined) as { tokens?: number; cost?: number; durationMs?: number; toolUses?: number } | undefined,
+    metrics: (row.metrics ?? undefined) as
+      | { tokens?: number; cost?: number; durationMs?: number; toolUses?: number }
+      | undefined,
   });
 }
 
@@ -49,13 +60,16 @@ export class DrizzleTaskRunRepo implements TaskRunRepo {
   }
 
   async findAwaitingReview(userId: string): Promise<TaskRun[]> {
-    const userTasks = this.db.select({ id: scheduledTasks.id })
+    const userTasks = this.db
+      .select({ id: scheduledTasks.id })
       .from(scheduledTasks)
       .where(eq(scheduledTasks.userId, userId))
       .all();
     if (userTasks.length === 0) return [];
     const taskIds = userTasks.map((t) => t.id);
-    const rows = this.db.select().from(taskRuns)
+    const rows = this.db
+      .select()
+      .from(taskRuns)
       .where(inArray(taskRuns.taskId, taskIds))
       .all()
       .filter((r) => r.status === 'awaiting_review');
@@ -65,7 +79,9 @@ export class DrizzleTaskRunRepo implements TaskRunRepo {
   async save(run: TaskRun): Promise<TaskRun> {
     const row = toRunRow(run.toProps());
     const { id: _id, taskId: _taskId, startedAt: _startedAt, ...settable } = row;
-    this.db.insert(taskRuns).values(row)
+    this.db
+      .insert(taskRuns)
+      .values(row)
       .onConflictDoUpdate({ target: taskRuns.id, set: settable })
       .run();
     return run;

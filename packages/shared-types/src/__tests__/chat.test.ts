@@ -19,9 +19,7 @@ describe('ToolCallSchema', () => {
   });
 
   it('rejects empty name', () => {
-    expect(() =>
-      ToolCallSchema.parse({ id: 'x', name: '', input: {} })
-    ).toThrow();
+    expect(() => ToolCallSchema.parse({ id: 'x', name: '', input: {} })).toThrow();
   });
 });
 

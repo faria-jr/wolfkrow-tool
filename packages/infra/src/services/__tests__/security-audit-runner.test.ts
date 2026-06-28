@@ -49,7 +49,8 @@ describe('parseFindingsFromText', () => {
   });
 
   it('parses text wrapped in non-JSON prose', () => {
-    const text = 'Here are the findings:\n[{"severity":"warning","file":"a.ts","message":"x"}]\nDone.';
+    const text =
+      'Here are the findings:\n[{"severity":"warning","file":"a.ts","message":"x"}]\nDone.';
     const out = parseFindingsFromText(text);
     expect(out).toHaveLength(1);
   });
@@ -57,7 +58,9 @@ describe('parseFindingsFromText', () => {
 
 describe('runSecurityAgent', () => {
   it('returns parsed findings from provider response', async () => {
-    const provider = makeProvider(['[{"severity":"critical","file":"a.ts","message":"hardcoded key"}]']);
+    const provider = makeProvider([
+      '[{"severity":"critical","file":"a.ts","message":"hardcoded key"}]',
+    ]);
     const agent = SECURITY_AUDIT_AGENTS[0]!;
     const out = await runSecurityAgent({ agent, files: ['a.ts'], model: 'm', provider });
     expect(out).toHaveLength(1);

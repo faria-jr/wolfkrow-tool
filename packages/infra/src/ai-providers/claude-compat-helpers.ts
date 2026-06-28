@@ -12,7 +12,7 @@ export interface StreamEventsResult {
 }
 
 export async function* processStreamEvents(
-  stream: ReturnType<Anthropic['messages']['stream']>,
+  stream: ReturnType<Anthropic['messages']['stream']>
 ): AsyncGenerator<StreamChunk, StreamEventsResult> {
   const toolUseBlocks = new Map<string, ToolUseBlock>();
   let currentToolId: string | null = null;
@@ -58,7 +58,7 @@ function extractTextDelta(event: Anthropic.Messages.RawMessageStreamEvent): stri
 function appendToolJson(
   event: Anthropic.Messages.RawMessageStreamEvent,
   currentToolId: string | null,
-  toolUseBlocks: Map<string, ToolUseBlock>,
+  toolUseBlocks: Map<string, ToolUseBlock>
 ): void {
   if (event.type !== 'content_block_delta' || !currentToolId) return;
   const delta = (event as { delta: Anthropic.Messages.RawContentBlockDelta }).delta;
@@ -68,7 +68,7 @@ function appendToolJson(
 }
 
 export async function* drainTextStream(
-  stream: ReturnType<Anthropic['messages']['stream']>,
+  stream: ReturnType<Anthropic['messages']['stream']>
 ): AsyncIterable<StreamChunk> {
   try {
     for await (const event of stream) {
@@ -98,11 +98,16 @@ export function parseJson(partial: string): Record<string, unknown> {
   }
 }
 
-export function toMessageParams(options: { messages: { role: string; content: string }[] }): Anthropic.Messages.MessageParam[] {
+export function toMessageParams(options: {
+  messages: { role: string; content: string }[];
+}): Anthropic.Messages.MessageParam[] {
   return options.messages.filter((m) => m.role !== 'system').map(toAnthropicMessage);
 }
 
-function toAnthropicMessage(message: { role: string; content: string }): Anthropic.Messages.MessageParam {
+function toAnthropicMessage(message: {
+  role: string;
+  content: string;
+}): Anthropic.Messages.MessageParam {
   return {
     role: message.role === 'assistant' ? 'assistant' : 'user',
     content: message.content,
@@ -111,12 +116,9 @@ function toAnthropicMessage(message: { role: string; content: string }): Anthrop
 
 export function injectImageParts(
   messages: Anthropic.Messages.MessageParam[],
-  parts: ImagePart[],
+  parts: ImagePart[]
 ): void {
-  const lastUserIdx = messages.reduce(
-    (found, m, i) => (m.role === 'user' ? i : found),
-    -1,
-  );
+  const lastUserIdx = messages.reduce((found, m, i) => (m.role === 'user' ? i : found), -1);
   if (lastUserIdx < 0) return;
 
   const lastMsg = messages[lastUserIdx];

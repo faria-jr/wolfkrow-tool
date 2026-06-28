@@ -7,7 +7,8 @@ import { workerFetch } from '@/lib/worker-fetch';
 export async function POST(req: Request) {
   const cookieStore = await cookies();
   const token = cookieStore.get('session')?.value ?? null;
-  if (!token || !(await getSession(token))) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!token || !(await getSession(token)))
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await req.json();
   const res = await workerFetch('/open-design/lock', { method: 'POST', bearerToken: token, body });

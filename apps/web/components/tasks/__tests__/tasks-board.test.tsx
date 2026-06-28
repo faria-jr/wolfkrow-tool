@@ -5,7 +5,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TasksBoard } from '../tasks-board';
 
 function makeTask(status = 'todo') {
-  return { id: 't1', title: 'My Task', description: null, status, priority: 'high', category: 'dev', dueDate: null, tags: [] };
+  return {
+    id: 't1',
+    title: 'My Task',
+    description: null,
+    status,
+    priority: 'high',
+    category: 'dev',
+    dueDate: null,
+    tags: [],
+  };
 }
 
 describe('TasksBoard', () => {

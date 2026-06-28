@@ -24,7 +24,9 @@ export function VoiceRecorder({ onTranscript }: VoiceRecorderProps) {
   return (
     <div className="flex flex-col items-center gap-3">
       <button
-        onClick={() => { void handleToggle(); }}
+        onClick={() => {
+          void handleToggle();
+        }}
         className={`flex h-12 w-12 items-center justify-center rounded-full shadow-md transition-colors ${isRecording ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'}`}
         aria-label={isRecording ? 'Stop recording' : 'Start recording'}
       >
@@ -32,7 +34,7 @@ export function VoiceRecorder({ onTranscript }: VoiceRecorderProps) {
           <span className="h-4 w-4 rounded bg-white" />
         ) : (
           <svg viewBox="0 0 24 24" className="h-6 w-6 text-white" fill="currentColor">
-            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
           </svg>
         )}
       </button>

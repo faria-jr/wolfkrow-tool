@@ -44,30 +44,30 @@ import { logger } from './logger';
 async function main() {
   // 1. Init DB
   await initDatabase();
-  
+
   // 2. Start MCPs
   await mcpManager.startAll();
-  
+
   // 3. Start Telegram bot
   await telegramBridge.start();
-  
+
   // 4. Start scheduler
   scheduler.start();
-  
+
   // 5. Start dreaming engine
   dreamingEngine.start();
-  
+
   // 6. HTTP server (chat, MCP control, REST API)
   const httpServer = createServer(handleHttp);
-  
+
   // 7. WebSocket server (PTY)
   const wss = new WebSocketServer({ server: httpServer, path: '/pty' });
   wss.on('connection', handlePtyConnection);
-  
+
   httpServer.listen(4000, () => {
     logger.info('Worker listening on :4000');
   });
-  
+
   // 8. Graceful shutdown
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
@@ -177,7 +177,7 @@ wss.on('connection', (ws, req) => {
 async function authenticate(req: IncomingMessage): Promise<{ userId: string } | null> {
   const auth = req.headers.authorization;
   if (!auth?.startsWith('Bearer ')) return null;
-  
+
   try {
     const payload = await jwtVerify(auth.slice(7), SHARED_SECRET);
     return { userId: payload.sub as string };

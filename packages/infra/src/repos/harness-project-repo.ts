@@ -35,31 +35,52 @@ export class DrizzleHarnessProjectRepo implements HarnessProjectRepo {
     return rows[0] ? toEntity(rows[0]) : null;
   }
 
+  async findAll(): Promise<HarnessProject[]> {
+    const rows = this.db.select().from(harnessProjects).all();
+    return rows.map(toEntity);
+  }
+
   async findByUserId(userId: string): Promise<HarnessProject[]> {
-    const rows = this.db.select().from(harnessProjects).where(eq(harnessProjects.userId, userId)).all();
+    const rows = this.db
+      .select()
+      .from(harnessProjects)
+      .where(eq(harnessProjects.userId, userId))
+      .all();
     return rows.map(toEntity);
   }
 
   async save(project: HarnessProject): Promise<HarnessProject> {
     const p = project.toProps();
-    this.db.insert(harnessProjects).values({
-      id: p.id, userId: p.userId, name: p.name,
-      description: p.description ?? null, specPath: p.specPath,
-      projectPath: p.projectPath ?? null, status: p.status,
-      config: asJsonField(p.config),
-      metrics: asJsonField(p.metrics),
-      createdAt: p.createdAt, updatedAt: p.updatedAt,
-      completedAt: p.completedAt ?? null,
-    }).onConflictDoUpdate({
-      target: harnessProjects.id,
-      set: {
-        name: p.name, description: p.description ?? null,
-        projectPath: p.projectPath ?? null, status: p.status,
+    this.db
+      .insert(harnessProjects)
+      .values({
+        id: p.id,
+        userId: p.userId,
+        name: p.name,
+        description: p.description ?? null,
+        specPath: p.specPath,
+        projectPath: p.projectPath ?? null,
+        status: p.status,
         config: asJsonField(p.config),
         metrics: asJsonField(p.metrics),
-        updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
-      },
-    }).run();
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        completedAt: p.completedAt ?? null,
+      })
+      .onConflictDoUpdate({
+        target: harnessProjects.id,
+        set: {
+          name: p.name,
+          description: p.description ?? null,
+          projectPath: p.projectPath ?? null,
+          status: p.status,
+          config: asJsonField(p.config),
+          metrics: asJsonField(p.metrics),
+          updatedAt: p.updatedAt,
+          completedAt: p.completedAt ?? null,
+        },
+      })
+      .run();
     return project;
   }
 

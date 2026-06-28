@@ -11,6 +11,16 @@ export interface UseSttReturn {
   error: string | null;
 }
 
+/** POST the recorded chunks to the transcription endpoint and return the text. */
+async function transcribeBlob(chunks: Blob[]): Promise<{ text: string }> {
+  const blob = new Blob(chunks, { type: 'audio/webm' });
+  const form = new FormData();
+  form.append('audio', blob, 'recording.webm');
+  const res = await fetch('/api/voice/transcribe', { method: 'POST', body: form });
+  if (!res.ok) throw new Error('Transcription failed');
+  return (await res.json()) as { text: string };
+}
+
 export function useStt(): UseSttReturn {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -32,30 +42,23 @@ export function useStt(): UseSttReturn {
   }, []);
 
   const stopRecording = useCallback(async (): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const recorder = recorderRef.current;
-      if (!recorder) { resolve(''); return; }
-
-      recorder.onstop = async () => {
+    const recorder = recorderRef.current;
+    if (!recorder) return '';
+    return new Promise<string>((resolve, reject) => {
+      recorder.onstop = () => {
         setIsRecording(false);
         recorderRef.current?.stream.getTracks().forEach((t) => t.stop());
-        try {
-          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-          const form = new FormData();
-          form.append('audio', blob, 'recording.webm');
-
-          const res = await fetch('/api/voice/transcribe', { method: 'POST', body: form });
-          if (!res.ok) throw new Error('Transcription failed');
-          const data = await res.json() as { text: string };
-          setTranscript(data.text);
-          resolve(data.text);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : 'STT error';
-          setError(msg);
-          reject(new Error(msg));
-        }
+        void transcribeBlob(chunksRef.current)
+          .then(({ text }) => {
+            setTranscript(text);
+            resolve(text);
+          })
+          .catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : 'STT error';
+            setError(msg);
+            reject(new Error(msg));
+          });
       };
-
       recorder.stop();
     });
   }, []);

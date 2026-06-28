@@ -17,6 +17,34 @@ export interface UsePtyReturn {
   onData: (listener: (data: string) => void) => () => void;
 }
 
+/** Wire WebSocket lifecycle + message handlers onto the socket. */
+function attachWsHandlers(
+  ws: WebSocket,
+  opts: {
+    setState: (s: PtyState) => void;
+    setSessionId: (id: string | null) => void;
+    listeners: Set<(data: string) => void>;
+    cols: number;
+    rows: number;
+  }
+): void {
+  ws.onopen = () => {
+    opts.setState('connected');
+    ws.send(JSON.stringify({ type: 'resize', cols: opts.cols, rows: opts.rows }));
+  };
+  ws.onclose = () => {
+    opts.setState('disconnected');
+    opts.setSessionId(null);
+  };
+  ws.onerror = () => opts.setState('disconnected');
+  ws.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data as string) as { type: string; data?: string };
+    if (msg.type === 'output' && msg.data) {
+      for (const listener of opts.listeners) listener(msg.data);
+    }
+  };
+}
+
 export function usePty(): UsePtyReturn {
   const [state, setState] = useState<PtyState>('idle');
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -25,7 +53,9 @@ export function usePty(): UsePtyReturn {
 
   const onData = useCallback((listener: (data: string) => void) => {
     dataListeners.current.add(listener);
-    return () => { dataListeners.current.delete(listener); };
+    return () => {
+      dataListeners.current.delete(listener);
+    };
   }, []);
 
   const disconnect = useCallback(() => {
@@ -39,28 +69,22 @@ export function usePty(): UsePtyReturn {
     setState('connecting');
 
     const res = await fetch(`${WORKER}/pty`, { method: 'POST', credentials: 'include' });
-    if (!res.ok) { setState('disconnected'); return; }
-    const { sessionId: id } = await res.json() as { sessionId: string };
+    if (!res.ok) {
+      setState('disconnected');
+      return;
+    }
+    const { sessionId: id } = (await res.json()) as { sessionId: string };
     setSessionId(id);
 
     const ws = new WebSocket(`${WS_WORKER}/pty/${id}`);
     wsRef.current = ws;
-
-    ws.onopen = () => setState('connected');
-    ws.onclose = () => { setState('disconnected'); setSessionId(null); };
-    ws.onerror = () => setState('disconnected');
-    ws.onmessage = (ev) => {
-      const msg = JSON.parse(ev.data as string) as { type: string; data?: string };
-      if (msg.type === 'output' && msg.data) {
-        for (const listener of dataListeners.current) listener(msg.data);
-      }
-    };
-
-    // Send initial resize
-    ws.onopen = () => {
-      setState('connected');
-      ws.send(JSON.stringify({ type: 'resize', cols, rows }));
-    };
+    attachWsHandlers(ws, {
+      setState,
+      setSessionId,
+      listeners: dataListeners.current,
+      cols,
+      rows,
+    });
   }, []);
 
   const write = useCallback((data: string) => {
@@ -72,7 +96,9 @@ export function usePty(): UsePtyReturn {
   }, []);
 
   useEffect(() => {
-    return () => { wsRef.current?.close(); };
+    return () => {
+      wsRef.current?.close();
+    };
   }, []);
 
   return { state, sessionId, connect, disconnect, write, resize, onData };

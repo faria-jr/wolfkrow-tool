@@ -23,12 +23,21 @@ export class DrizzlePipelineMessageRepo implements PipelineMessageRepo {
 
   async save(message: PipelineMessage): Promise<PipelineMessage> {
     const p = message.toProps();
-    this.db.insert(pipelineMessages).values({
-      id: p.id, projectId: p.projectId, phaseId: p.phaseId, role: p.role, content: p.content, createdAt: p.createdAt,
-    }).onConflictDoUpdate({
-      target: pipelineMessages.id,
-      set: { role: p.role, content: p.content },
-    }).run();
+    this.db
+      .insert(pipelineMessages)
+      .values({
+        id: p.id,
+        projectId: p.projectId,
+        phaseId: p.phaseId,
+        role: p.role,
+        content: p.content,
+        createdAt: p.createdAt,
+      })
+      .onConflictDoUpdate({
+        target: pipelineMessages.id,
+        set: { role: p.role, content: p.content },
+      })
+      .run();
     return message;
   }
 
@@ -38,23 +47,39 @@ export class DrizzlePipelineMessageRepo implements PipelineMessageRepo {
     this.db.transaction((tx) => {
       for (const message of messages) {
         const p = message.toProps();
-        tx.insert(pipelineMessages).values({
-          id: p.id, projectId: p.projectId, phaseId: p.phaseId, role: p.role, content: p.content, createdAt: p.createdAt,
-        }).onConflictDoUpdate({
-          target: pipelineMessages.id,
-          set: { role: p.role, content: p.content },
-        }).run();
+        tx.insert(pipelineMessages)
+          .values({
+            id: p.id,
+            projectId: p.projectId,
+            phaseId: p.phaseId,
+            role: p.role,
+            content: p.content,
+            createdAt: p.createdAt,
+          })
+          .onConflictDoUpdate({
+            target: pipelineMessages.id,
+            set: { role: p.role, content: p.content },
+          })
+          .run();
       }
     });
   }
 
   async findByPhaseId(phaseId: string): Promise<PipelineMessage[]> {
-    const rows = this.db.select().from(pipelineMessages).where(eq(pipelineMessages.phaseId, phaseId)).all();
+    const rows = this.db
+      .select()
+      .from(pipelineMessages)
+      .where(eq(pipelineMessages.phaseId, phaseId))
+      .all();
     return rows.map(toEntity);
   }
 
   async findByProjectId(projectId: string): Promise<PipelineMessage[]> {
-    const rows = this.db.select().from(pipelineMessages).where(eq(pipelineMessages.projectId, projectId)).all();
+    const rows = this.db
+      .select()
+      .from(pipelineMessages)
+      .where(eq(pipelineMessages.projectId, projectId))
+      .all();
     return rows.map(toEntity);
   }
 }

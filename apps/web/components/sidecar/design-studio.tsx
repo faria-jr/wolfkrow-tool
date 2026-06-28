@@ -1,9 +1,10 @@
 'use client';
 
+import { Camera, Loader2, Lock, Palette, Play, Square } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Camera, Lock, Play, Square, Loader2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 
 type StudioStatus = 'stopped' | 'starting' | 'running' | 'crashed' | 'unknown';
 
@@ -30,10 +31,21 @@ interface DesignStudioProps {
 export function DesignStudio({ overrideUrl, projectId }: DesignStudioProps) {
   const studio = useOpenDesign(overrideUrl);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const actions = useDesignActions(projectId);
+
+  return (
+    <div className="flex h-full flex-col gap-3">
+      <DesignStudioToolbar actions={actions} projectId={projectId} studio={studio} />
+      <StudioFrame studio={studio} iframeRef={iframeRef} />
+    </div>
+  );
+}
+
+function useDesignActions(projectId?: string) {
   const [snapshotting, setSnapshotting] = useState(false);
   const [locking, setLocking] = useState(false);
 
-  const handleCaptureSnapshot = async () => {
+  const captureSnapshot = async () => {
     if (!projectId) return;
     setSnapshotting(true);
     try {
@@ -54,14 +66,17 @@ export function DesignStudio({ overrideUrl, projectId }: DesignStudioProps) {
     }
   };
 
-  const handleLockDesign = async () => {
+  const lockDesign = async () => {
     if (!projectId) return;
     setLocking(true);
     try {
       const res = await fetch('/api/open-design/lock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ odProjectId: projectId, outputDir: './apps/web/components/design-export' }),
+        body: JSON.stringify({
+          odProjectId: projectId,
+          outputDir: './apps/web/components/design-export',
+        }),
       });
       if (res.ok) {
         toast.success('Design locked and code generated successfully!');
@@ -75,47 +90,15 @@ export function DesignStudio({ overrideUrl, projectId }: DesignStudioProps) {
     }
   };
 
-  return (
-    <div className="flex h-full flex-col gap-3">
-      <div className="flex items-center justify-between px-1">
-        <span className={`text-sm font-medium ${STATUS_COLOR[studio.status]}`}>
-          Studio: {studio.status}
-        </span>
-        
-        <div className="flex items-center gap-2">
-          {studio.status === 'running' && projectId && (
-            <>
-              <Button
-                onClick={handleCaptureSnapshot}
-                disabled={snapshotting}
-                size="sm"
-                variant="outline"
-                className="gap-1.5 text-xs h-8"
-              >
-                {snapshotting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
-                Snapshot
-              </Button>
-              <Button
-                onClick={handleLockDesign}
-                disabled={locking}
-                size="sm"
-                variant="default"
-                className="gap-1.5 text-xs h-8"
-              >
-                {locking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
-                Lock Design
-              </Button>
-            </>
-          )}
-          <StudioControls studio={studio} />
-        </div>
-      </div>
-      <StudioFrame studio={studio} iframeRef={iframeRef} />
-    </div>
-  );
+  return { captureSnapshot, lockDesign, locking, snapshotting };
 }
 
-async function fetchStudioStatus(): Promise<{ status: StudioStatus; webUrl: string | null } | null> {
+type DesignActions = ReturnType<typeof useDesignActions>;
+
+async function fetchStudioStatus(): Promise<{
+  status: StudioStatus;
+  webUrl: string | null;
+} | null> {
   try {
     const res = await fetch('/api/open-design');
     if (!res.ok) return null;
@@ -151,7 +134,9 @@ function useOpenDesign(overrideUrl?: string) {
       if (alive) setTimeout(poll, POLL_MS);
     };
     void poll();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [overrideUrl]);
 
   const start = useCallback(async () => {
@@ -178,18 +163,95 @@ function useOpenDesign(overrideUrl?: string) {
   return { status, webUrl, loading, start, stop };
 }
 
-function StudioControls({ studio }: { studio: { status: StudioStatus; loading: boolean; start: () => void; stop: () => void } }) {
+function DesignStudioToolbar({
+  actions,
+  projectId,
+  studio,
+}: {
+  actions: DesignActions;
+  projectId: string | undefined;
+  studio: ReturnType<typeof useOpenDesign>;
+}) {
+  return (
+    <div className="flex items-center justify-between px-1">
+      <span className={`text-sm font-medium ${STATUS_COLOR[studio.status]}`}>
+        Studio: {studio.status}
+      </span>
+
+      <div className="flex items-center gap-2">
+        {studio.status === 'running' && projectId && <DesignActionButtons actions={actions} />}
+        <StudioControls studio={studio} />
+      </div>
+    </div>
+  );
+}
+
+function DesignActionButtons({ actions }: { actions: DesignActions }) {
+  return (
+    <>
+      <Button
+        className="h-8 gap-1.5 text-xs"
+        disabled={actions.snapshotting}
+        onClick={actions.captureSnapshot}
+        size="sm"
+        variant="outline"
+      >
+        {actions.snapshotting ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Camera className="h-3.5 w-3.5" />
+        )}
+        Snapshot
+      </Button>
+      <Button
+        className="h-8 gap-1.5 text-xs"
+        disabled={actions.locking}
+        onClick={actions.lockDesign}
+        size="sm"
+        variant="default"
+      >
+        {actions.locking ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Lock className="h-3.5 w-3.5" />
+        )}
+        Lock Design
+      </Button>
+    </>
+  );
+}
+
+function StudioControls({
+  studio,
+}: {
+  studio: { status: StudioStatus; loading: boolean; start: () => void; stop: () => void };
+}) {
   const { status, loading, start, stop } = studio;
   return (
     <div className="flex gap-2">
       {status !== 'running' && (
-        <Button onClick={start} disabled={loading || status === 'starting'} size="sm" className="h-8 gap-1 text-xs">
-          {status === 'starting' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+        <Button
+          onClick={start}
+          disabled={loading || status === 'starting'}
+          size="sm"
+          className="h-8 gap-1 text-xs"
+        >
+          {status === 'starting' ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Play className="h-3 w-3" />
+          )}
           {status === 'starting' ? 'Starting…' : 'Start Engine'}
         </Button>
       )}
       {(status === 'running' || status === 'starting') && (
-        <Button onClick={stop} disabled={loading} variant="outline" size="sm" className="h-8 gap-1 text-xs text-destructive">
+        <Button
+          onClick={stop}
+          disabled={loading}
+          variant="outline"
+          size="sm"
+          className="text-destructive h-8 gap-1 text-xs"
+        >
           <Square className="h-3 w-3" />
           Stop Engine
         </Button>
@@ -198,26 +260,33 @@ function StudioControls({ studio }: { studio: { status: StudioStatus; loading: b
   );
 }
 
-function StudioFrame({ studio, iframeRef }: { studio: StudioState; iframeRef: React.RefObject<HTMLIFrameElement | null> }) {
+function StudioFrame({
+  studio,
+  iframeRef,
+}: {
+  studio: StudioState;
+  iframeRef: React.RefObject<HTMLIFrameElement | null>;
+}) {
   if (studio.status === 'running' && studio.webUrl) {
     return (
       <iframe
         ref={iframeRef}
         src={studio.webUrl}
-        className="w-full flex-1 rounded border border-zinc-800 bg-black min-h-[400px]"
+        className="min-h-96 w-full flex-1 rounded border border-zinc-800 bg-black"
         title="Open Design Studio"
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
       />
     );
   }
-  const message = studio.status === 'starting'
-    ? 'Design Studio is starting up…'
-    : studio.status === 'crashed'
-      ? 'Studio crashed. Click Start to retry.'
-      : 'Click Start Engine to launch the Design Studio.';
+  const message =
+    studio.status === 'starting'
+      ? 'Design Studio is starting up…'
+      : studio.status === 'crashed'
+        ? 'Studio crashed. Click Start to retry.'
+        : 'Click Start Engine to launch the Design Studio.';
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded border border-dashed border-zinc-800 text-muted-foreground min-h-[300px]">
-      <span className="text-3xl animate-bounce">🎨</span>
+    <div className="text-muted-foreground flex min-h-80 flex-1 flex-col items-center justify-center gap-3 rounded border border-dashed border-zinc-800">
+      <Palette className="h-8 w-8" />
       <p className="text-sm">{message}</p>
     </div>
   );

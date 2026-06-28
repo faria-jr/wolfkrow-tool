@@ -18,6 +18,7 @@ Decisão: Electron wrapper mínimo (~300 linhas) ou PWA pura?
 ## Decisão
 
 **Electron wrapper mínimo** (~300 linhas) que:
+
 - Spawna Next.js + Worker como child processes
 - Abre BrowserWindow apontando para `http://localhost:3000`
 - Gerencia systray + hotkey + auto-launch
@@ -34,7 +35,7 @@ class WolfkrowWrapper {
   private workerProcess?: ChildProcess;
   private mainWindow?: BrowserWindow;
   private tray?: Tray;
-  
+
   async start() {
     await this.spawnServices();
     await this.waitForServer();
@@ -43,45 +44,41 @@ class WolfkrowWrapper {
     this.registerHotkeys();
     this.setupAutoLaunch();
   }
-  
+
   private async spawnServices() {
     const isDev = !app.isPackaged;
-    
+
     if (isDev) {
       // Dev: assume user ran `pnpm dev` separately
       return;
     }
-    
+
     // Production: spawn bundled Next.js + Worker
     const resourcesPath = process.resourcesPath;
-    
-    this.nextProcess = spawn(process.execPath, [
-      path.join(resourcesPath, 'web/server.js'),
-    ], {
+
+    this.nextProcess = spawn(process.execPath, [path.join(resourcesPath, 'web/server.js')], {
       env: { ...process.env, PORT: '3000', NODE_ENV: 'production' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    
-    this.workerProcess = spawn(process.execPath, [
-      path.join(resourcesPath, 'worker/index.js'),
-    ], {
+
+    this.workerProcess = spawn(process.execPath, [path.join(resourcesPath, 'worker/index.js')], {
       env: { ...process.env, PORT: '4000', NODE_ENV: 'production' },
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
     });
   }
-  
+
   private async waitForServer(maxAttempts = 30) {
     for (let i = 0; i < maxAttempts; i++) {
       try {
         const res = await fetch('http://localhost:3000/api/health');
         if (res.ok) return;
       } catch {}
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise((r) => setTimeout(r, 1000));
     }
     throw new Error('Next.js failed to start in 30s');
   }
-  
+
   private createWindow() {
     this.mainWindow = new BrowserWindow({
       width: 1400,
@@ -101,13 +98,13 @@ class WolfkrowWrapper {
         webSecurity: true,
       },
     });
-    
+
     this.mainWindow.loadURL('http://localhost:3000');
-    
+
     this.mainWindow.once('ready-to-show', () => {
       this.mainWindow?.show();
     });
-    
+
     // Hide instead of close (X button)
     this.mainWindow.on('close', (e) => {
       if (!app.isQuitting) {
@@ -116,10 +113,10 @@ class WolfkrowWrapper {
       }
     });
   }
-  
+
   private createTray() {
     this.tray = new Tray(path.join(__dirname, '../resources/tray-icon.png'));
-    
+
     const contextMenu = Menu.buildFromTemplate([
       { label: 'Abrir Wolfkrow', click: () => this.showWindow() },
       { label: 'Chat Rápido', click: () => this.quickChat() },
@@ -130,10 +127,10 @@ class WolfkrowWrapper {
       { type: 'separator' },
       { label: 'Sair', click: () => this.quit() },
     ]);
-    
+
     this.tray.setToolTip('Wolfkrow Tool');
     this.tray.setContextMenu(contextMenu);
-    
+
     this.tray.on('click', () => {
       if (this.mainWindow?.isVisible()) {
         this.mainWindow.hide();
@@ -142,7 +139,7 @@ class WolfkrowWrapper {
       }
     });
   }
-  
+
   private registerHotkeys() {
     // Cmd+Shift+Space (mac) / Ctrl+Shift+Space (win/linux)
     globalShortcut.register('CommandOrControl+Shift+Space', () => {
@@ -154,7 +151,7 @@ class WolfkrowWrapper {
       }
     });
   }
-  
+
   private setupAutoLaunch() {
     if (process.platform === 'darwin' || process.platform === 'win32') {
       app.setLoginItemSettings({
@@ -163,33 +160,33 @@ class WolfkrowWrapper {
       });
     }
   }
-  
+
   private showWindow() {
     if (!this.mainWindow) return;
-    
+
     if (this.mainWindow.isMinimized()) this.mainWindow.restore();
     this.mainWindow.show();
     this.mainWindow.focus();
   }
-  
+
   private quickChat() {
     this.showWindow();
     this.mainWindow?.webContents.send('navigate', '/chat');
   }
-  
+
   private lock() {
     this.mainWindow?.webContents.send('lock-app');
   }
-  
+
   private async quit() {
     app.isQuitting = true;
-    
+
     // Graceful shutdown
     this.nextProcess?.kill('SIGTERM');
     this.workerProcess?.kill('SIGTERM');
-    
-    await new Promise(r => setTimeout(r, 2000)); // Wait for cleanup
-    
+
+    await new Promise((r) => setTimeout(r, 2000)); // Wait for cleanup
+
     app.quit();
   }
 }
@@ -236,14 +233,14 @@ app.on('before-quit', async () => {
 
 ## Tamanho do Bundle
 
-| Component | Size |
-|---|---|
-| Electron runtime | ~70MB |
-| Next.js (production) | ~20MB |
-| Worker | ~5MB |
-| MCPs | ~30MB total |
-| Resources (icon, etc) | ~1MB |
-| **Total DMG** | **~120-150MB** |
+| Component             | Size           |
+| --------------------- | -------------- |
+| Electron runtime      | ~70MB          |
+| Next.js (production)  | ~20MB          |
+| Worker                | ~5MB           |
+| MCPs                  | ~30MB total    |
+| Resources (icon, etc) | ~1MB           |
+| **Total DMG**         | **~120-150MB** |
 
 Aceitável para desktop app.
 
@@ -318,29 +315,33 @@ autoUpdater.autoInstallOnAppQuit = true;
 
 autoUpdater.on('update-available', (info) => {
   // Show notification: "New version available"
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Update available',
-    message: `Version ${info.version} is available. Download now?`,
-    buttons: ['Download', 'Later'],
-  }).then((result) => {
-    if (result.response === 0) {
-      autoUpdater.downloadUpdate();
-    }
-  });
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: 'Update available',
+      message: `Version ${info.version} is available. Download now?`,
+      buttons: ['Download', 'Later'],
+    })
+    .then((result) => {
+      if (result.response === 0) {
+        autoUpdater.downloadUpdate();
+      }
+    });
 });
 
 autoUpdater.on('update-downloaded', () => {
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Update ready',
-    message: 'Update downloaded. Restart to apply.',
-    buttons: ['Restart', 'Later'],
-  }).then((result) => {
-    if (result.response === 0) {
-      autoUpdater.quitAndInstall();
-    }
-  });
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: 'Update ready',
+      message: 'Update downloaded. Restart to apply.',
+      buttons: ['Restart', 'Later'],
+    })
+    .then((result) => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
 });
 
 autoUpdater.checkForUpdates();
@@ -398,10 +399,10 @@ linux:
 
 asar: true
 asarUnpack:
-  - "**/*.node"
-  - "**/better-sqlite3/**"
-  - "**/keytar/**"
-  - "**/sqlite-vec/**"
+  - '**/*.node'
+  - '**/better-sqlite3/**'
+  - '**/keytar/**'
+  - '**/sqlite-vec/**'
 ```
 
 ## References

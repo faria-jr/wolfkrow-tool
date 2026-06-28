@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from 'react';
 
-
 import { useStt } from './use-stt';
 import { useTts } from './use-tts';
 import { useVad } from './use-vad';
@@ -52,7 +51,10 @@ async function processSpeechEnd(p: SpeechEndParams): Promise<void> {
   p.setState('processing');
   try {
     const transcript = await p.stopRecording();
-    if (!transcript.trim()) { p.setState('listening'); return; }
+    if (!transcript.trim()) {
+      p.setState('listening');
+      return;
+    }
     p.addMessage({ role: 'user', text: transcript });
     const assistantText = await fetchAssistantResponse(transcript, p.agentId);
     p.addMessage({ role: 'assistant', text: assistantText });
@@ -67,7 +69,29 @@ async function processSpeechEnd(p: SpeechEndParams): Promise<void> {
   }
 }
 
-export function useVoiceConversation(options: UseVoiceConversationOptions = {}): UseVoiceConversationReturn {
+/** Build VAD callbacks bound to the conversation state setters. */
+function buildVadCallbacks(opts: {
+  state: VoiceConversationState;
+  setState: (s: VoiceConversationState) => void;
+  stopTts: () => void;
+  handleSpeechEnd: () => void;
+}) {
+  return {
+    onSpeechStart: () => {
+      if (opts.state === 'speaking') {
+        opts.stopTts();
+        opts.setState('listening');
+      }
+    },
+    onSpeechEnd: () => {
+      void opts.handleSpeechEnd();
+    },
+  };
+}
+
+export function useVoiceConversation(
+  options: UseVoiceConversationOptions = {}
+): UseVoiceConversationReturn {
   const [state, setState] = useState<VoiceConversationState>('idle');
   const [messages, setMessages] = useState<VoiceConversationMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -84,24 +108,31 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
     : { provider: voiceSettings.provider };
   const { speak, stop: stopTts } = useTts(ttsOptions);
 
-  const addMessage = useCallback((msg: VoiceConversationMessage) => {
-    setMessages((prev) => [...prev, msg]);
-    options.onMessage?.(msg);
-  }, [options]);
+  const addMessage = useCallback(
+    (msg: VoiceConversationMessage) => {
+      setMessages((prev) => [...prev, msg]);
+      options.onMessage?.(msg);
+    },
+    [options]
+  );
 
   const handleSpeechEnd = useCallback(() => {
-    void processSpeechEnd({ state, setState, stopRecording, addMessage, speak, resetStt, startRecording, setError, agentId: options.agentId });
+    void processSpeechEnd({
+      state,
+      setState,
+      stopRecording,
+      addMessage,
+      speak,
+      resetStt,
+      startRecording,
+      setError,
+      agentId: options.agentId,
+    });
   }, [state, stopRecording, addMessage, options.agentId, speak, resetStt, startRecording]);
 
-  const { start: startVad, stop: stopVad } = useVad({
-    onSpeechStart: () => {
-      if (state === 'speaking') {
-        stopTts();
-        setState('listening');
-      }
-    },
-    onSpeechEnd: () => { void handleSpeechEnd(); },
-  });
+  const { start: startVad, stop: stopVad } = useVad(
+    buildVadCallbacks({ state, setState, stopTts, handleSpeechEnd })
+  );
 
   const start = useCallback(async () => {
     setError(null);

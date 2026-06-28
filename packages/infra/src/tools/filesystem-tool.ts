@@ -31,25 +31,38 @@ export class FilesystemTool implements ToolExecutor {
     const workDir = ctx.workDir ?? process.cwd();
     try {
       switch (op) {
-        case 'read': return await this.handleRead(input, workDir, callId);
-        case 'write': return await this.handleWrite(input, workDir, callId);
-        case 'glob': return await this.handleGlob(input, workDir, callId);
-        case 'grep': return await this.handleGrep(input, workDir, callId);
-        default: return ToolResult.error(callId, `Unknown operation: ${op}`);
+        case 'read':
+          return await this.handleRead(input, workDir, callId);
+        case 'write':
+          return await this.handleWrite(input, workDir, callId);
+        case 'glob':
+          return await this.handleGlob(input, workDir, callId);
+        case 'grep':
+          return await this.handleGrep(input, workDir, callId);
+        default:
+          return ToolResult.error(callId, `Unknown operation: ${op}`);
       }
     } catch (err) {
       return ToolResult.error(callId, toErrorMessage(err));
     }
   }
 
-  private async handleRead(input: Record<string, unknown>, workDir: string, callId: string): Promise<ToolResult> {
+  private async handleRead(
+    input: Record<string, unknown>,
+    workDir: string,
+    callId: string
+  ): Promise<ToolResult> {
     const filePath = this.resolveAndValidate(String(input['path'] ?? ''), workDir, callId);
     if (filePath instanceof ToolResult) return filePath;
     const content = await fs.readFile(filePath, 'utf-8');
     return ToolResult.ok(callId, content);
   }
 
-  private async handleWrite(input: Record<string, unknown>, workDir: string, callId: string): Promise<ToolResult> {
+  private async handleWrite(
+    input: Record<string, unknown>,
+    workDir: string,
+    callId: string
+  ): Promise<ToolResult> {
     const filePath = this.resolveAndValidate(String(input['path'] ?? ''), workDir, callId);
     if (filePath instanceof ToolResult) return filePath;
     const content = String(input['content'] ?? '');
@@ -58,13 +71,21 @@ export class FilesystemTool implements ToolExecutor {
     return ToolResult.ok(callId, `Written: ${path.relative(workDir, filePath)}`);
   }
 
-  private async handleGlob(input: Record<string, unknown>, workDir: string, callId: string): Promise<ToolResult> {
+  private async handleGlob(
+    input: Record<string, unknown>,
+    workDir: string,
+    callId: string
+  ): Promise<ToolResult> {
     const pattern = String(input['pattern'] ?? '**/*');
     const files = await this.glob(pattern, workDir);
     return ToolResult.ok(callId, files.join('\n'));
   }
 
-  private async handleGrep(input: Record<string, unknown>, workDir: string, callId: string): Promise<ToolResult> {
+  private async handleGrep(
+    input: Record<string, unknown>,
+    workDir: string,
+    callId: string
+  ): Promise<ToolResult> {
     const pattern = String(input['pattern'] ?? '');
     const searchIn = String(input['searchPath'] ?? '.');
     const searchPath = this.resolveAndValidate(searchIn, workDir, callId);
@@ -73,11 +94,18 @@ export class FilesystemTool implements ToolExecutor {
     return ToolResult.ok(callId, results.join('\n') || '(no matches)');
   }
 
-  private resolveAndValidate(filePath: string, workDir: string, callId: string): string | ToolResult {
+  private resolveAndValidate(
+    filePath: string,
+    workDir: string,
+    callId: string
+  ): string | ToolResult {
     if (!filePath) return ToolResult.error(callId, 'path is required');
     const resolved = path.resolve(workDir, filePath);
     if (!resolved.startsWith(workDir)) {
-      return ToolResult.error(callId, `Path "${filePath}" not allowed — must stay within workspace`);
+      return ToolResult.error(
+        callId,
+        `Path "${filePath}" not allowed — must stay within workspace`
+      );
     }
     return resolved;
   }

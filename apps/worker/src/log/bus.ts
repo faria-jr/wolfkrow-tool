@@ -23,7 +23,11 @@ class LogBus {
     if (this.ring.length >= RING_SIZE) this.ring.shift();
     this.ring.push(entry);
     for (const sub of this.subscribers) {
-      try { sub(entry); } catch { /* ignore */ }
+      try {
+        sub(entry);
+      } catch {
+        /* ignore */
+      }
     }
   }
 

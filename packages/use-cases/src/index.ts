@@ -12,6 +12,8 @@ export * from './memory/index';
 export * from './scheduler/index';
 export * from './harness/index';
 export * from './pipeline/index';
+export * from './projects/index';
+export * from './run-events/index';
 export * from './enrich/index';
 export * from './workflow/index';
 export * from './vault/index';

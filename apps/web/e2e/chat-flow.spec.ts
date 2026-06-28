@@ -1,11 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { SELECTORS } from './helpers/selectors';
-import {
-  mockChatSessions,
-  mockChatStream,
-  mockToolPermissionResolve,
-} from './helpers/sse-mock';
+import { mockChatSessions, mockChatStream, mockToolPermissionResolve } from './helpers/sse-mock';
 import { expect, test } from './helpers/test-fixtures';
 
 /**
@@ -57,10 +53,23 @@ test.describe('Chat — sessions', () => {
     await authedPage.route('**/api/chat/sessions', async (route) => {
       if (route.request().method() === 'POST') {
         postCalls += 1;
-        const body = { id: `sess-${postCalls}`, title: 'New Chat', lastActivity: new Date().toISOString(), archived: false };
-        await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(body) });
+        const body = {
+          id: `sess-${postCalls}`,
+          title: 'New Chat',
+          lastActivity: new Date().toISOString(),
+          archived: false,
+        };
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify(body),
+        });
       } else {
-        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify([]),
+        });
       }
     });
     await authedPage.goto('/chat');
@@ -68,7 +77,9 @@ test.describe('Chat — sessions', () => {
     expect(postCalls).toBe(1);
   });
 
-  test('delete session — confirms via window.confirm and removes from list', async ({ authedPage }) => {
+  test('delete session — confirms via window.confirm and removes from list', async ({
+    authedPage,
+  }) => {
     await mockChatSessions(authedPage, [
       { id: 'sess-X', title: 'Session X' },
       { id: 'sess-Y', title: 'Session Y' },
@@ -102,7 +113,9 @@ test.describe('Chat — streaming send', () => {
     await mockChatStream(authedPage, { deltas: ['Slow', ' response'], delayMsPerDelta: 80 });
     await authedPage.goto('/chat');
     await sendMessage(authedPage, 'Hello');
-    await expect(authedPage.locator(SELECTORS.chat.streamIndicator)).toBeVisible({ timeout: 5_000 });
+    await expect(authedPage.locator(SELECTORS.chat.streamIndicator)).toBeVisible({
+      timeout: 5_000,
+    });
   });
 
   test('stream indicator disappears when stream completes', async ({ authedPage }) => {
@@ -110,7 +123,9 @@ test.describe('Chat — streaming send', () => {
     await mockChatStream(authedPage, { deltas: ['Quick'] });
     await authedPage.goto('/chat');
     await sendMessage(authedPage, 'Hi');
-    await expect(authedPage.locator(SELECTORS.chat.streamIndicator)).toBeHidden({ timeout: 10_000 });
+    await expect(authedPage.locator(SELECTORS.chat.streamIndicator)).toBeHidden({
+      timeout: 10_000,
+    });
   });
 
   test('stop button aborts an in-flight stream', async ({ authedPage }) => {
@@ -170,7 +185,9 @@ test.describe('Chat — streaming send', () => {
     await mockChatStream(authedPage, { deltas: ['Reply 1'] });
     await authedPage.goto('/chat');
     await sendMessage(authedPage, 'Q1');
-    await expect(authedPage.locator(SELECTORS.chat.assistantMessage).last()).toContainText('Reply 1');
+    await expect(authedPage.locator(SELECTORS.chat.assistantMessage).last()).toContainText(
+      'Reply 1'
+    );
     await sendMessage(authedPage, 'Q2');
     const assistants = authedPage.locator(SELECTORS.chat.assistantMessage);
     await expect(assistants).toHaveCount(2);
@@ -181,7 +198,10 @@ test.describe('Chat — streaming send', () => {
     await mockChatStream(authedPage, { failWith: 'provider unreachable' });
     await authedPage.goto('/chat');
     await sendMessage(authedPage, 'hi');
-    await expect(authedPage.locator(SELECTORS.chat.assistantMessage)).toContainText(/error|could not connect/i, { timeout: 10_000 });
+    await expect(authedPage.locator(SELECTORS.chat.assistantMessage)).toContainText(
+      /error|could not connect/i,
+      { timeout: 10_000 }
+    );
   });
 });
 
@@ -214,7 +234,11 @@ test.describe('Chat — tool permission', () => {
     await authedPage.route('**/chat/permission', async (route) => {
       const body = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
       if (body['approved'] === true) approvePosted = true;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ resolved: true }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ resolved: true }),
+      });
     });
     await authedPage.goto('/chat');
     await sendMessage(authedPage, 'delete tmp');
@@ -231,7 +255,11 @@ test.describe('Chat — tool permission', () => {
     await authedPage.route('**/chat/permission', async (route) => {
       const body = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
       if (body['approved'] === false) denied = true;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ resolved: true }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ resolved: true }),
+      });
     });
     await authedPage.goto('/chat');
     await sendMessage(authedPage, 'delete tmp');
@@ -260,7 +288,9 @@ test.describe('Chat — attachments', () => {
     await authedPage.goto('/chat');
     const png = Buffer.from('89504E470D0A1A0A', 'hex');
     await authedPage.locator('input[type="file"]').first().setInputFiles({
-      name: 'tmp.png', mimeType: 'image/png', buffer: png,
+      name: 'tmp.png',
+      mimeType: 'image/png',
+      buffer: png,
     });
     await expect(authedPage.locator(SELECTORS.chat.attachmentPreviews)).toBeVisible();
     await authedPage.getByRole('button', { name: /remove tmp\.png/i }).click();
@@ -270,10 +300,20 @@ test.describe('Chat — attachments', () => {
   test('unsupported MIME type surfaces an inline error', async ({ authedPage }) => {
     await mockChatSessions(authedPage, []);
     await authedPage.goto('/chat');
-    await authedPage.locator('input[type="file"]').first().setInputFiles({
-      name: 'bad.exe', mimeType: 'application/x-msdownload', buffer: Buffer.from('MZ'),
-    });
-    await expect(authedPage.getByRole('alert').filter({ hasText: /tipo|não suportado|not supported/i }).first()).toBeVisible();
+    await authedPage
+      .locator('input[type="file"]')
+      .first()
+      .setInputFiles({
+        name: 'bad.exe',
+        mimeType: 'application/x-msdownload',
+        buffer: Buffer.from('MZ'),
+      });
+    await expect(
+      authedPage
+        .getByRole('alert')
+        .filter({ hasText: /tipo|não suportado|not supported/i })
+        .first()
+    ).toBeVisible();
   });
 
   test('oversized attachment (>5MB) is rejected with inline error', async ({ authedPage }) => {
@@ -281,8 +321,15 @@ test.describe('Chat — attachments', () => {
     await authedPage.goto('/chat');
     const big = Buffer.alloc(6 * 1024 * 1024, 0);
     await authedPage.locator('input[type="file"]').first().setInputFiles({
-      name: 'huge.png', mimeType: 'image/png', buffer: big,
+      name: 'huge.png',
+      mimeType: 'image/png',
+      buffer: big,
     });
-    await expect(authedPage.getByRole('alert').filter({ hasText: /excede|limit|5 ?mb/i }).first()).toBeVisible();
+    await expect(
+      authedPage
+        .getByRole('alert')
+        .filter({ hasText: /excede|limit|5 ?mb/i })
+        .first()
+    ).toBeVisible();
   });
 });

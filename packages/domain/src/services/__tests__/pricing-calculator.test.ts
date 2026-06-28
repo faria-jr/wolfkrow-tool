@@ -68,14 +68,19 @@ describe('PricingCalculator', () => {
   });
 
   it('exposes default calculator', () => {
-    expect(defaultPricingCalculator.cost('gpt-4o', { inputTokens: 1000, outputTokens: 0 }).toUSD()).toBe(0.01);
+    expect(
+      defaultPricingCalculator.cost('gpt-4o', { inputTokens: 1000, outputTokens: 0 }).toUSD()
+    ).toBe(0.01);
   });
 });
 
 describe('multi-preset pricing (RM6)', () => {
   it('glm-4.7 has known pricing and cost > 0', () => {
     expect(hasKnownPricing('glm-4.7')).toBe(true);
-    const cost = defaultPricingCalculator.cost('glm-4.7', { inputTokens: 1_000_000, outputTokens: 500_000 });
+    const cost = defaultPricingCalculator.cost('glm-4.7', {
+      inputTokens: 1_000_000,
+      outputTokens: 500_000,
+    });
     expect(cost.toUSD()).toBeGreaterThan(0);
   });
 
@@ -87,8 +92,15 @@ describe('multi-preset pricing (RM6)', () => {
     // P1-5: kimi-k2-instruct is now catalogued under the moonshot provider, so
     // the base (provider-agnostic) lookup finds it — the old divergence (base
     // unknown vs preset known) is gone. Cost is positive from either call.
-    const kimiCost = defaultPricingCalculator.cost('kimi-k2-instruct', { inputTokens: 1_000_000, outputTokens: 500_000 }, 'moonshot');
-    const base = defaultPricingCalculator.cost('kimi-k2-instruct', { inputTokens: 1_000_000, outputTokens: 500_000 });
+    const kimiCost = defaultPricingCalculator.cost(
+      'kimi-k2-instruct',
+      { inputTokens: 1_000_000, outputTokens: 500_000 },
+      'moonshot'
+    );
+    const base = defaultPricingCalculator.cost('kimi-k2-instruct', {
+      inputTokens: 1_000_000,
+      outputTokens: 500_000,
+    });
     expect(kimiCost.toUSD()).toBeGreaterThan(0);
     expect(base.toUSD()).toBeGreaterThan(0);
     expect(kimiCost.toUSD()).toBe(base.toUSD());

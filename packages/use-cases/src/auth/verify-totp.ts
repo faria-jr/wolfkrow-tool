@@ -20,7 +20,7 @@ export interface VerifyTotpOutput {
 export class VerifyTotpUseCase implements UseCase<VerifyTotpInput, VerifyTotpOutput> {
   constructor(
     private readonly userRepo: UserRepo,
-    private readonly totp: TotpVerifier,
+    private readonly totp: TotpVerifier
   ) {}
 
   async execute(input: VerifyTotpInput): Promise<VerifyTotpOutput> {

@@ -30,9 +30,7 @@ function toEntity(row: DbRow): SemanticMemory {
 
 function hasVec0Table(sqlite: DatabaseClient['$client'], name: string): boolean {
   return (
-    sqlite
-      .prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`)
-      .get(name) != null
+    sqlite.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`).get(name) != null
   );
 }
 
@@ -47,7 +45,9 @@ export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
   }
 
   async findByUserId(userId: string, limit?: number): Promise<SemanticMemory[]> {
-    const q = this.db.select().from(semanticMemories)
+    const q = this.db
+      .select()
+      .from(semanticMemories)
       .where(eq(semanticMemories.userId, userId))
       .orderBy(semanticMemories.createdAt);
     const rows = limit ? q.limit(limit).all() : q.all();
@@ -57,32 +57,40 @@ export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
   async save(memory: SemanticMemory): Promise<SemanticMemory> {
     const sqlite = this.db.$client;
     const p = memory.toProps();
-    this.db.insert(semanticMemories).values({
-      id: p.id,
-      userId: p.userId,
-      content: p.content,
-      embedding: p.embedding ?? null,
-      source: p.source,
-      importance: p.importance,
-      accessCount: p.accessCount,
-      lastAccessedAt: p.lastAccessedAt ?? null,
-      metadata: p.metadata,
-      createdAt: p.createdAt,
-    }).onConflictDoUpdate({
-      target: semanticMemories.id,
-      set: {
+    this.db
+      .insert(semanticMemories)
+      .values({
+        id: p.id,
+        userId: p.userId,
         content: p.content,
         embedding: p.embedding ?? null,
+        source: p.source,
         importance: p.importance,
         accessCount: p.accessCount,
         lastAccessedAt: p.lastAccessedAt ?? null,
         metadata: p.metadata,
-      },
-    }).run();
+        createdAt: p.createdAt,
+      })
+      .onConflictDoUpdate({
+        target: semanticMemories.id,
+        set: {
+          content: p.content,
+          embedding: p.embedding ?? null,
+          importance: p.importance,
+          accessCount: p.accessCount,
+          lastAccessedAt: p.lastAccessedAt ?? null,
+          metadata: p.metadata,
+        },
+      })
+      .run();
 
-    if (p.embedding && p.embedding.length === VEC_DIM && hasVec0Table(sqlite, 'semantic_memories_vec')) {
+    if (
+      p.embedding &&
+      p.embedding.length === VEC_DIM &&
+      hasVec0Table(sqlite, 'semantic_memories_vec')
+    ) {
       const vec0Stmt = sqlite.prepare(
-        'INSERT OR REPLACE INTO semantic_memories_vec (memory_id, embedding) VALUES (?, ?)',
+        'INSERT OR REPLACE INTO semantic_memories_vec (memory_id, embedding) VALUES (?, ?)'
       );
       try {
         vec0Stmt.run(p.id, JSON.stringify(p.embedding));
@@ -123,7 +131,7 @@ export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
   async vectorSearch(
     embedding: number[],
     userId: string,
-    limit: number,
+    limit: number
   ): Promise<MemorySearchResult[]> {
     const sqlite = this.db.$client;
     if (embedding.length === VEC_DIM && hasVec0Table(sqlite, 'semantic_memories_vec')) {
@@ -136,7 +144,7 @@ export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
     sqlite: DatabaseClient['$client'],
     embedding: number[],
     userId: string,
-    limit: number,
+    limit: number
   ): MemorySearchResult[] {
     const candidates = sqlite
       .prepare(
@@ -146,7 +154,7 @@ export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
          WHERE v.embedding MATCH ?
            AND m.user_id = ?
          ORDER BY v.distance
-         LIMIT ?`,
+         LIMIT ?`
       )
       .all(JSON.stringify(embedding), userId, limit * 10) as Array<{
       memory_id: string;
@@ -167,11 +175,7 @@ export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
     return results;
   }
 
-  private vectorSearchJS(
-    embedding: number[],
-    userId: string,
-    limit: number,
-  ): MemorySearchResult[] {
+  private vectorSearchJS(embedding: number[], userId: string, limit: number): MemorySearchResult[] {
     const rows = this.db
       .select()
       .from(semanticMemories)
@@ -193,7 +197,7 @@ export class DrizzleSemanticMemoryRepo implements SemanticMemoryRepo {
   async hybridSearch(
     embedding: number[],
     userId: string,
-    limit: number,
+    limit: number
   ): Promise<HybridMemorySearchResult[]> {
     // Currently vector-only; keyword signal can be added here when a full-text
     // index for semantic_memories is introduced.

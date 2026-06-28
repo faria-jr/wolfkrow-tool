@@ -50,7 +50,11 @@ const tools: McpTool[] = [
       type: 'object',
       properties: {
         id: { type: 'string', description: 'Drive file id' },
-        role: { type: 'string', enum: ['reader', 'writer', 'commenter'], description: 'Default reader' },
+        role: {
+          type: 'string',
+          enum: ['reader', 'writer', 'commenter'],
+          description: 'Default reader',
+        },
       },
       required: ['id'],
     },
@@ -115,7 +119,7 @@ async function getFile(args: Record<string, unknown>): Promise<McpToolResult> {
   return text(
     await driveGet(`/files/${encodeURIComponent(id)}`, {
       fields: 'id,name,mimeType,modifiedTime,size,webViewLink,description',
-    }),
+    })
   );
 }
 
@@ -127,7 +131,7 @@ async function shareFile(args: Record<string, unknown>): Promise<McpToolResult> 
     await drivePost(`/files/${encodeURIComponent(id)}/permissions`, {
       type: 'anyone',
       role,
-    }),
+    })
   );
 }
 

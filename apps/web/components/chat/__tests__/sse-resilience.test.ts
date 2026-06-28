@@ -24,68 +24,50 @@ describe('FE-4 — SSE resilience (sse.ts streamSse)', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('survives a malformed frame: text before and after is still received', async () => {
-    vi.stubGlobal(
-      'fetch',
-      async () =>
-        sseResponse([
-          'data: {"type":"text","content":"Hel"}',
-          'data: this-is-not-valid-json', // malformed
-          'data: {"type":"text","content":"lo"}',
-          'data: {"type":"done"}',
-        ]),
+    vi.stubGlobal('fetch', async () =>
+      sseResponse([
+        'data: {"type":"text","content":"Hel"}',
+        'data: this-is-not-valid-json', // malformed
+        'data: {"type":"text","content":"lo"}',
+        'data: {"type":"done"}',
+      ])
     );
 
     const received: string[] = [];
-    await streamSse(
-      'http://localhost/chat/send',
-      { message: 'hi' },
-      new AbortController().signal,
-      { onText: (t) => received.push(t) },
-    );
+    await streamSse('http://localhost/chat/send', { message: 'hi' }, new AbortController().signal, {
+      onText: (t) => received.push(t),
+    });
 
     expect(received).toEqual(['Hel', 'lo']);
   });
 
   it('does not throw when the first frame is malformed', async () => {
-    vi.stubGlobal(
-      'fetch',
-      async () =>
-        sseResponse([
-          'data: {broken',
-          'data: {"type":"text","content":"ok"}',
-        ]),
+    vi.stubGlobal('fetch', async () =>
+      sseResponse(['data: {broken', 'data: {"type":"text","content":"ok"}'])
     );
 
     const received: string[] = [];
     await expect(
-      streamSse(
-        'http://localhost/chat/send',
-        { message: 'hi' },
-        new AbortController().signal,
-        { onText: (t) => received.push(t) },
-      ),
+      streamSse('http://localhost/chat/send', { message: 'hi' }, new AbortController().signal, {
+        onText: (t) => received.push(t),
+      })
     ).resolves.toBeUndefined();
     expect(received).toEqual(['ok']);
   });
 
   it('survives a frame with valid JSON but wrong event shape', async () => {
-    vi.stubGlobal(
-      'fetch',
-      async () =>
-        sseResponse([
-          'data: {"type":"text","content":"A"}',
-          'data: {"unknownField":42}', // valid JSON, unknown type
-          'data: {"type":"text","content":"B"}',
-        ]),
+    vi.stubGlobal('fetch', async () =>
+      sseResponse([
+        'data: {"type":"text","content":"A"}',
+        'data: {"unknownField":42}', // valid JSON, unknown type
+        'data: {"type":"text","content":"B"}',
+      ])
     );
 
     const received: string[] = [];
-    await streamSse(
-      'http://localhost/chat/send',
-      { message: 'hi' },
-      new AbortController().signal,
-      { onText: (t) => received.push(t) },
-    );
+    await streamSse('http://localhost/chat/send', { message: 'hi' }, new AbortController().signal, {
+      onText: (t) => received.push(t),
+    });
     expect(received).toEqual(['A', 'B']);
   });
 });

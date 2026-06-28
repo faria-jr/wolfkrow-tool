@@ -1,7 +1,6 @@
 import { handleRpcMessage } from '@wolfkrow/mcp-shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-
 import { handlers } from '../index';
 
 afterEach(() => {
@@ -31,7 +30,7 @@ describe('local-agents MCP server smoke tests', () => {
     const tools = (res?.result as { tools: { name: string }[] })?.tools ?? [];
     const names = tools.map((t) => t.name);
     expect(names).toEqual(
-      expect.arrayContaining(['list_agents', 'get_agent', 'create_agent', 'delete_agent']),
+      expect.arrayContaining(['list_agents', 'get_agent', 'create_agent', 'delete_agent'])
     );
   });
 
@@ -39,8 +38,13 @@ describe('local-agents MCP server smoke tests', () => {
     process.env['WOLFKROW_AUTH_TOKEN'] = 't';
     vi.stubGlobal('fetch', makeFetchOk({ agents: [] }));
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'list_agents', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: { name: 'list_agents', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe('http://localhost:3000/api/agents');
@@ -59,7 +63,7 @@ describe('local-agents MCP server smoke tests', () => {
           arguments: { name: 'helper', runtime: 'claude-compat', provider: 'zai' },
         },
       },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     const call = vi.mocked(fetch).mock.calls[0];
@@ -72,8 +76,13 @@ describe('local-agents MCP server smoke tests', () => {
     process.env['WOLFKROW_WEB_URL'] = 'http://my-web:8888/';
     vi.stubGlobal('fetch', makeFetchOk({ agents: [] }));
     await handleRpcMessage(
-      { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'list_agents', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'tools/call',
+        params: { name: 'list_agents', arguments: {} },
+      },
+      handlers
     );
     expect(vi.mocked(fetch).mock.calls[0]?.[0]).toBe('http://my-web:8888/api/agents');
   });
@@ -82,15 +91,20 @@ describe('local-agents MCP server smoke tests', () => {
     process.env['WOLFKROW_AUTH_TOKEN'] = 't';
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'get_agent', arguments: {} } },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
 
   it('returns isError when auth token missing', async () => {
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'list_agents', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 7,
+        method: 'tools/call',
+        params: { name: 'list_agents', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
@@ -98,7 +112,7 @@ describe('local-agents MCP server smoke tests', () => {
   it('unknown tool returns isError', async () => {
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 8, method: 'tools/call', params: { name: 'nope', arguments: {} } },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });

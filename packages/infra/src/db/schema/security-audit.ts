@@ -18,7 +18,9 @@ export const securityScans = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     projectPath: text('project_path').notNull(),
-    status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] }).notNull().default('pending'),
+    status: text('status', { enum: ['pending', 'running', 'completed', 'failed'] })
+      .notNull()
+      .default('pending'),
     summary: metadata(),
     startedAt: timestamp('started_at').notNull(),
     completedAt: timestamp('completed_at'),
@@ -27,7 +29,7 @@ export const securityScans = sqliteTable(
   (t) => ({
     userIdx: index('security_scans_user_idx').on(t.userId),
     statusIdx: index('security_scans_status_idx').on(t.status),
-  }),
+  })
 );
 
 export const securityFindings = sqliteTable(
@@ -51,5 +53,5 @@ export const securityFindings = sqliteTable(
   (t) => ({
     scanIdx: index('security_findings_scan_idx').on(t.scanId),
     severityIdx: index('security_findings_severity_idx').on(t.severity),
-  }),
+  })
 );

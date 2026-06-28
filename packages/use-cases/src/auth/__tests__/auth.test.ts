@@ -1,5 +1,4 @@
-import type {
-  User} from '@wolfkrow/domain';
+import type { User } from '@wolfkrow/domain';
 import {
   ConflictError,
   type LockoutPolicy,
@@ -81,7 +80,7 @@ describe('RegisterUseCase', () => {
     const { register } = setup();
     await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
     await expect(
-      register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined }),
+      register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined })
     ).rejects.toThrow(ConflictError);
   });
 });
@@ -153,7 +152,9 @@ describe('UnlockSessionUseCase', () => {
   it('succeeds with correct password', async () => {
     const { repo, hasher, register } = setup();
     await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
-    const out = await new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({ password: PW('Abcdef12') });
+    const out = await new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({
+      password: PW('Abcdef12'),
+    });
     expect(out.userId).toMatch(/^[0-9a-f-]{36}$/);
   });
 
@@ -161,14 +162,18 @@ describe('UnlockSessionUseCase', () => {
     const { repo, hasher, register } = setup();
     await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
     await expect(
-      new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({ password: PW('Wrong123') }),
+      new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({
+        password: PW('Wrong123'),
+      })
     ).rejects.toThrow(UnauthorizedError);
   });
 
   it('throws when no owner', async () => {
     const { repo, hasher } = setup();
     await expect(
-      new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({ password: PW('Abcdef12') }),
+      new UnlockSessionUseCase(repo, hasher, new LockoutPolicyCtor()).execute({
+        password: PW('Abcdef12'),
+      })
     ).rejects.toThrow(UnauthorizedError);
   });
 });
@@ -190,7 +195,11 @@ describe('EnableTotpUseCase', () => {
     const { repo, register } = setup();
     await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
     const owner = await repo.findOwner();
-    await new EnableTotpUseCase(repo, new FakeTotp()).execute({ userId: owner!.id, secret: 'S', code: VALID_CODE });
+    await new EnableTotpUseCase(repo, new FakeTotp()).execute({
+      userId: owner!.id,
+      secret: 'S',
+      code: VALID_CODE,
+    });
     const updated = await repo.findById(owner!.id);
     expect(updated?.totpEnabled).toBe(true);
   });
@@ -200,7 +209,11 @@ describe('EnableTotpUseCase', () => {
     await register.execute({ password: PW('Abcdef12'), displayName: undefined, email: undefined });
     const owner = await repo.findOwner();
     await expect(
-      new EnableTotpUseCase(repo, new FakeTotp()).execute({ userId: owner!.id, secret: 'S', code: '000000' }),
+      new EnableTotpUseCase(repo, new FakeTotp()).execute({
+        userId: owner!.id,
+        secret: 'S',
+        code: '000000',
+      })
     ).rejects.toThrow(UnauthorizedError);
   });
 });
@@ -230,7 +243,7 @@ describe('DisableTotpUseCase', () => {
         userId: owner!.id,
         password: PW('Wrong123'),
         code: VALID_CODE,
-      }),
+      })
     ).rejects.toThrow(UnauthorizedError);
   });
 
@@ -244,7 +257,7 @@ describe('DisableTotpUseCase', () => {
         userId: owner!.id,
         password: PW('Abcdef12'),
         code: '000000',
-      }),
+      })
     ).rejects.toThrow(UnauthorizedError);
   });
 });
@@ -274,7 +287,7 @@ describe('VerifyTotpUseCase', () => {
     const userId = await registerAndEnableTotp(repo);
 
     await expect(
-      new VerifyTotpUseCase(repo, new FakeTotp()).execute({ userId, code: '000000' }),
+      new VerifyTotpUseCase(repo, new FakeTotp()).execute({ userId, code: '000000' })
     ).rejects.toThrow(UnauthorizedError);
   });
 
@@ -288,7 +301,7 @@ describe('VerifyTotpUseCase', () => {
     const owner = await repo.findOwner();
 
     await expect(
-      new VerifyTotpUseCase(repo, new FakeTotp()).execute({ userId: owner!.id, code: VALID_CODE }),
+      new VerifyTotpUseCase(repo, new FakeTotp()).execute({ userId: owner!.id, code: VALID_CODE })
     ).rejects.toThrow(UnauthorizedError);
   });
 });

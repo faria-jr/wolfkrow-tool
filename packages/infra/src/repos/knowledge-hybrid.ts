@@ -26,7 +26,7 @@ export function vectorSearchVec0(
     limit: number;
     documentIds: string[] | undefined;
     toEntity: (row: typeof knowledgeChunks.$inferSelect) => KnowledgeChunk;
-  },
+  }
 ): ChunkSearchResult[] {
   const { embedding, limit, documentIds, toEntity } = options;
   const queryLimit = documentIds && documentIds.length > 0 ? limit * 10 : limit;
@@ -36,7 +36,7 @@ export function vectorSearchVec0(
        FROM knowledge_chunks_vec
        WHERE embedding MATCH ?
        ORDER BY distance
-       LIMIT ?`,
+       LIMIT ?`
     )
     .all(JSON.stringify(embedding), queryLimit) as Array<{ chunk_id: string; distance: number }>;
 
@@ -69,7 +69,7 @@ export function keywordSearchFts5(
     limit: number;
     documentIds: string[] | undefined;
     toEntity: (row: typeof knowledgeChunks.$inferSelect) => KnowledgeChunk;
-  },
+  }
 ): KeywordSearchResult[] {
   const { query, limit, documentIds, toEntity } = options;
   const ftsQuery = buildFtsQuery(query);
@@ -82,7 +82,7 @@ export function keywordSearchFts5(
        FROM knowledge_chunks_fts
        WHERE knowledge_chunks_fts MATCH ?
        ORDER BY rank
-       LIMIT ?`,
+       LIMIT ?`
     )
     .all(ftsQuery, fetchLimit) as Array<{ chunk_id: string; rank: number }>;
 
@@ -134,7 +134,7 @@ function buildFtsQuery(query: string): string {
 export function fuseHybridResults(
   vecResults: ChunkSearchResult[],
   kwResults: KeywordSearchResult[],
-  limit: number,
+  limit: number
 ): HybridChunkSearchResult[] {
   const vecRanks: RankedItem[] = vecResults.map((r, idx) => ({
     id: r.chunk.toProps().id,
@@ -146,10 +146,10 @@ export function fuseHybridResults(
   }));
   const fused = reciprocalRankFusion([vecRanks, kwRanks]);
   const vecById = new Map<string, ChunkSearchResult>(
-    vecResults.map((r) => [r.chunk.toProps().id, r]),
+    vecResults.map((r) => [r.chunk.toProps().id, r])
   );
   const kwById = new Map<string, KeywordSearchResult>(
-    kwResults.map((r) => [r.chunk.toProps().id, r]),
+    kwResults.map((r) => [r.chunk.toProps().id, r])
   );
 
   return Array.from(fused.entries())
@@ -162,7 +162,7 @@ function toHybridResult(
   id: string,
   score: number,
   vecById: Map<string, ChunkSearchResult>,
-  kwById: Map<string, KeywordSearchResult>,
+  kwById: Map<string, KeywordSearchResult>
 ): HybridChunkSearchResult {
   const vec = vecById.get(id);
   if (vec) {

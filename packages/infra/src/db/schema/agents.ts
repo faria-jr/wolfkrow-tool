@@ -25,7 +25,9 @@ export const agents = sqliteTable(
     mcpServers: text('mcp_servers', { mode: 'json' }).$type<string[]>().notNull().default([]),
     isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
     skills: text('skills', { mode: 'json' }).$type<string[]>().notNull().default([]),
-    runtime: text('runtime', { enum: ['cloud', 'local', 'codex', 'external', 'claude-compat'] }).notNull(),
+    runtime: text('runtime', {
+      enum: ['cloud', 'local', 'codex', 'external', 'claude-compat'],
+    }).notNull(),
     provider: text('provider'),
     squad: text('squad', { enum: ['harness', 'workflow', 'enrich', 'custom'] }),
     systemPrompt: longText('system_prompt'),
@@ -36,5 +38,5 @@ export const agents = sqliteTable(
   (t) => ({
     userIdIdx: index('agents_user_id_idx').on(t.userId),
     isActiveIdx: index('agents_is_active_idx').on(t.isActive),
-  }),
+  })
 );

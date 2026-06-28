@@ -5,7 +5,7 @@
 export class LockoutPolicy {
   constructor(
     readonly maxAttempts = 5,
-    readonly lockDurationMs = 5 * 60 * 1000,
+    readonly lockDurationMs = 5 * 60 * 1000
   ) {}
 
   /** Após N falhas, deve bloquear? */

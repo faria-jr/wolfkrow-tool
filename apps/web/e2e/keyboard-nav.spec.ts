@@ -20,7 +20,10 @@ test.describe('Keyboard navigation', () => {
 
   test('sidebar nav is reachable by keyboard and activates on Enter', async ({ authedPage }) => {
     await authedPage.goto('/tasks');
-    const agentsLink = authedPage.locator('nav a, aside a').filter({ hasText: /^Agents$/ }).first();
+    const agentsLink = authedPage
+      .locator('nav a, aside a')
+      .filter({ hasText: /^Agents$/ })
+      .first();
     await agentsLink.focus();
     await authedPage.keyboard.press('Enter');
     await expect(authedPage).toHaveURL(/\/agents/);

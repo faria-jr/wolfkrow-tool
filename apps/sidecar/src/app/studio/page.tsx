@@ -25,7 +25,9 @@ async function fetchStudioStatus(): Promise<StudioState> {
   try {
     const res = await fetch('/api/open-design');
     if (!res.ok) return { status: 'offline', webUrl: null, daemonUrl: null };
-    const data = (await res.json()) as { state?: { status: StudioStatus; webUrl: string | null; daemonUrl: string | null } };
+    const data = (await res.json()) as {
+      state?: { status: StudioStatus; webUrl: string | null; daemonUrl: string | null };
+    };
     return {
       status: data.state?.status ?? 'unknown',
       webUrl: data.state?.webUrl ?? null,
@@ -62,7 +64,9 @@ function useOpenDesign() {
       if (alive) setTimeout(poll, POLL_MS);
     };
     void poll();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const start = useCallback(async () => {
@@ -89,7 +93,22 @@ function useOpenDesign() {
   return { status, webUrl, loading, start, stop };
 }
 
-function StudioControls({ studio }: { studio: { status: StudioStatus; loading: boolean; start: () => void; stop: () => void } }) {
+const buttonStyle: React.CSSProperties = {
+  padding: '0.5rem 1rem',
+  borderRadius: 6,
+  border: '1px solid #333',
+  background: '#2563eb',
+  color: '#fff',
+  fontSize: '0.875rem',
+  cursor: 'pointer',
+  fontWeight: 500,
+};
+
+function StudioControls({
+  studio,
+}: {
+  studio: { status: StudioStatus; loading: boolean; start: () => void; stop: () => void };
+}) {
   const { status, loading, start, stop } = studio;
   return (
     <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -109,18 +128,118 @@ function StudioControls({ studio }: { studio: { status: StudioStatus; loading: b
 
 function StudioFrame({ webUrl }: { webUrl: string | null }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  if (webUrl) {
-    return (
-      <iframe
-        ref={iframeRef}
-        src={webUrl}
-        style={{ width: '100%', flex: 1, border: '1px solid #333', borderRadius: 8, background: '#0a0a0a' }}
-        title="Open Design Studio"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      />
-    );
-  }
-  return null;
+  if (!webUrl) return null;
+  return (
+    <iframe
+      ref={iframeRef}
+      src={webUrl}
+      style={{
+        width: '100%',
+        flex: 1,
+        border: '1px solid #333',
+        borderRadius: 8,
+        background: '#0a0a0a',
+      }}
+      title="Open Design Studio"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+    />
+  );
+}
+
+function getStatusMessage(status: StudioStatus): string {
+  if (status === 'starting') return 'Engine is starting up…';
+  if (status === 'crashed') return 'Engine crashed. Click Start to retry.';
+  return 'The design engine is not running. Click Start Engine to launch it.';
+}
+
+function StudioHeader({
+  status,
+  webUrl,
+  onReload,
+  controls,
+}: {
+  status: StudioStatus;
+  webUrl: string | null;
+  onReload: () => void;
+  controls: React.ReactNode;
+}) {
+  return (
+    <header
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '1rem 1.5rem',
+        borderBottom: '1px solid #222',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <span style={{ fontSize: '1.5rem' }}>🎨</span>
+        <div>
+          <h1 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>Open Design Studio</h1>
+          <p style={{ margin: 0, fontSize: '0.75rem', color: STATUS_COLOR[status] }}>
+            Engine: {status}
+          </p>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {webUrl && (
+          <button
+            onClick={onReload}
+            style={{ ...buttonStyle, background: '#1f2937', fontSize: '0.8rem' }}
+          >
+            Reload
+          </button>
+        )}
+        {controls}
+      </div>
+    </header>
+  );
+}
+
+function StudioMain({
+  webUrl,
+  status,
+  controls,
+}: {
+  webUrl: string | null;
+  status: StudioStatus;
+  controls: React.ReactNode;
+}) {
+  return (
+    <main
+      style={{
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '1rem',
+        overflow: 'hidden',
+      }}
+    >
+      {webUrl ? (
+        <StudioFrame webUrl={webUrl} />
+      ) : (
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '1rem',
+            color: '#888',
+          }}
+        >
+          <span style={{ fontSize: '3rem' }}>🎨</span>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 500, margin: 0 }}>Open Design Studio</h2>
+          <p style={{ margin: 0, textAlign: 'center', maxWidth: 360, fontSize: '0.875rem' }}>
+            {getStatusMessage(status)}
+          </p>
+          {controls}
+        </div>
+      )}
+    </main>
+  );
 }
 
 export default function StudioPage() {
@@ -131,57 +250,30 @@ export default function StudioPage() {
     setIframeKey((k) => k + 1);
   }, []);
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: '#0f0f0f', color: '#f0f0f0' }}>
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.5rem', borderBottom: '1px solid #222' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '1.5rem' }}>🎨</span>
-          <div>
-            <h1 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>Open Design Studio</h1>
-            <p style={{ margin: 0, fontSize: '0.75rem', color: STATUS_COLOR[studio.status] }}>
-              Engine: {studio.status}
-            </p>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {studio.webUrl && (
-            <button onClick={reloadFrame} style={{ ...buttonStyle, background: '#1f2937', fontSize: '0.8rem' }}>
-              Reload
-            </button>
-          )}
-          <StudioControls studio={studio} />
-        </div>
-      </header>
+  const controls = <StudioControls studio={studio} />;
 
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '1rem', overflow: 'hidden' }}>
-        {studio.webUrl ? (
-          <StudioFrame key={iframeKey} webUrl={studio.webUrl} />
-        ) : (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', color: '#888' }}>
-            <span style={{ fontSize: '3rem' }}>🎨</span>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 500, margin: 0 }}>Open Design Studio</h2>
-            <p style={{ margin: 0, textAlign: 'center', maxWidth: 360, fontSize: '0.875rem' }}>
-              {studio.status === 'starting'
-                ? 'Engine is starting up…'
-                : studio.status === 'crashed'
-                  ? 'Engine crashed. Click Start to retry.'
-                  : 'The design engine is not running. Click Start Engine to launch it.'}
-            </p>
-            <StudioControls studio={studio} />
-          </div>
-        )}
-      </main>
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        background: '#0f0f0f',
+        color: '#f0f0f0',
+      }}
+    >
+      <StudioHeader
+        status={studio.status}
+        webUrl={studio.webUrl}
+        onReload={reloadFrame}
+        controls={controls}
+      />
+      <StudioMain
+        key={iframeKey}
+        webUrl={studio.webUrl}
+        status={studio.status}
+        controls={controls}
+      />
     </div>
   );
 }
-
-const buttonStyle: React.CSSProperties = {
-  padding: '0.5rem 1rem',
-  borderRadius: 6,
-  border: '1px solid #333',
-  background: '#2563eb',
-  color: '#fff',
-  fontSize: '0.875rem',
-  cursor: 'pointer',
-  fontWeight: 500,
-};

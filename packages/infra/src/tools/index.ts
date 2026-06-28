@@ -2,7 +2,7 @@ export { BashTool } from './bash-tool';
 export { FilesystemTool } from './filesystem-tool';
 export { WebTool } from './web-tool';
 export { TodoTool } from './todo-tool';
-export { AskUserTool } from './ask-user-tool';
+export { AskUserTool, parseAskUserResult, ASK_USER_SENTINEL } from './ask-user-tool';
 export { MemoryTool } from './memory-tool';
 export { SkillTool } from './skill-tool';
 export { ToolRegistry } from './tool-registry';

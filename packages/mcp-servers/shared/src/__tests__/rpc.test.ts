@@ -17,7 +17,10 @@ const tool = (name: string): McpTool => ({ name, description: 'd', inputSchema: 
 
 describe('handleRpcMessage', () => {
   it('answers initialize with protocol version and tools capability', async () => {
-    const res = await handleRpcMessage({ jsonrpc: '2.0', id: 1, method: 'initialize' }, makeHandlers());
+    const res = await handleRpcMessage(
+      { jsonrpc: '2.0', id: 1, method: 'initialize' },
+      makeHandlers()
+    );
     expect(res).toEqual({
       jsonrpc: '2.0',
       id: 1,
@@ -31,16 +34,19 @@ describe('handleRpcMessage', () => {
   it('answers tools/list with the handler-declared tools', async () => {
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 2, method: 'tools/list' },
-      makeHandlers({ listTools: () => [tool('foo')] }),
+      makeHandlers({ listTools: () => [tool('foo')] })
     );
     expect(res?.result).toEqual({ tools: [tool('foo')] });
   });
 
   it('forwards name+arguments to callTool and returns its result', async () => {
-    const callTool = vi.fn(async () => ({ content: [{ type: 'text' as const, text: 'r' }], isError: true }));
+    const callTool = vi.fn(async () => ({
+      content: [{ type: 'text' as const, text: 'r' }],
+      isError: true,
+    }));
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 't', arguments: { x: 1 } } },
-      makeHandlers({ callTool }),
+      makeHandlers({ callTool })
     );
     expect(callTool).toHaveBeenCalledWith('t', { x: 1 });
     expect(res?.result).toEqual({ content: [{ type: 'text', text: 'r' }], isError: true });
@@ -50,7 +56,7 @@ describe('handleRpcMessage', () => {
     const callTool = vi.fn(async () => ({ content: [{ type: 'text' as const, text: 'r' }] }));
     await handleRpcMessage(
       { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 't' } },
-      makeHandlers({ callTool }),
+      makeHandlers({ callTool })
     );
     expect(callTool).toHaveBeenCalledWith('t', {});
   });
@@ -58,7 +64,7 @@ describe('handleRpcMessage', () => {
   it('rejects tools/call without a tool name', async () => {
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 5, method: 'tools/call', params: {} },
-      makeHandlers(),
+      makeHandlers()
     );
     expect(res?.error?.code).toBe(-32600);
   });
@@ -72,7 +78,7 @@ describe('handleRpcMessage', () => {
   it('returns null for notifications (requests without an id)', async () => {
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', method: 'notifications/initialized' },
-      makeHandlers(),
+      makeHandlers()
     );
     expect(res).toBeNull();
   });
@@ -85,11 +91,7 @@ describe('runJsonRpcServer', () => {
     const chunks: string[] = [];
     output.on('data', (c: Buffer) => chunks.push(c.toString()));
 
-    runJsonRpcServer(
-      input,
-      output,
-      makeHandlers({ listTools: () => [tool('t')] }),
-    );
+    runJsonRpcServer(input, output, makeHandlers({ listTools: () => [tool('t')] }));
 
     input.write(`${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize' })}\n`);
     input.write(`${JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/list' })}\n`);

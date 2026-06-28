@@ -1,4 +1,9 @@
-import type { ChunkMetadata, EmbeddingPort, KnowledgeChunkRepo, KnowledgeDocRepo } from '@wolfkrow/domain';
+import type {
+  ChunkMetadata,
+  EmbeddingPort,
+  KnowledgeChunkRepo,
+  KnowledgeDocRepo,
+} from '@wolfkrow/domain';
 import { KnowledgeChunk, KnowledgeDocument } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
@@ -25,7 +30,7 @@ export class IngestDocumentUseCase implements UseCase<IngestDocumentInput, Inges
   constructor(
     private readonly docRepo: KnowledgeDocRepo,
     private readonly chunkRepo: KnowledgeChunkRepo,
-    private readonly embedder: EmbeddingPort,
+    private readonly embedder: EmbeddingPort
   ) {}
 
   async execute(input: IngestDocumentInput): Promise<IngestDocumentOutput> {
@@ -50,7 +55,7 @@ export class IngestDocumentUseCase implements UseCase<IngestDocumentInput, Inges
           embedding: embeddings[j],
           metadata: c.metadata,
           position: i + j,
-        }),
+        })
       );
       allChunks.push(...chunks);
     }

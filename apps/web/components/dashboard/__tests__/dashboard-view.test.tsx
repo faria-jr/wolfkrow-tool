@@ -46,17 +46,43 @@ afterEach(() => {
 
 const harnessProjects = [
   {
-    id: 'h1', name: 'Harness A', status: 'running', createdAt: '2026-06-25T10:00:00.000Z',
-    metrics: { totalTokens: 1200, totalCost: 0.5, roundCount: 3, featuresPassed: 1, featuresTotal: 2, totalDurationMs: 60000 },
+    id: 'h1',
+    name: 'Harness A',
+    status: 'running',
+    createdAt: '2026-06-25T10:00:00.000Z',
+    metrics: {
+      totalTokens: 1200,
+      totalCost: 0.5,
+      roundCount: 3,
+      featuresPassed: 1,
+      featuresTotal: 2,
+      totalDurationMs: 60000,
+    },
   },
   {
-    id: 'h2', name: 'Harness B', status: 'completed', createdAt: '2026-06-24T10:00:00.000Z',
-    metrics: { totalTokens: 800, totalCost: 0.25, roundCount: 2, featuresPassed: 2, featuresTotal: 2, totalDurationMs: 30000 },
+    id: 'h2',
+    name: 'Harness B',
+    status: 'completed',
+    createdAt: '2026-06-24T10:00:00.000Z',
+    metrics: {
+      totalTokens: 800,
+      totalCost: 0.25,
+      roundCount: 2,
+      featuresPassed: 2,
+      featuresTotal: 2,
+      totalDurationMs: 30000,
+    },
   },
 ];
 
 const pipelineProjects = [
-  { id: 'p1', name: 'Pipeline A', status: 'active', currentStage: 'implementation', createdAt: '2026-06-25T12:00:00.000Z' },
+  {
+    id: 'p1',
+    name: 'Pipeline A',
+    status: 'active',
+    currentStage: 'implementation',
+    createdAt: '2026-06-25T12:00:00.000Z',
+  },
 ];
 
 describe('DashboardView', () => {

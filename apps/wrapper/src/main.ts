@@ -15,15 +15,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { resolve } from 'node:path';
 
-import {
-  app,
-  BrowserWindow,
-  globalShortcut,
-  Menu,
-  nativeImage,
-  shell,
-  Tray,
-} from 'electron';
+import { app, BrowserWindow, globalShortcut, Menu, nativeImage, shell, Tray } from 'electron';
 import { autoUpdater } from 'electron-updater';
 
 import { createLogger } from './logger';
@@ -34,9 +26,9 @@ const logger = createLogger('main');
 // Constants
 // ---------------------------------------------------------------------------
 
-const WEB_PORT  = 3000;
-const WEB_URL   = `http://localhost:${WEB_PORT}`;
-const ROOT_DIR  = resolve(__dirname, '../../..');
+const WEB_PORT = 3000;
+const WEB_URL = `http://localhost:${WEB_PORT}`;
+const ROOT_DIR = resolve(__dirname, '../../..');
 const ICON_PATH = resolve(ROOT_DIR, 'resources', 'icon.png');
 
 const HOTKEY = 'CommandOrControl+Shift+Space';
@@ -157,12 +149,17 @@ function createTray(window: BrowserWindow): void {
   const menu = Menu.buildFromTemplate([
     {
       label: 'Open Wolfkrow',
-      click: () => { window.show(); window.focus(); },
+      click: () => {
+        window.show();
+        window.focus();
+      },
     },
     {
       label: 'Quick Chat',
       accelerator: HOTKEY,
-      click: () => { toggleWindow(); },
+      click: () => {
+        toggleWindow();
+      },
     },
     {
       label: 'Lock',
@@ -174,7 +171,9 @@ function createTray(window: BrowserWindow): void {
     { type: 'separator' },
     {
       label: 'Open in Browser',
-      click: () => { void shell.openExternal(WEB_URL); },
+      click: () => {
+        void shell.openExternal(WEB_URL);
+      },
     },
     { type: 'separator' },
     {
@@ -234,12 +233,20 @@ async function main(): Promise<void> {
     return;
   }
 
-  app.on('second-instance', () => { win?.show(); win?.focus(); });
+  app.on('second-instance', () => {
+    win?.show();
+    win?.focus();
+  });
 
   await app.whenReady();
 
   // Spawn Next.js web server
-  spawnChild('web', 'node', ['node_modules/.bin/next', 'start', '--port', String(WEB_PORT)], resolve(ROOT_DIR, 'apps', 'web'));
+  spawnChild(
+    'web',
+    'node',
+    ['node_modules/.bin/next', 'start', '--port', String(WEB_PORT)],
+    resolve(ROOT_DIR, 'apps', 'web')
+  );
 
   // Spawn Fastify worker
   spawnChild('worker', 'node', ['dist/index.js'], resolve(ROOT_DIR, 'apps', 'worker'));
@@ -259,8 +266,13 @@ async function main(): Promise<void> {
   // Global hotkey
   globalShortcut.register(HOTKEY, toggleWindow);
 
-  app.on('activate', () => { win?.show(); win?.focus(); });
-  app.on('window-all-closed', () => { /* prevent default quit; tray keeps app alive */ });
+  app.on('activate', () => {
+    win?.show();
+    win?.focus();
+  });
+  app.on('window-all-closed', () => {
+    /* prevent default quit; tray keeps app alive */
+  });
 
   app.on('will-quit', () => {
     globalShortcut.unregisterAll();

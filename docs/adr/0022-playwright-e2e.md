@@ -6,6 +6,7 @@
 ## Contexto
 
 Precisamos de testes E2E que validem fluxos completos:
+
 - Login + TOTP
 - Send message + streaming
 - Upload document + search
@@ -63,35 +64,37 @@ test.describe('Chat', () => {
     await page.getByRole('button', { name: 'Login' }).click();
     await expect(page).toHaveURL('/chat');
   });
-  
+
   test('user can send a message and receive streaming response', async ({ page }) => {
     await page.goto('/chat');
-    
+
     const input = page.getByPlaceholder('Type a message...');
     await input.fill('Hello, world!');
     await input.press('Enter');
-    
+
     // Wait for streaming to start
     await expect(page.getByTestId('streaming-indicator')).toBeVisible();
-    
+
     // Wait for response
-    await expect(page.getByText('Hello! How can I help you today?')).toBeVisible({ timeout: 10_000 });
-    
+    await expect(page.getByText('Hello! How can I help you today?')).toBeVisible({
+      timeout: 10_000,
+    });
+
     // Streaming should end
     await expect(page.getByTestId('streaming-indicator')).not.toBeVisible();
   });
-  
+
   test('user can abort streaming', async ({ page }) => {
     await page.goto('/chat');
-    
+
     const input = page.getByPlaceholder('Type a message...');
     await input.fill('Tell me a long story...');
     await input.press('Enter');
-    
+
     await expect(page.getByTestId('streaming-indicator')).toBeVisible();
-    
+
     await page.getByRole('button', { name: 'Stop' }).click();
-    
+
     await expect(page.getByTestId('streaming-indicator')).not.toBeVisible();
   });
 });
@@ -144,16 +147,16 @@ test('chat dark mode visual', async ({ page }) => {
 
 ## Cenários E2E Críticos
 
-| Cenário | Por quê crítico |
-|---|---|
-| `auth.spec.ts` | Security |
-| `chat.spec.ts` | Core feature |
-| `pipeline.spec.ts` | Multi-stage flow |
-| `harness.spec.ts` | Long-running async |
-| `voice.spec.ts` | Media APIs |
+| Cenário             | Por quê crítico        |
+| ------------------- | ---------------------- |
+| `auth.spec.ts`      | Security               |
+| `chat.spec.ts`      | Core feature           |
+| `pipeline.spec.ts`  | Multi-stage flow       |
+| `harness.spec.ts`   | Long-running async     |
+| `voice.spec.ts`     | Media APIs             |
 | `knowledge.spec.ts` | Upload + vector search |
-| `scheduler.spec.ts` | Cron timing |
-| `wrapper.spec.ts` | Electron integration |
+| `scheduler.spec.ts` | Cron timing            |
+| `wrapper.spec.ts`   | Electron integration   |
 
 ## Alternativas Consideradas
 

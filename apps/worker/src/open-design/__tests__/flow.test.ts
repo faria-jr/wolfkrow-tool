@@ -14,7 +14,15 @@ function mockClient(overrides: Partial<OpenDesignClient> = {}): OpenDesignClient
   return {
     health: vi.fn(async () => ({ ok: true, version: '0.6.0' })),
     createProject: vi.fn(async () => ({
-      project: { id: 'wolfkrow-acme', name: 'Acme', skillId: null, designSystemId: null, metadata: { kind: 'prototype', fidelity: 'high-fidelity', source: 'wolfkrow' }, createdAt: 1, updatedAt: 1 },
+      project: {
+        id: 'wolfkrow-acme',
+        name: 'Acme',
+        skillId: null,
+        designSystemId: null,
+        metadata: { kind: 'prototype', fidelity: 'high-fidelity', source: 'wolfkrow' },
+        createdAt: 1,
+        updatedAt: 1,
+      },
       conversationId: 'conv-1',
     })),
     listProjects: vi.fn(async () => []),
@@ -46,26 +54,33 @@ describe('bootstrap helpers + flow', () => {
   });
 
   it('buildStudioUrl appends project + embed params', () => {
-    expect(buildStudioUrl('http://127.0.0.1:7460/', 'wolfkrow-acme'))
-      .toBe('http://127.0.0.1:7460/projects/wolfkrow-acme?host=wolfkrow&locale=pt-BR');
-    expect(buildStudioUrl('http://127.0.0.1:7460', 'p1'))
-      .toBe('http://127.0.0.1:7460/projects/p1?host=wolfkrow&locale=pt-BR');
+    expect(buildStudioUrl('http://127.0.0.1:7460/', 'wolfkrow-acme')).toBe(
+      'http://127.0.0.1:7460/projects/wolfkrow-acme?host=wolfkrow&locale=pt-BR'
+    );
+    expect(buildStudioUrl('http://127.0.0.1:7460', 'p1')).toBe(
+      'http://127.0.0.1:7460/projects/p1?host=wolfkrow&locale=pt-BR'
+    );
   });
 
   it('creates the OD project with the design-brief pending prompt + wolfkrow metadata', async () => {
     const client = mockClient();
     const r = await bootstrapDesignSession(client, {
-      wolfkrowProjectId: 'wp-1', name: 'Acme', specContent: 'Build a CRM.', webUrl: 'http://127.0.0.1:7460',
+      wolfkrowProjectId: 'wp-1',
+      name: 'Acme',
+      specContent: 'Build a CRM.',
+      webUrl: 'http://127.0.0.1:7460',
     });
     expect(r.openDesignProjectId).toBe('wolfkrow-acme');
     expect(r.conversationId).toBe('conv-1');
     expect(r.studioUrl).toContain('host=wolfkrow');
     expect(r.prompt).toContain('Acme');
-    expect(client.createProject).toHaveBeenCalledWith(expect.objectContaining({
-      id: 'wolfkrow-wp-1',
-      pendingPrompt: expect.stringContaining('CRM'),
-      metadata: expect.objectContaining({ source: 'wolfkrow', wolfkrowProjectId: 'wp-1' }),
-    }));
+    expect(client.createProject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'wolfkrow-wp-1',
+        pendingPrompt: expect.stringContaining('CRM'),
+        metadata: expect.objectContaining({ source: 'wolfkrow', wolfkrowProjectId: 'wp-1' }),
+      })
+    );
   });
 });
 

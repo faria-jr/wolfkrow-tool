@@ -34,7 +34,7 @@ class InMemoryUsageRepo implements UsageRepo {
         (!filter.from || r.timestamp >= filter.from) &&
         (!filter.to || r.timestamp <= filter.to) &&
         (!filter.source || r.source === filter.source) &&
-        (!filter.agentId || r.agentId === filter.agentId),
+        (!filter.agentId || r.agentId === filter.agentId)
     );
   }
 
@@ -45,7 +45,7 @@ class InMemoryUsageRepo implements UsageRepo {
           r.userId === filter.userId &&
           (!filter.from || r.timestamp >= filter.from) &&
           (!filter.to || r.timestamp <= filter.to) &&
-          (!filter.agentId || r.agentId === filter.agentId),
+          (!filter.agentId || r.agentId === filter.agentId)
       )
       .reduce((sum, r) => sum + r.cost, 0);
   }
@@ -81,7 +81,7 @@ describe('ComputeUsageUseCase', () => {
   it('aggregates token totals and cost across records', () => {
     repo.records.push(
       record({ userId: 'u1', model: 'gpt-4o', cost: 1000 }),
-      record({ userId: 'u1', model: 'gpt-4o', cost: 500 }),
+      record({ userId: 'u1', model: 'gpt-4o', cost: 500 })
     );
     const summary = new ComputeUsageUseCase(repo).execute({ userId: 'u1' });
     expect(summary.totalInputTokens).toBe(200);
@@ -92,7 +92,7 @@ describe('ComputeUsageUseCase', () => {
   it('groups cost by model and by source', () => {
     repo.records.push(
       record({ userId: 'u1', model: 'gpt-4o', source: 'chat', cost: 1000 }),
-      record({ userId: 'u1', model: 'claude', source: 'agent', cost: 2000 }),
+      record({ userId: 'u1', model: 'claude', source: 'agent', cost: 2000 })
     );
     const summary = new ComputeUsageUseCase(repo).execute({ userId: 'u1' });
     expect(summary.byModel['gpt-4o']?.costUSD).toBe(10);
@@ -105,7 +105,7 @@ describe('ComputeUsageUseCase', () => {
     repo.records.push(
       record({ userId: 'u1', model: 'claude-opus', runtime: 'cloud', cost: 1000 }),
       record({ userId: 'u1', model: 'llama3', runtime: 'local', cost: 200 }),
-      record({ userId: 'u1', model: 'qwen', runtime: 'local', cost: 300 }),
+      record({ userId: 'u1', model: 'qwen', runtime: 'local', cost: 300 })
     );
     const summary = new ComputeUsageUseCase(repo).execute({ userId: 'u1' });
     expect(summary.byRuntime['cloud']?.costUSD).toBe(10);
@@ -119,7 +119,7 @@ describe('ComputeUsageUseCase', () => {
     const day2 = new Date('2024-01-01T10:00:00Z');
     repo.records.push(
       record({ userId: 'u1', inputTokens: 100, outputTokens: 40, cost: 500, timestamp: day1 }),
-      record({ userId: 'u1', inputTokens: 50, outputTokens: 10, cost: 250, timestamp: day2 }),
+      record({ userId: 'u1', inputTokens: 50, outputTokens: 10, cost: 250, timestamp: day2 })
     );
     const summary = new ComputeUsageUseCase(repo).execute({ userId: 'u1' });
     expect(Array.isArray(summary.byDay)).toBe(true);
@@ -163,7 +163,7 @@ describe('CheckBudgetUseCase', () => {
   it('scopes cost to the agentId filter', () => {
     repo.records.push(
       record({ userId: 'u1', agentId: 'a1', cost: 6000 }),
-      record({ userId: 'u1', agentId: 'a2', cost: 1000 }),
+      record({ userId: 'u1', agentId: 'a2', cost: 1000 })
     );
     const result = new CheckBudgetUseCase(repo).execute({
       userId: 'u1',

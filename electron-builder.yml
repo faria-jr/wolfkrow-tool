@@ -1,6 +1,6 @@
 appId: com.wolfkrow.tool
 productName: Wolfkrow
-copyright: "Copyright © 2024-2025 Wolfkrow Labs"
+copyright: 'Copyright © 2024-2025 Wolfkrow Labs'
 
 directories:
   output: dist-electron
@@ -11,17 +11,17 @@ files:
   - apps/web/.next/standalone/**/*
   - apps/worker/dist/**/*
   - node_modules/**/*
-  - "!node_modules/**/test*"
-  - "!node_modules/**/.git"
+  - '!node_modules/**/test*'
+  - '!node_modules/**/.git'
   - resources/**/*
 
 extraResources:
   - from: resources
     to: resources
     filter:
-      - "*.png"
-      - "*.icns"
-      - "*.ico"
+      - '*.png'
+      - '*.icns'
+      - '*.ico'
 
 mac:
   category: public.app-category.productivity

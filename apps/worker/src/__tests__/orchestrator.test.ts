@@ -1,4 +1,9 @@
-import { MockProvider, ToolRegistry, type AIProviderFactory, type StreamChunk } from '@wolfkrow/infra';
+import {
+  MockProvider,
+  ToolRegistry,
+  type AIProviderFactory,
+  type StreamChunk,
+} from '@wolfkrow/infra';
 import keytar from 'keytar';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -17,6 +22,7 @@ const fakeRepos = {
   agent: { findById: async (_id: string) => null as unknown },
   skill: { findByUserId: async (_u: string) => [] as unknown[] },
   globalRule: { findAll: async (_u: string) => [] as unknown[] },
+  providerConfig: { findAll: async (_u: string) => [] },
 };
 // P1-8: orchestrator builds its default factory from getToolRegistry(); expose
 // a real (empty) registry so the default-factory tests don't import infra tools.
@@ -35,6 +41,14 @@ function spyFactory(spy: ReturnType<typeof vi.fn>): AIProviderFactory {
   return { create: spy, createFromConfig: spy };
 }
 
+function expectProviderConfigCall(
+  spy: ReturnType<typeof vi.fn>,
+  providerId: string,
+  apiKey: string | ReturnType<typeof expect.any> = expect.any(String)
+) {
+  expect(spy).toHaveBeenCalledWith(expect.objectContaining({ id: providerId }), apiKey);
+}
+
 const mockFactory: AIProviderFactory = {
   create: (_provider: string, _key: string) => new MockProvider(['Hello', ' world']),
   createFromConfig: () => new MockProvider(['Hello', ' world']),
@@ -48,9 +62,15 @@ describe('OrchestratorService', () => {
   it('streams chunks from provider via factory', async () => {
     const orchestrator = new OrchestratorService({ factory: mockFactory });
     const chunks = await collect(
-      orchestrator.stream({ messages: [{ role: 'user', content: 'hi' }], model: 'claude-3-5-sonnet-20241022' }),
+      orchestrator.stream({
+        messages: [{ role: 'user', content: 'hi' }],
+        model: 'claude-3-5-sonnet-20241022',
+      })
     );
-    const text = chunks.filter((c) => c.delta !== '').map((c) => c.delta).join('');
+    const text = chunks
+      .filter((c) => c.delta !== '')
+      .map((c) => c.delta)
+      .join('');
     expect(text).toBe('Hello world');
     expect(chunks.at(-1)?.done).toBe(true);
   });
@@ -62,9 +82,9 @@ describe('OrchestratorService', () => {
         messages: [{ role: 'user', content: 'hi' }],
         model: 'gpt-4o',
         provider: 'codex',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('codex', 'test-api-key');
+    expectProviderConfigCall(createSpy, 'openai', 'test-api-key');
   });
 
   it('infers anthropic provider for claude-* models', async () => {
@@ -73,9 +93,9 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'claude-3-5-sonnet-20241022',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('anthropic', expect.any(String));
+    expectProviderConfigCall(createSpy, 'anthropic');
   });
 
   it('infers codex provider for gpt-* models', async () => {
@@ -84,9 +104,9 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'gpt-4o',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('codex', expect.any(String));
+    expectProviderConfigCall(createSpy, 'openai');
   });
 
   it('infers ollama provider for llama-* models', async () => {
@@ -95,16 +115,21 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'llama-3.2',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('ollama', 'ollama');
+    expectProviderConfigCall(createSpy, 'ollama', 'ollama');
   });
 
   it('throws when API key missing in keychain', async () => {
     vi.mocked(keytar.getPassword).mockResolvedValue(null);
     const orchestrator = new OrchestratorService({ factory: mockFactory });
     await expect(
-      collect(orchestrator.stream({ messages: [{ role: 'user', content: 'hi' }], model: 'claude-3-sonnet' })),
+      collect(
+        orchestrator.stream({
+          messages: [{ role: 'user', content: 'hi' }],
+          model: 'claude-3-sonnet',
+        })
+      )
     ).rejects.toThrow(/Missing API key/);
   });
 
@@ -114,9 +139,9 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'glm-4.7',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('claude-compat:zai', expect.any(String));
+    expectProviderConfigCall(createSpy, 'zai');
   });
 
   it('infers claude-compat:minimax for minimax-* models without agent', async () => {
@@ -125,9 +150,9 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'minimax-text-01',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('claude-compat:minimax', expect.any(String));
+    expectProviderConfigCall(createSpy, 'minimax');
   });
 
   it('infers claude-compat:moonshot for kimi-* models without agent', async () => {
@@ -136,9 +161,9 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'kimi-k2',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('claude-compat:moonshot', expect.any(String));
+    expectProviderConfigCall(createSpy, 'moonshot');
   });
 
   it('infers claude-compat:qwen for qwen-* models without agent', async () => {
@@ -147,9 +172,9 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'x' }],
         model: 'qwen-2.5',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('claude-compat:qwen', expect.any(String));
+    expectProviderConfigCall(createSpy, 'qwen');
   });
 
   it('maps explicit claude-compat provider id to claude-compat wire', async () => {
@@ -159,9 +184,9 @@ describe('OrchestratorService', () => {
         messages: [{ role: 'user', content: 'x' }],
         model: 'glm-4.7',
         provider: 'zai',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('claude-compat:zai', expect.any(String));
+    expectProviderConfigCall(createSpy, 'zai');
   });
 
   it('passes system prompt through to the query call', async () => {
@@ -171,7 +196,7 @@ describe('OrchestratorService', () => {
         messages: [{ role: 'user', content: 'hi' }],
         model: 'claude-3-5-sonnet-20241022',
         system: 'Be helpful',
-      }),
+      })
     );
     expect(createSpy).toHaveBeenCalled();
   });
@@ -192,10 +217,10 @@ describe('OrchestratorService', () => {
         model: 'claude-3-5-sonnet-20241022', // should be overridden by the agent
         agentId: 'a1',
         userId: 'u1',
-      }),
+      })
     );
-    // runtime 'codex' maps to the 'codex' provider (agent drove resolution)
-    expect(createSpy).toHaveBeenCalledWith('codex', expect.any(String));
+    // runtime 'codex' maps to the OpenAI-compatible provider config.
+    expectProviderConfigCall(createSpy, 'openai');
     expect(chunks.length).toBeGreaterThan(0);
   });
 
@@ -215,9 +240,9 @@ describe('OrchestratorService', () => {
         model: 'claude-3-5-sonnet-20241022',
         agentId: 'a1',
         userId: 'u1',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('claude-compat:zai', expect.any(String));
+    expectProviderConfigCall(createSpy, 'zai');
   });
 
   it('M2: infers claude-compat provider by model prefix when provider omitted', async () => {
@@ -236,9 +261,9 @@ describe('OrchestratorService', () => {
         model: 'claude-3-5-sonnet-20241022',
         agentId: 'a1',
         userId: 'u1',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('claude-compat:moonshot', expect.any(String));
+    expectProviderConfigCall(createSpy, 'moonshot');
   });
 
   // ---- P1-5: inferProvider catalog path (mapRegistryProviderToWire branches) ----
@@ -249,9 +274,9 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'hi' }],
         model: 'gpt-4o',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('codex', expect.any(String));
+    expectProviderConfigCall(createSpy, 'openai');
   });
 
   it('P1-5: a catalogued Ollama model infers the ollama wire provider', async () => {
@@ -260,9 +285,9 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'hi' }],
         model: 'llama-3.2',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('ollama', expect.any(String));
+    expectProviderConfigCall(createSpy, 'ollama');
   });
 
   it('P1-5: an OpenRouter-prefixed model infers the openrouter wire provider', async () => {
@@ -271,9 +296,9 @@ describe('OrchestratorService', () => {
       new OrchestratorService({ factory: spyFactory(createSpy) }).stream({
         messages: [{ role: 'user', content: 'hi' }],
         model: 'or:z-ai/glm-4.7',
-      }),
+      })
     );
-    expect(createSpy).toHaveBeenCalledWith('openrouter', expect.any(String));
+    expectProviderConfigCall(createSpy, 'openrouter');
   });
 
   // ---- applyAgent / resolveAgentRuntime null branch ----
@@ -286,12 +311,12 @@ describe('OrchestratorService', () => {
         messages: [{ role: 'user', content: 'hi' }],
         model: 'claude-3-5-sonnet-20241022',
         agentId: 'missing-agent',
-      }),
+      })
     );
     expect(chunks.length).toBeGreaterThan(0);
     // No explicit userId in the request → falls back to the agent's userId
     // when one exists; with a null agent the request is used as-is.
-    expect(createSpy).toHaveBeenCalledWith('anthropic', expect.any(String));
+    expectProviderConfigCall(createSpy, 'anthropic');
   });
 
   // ---- stream() option-spread branches ----
@@ -310,10 +335,15 @@ describe('OrchestratorService', () => {
         temperature: 0.5,
         signal: ac.signal,
         imageParts,
-      }),
+      })
     );
     expect(querySpy).toHaveBeenCalledTimes(1);
-    const passed = querySpy.mock.calls[0]![0] as { maxTokens?: number; temperature?: number; signal?: AbortSignal; imageParts?: typeof imageParts };
+    const passed = querySpy.mock.calls[0]![0] as {
+      maxTokens?: number;
+      temperature?: number;
+      signal?: AbortSignal;
+      imageParts?: typeof imageParts;
+    };
     expect(passed.maxTokens).toBe(128);
     expect(passed.temperature).toBe(0.5);
     expect(passed.signal).toBe(ac.signal);

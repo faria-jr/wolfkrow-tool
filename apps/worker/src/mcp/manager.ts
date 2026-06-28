@@ -43,7 +43,11 @@ export interface McpManager {
   get(name: string): McpServerState | undefined;
   stopAll(): Promise<void>;
   call(serverName: string, method: string, params: unknown): Promise<unknown>;
-  callTool(serverName: string, toolName: string, args: Record<string, unknown>): Promise<McpToolCallResult>;
+  callTool(
+    serverName: string,
+    toolName: string,
+    args: Record<string, unknown>
+  ): Promise<McpToolCallResult>;
   listTools(serverName: string): McpTool[];
   listAllTools(): Map<string, McpTool[]>;
 }
@@ -73,9 +77,14 @@ class McpManagerImpl implements McpManager {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     const state: McpServerState = {
-      config, process: child, status: 'starting',
-      startedAt: new Date(), restarts: 0,
-      tools: [], pendingRequests: new Map(), buffer: '',
+      config,
+      process: child,
+      status: 'starting',
+      startedAt: new Date(),
+      restarts: 0,
+      tools: [],
+      pendingRequests: new Map(),
+      buffer: '',
     };
     this.servers.set(config.name, state);
     this.attachProcessHandlers(child, state);
@@ -86,8 +95,12 @@ class McpManagerImpl implements McpManager {
 
   private attachProcessHandlers(child: ChildProcess, state: McpServerState): void {
     const { name } = state.config;
-    child.stdout?.on('data', (chunk: Buffer) => { this.handleStdoutChunk(state, chunk); });
-    child.stderr?.on('data', (d: Buffer) => { logger.warn({ name, output: d.toString().trim() }, 'MCP stderr'); });
+    child.stdout?.on('data', (chunk: Buffer) => {
+      this.handleStdoutChunk(state, chunk);
+    });
+    child.stderr?.on('data', (d: Buffer) => {
+      logger.warn({ name, output: d.toString().trim() }, 'MCP stderr');
+    });
     child.on('error', (err) => {
       logger.error({ name, err }, 'MCP process error');
       state.status = 'crashed';
@@ -112,8 +125,12 @@ class McpManagerImpl implements McpManager {
 
   private handleRpcMessage(state: McpServerState, line: string): void {
     let msg: JsonRpcResponse;
-    try { msg = JSON.parse(line) as JsonRpcResponse; }
-    catch { logger.warn({ name: state.config.name }, 'Invalid JSON-RPC line'); return; }
+    try {
+      msg = JSON.parse(line) as JsonRpcResponse;
+    } catch {
+      logger.warn({ name: state.config.name }, 'Invalid JSON-RPC line');
+      return;
+    }
     const pending = state.pendingRequests.get(msg.id);
     if (!pending) return;
     clearTimeout(pending.timer);
@@ -136,7 +153,7 @@ class McpManagerImpl implements McpManager {
       capabilities: {},
       clientInfo: { name: 'wolfkrow', version: '1.0.0' },
     });
-    const resp = await this.call(state.config.name, 'tools/list', {}) as { tools?: McpTool[] };
+    const resp = (await this.call(state.config.name, 'tools/list', {})) as { tools?: McpTool[] };
     state.tools = resp.tools ?? [];
     this.persistToolRegistry(state);
   }
@@ -152,7 +169,7 @@ class McpManagerImpl implements McpManager {
           name: t.name,
           ...(t.description !== undefined ? { description: t.description } : {}),
           ...(t.inputSchema !== undefined ? { inputSchema: t.inputSchema } : {}),
-        })),
+        }))
       );
     } catch {
       logger.warn({ name: state.config.name }, 'Failed to persist tool registry');
@@ -174,8 +191,15 @@ class McpManagerImpl implements McpManager {
     });
   }
 
-  async callTool(serverName: string, toolName: string, args: Record<string, unknown>): Promise<McpToolCallResult> {
-    return this.call(serverName, 'tools/call', { name: toolName, arguments: args }) as Promise<McpToolCallResult>;
+  async callTool(
+    serverName: string,
+    toolName: string,
+    args: Record<string, unknown>
+  ): Promise<McpToolCallResult> {
+    return this.call(serverName, 'tools/call', {
+      name: toolName,
+      arguments: args,
+    }) as Promise<McpToolCallResult>;
   }
 
   listTools(serverName: string): McpTool[] {
@@ -218,8 +242,14 @@ class McpManagerImpl implements McpManager {
     this.rejectPendingRequests(state, new Error(`MCP server ${name} stopped`));
     state.process.kill('SIGTERM');
     await new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => { state.process.kill('SIGKILL'); resolve(); }, 5000);
-      state.process.on('exit', () => { clearTimeout(timeout); resolve(); });
+      const timeout = setTimeout(() => {
+        state.process.kill('SIGKILL');
+        resolve();
+      }, 5000);
+      state.process.on('exit', () => {
+        clearTimeout(timeout);
+        resolve();
+      });
     });
     this.servers.delete(name);
   }
@@ -232,8 +262,12 @@ class McpManagerImpl implements McpManager {
     return this.start(config);
   }
 
-  list(): McpServerState[] { return Array.from(this.servers.values()); }
-  get(name: string): McpServerState | undefined { return this.servers.get(name); }
+  list(): McpServerState[] {
+    return Array.from(this.servers.values());
+  }
+  get(name: string): McpServerState | undefined {
+    return this.servers.get(name);
+  }
   async stopAll(): Promise<void> {
     await Promise.all(Array.from(this.servers.keys()).map((n) => this.stop(n)));
   }

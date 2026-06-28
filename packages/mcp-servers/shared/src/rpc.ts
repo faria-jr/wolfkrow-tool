@@ -41,7 +41,7 @@ export function createResponse(id: number | string, result: unknown): JsonRpcRes
 export function createErrorResponse(
   id: number | string,
   code: number,
-  message: string,
+  message: string
 ): JsonRpcResponse {
   return { jsonrpc: '2.0', id, error: { code, message } };
 }
@@ -53,7 +53,7 @@ export function createErrorResponse(
  */
 export async function handleRpcMessage(
   msg: JsonRpcRequest,
-  handlers: McpHandlers,
+  handlers: McpHandlers
 ): Promise<JsonRpcResponse | null> {
   const id = msg.id;
   if (id === undefined) return null;
@@ -79,7 +79,11 @@ export async function handleRpcMessage(
     }
 
     default:
-      return createErrorResponse(id, ERROR_CODES.METHOD_NOT_FOUND, `Method not found: ${msg.method}`);
+      return createErrorResponse(
+        id,
+        ERROR_CODES.METHOD_NOT_FOUND,
+        `Method not found: ${msg.method}`
+      );
   }
 }
 
@@ -88,11 +92,7 @@ export async function handleRpcMessage(
  * dispatches each line, and writes responses to `output`. Malformed lines and
  * handler exceptions are turned into error responses rather than crashing.
  */
-export function runJsonRpcServer(
-  input: Readable,
-  output: Writable,
-  handlers: McpHandlers,
-): void {
+export function runJsonRpcServer(input: Readable, output: Writable, handlers: McpHandlers): void {
   let buffer = '';
   input.setEncoding('utf8');
   input.on('data', (chunk: string) => {
@@ -106,11 +106,7 @@ export function runJsonRpcServer(
   });
 }
 
-async function processLine(
-  line: string,
-  handlers: McpHandlers,
-  output: Writable,
-): Promise<void> {
+async function processLine(line: string, handlers: McpHandlers, output: Writable): Promise<void> {
   let msg: JsonRpcRequest;
   try {
     msg = JSON.parse(line) as JsonRpcRequest;
@@ -124,7 +120,10 @@ async function processLine(
     if (response) write(output, response);
   } catch (err) {
     if (msg.id !== undefined) {
-      write(output, createErrorResponse(msg.id, ERROR_CODES.INTERNAL_ERROR, (err as Error).message));
+      write(
+        output,
+        createErrorResponse(msg.id, ERROR_CODES.INTERNAL_ERROR, (err as Error).message)
+      );
     }
   }
 }

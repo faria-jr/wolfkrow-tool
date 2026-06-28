@@ -17,7 +17,12 @@ vi.mock('../../container', () => ({
 import type { Logger } from '../../logger';
 import { recordChatTurn, stopMemoryLifecycle } from '../lifecycle';
 
-const logger = { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() } as unknown as Logger;
+const logger = {
+  info: vi.fn(),
+  error: vi.fn(),
+  warn: vi.fn(),
+  debug: vi.fn(),
+} as unknown as Logger;
 
 function flush(): Promise<void> {
   return new Promise((resolve) => setImmediate(resolve));
@@ -54,9 +59,7 @@ describe('memory lifecycle (FIX-012 + FIX-013)', () => {
   it('never throws — extraction failures are logged, not propagated', async () => {
     spies.saveMemory.mockRejectedValueOnce(new Error('db down'));
 
-    recordChatTurn(logger, 'u1', [
-      { role: 'user', content: 'I prefer dark mode always, really.' },
-    ]);
+    recordChatTurn(logger, 'u1', [{ role: 'user', content: 'I prefer dark mode always, really.' }]);
     await flush();
     await flush();
 

@@ -34,47 +34,37 @@ describe('FE-4 — api-client contracts', () => {
 
   describe('login()', () => {
     it('parses a success response', async () => {
-      vi.stubGlobal(
-        'fetch',
-        async (_url: string, _init: RequestInit) =>
-          jsonResponse(200, { status: 'success', userId: VALID_UUID }),
+      vi.stubGlobal('fetch', async (_url: string, _init: RequestInit) =>
+        jsonResponse(200, { status: 'success', userId: VALID_UUID })
       );
       const res = await login({ password: 'pw' });
       expect(res.status).toBe('success');
     });
 
     it('parses a requires_totp response', async () => {
-      vi.stubGlobal(
-        'fetch',
-        async () => jsonResponse(200, { status: 'requires_totp', userId: VALID_UUID }),
+      vi.stubGlobal('fetch', async () =>
+        jsonResponse(200, { status: 'requires_totp', userId: VALID_UUID })
       );
       const res = await login({ password: 'pw' });
       expect(res.status).toBe('requires_totp');
     });
 
     it('parses a locked (423) response — contract, not error', async () => {
-      vi.stubGlobal(
-        'fetch',
-        async () => jsonResponse(423, { status: 'locked', lockedUntil: '2026-06-25T00:00:00Z' }),
+      vi.stubGlobal('fetch', async () =>
+        jsonResponse(423, { status: 'locked', lockedUntil: '2026-06-25T00:00:00Z' })
       );
       const res = await login({ password: 'pw' });
       expect(res.status).toBe('locked');
     });
 
     it('throws ApiClientError on 401', async () => {
-      vi.stubGlobal(
-        'fetch',
-        async () => jsonResponse(401, { error: 'Invalid credentials' }),
-      );
+      vi.stubGlobal('fetch', async () => jsonResponse(401, { error: 'Invalid credentials' }));
       await expect(login({ password: 'pw' })).rejects.toThrow(ApiClientError);
       await expect(login({ password: 'pw' })).rejects.toMatchObject({ status: 401 });
     });
 
     it('throws on shape drift (BE returns garbage)', async () => {
-      vi.stubGlobal(
-        'fetch',
-        async () => jsonResponse(200, { totally: 'unrelated' }),
-      );
+      vi.stubGlobal('fetch', async () => jsonResponse(200, { totally: 'unrelated' }));
       await expect(login({ password: 'pw' })).rejects.toThrow(/shape mismatch/);
     });
   });
@@ -100,10 +90,8 @@ describe('FE-4 — api-client contracts', () => {
     });
 
     it('throws on shape drift (missing byDay)', async () => {
-      vi.stubGlobal(
-        'fetch',
-        async () =>
-          jsonResponse(200, { totalInputTokens: 1, totalOutputTokens: 1, totalCostUSD: 0 }),
+      vi.stubGlobal('fetch', async () =>
+        jsonResponse(200, { totalInputTokens: 1, totalOutputTokens: 1, totalCostUSD: 0 })
       );
       await expect(getUsageSummary()).rejects.toThrow(/shape mismatch/);
     });
@@ -158,10 +146,7 @@ describe('FE-4 — api-client contracts', () => {
     };
 
     it('parses a valid vault list', async () => {
-      vi.stubGlobal(
-        'fetch',
-        async () => jsonResponse(200, { secrets: [validSecret] }),
-      );
+      vi.stubGlobal('fetch', async () => jsonResponse(200, { secrets: [validSecret] }));
       const res = await listVaultSecrets();
       expect(res).toHaveLength(1);
       expect(res[0]?.key).toBe('anthropic-api-key');

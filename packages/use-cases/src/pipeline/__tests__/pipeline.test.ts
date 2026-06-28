@@ -16,17 +16,36 @@ import {
 
 class InMemoryProjectRepo implements PipelineProjectRepo {
   readonly store = new Map<string, PipelineProject>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByUserId(u: string) { return [...this.store.values()].filter((p) => p.userId === u); }
-  async save(p: PipelineProject) { this.store.set(p.id, p); return p; }
-  async delete(id: string) { this.store.delete(id); }
+  async findAll() {
+    return [...this.store.values()];
+  }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByUserId(u: string) {
+    return [...this.store.values()].filter((p) => p.userId === u);
+  }
+  async save(p: PipelineProject) {
+    this.store.set(p.id, p);
+    return p;
+  }
+  async delete(id: string) {
+    this.store.delete(id);
+  }
 }
 
 class InMemoryPhaseRepo implements PipelinePhaseRepo {
   readonly store = new Map<string, PipelinePhase>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByProjectId(pid: string) { return [...this.store.values()].filter((p) => p.projectId === pid); }
-  async save(p: PipelinePhase) { this.store.set(p.id, p); return p; }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByProjectId(pid: string) {
+    return [...this.store.values()].filter((p) => p.projectId === pid);
+  }
+  async save(p: PipelinePhase) {
+    this.store.set(p.id, p);
+    return p;
+  }
 }
 
 // ── CreatePipelineProjectUseCase ──────────────────────────────────────────────
@@ -63,7 +82,9 @@ describe('GetPipelineProjectUseCase', () => {
   });
 
   it('throws NotFoundError for unknown id', async () => {
-    await expect(new GetPipelineProjectUseCase(repo).execute({ projectId: 'bad' })).rejects.toThrow(NotFoundError);
+    await expect(new GetPipelineProjectUseCase(repo).execute({ projectId: 'bad' })).rejects.toThrow(
+      NotFoundError
+    );
   });
 });
 
@@ -94,7 +115,9 @@ describe('DeletePipelineProjectUseCase', () => {
     const repo = new InMemoryProjectRepo();
     const p = PipelineProject.create({ userId: 'u1', name: 'X' });
     await repo.save(p);
-    await expect(new DeletePipelineProjectUseCase(repo).execute({ projectId: p.id, userId: 'u2' })).rejects.toThrow(NotFoundError);
+    await expect(
+      new DeletePipelineProjectUseCase(repo).execute({ projectId: p.id, userId: 'u2' })
+    ).rejects.toThrow(NotFoundError);
   });
 });
 
@@ -107,7 +130,10 @@ describe('StartPhaseUseCase', () => {
     const p = PipelineProject.create({ userId: 'u1', name: 'P' });
     await projectRepo.save(p);
 
-    const { phase } = await new StartPhaseUseCase(projectRepo, phaseRepo).execute({ projectId: p.id, stage: 'discovery' });
+    const { phase } = await new StartPhaseUseCase(projectRepo, phaseRepo).execute({
+      projectId: p.id,
+      stage: 'discovery',
+    });
     expect(phase.status).toBe('in_progress');
     expect(phase.stage).toBe('discovery');
     expect(phase.startedAt).toBeDefined();
@@ -122,10 +148,18 @@ describe('CompletePhaseUseCase', () => {
     const phaseRepo = new InMemoryPhaseRepo();
     const p = PipelineProject.create({ userId: 'u1', name: 'P' });
     await projectRepo.save(p);
-    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: p.id, stage: 'discovery' }).start());
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: p.id, stage: 'discovery' }).start()
+    );
 
-    const { phase: completed, project } = await new CompletePhaseUseCase(projectRepo, phaseRepo).execute({
-      phaseId: phase.id, projectId: p.id, artifactPath: '/tmp/notes.md', tokens: 500,
+    const { phase: completed, project } = await new CompletePhaseUseCase(
+      projectRepo,
+      phaseRepo
+    ).execute({
+      phaseId: phase.id,
+      projectId: p.id,
+      artifactPath: '/tmp/notes.md',
+      tokens: 500,
     });
     expect(completed.status).toBe('completed');
     expect(project.currentStage).toBe('spec_build');
@@ -141,10 +175,15 @@ describe('ApprovePipelinePhaseUseCase', () => {
     let p = PipelineProject.create({ userId: 'u1', name: 'P' });
     p = p.withStage('approval', { status: 'awaiting_approval' });
     await projectRepo.save(p);
-    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: p.id, stage: 'approval' }).start().awaitUser());
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: p.id, stage: 'approval' }).start().awaitUser()
+    );
 
     const { project } = await new ApprovePipelinePhaseUseCase(projectRepo, phaseRepo).execute({
-      projectId: p.id, phaseId: phase.id, approved: true, notes: 'Looks good',
+      projectId: p.id,
+      phaseId: phase.id,
+      approved: true,
+      notes: 'Looks good',
     });
     expect(project.currentStage).toBe('design');
     expect(project.status).toBe('running');
@@ -156,10 +195,15 @@ describe('ApprovePipelinePhaseUseCase', () => {
     let p = PipelineProject.create({ userId: 'u1', name: 'P' });
     p = p.withStage('approval', { status: 'awaiting_approval' });
     await projectRepo.save(p);
-    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: p.id, stage: 'approval' }).start().awaitUser());
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: p.id, stage: 'approval' }).start().awaitUser()
+    );
 
     const { project } = await new ApprovePipelinePhaseUseCase(projectRepo, phaseRepo).execute({
-      projectId: p.id, phaseId: phase.id, approved: false, notes: 'Need changes',
+      projectId: p.id,
+      phaseId: phase.id,
+      approved: false,
+      notes: 'Need changes',
     });
     expect(project.status).toBe('paused');
   });
@@ -170,12 +214,17 @@ describe('ApprovePipelinePhaseUseCase', () => {
     let p = PipelineProject.create({ userId: 'u1', name: 'P' });
     p = p.withStage('approval', { status: 'awaiting_approval' });
     await projectRepo.save(p);
-    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: p.id, stage: 'approval' }).start().awaitUser());
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: p.id, stage: 'approval' }).start().awaitUser()
+    );
 
     const editedSpec = '# Revised Spec\n\nOnly use Postgres, no MySQL fallback.';
     const { project } = await new ApprovePipelinePhaseUseCase(projectRepo, phaseRepo).execute({
-      projectId: p.id, phaseId: phase.id, approved: true,
-      notes: 'Approve with edit', specEdits: editedSpec,
+      projectId: p.id,
+      phaseId: phase.id,
+      approved: true,
+      notes: 'Approve with edit',
+      specEdits: editedSpec,
     });
     expect(project.currentStage).toBe('design');
     expect(project.specEdits).toBe(editedSpec);
@@ -189,10 +238,15 @@ describe('ApprovePipelinePhaseUseCase', () => {
     let p = PipelineProject.create({ userId: 'u1', name: 'P' });
     p = p.withStage('spec_validate', { status: 'awaiting_approval' });
     await projectRepo.save(p);
-    const phase = await phaseRepo.save(PipelinePhase.create({ projectId: p.id, stage: 'spec_validate' }).start().awaitUser());
+    const phase = await phaseRepo.save(
+      PipelinePhase.create({ projectId: p.id, stage: 'spec_validate' }).start().awaitUser()
+    );
 
     const { project } = await new ApprovePipelinePhaseUseCase(projectRepo, phaseRepo).execute({
-      projectId: p.id, phaseId: phase.id, approved: true, specEdits: '# Edited spec',
+      projectId: p.id,
+      phaseId: phase.id,
+      approved: true,
+      specEdits: '# Edited spec',
     });
     expect(project.currentStage).toBe('spec_validate');
     expect(project.specEdits).toBe('# Edited spec');

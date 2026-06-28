@@ -26,7 +26,7 @@ export class CompactSessionUseCase implements UseCase<CompactSessionInput, Compa
 
   constructor(
     private readonly messageRepo: MessageRepo,
-    private readonly ai: AIStreamPort,
+    private readonly ai: AIStreamPort
   ) {}
 
   async execute(input: CompactSessionInput): Promise<CompactSessionOutput> {
@@ -62,11 +62,20 @@ export class CompactSessionUseCase implements UseCase<CompactSessionInput, Compa
     return { compacted: true, beforeTokens, afterTokens, summary };
   }
 
-  private async summarize(messages: { role: string; content: string }[], model: string, signal?: AbortSignal): Promise<string> {
+  private async summarize(
+    messages: { role: string; content: string }[],
+    model: string,
+    signal?: AbortSignal
+  ): Promise<string> {
     const historyText = messages.map((m) => `${m.role}: ${m.content}`).join('\n');
     const result = await this.ai.complete({
       model,
-      messages: [{ role: 'user', content: `Summarize this conversation in 2-3 sentences:\n\n${historyText}` }],
+      messages: [
+        {
+          role: 'user',
+          content: `Summarize this conversation in 2-3 sentences:\n\n${historyText}`,
+        },
+      ],
       ...(signal !== undefined ? { signal } : {}),
     });
     return result.content;

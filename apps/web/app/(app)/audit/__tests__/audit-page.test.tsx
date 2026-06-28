@@ -47,10 +47,13 @@ const mockFinding = {
 
 describe('AuditPage', () => {
   it('renders page title', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => [],
-    }) as unknown as typeof fetch);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      }) as unknown as typeof fetch
+    );
     render(<AuditPage />, { wrapper: makeWrapper() });
     expect(screen.getByText('Security Audit')).toBeTruthy();
     // settle the react-query scan list fetch inside this test's act() boundary
@@ -58,19 +61,25 @@ describe('AuditPage', () => {
   });
 
   it('shows empty scans state when no scans returned', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => [],
-    }) as unknown as typeof fetch);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      }) as unknown as typeof fetch
+    );
     render(<AuditPage />, { wrapper: makeWrapper() });
     expect(await screen.findByText(/no scans yet/i)).toBeTruthy();
   });
 
   it('renders scans list when scans returned', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => [mockScan],
-    }) as unknown as typeof fetch);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: async () => [mockScan],
+      }) as unknown as typeof fetch
+    );
     render(<AuditPage />, { wrapper: makeWrapper() });
     expect(await screen.findByText('/tmp/proj')).toBeTruthy();
     expect(screen.getByText(/completed · 2 findings/i)).toBeTruthy();
@@ -78,7 +87,8 @@ describe('AuditPage', () => {
 
   it('clicking View loads findings for the selected scan', async () => {
     const user = userEvent.setup();
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => [mockScan] })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ findings: [mockFinding] }) });
     vi.stubGlobal('fetch', fetchMock);
@@ -96,7 +106,8 @@ describe('AuditPage', () => {
   it('submits a new audit and updates the scan list', async () => {
     const user = userEvent.setup();
     const newScan = { ...mockScan, id: 'scan-2', projectPath: '/tmp/proj2' };
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => [] })
       .mockResolvedValueOnce({ ok: true, json: async () => newScan })
       .mockResolvedValueOnce({ ok: true, json: async () => [newScan] })

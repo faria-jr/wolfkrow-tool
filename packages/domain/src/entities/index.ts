@@ -5,47 +5,136 @@ export type { MessageRole, MessageProps, MessageCreateInput } from './message';
 export { ChatSession } from './chat-session';
 export type { ChatSessionProps, ChatSessionCreateInput } from './chat-session';
 export { Agent } from './agent';
-export type { AgentProps, AgentCreateInput, AgentUpdateInput, Runtime, Squad, Effort, PromptContext } from './agent';
+export type {
+  AgentProps,
+  AgentCreateInput,
+  AgentUpdateInput,
+  Runtime,
+  Squad,
+  Effort,
+  PromptContext,
+} from './agent';
 export { Skill } from './skill';
 export type { SkillProps, SkillCreateInput, SkillUpdateInput } from './skill';
 export { KnowledgeDocument } from './knowledge-document';
-export type { KnowledgeDocumentProps, KnowledgeDocumentCreateInput, DocumentStatus, EmbeddingModel, DocumentMetadata } from './knowledge-document';
+export type {
+  KnowledgeDocumentProps,
+  KnowledgeDocumentCreateInput,
+  DocumentStatus,
+  EmbeddingModel,
+  DocumentMetadata,
+} from './knowledge-document';
 export { KnowledgeChunk } from './knowledge-chunk';
-export type { KnowledgeChunkProps, KnowledgeChunkCreateInput, ChunkMetadata, ChunkSourceType } from './knowledge-chunk';
+export type {
+  KnowledgeChunkProps,
+  KnowledgeChunkCreateInput,
+  ChunkMetadata,
+  ChunkSourceType,
+} from './knowledge-chunk';
 export { formatCitation, formatCitationLabel, buildCitationIndex } from './citation';
 export type { CitationInput } from './citation';
 export { SemanticMemory } from './semantic-memory';
-export type { SemanticMemoryProps, SemanticMemoryCreateInput, MemorySource } from './semantic-memory';
+export type {
+  SemanticMemoryProps,
+  SemanticMemoryCreateInput,
+  MemorySource,
+} from './semantic-memory';
 export { DailySummary } from './daily-summary';
 export type { DailySummaryProps, DailySummaryCreateInput } from './daily-summary';
 export { CompactionLog } from './compaction-log';
-export type { CompactionLogProps, CompactionLogCreateInput, CompactionTrigger } from './compaction-log';
+export type {
+  CompactionLogProps,
+  CompactionLogCreateInput,
+  CompactionTrigger,
+} from './compaction-log';
 export { HarnessProject } from './harness-project';
-export type { HarnessProjectProps, HarnessProjectCreateInput, HarnessProjectStatus, HarnessConfig, ProjectMetrics } from './harness-project';
+export type {
+  HarnessProjectProps,
+  HarnessProjectCreateInput,
+  HarnessProjectStatus,
+  HarnessConfig,
+  ProjectMetrics,
+} from './harness-project';
 export { HarnessSprint } from './harness-sprint';
-export type { HarnessSprintProps, HarnessSprintCreateInput, SprintStatus, SprintFeature, SprintMetrics } from './harness-sprint';
+export type {
+  HarnessSprintProps,
+  HarnessSprintCreateInput,
+  SprintStatus,
+  SprintFeature,
+  SprintMetrics,
+} from './harness-sprint';
 export { HarnessRound } from './harness-round';
-export type { HarnessRoundProps, HarnessRoundCreateInput, RoundStatus, RoundMetrics } from './harness-round';
+export type {
+  HarnessRoundProps,
+  HarnessRoundCreateInput,
+  RoundStatus,
+  RoundMetrics,
+} from './harness-round';
+export { Project } from './project';
+export type {
+  ProjectProps,
+  ProjectCreateInput,
+  ProjectUpdateInput,
+  ProjectStatus,
+} from './project';
 export { EnrichSession } from './enrich-session';
-export type { EnrichSessionProps, EnrichSessionCreateInput, EnrichStatus, EnrichMetrics } from './enrich-session';
+export type {
+  EnrichSessionProps,
+  EnrichSessionCreateInput,
+  EnrichStatus,
+  EnrichMetrics,
+} from './enrich-session';
 export { WorkflowRun } from './workflow-run';
-export type { WorkflowRunProps, WorkflowRunCreateInput, WorkflowRunStatus, WorkflowMetrics } from './workflow-run';
+export type {
+  WorkflowRunProps,
+  WorkflowRunCreateInput,
+  WorkflowRunStatus,
+  WorkflowMetrics,
+} from './workflow-run';
+export { RunEvent } from './run-event';
+export type { RunEventProps, RunEventCreateInput, WorkflowKind } from './run-event';
 export { PipelineProject } from './pipeline-project';
-export type { PipelineProjectProps, PipelineProjectCreateInput, PipelineStage, PipelineStatus, PipelineMetrics } from './pipeline-project';
+export type {
+  PipelineProjectProps,
+  PipelineProjectCreateInput,
+  PipelineStage,
+  PipelineStatus,
+  PipelineMetrics,
+} from './pipeline-project';
 export { phaseKindFor } from './phase-kind';
 export type { PhaseKind } from './phase-kind';
 export { PipelinePhase } from './pipeline-phase';
-export type { PipelinePhaseProps, PipelinePhaseCreateInput, PhaseStatus, PhaseMetrics } from './pipeline-phase';
+export type {
+  PipelinePhaseProps,
+  PipelinePhaseCreateInput,
+  PhaseStatus,
+  PhaseMetrics,
+} from './pipeline-phase';
 export { PipelineMessage } from './pipeline-message';
-export type { PipelineMessageProps, PipelineMessageCreateInput, PipelineMessageRole } from './pipeline-message';
+export type {
+  PipelineMessageProps,
+  PipelineMessageCreateInput,
+  PipelineMessageRole,
+} from './pipeline-message';
 export { ScheduledTask } from './scheduled-task';
 export type { ScheduledTaskProps, ScheduledTaskCreateInput, TaskStatus } from './scheduled-task';
 export { TaskRun } from './task-run';
 export type { TaskRunProps, TaskRunCreateInput, TaskRunStatus, TaskRunMetrics } from './task-run';
 export { Secret } from './secret';
-export type { SecretProps, SecretCreateInput, SecretUpdateInput, SecretCategory, SecretRepo } from './secret';
+export type {
+  SecretProps,
+  SecretCreateInput,
+  SecretUpdateInput,
+  SecretCategory,
+  SecretRepo,
+} from './secret';
 export { GlobalRule } from './global-rule';
-export type { GlobalRuleProps, GlobalRuleCreateInput, RuleKind, GlobalRuleRepo } from './global-rule';
+export type {
+  GlobalRuleProps,
+  GlobalRuleCreateInput,
+  RuleKind,
+  GlobalRuleRepo,
+} from './global-rule';
 
 export { RepoProfile } from './repo-profile';
 export type { RepoProfileProps, RoleMap } from './repo-profile';
@@ -53,8 +142,24 @@ export type { RepoProfileProps, RoleMap } from './repo-profile';
 export { Artifact, isArtifact } from './artifact';
 export type { ArtifactProps, ArtifactData, ArtifactKind } from './artifact';
 
-export { SecurityFinding, summarizeFindings, SECURITY_SEVERITIES, SECURITY_DIMENSIONS } from './security-finding';
-export type { SecurityFindingProps, SecuritySeverity, SecurityDimension, SecurityScanSummary } from './security-finding';
+export {
+  SecurityFinding,
+  summarizeFindings,
+  SECURITY_SEVERITIES,
+  SECURITY_DIMENSIONS,
+} from './security-finding';
+export type {
+  SecurityFindingProps,
+  SecuritySeverity,
+  SecurityDimension,
+  SecurityScanSummary,
+} from './security-finding';
 
 export { VaultNote, extractWikilinks, VAULT_KINDS } from './vault-note';
-export type { VaultNoteProps, VaultKind, VaultGraphNode, VaultGraphEdge, VaultGraphData } from './vault-note';
+export type {
+  VaultNoteProps,
+  VaultKind,
+  VaultGraphNode,
+  VaultGraphEdge,
+  VaultGraphData,
+} from './vault-note';

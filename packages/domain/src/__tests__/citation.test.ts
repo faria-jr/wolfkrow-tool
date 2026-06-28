@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  buildCitationIndex,
-  formatCitation,
-  formatCitationLabel,
-} from '../entities/citation';
+import { buildCitationIndex, formatCitation, formatCitationLabel } from '../entities/citation';
 import { KnowledgeChunk } from '../entities/knowledge-chunk';
 
-function makeChunk(overrides: Partial<{ id: string; documentId: string; position: number }> = {}): KnowledgeChunk {
+function makeChunk(
+  overrides: Partial<{ id: string; documentId: string; position: number }> = {}
+): KnowledgeChunk {
   return KnowledgeChunk.fromProps({
     id: overrides.id ?? 'chunk-1',
     documentId: overrides.documentId ?? 'doc-42',
@@ -23,7 +21,9 @@ describe('citation (M4)', () => {
   describe('formatCitation', () => {
     it('renders [index] filename:position when filename is provided', () => {
       const chunk = makeChunk({ documentId: 'doc-1', position: 12 });
-      expect(formatCitation({ index: 1, chunk, documentFilename: 'guide.md' })).toBe('[1] guide.md:12');
+      expect(formatCitation({ index: 1, chunk, documentFilename: 'guide.md' })).toBe(
+        '[1] guide.md:12'
+      );
     });
 
     it('renders [index] documentId:position when filename is missing', () => {
@@ -33,7 +33,9 @@ describe('citation (M4)', () => {
 
     it('omits the position when it is negative', () => {
       const chunk = makeChunk({ documentId: 'doc-1', position: -1 });
-      expect(formatCitation({ index: 5, chunk, documentFilename: 'no-pos.md' })).toBe('[5] no-pos.md');
+      expect(formatCitation({ index: 5, chunk, documentFilename: 'no-pos.md' })).toBe(
+        '[5] no-pos.md'
+      );
     });
 
     it('returns a plain [index] token when neither filename nor documentId are available', () => {
@@ -46,7 +48,9 @@ describe('citation (M4)', () => {
     it('matches the suffix of formatCitation', () => {
       const chunk = makeChunk({ documentId: 'doc-x', position: 42 });
       const labeled = formatCitation({ index: 1, chunk, documentFilename: 'x.md' });
-      expect(labeled.endsWith(formatCitationLabel({ index: 1, chunk, documentFilename: 'x.md' }))).toBe(true);
+      expect(
+        labeled.endsWith(formatCitationLabel({ index: 1, chunk, documentFilename: 'x.md' }))
+      ).toBe(true);
     });
 
     it('returns empty string for empty documentId without filename', () => {
@@ -67,11 +71,7 @@ describe('citation (M4)', () => {
         ['doc-2', 'advanced.md'],
       ]);
       const lines = buildCitationIndex(chunks, filenames);
-      expect(lines).toEqual([
-        '[1] intro.md:1',
-        '[2] advanced.md:2',
-        '[3] intro.md:3',
-      ]);
+      expect(lines).toEqual(['[1] intro.md:1', '[2] advanced.md:2', '[3] intro.md:3']);
     });
 
     it('falls back to documentId when filename map is missing entries', () => {

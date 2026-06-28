@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto';
 
 export type WorkflowRunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
 
-export interface WorkflowMetrics { durationMs: number; stepCount: number; }
+export interface WorkflowMetrics {
+  durationMs: number;
+  stepCount: number;
+}
 
 export interface WorkflowRunProps {
   id: string;
@@ -50,9 +53,16 @@ export class WorkflowRun {
   static create(input: WorkflowRunCreateInput): WorkflowRun {
     const now = new Date();
     return new WorkflowRun({
-      id: randomUUID(), userId: input.userId, workflowName: input.workflowName,
-      status: 'pending', input: input.input, output: undefined, error: undefined,
-      startedAt: undefined, completedAt: undefined, metrics: { durationMs: 0, stepCount: 0 },
+      id: randomUUID(),
+      userId: input.userId,
+      workflowName: input.workflowName,
+      status: 'pending',
+      input: input.input,
+      output: undefined,
+      error: undefined,
+      startedAt: undefined,
+      completedAt: undefined,
+      metrics: { durationMs: 0, stepCount: 0 },
       createdAt: now,
     });
   }
@@ -63,9 +73,17 @@ export class WorkflowRun {
 
   toProps(): WorkflowRunProps {
     return {
-      id: this.id, userId: this.userId, workflowName: this.workflowName, status: this.status,
-      input: this.input, output: this.output, error: this.error, startedAt: this.startedAt,
-      completedAt: this.completedAt, metrics: this.metrics, createdAt: this.createdAt,
+      id: this.id,
+      userId: this.userId,
+      workflowName: this.workflowName,
+      status: this.status,
+      input: this.input,
+      output: this.output,
+      error: this.error,
+      startedAt: this.startedAt,
+      completedAt: this.completedAt,
+      metrics: this.metrics,
+      createdAt: this.createdAt,
     };
   }
 
@@ -75,8 +93,14 @@ export class WorkflowRun {
 
   complete(output: Record<string, unknown>, stepCount: number, now = new Date()): WorkflowRun {
     return WorkflowRun.fromProps({
-      ...this.toProps(), status: 'completed', output, completedAt: now,
-      metrics: { durationMs: now.getTime() - (this.startedAt?.getTime() ?? now.getTime()), stepCount },
+      ...this.toProps(),
+      status: 'completed',
+      output,
+      completedAt: now,
+      metrics: {
+        durationMs: now.getTime() - (this.startedAt?.getTime() ?? now.getTime()),
+        stepCount,
+      },
     });
   }
 

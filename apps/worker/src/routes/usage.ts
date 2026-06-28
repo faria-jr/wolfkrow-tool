@@ -2,7 +2,6 @@
  * Usage routes — token analytics. S.2.
  */
 
-
 import { UsageSummarySchema } from '@wolfkrow/shared-types';
 import { ComputeUsageUseCase, CheckBudgetUseCase } from '@wolfkrow/use-cases';
 import { z } from 'zod';

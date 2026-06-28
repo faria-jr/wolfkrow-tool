@@ -13,16 +13,27 @@ import {
 
 class InMemoryEnrichRepo implements EnrichSessionRepo {
   readonly store = new Map<string, EnrichSession>();
-  async findById(id: string) { return this.store.get(id) ?? null; }
-  async findByUserId(u: string) { return [...this.store.values()].filter((s) => s.userId === u); }
-  async save(s: EnrichSession) { this.store.set(s.id, s); return s; }
-  async delete(id: string) { this.store.delete(id); }
+  async findById(id: string) {
+    return this.store.get(id) ?? null;
+  }
+  async findByUserId(u: string) {
+    return [...this.store.values()].filter((s) => s.userId === u);
+  }
+  async save(s: EnrichSession) {
+    this.store.set(s.id, s);
+    return s;
+  }
+  async delete(id: string) {
+    this.store.delete(id);
+  }
 }
 
 describe('CreateEnrichSessionUseCase', () => {
   it('creates session in pending state', async () => {
     const repo = new InMemoryEnrichRepo();
-    const { session } = await new CreateEnrichSessionUseCase(repo).execute('u1', { specPath: '/spec.md' });
+    const { session } = await new CreateEnrichSessionUseCase(repo).execute('u1', {
+      specPath: '/spec.md',
+    });
     expect(session.status).toBe('pending');
     expect(session.specPath).toBe('/spec.md');
     expect(session.userId).toBe('u1');
@@ -39,7 +50,9 @@ describe('GetEnrichSessionUseCase', () => {
   });
 
   it('throws NotFoundError', async () => {
-    await expect(new GetEnrichSessionUseCase(new InMemoryEnrichRepo()).execute({ sessionId: 'x' })).rejects.toThrow(NotFoundError);
+    await expect(
+      new GetEnrichSessionUseCase(new InMemoryEnrichRepo()).execute({ sessionId: 'x' })
+    ).rejects.toThrow(NotFoundError);
   });
 });
 
@@ -57,9 +70,14 @@ describe('RunValidatorUseCase', () => {
   it('starts validator and stores output', async () => {
     const repo = new InMemoryEnrichRepo();
     const s = await repo.save(EnrichSession.create({ userId: 'u1', specPath: '/s' }));
-    const mockAgent = { validate: vi.fn().mockResolvedValue({ output: 'Looks valid', tokens: 500 }) };
+    const mockAgent = {
+      validate: vi.fn().mockResolvedValue({ output: 'Looks valid', tokens: 500 }),
+    };
 
-    const { session } = await new RunValidatorUseCase(repo, mockAgent).execute({ sessionId: s.id, specContent: '# Spec' });
+    const { session } = await new RunValidatorUseCase(repo, mockAgent).execute({
+      sessionId: s.id,
+      specContent: '# Spec',
+    });
     expect(session.status).toBe('validator');
     expect(session.validatorMetrics.tokens).toBe(500);
     expect(mockAgent.validate).toHaveBeenCalledWith({ specContent: '# Spec' });
@@ -72,9 +90,15 @@ describe('RunEnricherUseCase', () => {
     let s = EnrichSession.create({ userId: 'u1', specPath: '/s' });
     s = s.startValidator().completeValidator(100, 500);
     await repo.save(s);
-    const mockAgent = { enrich: vi.fn().mockResolvedValue({ output: 'Enriched spec', tokens: 800 }) };
+    const mockAgent = {
+      enrich: vi.fn().mockResolvedValue({ output: 'Enriched spec', tokens: 800 }),
+    };
 
-    const { session } = await new RunEnricherUseCase(repo, mockAgent).execute({ sessionId: s.id, validatorOutput: 'ok', specContent: '# Spec' });
+    const { session } = await new RunEnricherUseCase(repo, mockAgent).execute({
+      sessionId: s.id,
+      validatorOutput: 'ok',
+      specContent: '# Spec',
+    });
     expect(session.status).toBe('completed');
     expect(session.enricherMetrics.tokens).toBe(800);
   });

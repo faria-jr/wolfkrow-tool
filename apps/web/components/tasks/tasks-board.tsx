@@ -69,9 +69,15 @@ export function TasksBoard() {
     <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="flex flex-col gap-4">
         {showForm ? (
-          <NewTaskForm onCreated={() => setShowForm(false)} onCreate={createTask} onCancel={() => setShowForm(false)} />
+          <NewTaskForm
+            onCreated={() => setShowForm(false)}
+            onCreate={createTask}
+            onCancel={() => setShowForm(false)}
+          />
         ) : (
-          <Button onClick={() => setShowForm(true)} className="w-fit">New Task</Button>
+          <Button onClick={() => setShowForm(true)} className="w-fit">
+            New Task
+          </Button>
         )}
 
         <div className="grid grid-cols-4 gap-4">
@@ -103,30 +109,41 @@ function useTasks() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
-
-  const createTask = useCallback(async (title: string) => {
-    await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title }),
-    });
-    await load();
+  useEffect(() => {
+    void load();
   }, [load]);
 
-  const moveTask = useCallback(async (id: string, status: TaskStatus) => {
-    await fetch(`/api/tasks/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
-    await load();
-  }, [load]);
+  const createTask = useCallback(
+    async (title: string) => {
+      await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+      await load();
+    },
+    [load]
+  );
 
-  const deleteTask = useCallback(async (id: string) => {
-    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
-    await load();
-  }, [load]);
+  const moveTask = useCallback(
+    async (id: string, status: TaskStatus) => {
+      await fetch(`/api/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      await load();
+    },
+    [load]
+  );
+
+  const deleteTask = useCallback(
+    async (id: string) => {
+      await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+      await load();
+    },
+    [load]
+  );
 
   return { tasks, createTask, moveTask, deleteTask };
 }
@@ -158,12 +175,18 @@ function NewTaskForm({
         placeholder="Task title…"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter') void submit(); }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') void submit();
+        }}
         autoFocus
         className="flex-1"
       />
-      <Button onClick={() => void submit()} disabled={saving || !title.trim()}>Add</Button>
-      <Button variant="outline" onClick={onCancel}>Cancel</Button>
+      <Button onClick={() => void submit()} disabled={saving || !title.trim()}>
+        Add
+      </Button>
+      <Button variant="outline" onClick={onCancel}>
+        Cancel
+      </Button>
     </div>
   );
 }
@@ -181,10 +204,13 @@ function TaskColumn({
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: statusKey });
   return (
-    <div ref={setNodeRef} className={`flex flex-col gap-2 rounded p-1 ${isOver ? 'bg-secondary/40' : ''}`}>
+    <div
+      ref={setNodeRef}
+      className={`flex flex-col gap-2 rounded p-1 ${isOver ? 'bg-secondary/40' : ''}`}
+    >
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold">{label}</h3>
-        <span className="rounded-full bg-secondary px-2 py-0.5 text-xs">{tasks.length}</span>
+        <span className="bg-secondary rounded-full px-2 py-0.5 text-xs">{tasks.length}</span>
       </div>
       <div className="flex flex-col gap-2">
         {tasks.map((task) => (
@@ -196,7 +222,9 @@ function TaskColumn({
 }
 
 function DraggableTaskCard({ task, onDelete }: { task: Task; onDelete: (id: string) => void }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id });
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+  });
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     opacity: isDragging ? 0.4 : 1,
@@ -211,13 +239,13 @@ function DraggableTaskCard({ task, onDelete }: { task: Task; onDelete: (id: stri
 /** Card body, reused by the drag overlay (no listeners there). */
 function TaskCardBody({ task, onDelete }: { task: Task; onDelete?: (id: string) => void }) {
   return (
-    <div className={`rounded border border-l-4 bg-card p-2 ${PRIORITY_COLORS[task.priority]}`}>
+    <div className={`bg-card rounded border border-l-4 p-2 ${PRIORITY_COLORS[task.priority]}`}>
       <p className="text-sm font-medium">{task.title}</p>
       {onDelete && (
         <div className="mt-2 flex flex-wrap gap-1">
           <button
             onClick={() => onDelete(task.id)}
-            className="rounded bg-destructive/10 px-1.5 py-0.5 text-xs text-destructive hover:bg-destructive/20"
+            className="bg-destructive/10 text-destructive hover:bg-destructive/20 rounded px-1.5 py-0.5 text-xs"
           >
             Delete
           </button>

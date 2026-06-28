@@ -17,7 +17,8 @@ export const Default: Story = {
   args: {
     open: true,
     title: 'Delete agent',
-    description: 'This action cannot be undone. The agent and its configuration will be permanently removed.',
+    description:
+      'This action cannot be undone. The agent and its configuration will be permanently removed.',
     confirmLabel: 'Delete',
     onConfirm: fn(),
     onCancel: fn(),

@@ -13,11 +13,11 @@ import type { TtsProvider } from './types';
 export type TtsProviderName = 'elevenlabs' | 'cartesia';
 
 export function createTtsProvider(name: string, apiKey: string): TtsProvider {
- switch (name) {
- case 'cartesia':
- return new CartesiaTtsProvider(apiKey);
- case 'elevenlabs':
- default:
- return new ElevenLabsTtsProvider(apiKey);
- }
+  switch (name) {
+    case 'cartesia':
+      return new CartesiaTtsProvider(apiKey);
+    case 'elevenlabs':
+    default:
+      return new ElevenLabsTtsProvider(apiKey);
+  }
 }

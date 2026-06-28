@@ -32,8 +32,8 @@ export const toolPermissions = sqliteTable(
     userAgentToolIdx: uniqueIndex('tool_permissions_user_agent_tool_idx').on(
       t.userId,
       t.agentId,
-      t.tool,
+      t.tool
     ),
     userIdx: index('tool_permissions_user_id_idx').on(t.userId),
-  }),
+  })
 );

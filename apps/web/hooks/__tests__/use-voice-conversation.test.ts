@@ -41,13 +41,17 @@ describe('useVoiceConversation', () => {
 
   it('start moves to listening state', async () => {
     const { result } = renderHook(() => useVoiceConversation());
-    await act(async () => { await result.current.start(); });
+    await act(async () => {
+      await result.current.start();
+    });
     expect(result.current.state).toBe('listening');
   });
 
   it('stop returns to idle', async () => {
     const { result } = renderHook(() => useVoiceConversation());
-    await act(async () => { await result.current.start(); });
+    await act(async () => {
+      await result.current.start();
+    });
     act(() => result.current.stop());
     expect(result.current.state).toBe('idle');
   });

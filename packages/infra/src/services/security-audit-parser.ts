@@ -3,14 +3,21 @@ import type { SecuritySeverity } from '@wolfkrow/domain';
 import type { ParsedFinding } from './security-audit-runner';
 
 const VALID_SEVERITIES: readonly SecuritySeverity[] = [
-  'info', 'warning', 'major', 'critical', 'blocker',
+  'info',
+  'warning',
+  'major',
+  'critical',
+  'blocker',
 ];
 
 function isValidBaseField(severity: unknown, file: unknown, message: unknown): boolean {
   return (
-    typeof severity === 'string' && VALID_SEVERITIES.includes(severity as SecuritySeverity) &&
-    typeof file === 'string' && file.length > 0 &&
-    typeof message === 'string' && message.length > 0
+    typeof severity === 'string' &&
+    VALID_SEVERITIES.includes(severity as SecuritySeverity) &&
+    typeof file === 'string' &&
+    file.length > 0 &&
+    typeof message === 'string' &&
+    message.length > 0
   );
 }
 

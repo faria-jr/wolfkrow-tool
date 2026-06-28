@@ -23,7 +23,7 @@ export class SyncAgentsToOrchestratorUseCase implements UseCase<SyncAgentsInput,
     const toUpdate = agents.filter(
       (a) =>
         a.runtime !== input.targetRuntime ||
-        (input.targetModel !== undefined && a.model !== input.targetModel),
+        (input.targetModel !== undefined && a.model !== input.targetModel)
     );
 
     const updated = await Promise.all(
@@ -32,9 +32,9 @@ export class SyncAgentsToOrchestratorUseCase implements UseCase<SyncAgentsInput,
           a.update({
             runtime: input.targetRuntime,
             ...(input.targetModel !== undefined ? { model: input.targetModel } : {}),
-          }),
-        ),
-      ),
+          })
+        )
+      )
     );
 
     return { synced: updated.length, agents: updated };

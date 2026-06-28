@@ -19,19 +19,20 @@ import type { SessionMessage } from './pipeline';
 let registry: DreamingGateRegistry | null = null;
 
 function createFactory(logger: Logger): DreamingGateFactory {
- return {
- create: (userId) => new DreamingGate(getRepos().dailySummary, getRepos().compactionLog, { userId }, logger),
- };
+  return {
+    create: (userId) =>
+      new DreamingGate(getRepos().dailySummary, getRepos().compactionLog, { userId }, logger),
+  };
 }
 
 export function getDreamingRegistry(logger: Logger): DreamingGateRegistry {
- if (!registry) registry = new DreamingGateRegistry(createFactory(logger), logger);
- return registry;
+  if (!registry) registry = new DreamingGateRegistry(createFactory(logger), logger);
+  return registry;
 }
 
 async function runMemoryExtraction(userId: string, messages: SessionMessage[]): Promise<void> {
- const pipeline = new MemoryPipeline(getRepos().semanticMemory, getAdapters().embedder);
- await pipeline.extractAndStore(userId, messages);
+  const pipeline = new MemoryPipeline(getRepos().semanticMemory, getAdapters().embedder);
+  await pipeline.extractAndStore(userId, messages);
 }
 
 /**
@@ -40,19 +41,19 @@ async function runMemoryExtraction(userId: string, messages: SessionMessage[]): 
  * resets even if extraction is still in flight.
  */
 export function recordChatTurn(logger: Logger, userId: string, messages: SessionMessage[]): void {
- void runMemoryExtraction(userId, messages).catch((err) => {
- logger.error({ err, userId }, 'Memory extraction failed');
- });
- getDreamingRegistry(logger).recordActivity(userId);
+  void runMemoryExtraction(userId, messages).catch((err) => {
+    logger.error({ err, userId }, 'Memory extraction failed');
+  });
+  getDreamingRegistry(logger).recordActivity(userId);
 }
 
 /** Stop all dreaming gates — call on worker shutdown. */
 export function stopMemoryLifecycle(): void {
- registry?.stopAll();
- registry = null;
+  registry?.stopAll();
+  registry = null;
 }
 
 /** Test-only: drop the singleton so tests start from a clean slate. */
 export function resetMemoryLifecycle(): void {
- registry = null;
+  registry = null;
 }

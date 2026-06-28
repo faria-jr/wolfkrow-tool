@@ -8,7 +8,13 @@ import type { ProviderFormValues } from './schema';
 import { Button } from '@/components/ui/button';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
 type FormControlType = UseFormReturn<ProviderFormValues>['control'];
@@ -31,7 +37,9 @@ function TextField({ control, name, label, type = 'text', placeholder, disabled 
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
-          <FormControl><Input type={type} placeholder={placeholder} disabled={disabled} {...field} /></FormControl>
+          <FormControl>
+            <Input type={type} placeholder={placeholder} disabled={disabled} {...field} />
+          </FormControl>
           <FormMessage />
         </FormItem>
       )}
@@ -49,7 +57,9 @@ function ProtocolField({ control }: { control: FormControlType }) {
           <FormLabel>Protocol</FormLabel>
           <Select onValueChange={field.onChange} defaultValue={field.value}>
             <FormControl>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
             </FormControl>
             <SelectContent>
               <SelectItem value="anthropic-compat">Anthropic-compatible</SelectItem>
@@ -80,11 +90,17 @@ function SupportsToolsField({ control }: { control: FormControlType }) {
   );
 }
 
-function ModelTags({ models, onRemove }: { models: readonly string[]; onRemove: (i: number) => void }) {
+function ModelTags({
+  models,
+  onRemove,
+}: {
+  models: readonly string[];
+  onRemove: (i: number) => void;
+}) {
   return (
     <div className="flex flex-wrap gap-1">
       {models.map((m, i) => (
-        <span key={i} className="flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-sm">
+        <span key={i} className="bg-muted flex items-center gap-1 rounded px-2 py-0.5 text-sm">
           {m}
           <button
             type="button"
@@ -99,7 +115,15 @@ function ModelTags({ models, onRemove }: { models: readonly string[]; onRemove: 
   );
 }
 
-function ModelInput({ models, onChange, error }: { models: readonly string[]; onChange: (next: string[]) => void; error?: string | undefined }) {
+function ModelInput({
+  models,
+  onChange,
+  error,
+}: {
+  models: readonly string[];
+  onChange: (next: string[]) => void;
+  error?: string | undefined;
+}) {
   const [modelInput, setModelInput] = useState('');
 
   const add = () => {
@@ -119,10 +143,17 @@ function ModelInput({ models, onChange, error }: { models: readonly string[]; on
           aria-label="Models"
           value={modelInput}
           onChange={(e) => setModelInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              add();
+            }
+          }}
           placeholder="model-name"
         />
-        <Button type="button" variant="outline" onClick={add}>Add model</Button>
+        <Button type="button" variant="outline" onClick={add}>
+          Add model
+        </Button>
       </div>
       {error && <p className="text-destructive text-sm">{error}</p>}
       <ModelTags models={models} onRemove={remove} />
@@ -136,7 +167,11 @@ interface ProviderFormFieldsProps {
   hasApiKey?: boolean;
 }
 
-export function ProviderFormFields({ form, isEditing = false, hasApiKey = false }: ProviderFormFieldsProps) {
+export function ProviderFormFields({
+  form,
+  isEditing = false,
+  hasApiKey = false,
+}: ProviderFormFieldsProps) {
   const models = form.watch('models');
 
   return (
@@ -155,12 +190,18 @@ export function ProviderFormFields({ form, isEditing = false, hasApiKey = false 
       <TextField
         control={form.control}
         name="apiKey"
-        label={hasApiKey ? 'API key (leave blank to keep existing)' : 'API key (optional — stored in vault)'}
+        label={
+          hasApiKey
+            ? 'API key (leave blank to keep existing)'
+            : 'API key (optional — stored in vault)'
+        }
         type="password"
         placeholder="sk-..."
       />
       {isEditing && hasApiKey && (
-        <p className="text-muted-foreground text-xs">An API key is already stored. Leave the field blank to keep it.</p>
+        <p className="text-muted-foreground text-xs">
+          An API key is already stored. Leave the field blank to keep it.
+        </p>
       )}
     </>
   );

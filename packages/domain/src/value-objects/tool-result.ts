@@ -4,7 +4,7 @@ export class ToolResult {
   private constructor(
     readonly callId: string,
     readonly output: string,
-    readonly isError: boolean,
+    readonly isError: boolean
   ) {}
 
   static ok(callId: string, output: string): ToolResult {

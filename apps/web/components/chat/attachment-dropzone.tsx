@@ -75,7 +75,7 @@ export function AttachmentDropzone({ onAttach, onError, disabled }: AttachmentDr
         type="button"
         disabled={disabled}
         aria-label="Anexar arquivo"
-        className="flex items-center gap-1 rounded px-2 py-1 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
+        className="text-muted-foreground hover:text-foreground flex items-center gap-1 rounded px-2 py-1 text-sm disabled:opacity-50"
         onClick={() => inputRef.current?.click()}
       >
         📎

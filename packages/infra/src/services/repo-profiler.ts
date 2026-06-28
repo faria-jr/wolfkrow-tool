@@ -3,12 +3,33 @@ import { extname, join, relative } from 'node:path';
 
 import { RepoProfile } from '@wolfkrow/domain';
 
-const EXCLUDED_DIRS = new Set(['.git', 'node_modules', '__pycache__', '.next', 'dist', 'build', '.cache']);
-const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.rs', '.java', '.rb', '.cs']);
+const EXCLUDED_DIRS = new Set([
+  '.git',
+  'node_modules',
+  '__pycache__',
+  '.next',
+  'dist',
+  'build',
+  '.cache',
+]);
+const SOURCE_EXTENSIONS = new Set([
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.py',
+  '.go',
+  '.rs',
+  '.java',
+  '.rb',
+  '.cs',
+]);
 
 const LANGUAGE_BY_EXT: Record<string, string> = {
-  '.ts': 'typescript', '.tsx': 'typescript',
-  '.js': 'javascript', '.jsx': 'javascript',
+  '.ts': 'typescript',
+  '.tsx': 'typescript',
+  '.js': 'javascript',
+  '.jsx': 'javascript',
   '.py': 'python',
   '.go': 'go',
   '.rs': 'rust',
@@ -99,8 +120,15 @@ export class RepoProfilerService {
     const fws = new Set<string>();
     const pkgPath = join(root, 'package.json');
     try {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as Record<string, Record<string, string>>;
-      const allDeps = { ...pkg['dependencies'], ...pkg['devDependencies'], ...pkg['peerDependencies'] };
+      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as Record<
+        string,
+        Record<string, string>
+      >;
+      const allDeps = {
+        ...pkg['dependencies'],
+        ...pkg['devDependencies'],
+        ...pkg['peerDependencies'],
+      };
       for (const { dep, name } of FRAMEWORK_DEPS) {
         if (dep in allDeps) fws.add(name);
       }

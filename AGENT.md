@@ -45,6 +45,7 @@ Infrastructure (DB + repos + AI providers)
 ```
 
 **Regras**:
+
 - `domain/` não importa nada de outros layers
 - `use-cases/` importa apenas `domain/`
 - `infra/` importa `domain/` + `use-cases/`
@@ -102,6 +103,7 @@ export type Agent = z.infer<typeof AgentSchema>;
 ```
 
 Schemas Zod são usados para:
+
 1. Validação runtime (Route Handlers, IPC)
 2. Inferência de tipos TypeScript
 3. Documentação OpenAPI (gerada automaticamente)
@@ -113,6 +115,7 @@ Schemas Zod são usados para:
 ### TypeScript Strict Mode
 
 `tsconfig.base.json` tem:
+
 - `strict: true`
 - `noUncheckedIndexedAccess: true`
 - `noImplicitAny: true`
@@ -166,6 +169,7 @@ import type { SendMessageInput } from '@wolfkrow/shared-types/schemas/chat';
 ```
 
 Path aliases:
+
 - `@wolfkrow/*` → `packages/*`
 - `@web/*` → `apps/web/*`
 - `@worker/*` → `apps/worker/*`
@@ -198,6 +202,7 @@ Path aliases:
 4. **REVIEW**: PR com coverage check
 
 **Coverage targets**:
+
 - `packages/domain/`: ≥95%
 - `packages/use-cases/`: ≥90%
 - `packages/infra/repos/`: ≥85%
@@ -206,6 +211,7 @@ Path aliases:
 - `apps/worker/`: ≥85%
 
 **Estrutura**:
+
 ```
 src/
 ├── entities/
@@ -219,6 +225,7 @@ src/
 ```
 
 **Frameworks**:
+
 - `vitest` para unit + integration
 - `@testing-library/react` para components
 - `playwright` para E2E
@@ -254,7 +261,7 @@ export const agents = sqliteTable('agents', {
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const session = await requireSession();
-  
+
   // SSE streaming from Worker
   return new Response(
     new ReadableStream({

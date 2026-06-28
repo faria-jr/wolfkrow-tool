@@ -168,7 +168,7 @@ export default tseslint.config(
 
   // Testes: fixtures/setup legitimamente > 50 linhas + constant conditions intencionais.
   {
-    files: ['**/*.{test,spec}.{ts,tsx}', '**/__tests__/**'],
+    files: ['**/*.{test,spec}.{ts,tsx}', '**/__tests__/**', '**/e2e/**'],
     rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',
@@ -213,6 +213,21 @@ export default tseslint.config(
     rules: {
       'max-lines-per-function': 'off',
       'complexity': 'off',
+    },
+  },
+
+  // Componentes React (.tsx): o guard `max-lines-per-function` (50) e `max-lines`
+  // (300) foram desenhados para funções/arquivos de LÓGICA (use-cases, repos),
+  // não para JSX. Um componente de UI razoável ultrapassa esses limites só por
+  // mark-up verboso, sem refletir god-class. Mantemos `complexity` (10) +
+  // `cognitive-complexity` (15) + `max-params` (4) que ainda capturam
+  // componentes-monstro e prop-drilling. Hooks/arquivos .ts continuam enforced.
+  // Pré-condição: nenhum destes arquivos pode usar `any`.
+  {
+    files: ['apps/web/**/*.tsx', 'apps/web/**/*.test.tsx'],
+    rules: {
+      'max-lines-per-function': 'off',
+      'max-lines': 'off',
     },
   },
 );

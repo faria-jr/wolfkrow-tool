@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-export type RoundStatus = 'coder_running' | 'evaluator_running' | 'passed' | 'failed' | 'max_rounds_reached';
+export type RoundStatus =
+  | 'coder_running'
+  | 'evaluator_running'
+  | 'passed'
+  | 'failed'
+  | 'max_rounds_reached';
 
 export interface RoundMetrics {
   coderTokens: number;
@@ -21,7 +26,10 @@ export interface HarnessRoundProps {
   completedAt: Date | undefined;
 }
 
-export type HarnessRoundCreateInput = Pick<HarnessRoundProps, 'sprintId' | 'featureIndex' | 'roundNumber'>;
+export type HarnessRoundCreateInput = Pick<
+  HarnessRoundProps,
+  'sprintId' | 'featureIndex' | 'roundNumber'
+>;
 
 export class HarnessRound {
   readonly id: string;
@@ -67,25 +75,43 @@ export class HarnessRound {
 
   toProps(): HarnessRoundProps {
     return {
-      id: this.id, sprintId: this.sprintId, featureIndex: this.featureIndex,
-      roundNumber: this.roundNumber, status: this.status, coderOutput: this.coderOutput,
-      evaluatorFeedback: this.evaluatorFeedback, metrics: this.metrics,
-      startedAt: this.startedAt, completedAt: this.completedAt,
+      id: this.id,
+      sprintId: this.sprintId,
+      featureIndex: this.featureIndex,
+      roundNumber: this.roundNumber,
+      status: this.status,
+      coderOutput: this.coderOutput,
+      evaluatorFeedback: this.evaluatorFeedback,
+      metrics: this.metrics,
+      startedAt: this.startedAt,
+      completedAt: this.completedAt,
     };
   }
 
   withCoderOutput(output: string, tokens: number): HarnessRound {
     return HarnessRound.fromProps({
-      ...this.toProps(), status: 'evaluator_running', coderOutput: output,
+      ...this.toProps(),
+      status: 'evaluator_running',
+      coderOutput: output,
       metrics: { ...this.metrics, coderTokens: tokens },
     });
   }
 
-  complete(status: 'passed' | 'failed' | 'max_rounds_reached', feedback?: string, evaluatorTokens = 0): HarnessRound {
+  complete(
+    status: 'passed' | 'failed' | 'max_rounds_reached',
+    feedback?: string,
+    evaluatorTokens = 0
+  ): HarnessRound {
     return HarnessRound.fromProps({
-      ...this.toProps(), status, completedAt: new Date(),
+      ...this.toProps(),
+      status,
+      completedAt: new Date(),
       ...(feedback !== undefined ? { evaluatorFeedback: feedback } : {}),
-      metrics: { ...this.metrics, evaluatorTokens, durationMs: Date.now() - this.startedAt.getTime() },
+      metrics: {
+        ...this.metrics,
+        evaluatorTokens,
+        durationMs: Date.now() - this.startedAt.getTime(),
+      },
     });
   }
 }

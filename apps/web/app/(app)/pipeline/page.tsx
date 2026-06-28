@@ -7,7 +7,10 @@ export const metadata = { title: 'Pipeline — Wolfkrow' };
 export default function PipelinePage() {
   return (
     <PageShell>
-      <PageHeader title="Pipeline" description="Plan, execute and approve multi-stage AI pipelines." />
+      <PageHeader
+        title="Pipeline"
+        description="Plan, execute and approve multi-stage AI pipelines."
+      />
       <PageContent className="overflow-hidden">
         <PipelineView />
       </PageContent>

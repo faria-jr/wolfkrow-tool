@@ -23,7 +23,9 @@ export type SecretCreateInput = {
   description?: string;
 };
 
-export type SecretUpdateInput = Partial<Pick<SecretProps, 'displayName' | 'description' | 'category'>>;
+export type SecretUpdateInput = Partial<
+  Pick<SecretProps, 'displayName' | 'description' | 'category'>
+>;
 
 export class Secret {
   readonly id: string;

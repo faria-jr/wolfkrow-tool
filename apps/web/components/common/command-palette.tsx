@@ -4,7 +4,14 @@ import { Bot, FileText, Settings, ShieldAlert, Sparkles, Zap } from 'lucide-reac
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { NAV_GROUPS } from '@/lib/nav';
 
 interface CommandEntry {
@@ -19,7 +26,12 @@ interface CommandEntry {
 // can't drift from the sidebar (it previously omitted the whole Tools group).
 function pageEntries(): CommandEntry[] {
   return NAV_GROUPS.flatMap((group) =>
-    group.items.map((item) => ({ label: item.title, url: item.url, group: group.label, icon: item.icon })),
+    group.items.map((item) => ({
+      label: item.title,
+      url: item.url,
+      group: group.label,
+      icon: item.icon,
+    }))
   );
 }
 
@@ -27,9 +39,30 @@ const ACTIONS: CommandEntry[] = [
   { label: 'New agent', url: '/agents', group: 'Actions', icon: Bot },
   { label: 'Run audit', url: '/audit', group: 'Actions', icon: ShieldAlert },
   { label: 'New provider', url: '/settings/providers', group: 'Actions', icon: Settings },
-  { label: 'Toggle theme', group: 'Actions', icon: Sparkles, onSelect: () => { document.documentElement.classList.toggle('dark'); } },
-  { label: 'Copy page URL', group: 'Actions', icon: FileText, onSelect: () => { if (typeof window !== 'undefined') void navigator.clipboard.writeText(window.location.href); } },
-  { label: 'Reload page', group: 'Actions', icon: Zap, onSelect: () => { if (typeof window !== 'undefined') window.location.reload(); } },
+  {
+    label: 'Toggle theme',
+    group: 'Actions',
+    icon: Sparkles,
+    onSelect: () => {
+      document.documentElement.classList.toggle('dark');
+    },
+  },
+  {
+    label: 'Copy page URL',
+    group: 'Actions',
+    icon: FileText,
+    onSelect: () => {
+      if (typeof window !== 'undefined') void navigator.clipboard.writeText(window.location.href);
+    },
+  },
+  {
+    label: 'Reload page',
+    group: 'Actions',
+    icon: Zap,
+    onSelect: () => {
+      if (typeof window !== 'undefined') window.location.reload();
+    },
+  },
 ];
 
 const ENTRIES: CommandEntry[] = [...pageEntries(), ...ACTIONS];

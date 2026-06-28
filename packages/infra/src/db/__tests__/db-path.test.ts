@@ -29,7 +29,7 @@ describe('resolveDbPath', () => {
       process.env.HOME ?? process.env.USERPROFILE ?? '',
       '.wolfkrow',
       'data',
-      'wolfkrow.db',
+      'wolfkrow.db'
     );
     expect(resolveDbPath()).toBe(expected);
   });

@@ -20,9 +20,9 @@
  * the HTTP client), which is out of scope for this layer.
  */
 
-import * as dns from 'node:dns'
+import * as dns from 'node:dns';
 
-import { isSsrfBlockedHost } from '@wolfkrow/domain'
+import { isSsrfBlockedHost } from '@wolfkrow/domain';
 
 /**
  * Returns true when the hostname is already a literal IP or a dev-loopback
@@ -30,12 +30,12 @@ import { isSsrfBlockedHost } from '@wolfkrow/domain'
  * explicitly permitted for local development).
  */
 function isLiteralHost(hostname: string): boolean {
-  if (hostname === 'localhost') return true
+  if (hostname === 'localhost') return true;
   // IPv4 literal (dotted decimal, already canonicalized by URL)
-  if (/^\d{1,3}(\.\d{1,3}){1,3}$/.test(hostname)) return true
+  if (/^\d{1,3}(\.\d{1,3}){1,3}$/.test(hostname)) return true;
   // IPv6 literal (with or without brackets)
-  if (hostname.startsWith('[') || hostname.includes(':')) return true
-  return false
+  if (hostname.startsWith('[') || hostname.includes(':')) return true;
+  return false;
 }
 
 /**
@@ -51,35 +51,35 @@ function isLiteralHost(hostname: string): boolean {
  * an attacker forces NXDOMAIN to block legitimate provider creation.
  */
 export async function assertPublicProviderHost(baseUrl: string): Promise<void> {
-  let parsed: URL
+  let parsed: URL;
   try {
-    parsed = new URL(baseUrl)
+    parsed = new URL(baseUrl);
   } catch {
     // Malformed URL — let the SDK surface the error; not an SSRF concern here.
-    return
+    return;
   }
 
-  const hostname = parsed.hostname
-  if (isLiteralHost(hostname)) return
+  const hostname = parsed.hostname;
+  if (isLiteralHost(hostname)) return;
 
-  let records: dns.LookupAddress[]
+  let records: dns.LookupAddress[];
   try {
-    records = await dns.promises.lookup(hostname, { all: true })
+    records = await dns.promises.lookup(hostname, { all: true });
   } catch {
     // DNS resolution failed — not an SSRF signal; allow construction to proceed
     // and let the HTTP client surface the connection error.
-    return
+    return;
   }
 
   // Reject if ANY resolved address is private/loopback. Round-robin DNS could
   // otherwise surface a public IP here but route the actual connection to a
   // private address among the returned set.
   for (const record of records) {
-    const address = record.address
+    const address = record.address;
     if (isSsrfBlockedHost(address)) {
       throw new Error(
-        `SSRF guard: baseUrl host "${hostname}" resolved to private/blocked address ${address}`,
-      )
+        `SSRF guard: baseUrl host "${hostname}" resolved to private/blocked address ${address}`
+      );
     }
   }
 }

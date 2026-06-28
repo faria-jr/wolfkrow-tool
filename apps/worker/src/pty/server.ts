@@ -53,7 +53,11 @@ export class PtyServer {
   kill(id: string): void {
     const session = this.sessions.get(id);
     if (!session) return;
-    try { session.pty.kill(); } catch { /* already dead */ }
+    try {
+      session.pty.kill();
+    } catch {
+      /* already dead */
+    }
     this.sessions.delete(id);
   }
 

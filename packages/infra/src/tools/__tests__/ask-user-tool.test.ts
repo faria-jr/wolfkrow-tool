@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { AskUserTool } from '../ask-user-tool';
+import { AskUserTool, ASK_USER_SENTINEL, parseAskUserResult } from '../ask-user-tool';
 
 const ctx = { userId: 'u1' };
 
@@ -15,17 +15,27 @@ describe('AskUserTool', () => {
     const tool = new AskUserTool();
     const r = await tool.execute({ question: 'Pick one', options: ['a', 'b'] }, ctx);
     expect(r.isError).toBe(false);
-    const parsed = JSON.parse(r.output) as { __type: string; question: string; options: string[] };
-    expect(parsed.__type).toBe('ask_user');
-    expect(parsed.question).toBe('Pick one');
-    expect(parsed.options).toEqual(['a', 'b']);
+    const parsed = parseAskUserResult(r.output);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.question).toBe('Pick one');
+    expect(parsed?.options).toEqual(['a', 'b']);
+  });
+
+  it('parseAskUserResult returns null for non-sentinel output', () => {
+    expect(parseAskUserResult('just text')).toBeNull();
+    expect(parseAskUserResult(JSON.stringify({ foo: 'bar' }))).toBeNull();
+    expect(parseAskUserResult(JSON.stringify({ __type: 'something_else' }))).toBeNull();
+  });
+
+  it('exposes the sentinel constant', () => {
+    expect(ASK_USER_SENTINEL).toBe('__wolfkrow_ask_user');
   });
 
   it('defaults options to empty array when missing', async () => {
     const tool = new AskUserTool();
     const r = await tool.execute({ question: 'Open question' }, ctx);
-    const parsed = JSON.parse(r.output) as { options: unknown[] };
-    expect(parsed.options).toEqual([]);
+    const parsed = parseAskUserResult(r.output);
+    expect(parsed?.options).toEqual([]);
   });
 
   it('returns error when question is missing', async () => {

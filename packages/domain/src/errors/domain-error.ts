@@ -8,7 +8,7 @@ export class DomainError extends Error {
   constructor(
     readonly code: string,
     message: string,
-    readonly context: Readonly<Record<string, unknown>> = {},
+    readonly context: Readonly<Record<string, unknown>> = {}
   ) {
     super(message);
     this.name = new.target.name;
@@ -55,16 +55,14 @@ export class ValidationError extends DomainError {
   constructor(
     readonly field: string,
     message: string,
-    context?: Record<string, unknown>,
+    context?: Record<string, unknown>
   ) {
     super('VALIDATION', message, { field, ...context });
   }
 
   /** Converte um ZodError em ValidationError agregando todas as issues. */
   static fromZod(field: string, error: ZodError): ValidationError {
-    const issues = error.issues
-      .map((i) => `${i.path.join('.')}: ${i.message}`)
-      .join('; ');
+    const issues = error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ');
     return new ValidationError(field, issues, { zodIssues: error.issues });
   }
 }

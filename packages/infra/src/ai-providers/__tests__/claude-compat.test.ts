@@ -50,7 +50,9 @@ describe('ClaudeCompatProvider', () => {
   });
 
   it('throws for unknown preset', () => {
-    expect(() => new ClaudeCompatProvider('key', 'unknown')).toThrow('Unknown Claude-compat provider: unknown');
+    expect(() => new ClaudeCompatProvider('key', 'unknown')).toThrow(
+      'Unknown Claude-compat provider: unknown'
+    );
   });
 
   it('injects image parts into the last user message', async () => {
@@ -58,11 +60,9 @@ describe('ClaudeCompatProvider', () => {
     const chunks = await collect(
       provider.query(
         opts('hi', {
-          imageParts: [
-            { mimeType: 'image/png', data: 'base64data' },
-          ],
-        }),
-      ),
+          imageParts: [{ mimeType: 'image/png', data: 'base64data' }],
+        })
+      )
     );
 
     expect(chunks.map((c) => c.delta)).toEqual(['Hel', 'lo', '']);
@@ -70,7 +70,10 @@ describe('ClaudeCompatProvider', () => {
 
   it('countTokens estimates from message length', async () => {
     const provider = new ClaudeCompatProvider('key', 'qwen');
-    const tokens = await provider.countTokens([{ role: 'user', content: 'a'.repeat(40) }], 'qwen-max');
+    const tokens = await provider.countTokens(
+      [{ role: 'user', content: 'a'.repeat(40) }],
+      'qwen-max'
+    );
     expect(tokens).toBe(10);
   });
 });
@@ -94,27 +97,40 @@ describe('ClaudeCompatProvider — tool-calling (RM3.1)', () => {
   it('accepts URL string as baseUrl when supportsTools given', () => {
     const registry = makeEchoRegistry();
     expect(
-      () => new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry }),
+      () =>
+        new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', {
+          supportsTools: true,
+          toolRegistry: registry,
+        })
     ).not.toThrow();
   });
 
   it('emits tool_call chunk on tool_use block', async () => {
     const registry = makeEchoRegistry();
-    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', {
+      supportsTools: true,
+      toolRegistry: registry,
+    });
     const chunks = await collect(provider.query(opts('use echo')));
     expect(chunks.some((c) => c.toolCall?.name === 'echo')).toBe(true);
   });
 
   it('emits tool_result chunk after tool execution', async () => {
     const registry = makeEchoRegistry();
-    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', {
+      supportsTools: true,
+      toolRegistry: registry,
+    });
     const chunks = await collect(provider.query(opts('use echo')));
     expect(chunks.some((c) => c.toolResult !== undefined)).toBe(true);
   });
 
   it('continues to text after tool loop completes', async () => {
     const registry = makeEchoRegistry();
-    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', {
+      supportsTools: true,
+      toolRegistry: registry,
+    });
     const chunks = await collect(provider.query(opts('use echo')));
     const textDeltas = chunks.filter((c) => c.delta && c.delta.length > 0 && !c.done);
     expect(textDeltas.length).toBeGreaterThan(0);
@@ -166,7 +182,10 @@ describe('ClaudeCompatProvider — abort propagation (P1-6 / Bug #4)', () => {
   it('does NOT execute a tool when signal is already aborted before the tool runs', async () => {
     const executeSpy = vi.fn().mockResolvedValue(ToolResult.ok('tid-1', 'ran'));
     const registry = makeRegistryWith('slow', executeSpy);
-    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', {
+      supportsTools: true,
+      toolRegistry: registry,
+    });
 
     // Abort BEFORE the stream starts — the tool must never run.
     const ac = new AbortController();
@@ -191,7 +210,10 @@ describe('ClaudeCompatProvider — abort propagation (P1-6 / Bug #4)', () => {
 
     const ac = new AbortController();
     const registry = makeRegistryWith('slow', executeSpy);
-    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', {
+      supportsTools: true,
+      toolRegistry: registry,
+    });
 
     const chunks = await collect(provider.query(opts('use slow', { signal: ac.signal })));
 
@@ -203,7 +225,10 @@ describe('ClaudeCompatProvider — abort propagation (P1-6 / Bug #4)', () => {
   it('happy path (no abort): tool runs to completion and result is emitted', async () => {
     const executeSpy = vi.fn().mockResolvedValue(ToolResult.ok('tid-1', 'ran'));
     const registry = makeRegistryWith('slow', executeSpy);
-    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', { supportsTools: true, toolRegistry: registry });
+    const provider = new ClaudeCompatProvider('key', 'https://api.z.ai/api/anthropic', {
+      supportsTools: true,
+      toolRegistry: registry,
+    });
 
     const chunks = await collect(provider.query(opts('use echo')));
 
@@ -238,10 +263,7 @@ function makeRegistryWith(name: string, execute: ToolExecutor['execute']): ToolR
   return new ToolRegistry([tool]);
 }
 
-function makeFakeStream(
-  parts: string[],
-  usage: { input_tokens: number; output_tokens: number },
-) {
+function makeFakeStream(parts: string[], usage: { input_tokens: number; output_tokens: number }) {
   const events = parts.map((text) => ({
     type: 'content_block_delta' as const,
     delta: { type: 'text_delta' as const, text },
@@ -260,12 +282,18 @@ function makeToolStream(
   toolName: string,
   toolId: string,
   input: Record<string, unknown>,
-  usage: { input_tokens: number; output_tokens: number },
+  usage: { input_tokens: number; output_tokens: number }
 ) {
   return {
     async *[Symbol.asyncIterator]() {
-      yield { type: 'content_block_start', content_block: { type: 'tool_use', id: toolId, name: toolName } };
-      yield { type: 'content_block_delta', delta: { type: 'input_json_delta', partial_json: JSON.stringify(input) } };
+      yield {
+        type: 'content_block_start',
+        content_block: { type: 'tool_use', id: toolId, name: toolName },
+      };
+      yield {
+        type: 'content_block_delta',
+        delta: { type: 'input_json_delta', partial_json: JSON.stringify(input) },
+      };
       yield { type: 'content_block_stop' };
     },
     async finalMessage() {

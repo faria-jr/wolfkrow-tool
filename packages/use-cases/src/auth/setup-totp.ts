@@ -16,7 +16,7 @@ export interface SetupTotpOutput {
 export class SetupTotpUseCase implements UseCase<SetupTotpInput, SetupTotpOutput> {
   constructor(
     private readonly userRepo: UserRepo,
-    private readonly totp: TotpVerifier,
+    private readonly totp: TotpVerifier
   ) {}
 
   async execute(input: SetupTotpInput): Promise<SetupTotpOutput> {

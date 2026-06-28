@@ -18,7 +18,6 @@ import {
 import { NAV_GROUPS, type NavItem } from '@/lib/nav';
 import { APP_VERSION } from '@/lib/version';
 
-
 /**
  * A nav item is active when the current pathname matches its route.
  * Top-level items use exact match; routes that own nested pages (e.g.
@@ -35,11 +34,7 @@ function isItemActive(pathname: string, url: string): boolean {
 function NavMenuItem({ item, pathname }: { item: NavItem; pathname: string }) {
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton
-        asChild
-        isActive={isItemActive(pathname, item.url)}
-        tooltip={item.title}
-      >
+      <SidebarMenuButton asChild isActive={isItemActive(pathname, item.url)} tooltip={item.title}>
         <Link href={item.url}>
           <item.icon className="h-4 w-4" />
           <span>{item.title}</span>
@@ -49,7 +44,15 @@ function NavMenuItem({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
-function NavGroup({ label, items, pathname }: { label: string; items: readonly NavItem[]; pathname: string }) {
+function NavGroup({
+  label,
+  items,
+  pathname,
+}: {
+  label: string;
+  items: readonly NavItem[];
+  pathname: string;
+}) {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>{label}</SidebarGroupLabel>
@@ -67,12 +70,12 @@ function NavGroup({ label, items, pathname }: { label: string; items: readonly N
 function SidebarBrand() {
   return (
     <div className="flex items-center gap-2 px-2 py-1.5">
-      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-accent shadow-md">
-        <span className="text-lg font-bold text-primary-foreground">W</span>
+      <div className="from-primary to-accent flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br shadow-md">
+        <span className="text-primary-foreground text-lg font-bold">W</span>
       </div>
       <div className="flex flex-col">
         <span className="text-sm font-semibold">Wolfkrow</span>
-        <span className="text-xs text-muted-foreground">v{APP_VERSION}</span>
+        <span className="text-muted-foreground text-xs">v{APP_VERSION}</span>
       </div>
     </div>
   );
@@ -94,8 +97,8 @@ export function Sidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="px-2 py-1.5 text-xs text-muted-foreground">
-          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground">
+        <div className="text-muted-foreground px-2 py-1.5 text-xs">
+          <kbd className="bg-muted text-muted-foreground pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border px-1.5 font-mono text-xs font-medium">
             <span className="text-xs">⌘</span>B
           </kbd>
           <span className="ml-2">Toggle sidebar</span>

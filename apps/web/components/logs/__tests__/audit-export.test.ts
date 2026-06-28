@@ -44,7 +44,7 @@ describe('audit-export (M6.4)', () => {
       const row = csv.split('\n')[1]!;
       // metadata is JSON-stringified and then CSV-escaped: {"count":3} becomes "{""count"":3}"
       expect(row).toBe(
-        'entry-1,2024-01-15T10:00:00.000Z,user-1,agent.create,agent,agent-abc,127.0.0.1,"{""count"":3}"',
+        'entry-1,2024-01-15T10:00:00.000Z,user-1,agent.create,agent,agent-abc,127.0.0.1,"{""count"":3}"'
       );
     });
 
@@ -81,7 +81,11 @@ describe('audit-export (M6.4)', () => {
   describe('formatAuditJson', () => {
     it('returns a pretty JSON document with entries + count + exportedAt', () => {
       const json = formatAuditJson(sampleEntries);
-      const parsed = JSON.parse(json) as { entries: ExportableAuditEntry[]; count: number; exportedAt: string };
+      const parsed = JSON.parse(json) as {
+        entries: ExportableAuditEntry[];
+        count: number;
+        exportedAt: string;
+      };
       expect(parsed.entries).toHaveLength(2);
       expect(parsed.count).toBe(2);
       expect(parsed.exportedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -91,7 +95,9 @@ describe('audit-export (M6.4)', () => {
   describe('buildAuditFilename', () => {
     it('produces a timestamped filename with the entry count', () => {
       const csvName = buildAuditFilename('csv', 42);
-      expect(csvName).toMatch(/^wolfkrow-audit-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-42entries\.csv$/);
+      expect(csvName).toMatch(
+        /^wolfkrow-audit-\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-42entries\.csv$/
+      );
       const jsonName = buildAuditFilename('json', 0);
       expect(jsonName).toMatch(/0entries\.json$/);
     });

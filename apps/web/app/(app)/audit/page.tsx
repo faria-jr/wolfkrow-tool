@@ -34,9 +34,17 @@ function ScansCard({ scans, onSelect }: { scans: Scan[]; onSelect: (s: Scan) => 
               <li key={s.id} className="flex items-center justify-between rounded border p-3">
                 <div>
                   <p className="font-medium">{s.projectPath}</p>
-                  <p className="text-xs text-muted-foreground">{s.status} · {s.summary?.total ?? 0} findings</p>
+                  <p className="text-muted-foreground text-xs">
+                    {s.status} · {s.summary?.total ?? 0} findings
+                  </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => { onSelect(s); }}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onSelect(s);
+                  }}
+                >
                   View
                 </Button>
               </li>

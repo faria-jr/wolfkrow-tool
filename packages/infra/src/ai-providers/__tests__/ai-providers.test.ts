@@ -58,7 +58,7 @@ describe('MockProvider', () => {
   it('countTokens estimates from message length', async () => {
     const tokens = await new MockProvider().countTokens(
       [{ role: 'user', content: 'a'.repeat(40) }],
-      'm',
+      'm'
     );
     expect(tokens).toBe(10);
   });
@@ -71,7 +71,7 @@ describe('helpers', () => {
         yield { delta: 'a' };
         yield { delta: 'b' };
         yield { delta: '', done: true, inputTokens: 3, outputTokens: 2 };
-      })(),
+      })()
     );
     expect(result.content).toBe('ab');
     expect(result.usage).toEqual({ inputTokens: 3, outputTokens: 2 });
@@ -108,16 +108,26 @@ describe('ProviderAIProviderFactory', () => {
 
   it('createFromConfig creates ClaudeCompatProvider for anthropic-compat protocol', () => {
     const cfg = ProviderConfig.create({
-      id: 'zai', displayName: 'Z', protocol: 'anthropic-compat',
-      baseUrl: 'https://api.z.ai/api/anthropic', apiKeyAccount: 'zai', models: ['glm-4.7'], supportsTools: true,
+      id: 'zai',
+      displayName: 'Z',
+      protocol: 'anthropic-compat',
+      baseUrl: 'https://api.z.ai/api/anthropic',
+      apiKeyAccount: 'zai',
+      models: ['glm-4.7'],
+      supportsTools: true,
     });
     expect(factory.createFromConfig(cfg, 'key')).toBeInstanceOf(ClaudeCompatProvider);
   });
 
   it('createFromConfig creates CodexProvider for openai-compatible protocol', () => {
     const cfg = ProviderConfig.create({
-      id: 'openai', displayName: 'OAI', protocol: 'openai-compatible',
-      baseUrl: 'https://api.openai.com/v1', apiKeyAccount: 'openai', models: ['gpt-4o'], supportsTools: true,
+      id: 'openai',
+      displayName: 'OAI',
+      protocol: 'openai-compatible',
+      baseUrl: 'https://api.openai.com/v1',
+      apiKeyAccount: 'openai',
+      models: ['gpt-4o'],
+      supportsTools: true,
     });
     expect(factory.createFromConfig(cfg, 'key')).toBeInstanceOf(CodexProvider);
   });
@@ -137,12 +147,18 @@ describe('ProviderAIProviderFactory — claude-compat tool wiring (P1-8)', () =>
     toolName: string,
     toolId: string,
     input: Record<string, unknown>,
-    usage: { input_tokens: number; output_tokens: number },
+    usage: { input_tokens: number; output_tokens: number }
   ) {
     return {
       async *[Symbol.asyncIterator]() {
-        yield { type: 'content_block_start', content_block: { type: 'tool_use', id: toolId, name: toolName } };
-        yield { type: 'content_block_delta', delta: { type: 'input_json_delta', partial_json: JSON.stringify(input) } };
+        yield {
+          type: 'content_block_start',
+          content_block: { type: 'tool_use', id: toolId, name: toolName },
+        };
+        yield {
+          type: 'content_block_delta',
+          delta: { type: 'input_json_delta', partial_json: JSON.stringify(input) },
+        };
         yield { type: 'content_block_stop' };
       },
       async finalMessage() {
@@ -155,10 +171,7 @@ describe('ProviderAIProviderFactory — claude-compat tool wiring (P1-8)', () =>
     };
   }
 
-  function makeTextStream(
-    parts: string[],
-    usage: { input_tokens: number; output_tokens: number },
-  ) {
+  function makeTextStream(parts: string[], usage: { input_tokens: number; output_tokens: number }) {
     const events = parts.map((text) => ({
       type: 'content_block_delta' as const,
       delta: { type: 'text_delta' as const, text },
@@ -175,7 +188,7 @@ describe('ProviderAIProviderFactory — claude-compat tool wiring (P1-8)', () =>
 
   it('create(claude-compat:*) executes a tool when a toolRegistry is provided', async () => {
     const executeSpy = vi.fn(async (_input: Record<string, unknown>, _ctx: ToolExecutionContext) =>
-      ToolResult.ok('tid-1', 'ran'),
+      ToolResult.ok('tid-1', 'ran')
     );
     const registry = new ToolRegistry([
       {
@@ -229,10 +242,7 @@ describe('AnthropicProvider (SDK mocked via top-level vi.mock)', () => {
   });
 });
 
-function makeFakeStream(
-  parts: string[],
-  usage: { input_tokens: number; output_tokens: number },
-) {
+function makeFakeStream(parts: string[], usage: { input_tokens: number; output_tokens: number }) {
   const events = parts.map((text) => ({
     type: 'content_block_delta' as const,
     delta: { type: 'text_delta' as const, text },

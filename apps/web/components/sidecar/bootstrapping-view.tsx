@@ -51,9 +51,10 @@ function resolveStatus(stageId: string, currentStage: string, hasError: boolean)
 
 function StepIcon({ status }: { status: StepStatus }) {
   if (status === 'done') return <CheckCircle2 className="size-4 shrink-0 text-green-500" />;
-  if (status === 'running') return <Loader2 className="size-4 shrink-0 animate-spin text-yellow-500" />;
-  if (status === 'error') return <AlertTriangle className="size-4 shrink-0 text-destructive" />;
-  return <Circle className="size-4 shrink-0 text-muted-foreground" />;
+  if (status === 'running')
+    return <Loader2 className="size-4 shrink-0 animate-spin text-yellow-500" />;
+  if (status === 'error') return <AlertTriangle className="text-destructive size-4 shrink-0" />;
+  return <Circle className="text-muted-foreground size-4 shrink-0" />;
 }
 
 export function BootstrappingView({ stage, ...rest }: BootstrappingViewProps) {
@@ -78,7 +79,7 @@ export function BootstrappingView({ stage, ...rest }: BootstrappingViewProps) {
                 <span
                   className={
                     status === 'running'
-                      ? 'font-medium text-foreground'
+                      ? 'text-foreground font-medium'
                       : status === 'done'
                         ? 'text-muted-foreground'
                         : status === 'error'
@@ -94,7 +95,9 @@ export function BootstrappingView({ stage, ...rest }: BootstrappingViewProps) {
           })}
         </ol>
         {rest.error && (
-          <p className="mt-3 text-sm text-destructive" role="alert">{rest.error}</p>
+          <p className="text-destructive mt-3 text-sm" role="alert">
+            {rest.error}
+          </p>
         )}
       </CardContent>
     </Card>

@@ -9,7 +9,13 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov', 'json'],
       include: ['src/**/*.ts'],
-      exclude: ['src/**/index.ts', 'src/__tests__/**', 'src/**/__tests__/**', '**/*.test.ts', '**/*.config.ts'],
+      exclude: [
+        'src/**/index.ts',
+        'src/__tests__/**',
+        'src/**/__tests__/**',
+        '**/*.test.ts',
+        '**/*.config.ts',
+      ],
       // §1.3 use-cases gate — um caso de uso = uma classe = um verbo.
       thresholds: {
         lines: 90,

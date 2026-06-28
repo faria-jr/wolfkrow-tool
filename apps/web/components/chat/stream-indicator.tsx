@@ -6,7 +6,7 @@ export function StreamIndicator() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50"
+          className="bg-muted-foreground/50 h-2 w-2 animate-bounce rounded-full"
           style={{ animationDelay: `${i * 150}ms` }}
         />
       ))}

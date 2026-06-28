@@ -17,13 +17,13 @@ import { getProviderApiKey, KEYTAR_SERVICE } from './lib/keychain';
 import type { Logger } from './logger';
 
 export interface AgentExecutorOptions {
- provider?: string;
- model?: string;
- temperature?: number;
- maxTokens?: number;
- logger?: Logger;
- providerFactory?: AIProviderFactory;
- keytarService?: string;
+  provider?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  logger?: Logger;
+  providerFactory?: AIProviderFactory;
+  keytarService?: string;
 }
 
 const DEFAULT_MODEL = DEFAULT_AGENT_MODEL;
@@ -31,59 +31,90 @@ const DEFAULT_TEMPERATURE = Number(process.env['AGENT_DEFAULT_TEMPERATURE']) || 
 const DEFAULT_MAX_TOKENS = 4096;
 
 interface AgentLike {
- userId: string;
- model: string;
- systemPrompt: string | undefined;
- skills: string[];
+  userId: string;
+  model: string;
+  systemPrompt: string | undefined;
+  skills: string[];
+}
+
+interface ScheduledTask {
+  id: string;
+  name: string;
+  prompt: string;
+  agentId: string | undefined;
+  requiresReview?: boolean;
+}
+
+async function runScheduledTask(
+  task: ScheduledTask,
+  opts: {
+    logger?: Logger;
+    providerName: string;
+    defaultModel: string;
+    temperature: number;
+    maxTokens: number;
+    serviceName: string;
+    factory: AIProviderFactory;
+  }
+): Promise<{
+  status: 'awaiting_review' | 'validated';
+  output: { content: string; inputTokens: number; outputTokens: number };
+}> {
+  const repos = getRepos();
+  const agent = task.agentId
+    ? ((await repos.agent.findById(task.agentId)) as AgentLike | null)
+    : null;
+  const userId = agent?.userId ?? 'default';
+
+  const system = await buildAgentSystemPrompt(agent, userId);
+
+  const apiKey = await getProviderApiKey(opts.providerName, opts.serviceName);
+  const provider: AIProvider = opts.factory.create(opts.providerName, apiKey);
+  const model = agent?.model ?? opts.defaultModel;
+  const prompt = `[Scheduled task: ${task.name}]\n\n${task.prompt}`;
+
+  opts.logger?.info({ taskId: task.id, agentId: task.agentId, model }, 'Calling AI provider');
+
+  const result = await provider.complete({
+    model,
+    system,
+    messages: [{ role: 'user', content: prompt }],
+    maxTokens: opts.maxTokens,
+    temperature: opts.temperature,
+  });
+
+  opts.logger?.info(
+    {
+      taskId: task.id,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+    },
+    'AI provider response received'
+  );
+
+  return {
+    status: task.requiresReview ? 'awaiting_review' : 'validated',
+    output: {
+      content: result.content,
+      inputTokens: result.usage.inputTokens,
+      outputTokens: result.usage.outputTokens,
+    },
+  };
 }
 
 export function createAgentExecutor(options: AgentExecutorOptions = {}): TaskExecutor {
- const logger = options.logger;
- const providerName = options.provider ?? 'anthropic';
- const defaultModel = options.model ?? DEFAULT_MODEL;
- const temperature = options.temperature ?? DEFAULT_TEMPERATURE;
- const maxTokens = options.maxTokens ?? DEFAULT_MAX_TOKENS;
- const serviceName = options.keytarService ?? KEYTAR_SERVICE;
- const factory: AIProviderFactory = options.providerFactory ?? aiProviderFactory;
-
- return {
- async execute(task: { id: string; name: string; prompt: string; agentId: string | undefined; requiresReview?: boolean }) {
- const repos = getRepos();
- const agent = task.agentId ? ((await repos.agent.findById(task.agentId)) as AgentLike | null) : null;
- const userId = agent?.userId ?? 'default';
-
- const system = await buildAgentSystemPrompt(agent, userId);
-
- const apiKey = await getProviderApiKey(providerName, serviceName);
- const provider: AIProvider = factory.create(providerName, apiKey);
- const model = agent?.model ?? defaultModel;
- const prompt = `[Scheduled task: ${task.name}]\n\n${task.prompt}`;
-
- logger?.info({ taskId: task.id, agentId: task.agentId, model }, 'Calling AI provider');
-
- const result = await provider.complete({
- model,
- system,
- messages: [{ role: 'user', content: prompt }],
- maxTokens,
- temperature,
- });
-
- logger?.info(
- { taskId: task.id, inputTokens: result.usage.inputTokens, outputTokens: result.usage.outputTokens },
- 'AI provider response received'
- );
-
- const status = task.requiresReview ? ('awaiting_review' as const) : ('validated' as const);
-
- return {
- status,
- output: {
- content: result.content,
- inputTokens: result.usage.inputTokens,
- outputTokens: result.usage.outputTokens,
- },
- };
- },
- };
+  const runOpts = {
+    providerName: options.provider ?? 'anthropic',
+    defaultModel: options.model ?? DEFAULT_MODEL,
+    temperature: options.temperature ?? DEFAULT_TEMPERATURE,
+    maxTokens: options.maxTokens ?? DEFAULT_MAX_TOKENS,
+    serviceName: options.keytarService ?? KEYTAR_SERVICE,
+    factory: (options.providerFactory ?? aiProviderFactory) as AIProviderFactory,
+    ...(options.logger !== undefined ? { logger: options.logger } : {}),
+  };
+  return {
+    async execute(task: ScheduledTask) {
+      return runScheduledTask(task, runOpts);
+    },
+  };
 }

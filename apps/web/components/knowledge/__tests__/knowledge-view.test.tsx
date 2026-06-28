@@ -9,7 +9,19 @@ describe('KnowledgeView', () => {
   beforeEach(() => {
     fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ documents: [{ id: 'd1', filename: 'spec.pdf', mimeType: 'application/pdf', size: 2048, status: 'ready', chunkCount: 3, createdAt: '2024-01-01' }] }),
+      json: async () => ({
+        documents: [
+          {
+            id: 'd1',
+            filename: 'spec.pdf',
+            mimeType: 'application/pdf',
+            size: 2048,
+            status: 'ready',
+            chunkCount: 3,
+            createdAt: '2024-01-01',
+          },
+        ],
+      }),
     } as Response);
     vi.stubGlobal('fetch', fetchMock);
   });

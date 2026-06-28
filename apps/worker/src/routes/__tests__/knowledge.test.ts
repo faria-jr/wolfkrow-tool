@@ -12,7 +12,6 @@ import { KnowledgeChunk, KnowledgeDocument } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-
 const { docs, fakeDocRepo, fakeChunkRepo, fakeEmbedder } = vi.hoisted(() => {
   const docs = new Map<string, KnowledgeDocument>();
   const fakeDocRepo = {
@@ -69,7 +68,10 @@ let app: FastifyInstance;
 beforeAll(async () => {
   docs.clear();
   const seeded = KnowledgeDocument.create({
-    userId: 'u1', filename: 'spec.md', mimeType: 'text/markdown', size: 100,
+    userId: 'u1',
+    filename: 'spec.md',
+    mimeType: 'text/markdown',
+    size: 100,
   });
   docs.set(seeded.id, seeded);
 
@@ -103,7 +105,11 @@ describe('knowledge GET /knowledge/documents — list', () => {
 describe('knowledge DELETE /knowledge/documents/:id', () => {
   it('deletes a document and its chunks, returns ok', async () => {
     const existing = [...docs.values()][0]!;
-    const res = await app.inject({ method: 'DELETE', url: `/knowledge/documents/${existing.id}`, headers: BEARER });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/knowledge/documents/${existing.id}`,
+      headers: BEARER,
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ deleted: true });
     expect(docs.has(existing.id)).toBe(false);
@@ -113,7 +119,9 @@ describe('knowledge DELETE /knowledge/documents/:id', () => {
 describe('knowledge POST /knowledge/search', () => {
   it('returns search results + the echoed query', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/knowledge/search', headers: BEARER,
+      method: 'POST',
+      url: '/knowledge/search',
+      headers: BEARER,
       payload: { query: 'specs', limit: 5 },
     });
     expect(res.statusCode).toBe(200);
@@ -124,7 +132,9 @@ describe('knowledge POST /knowledge/search', () => {
 
   it('returns empty results for an empty/whitespace query (use-case early return)', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/knowledge/search', headers: BEARER,
+      method: 'POST',
+      url: '/knowledge/search',
+      headers: BEARER,
       payload: { query: '   ' },
     });
     // The schema allows min(1) but whitespace passes; the use-case trims + returns [].
@@ -132,13 +142,20 @@ describe('knowledge POST /knowledge/search', () => {
   });
 
   it('rejects a body missing query → 400', async () => {
-    const res = await app.inject({ method: 'POST', url: '/knowledge/search', headers: BEARER, payload: {} });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/knowledge/search',
+      headers: BEARER,
+      payload: {},
+    });
     expect(res.statusCode).toBe(400);
   });
 
   it('accepts optional documentIds filter (canonical UUIDs per shared SearchQuerySchema)', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/knowledge/search', headers: BEARER,
+      method: 'POST',
+      url: '/knowledge/search',
+      headers: BEARER,
       payload: { query: 'x', documentIds: ['550e8400-e29b-41d4-a716-446655440000'] },
     });
     expect(res.statusCode).toBe(200);

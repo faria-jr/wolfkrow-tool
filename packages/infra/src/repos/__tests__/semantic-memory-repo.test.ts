@@ -73,8 +73,34 @@ describe('DrizzleSemanticMemoryRepo.vectorSearch (T24)', () => {
 
   it('filters by userId', async () => {
     const repo = makeRepo();
-    await repo.save(SemanticMemory.fromProps({ id: 'u1', userId: 'alice', content: 'alice mem', embedding: [1, 0], source: 'conversation', importance: 0.5, accessCount: 0, lastAccessedAt: undefined, metadata: {}, createdAt: new Date() }));
-    await repo.save(SemanticMemory.fromProps({ id: 'u2', userId: 'bob', content: 'bob mem', embedding: [1, 0], source: 'conversation', importance: 0.5, accessCount: 0, lastAccessedAt: undefined, metadata: {}, createdAt: new Date() }));
+    await repo.save(
+      SemanticMemory.fromProps({
+        id: 'u1',
+        userId: 'alice',
+        content: 'alice mem',
+        embedding: [1, 0],
+        source: 'conversation',
+        importance: 0.5,
+        accessCount: 0,
+        lastAccessedAt: undefined,
+        metadata: {},
+        createdAt: new Date(),
+      })
+    );
+    await repo.save(
+      SemanticMemory.fromProps({
+        id: 'u2',
+        userId: 'bob',
+        content: 'bob mem',
+        embedding: [1, 0],
+        source: 'conversation',
+        importance: 0.5,
+        accessCount: 0,
+        lastAccessedAt: undefined,
+        metadata: {},
+        createdAt: new Date(),
+      })
+    );
 
     const results = await repo.vectorSearch([1, 0], 'alice', 10);
     expect(results).toHaveLength(1);

@@ -5,19 +5,30 @@ const CALENDAR_API = 'https://www.googleapis.com/calendar/v3';
 const tools: McpTool[] = [
   {
     name: 'calendar_list_events',
-    description: 'List upcoming events from the user\'s primary Google Calendar.',
+    description: "List upcoming events from the user's primary Google Calendar.",
     inputSchema: {
       type: 'object',
       properties: {
-        maxResults: { type: 'number', default: 10, description: 'Max events to return (default 10).' },
-        timeMin: { type: 'string', description: 'Lower bound (RFC3339) for event start time. Defaults to now.' },
-        calendarId: { type: 'string', default: 'primary', description: 'Calendar ID (default "primary").' },
+        maxResults: {
+          type: 'number',
+          default: 10,
+          description: 'Max events to return (default 10).',
+        },
+        timeMin: {
+          type: 'string',
+          description: 'Lower bound (RFC3339) for event start time. Defaults to now.',
+        },
+        calendarId: {
+          type: 'string',
+          default: 'primary',
+          description: 'Calendar ID (default "primary").',
+        },
       },
     },
   },
   {
     name: 'calendar_create_event',
-    description: 'Create a new event on the user\'s primary Google Calendar.',
+    description: "Create a new event on the user's primary Google Calendar.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -25,7 +36,11 @@ const tools: McpTool[] = [
         startDateTime: { type: 'string', description: 'Start datetime in RFC3339 format.' },
         endDateTime: { type: 'string', description: 'End datetime in RFC3339 format.' },
         description: { type: 'string', description: 'Optional event description.' },
-        calendarId: { type: 'string', default: 'primary', description: 'Calendar ID (default "primary").' },
+        calendarId: {
+          type: 'string',
+          default: 'primary',
+          description: 'Calendar ID (default "primary").',
+        },
       },
       required: ['summary', 'startDateTime', 'endDateTime'],
     },
@@ -33,7 +48,11 @@ const tools: McpTool[] = [
 ];
 
 function text(data: unknown): McpToolResult {
-  return { content: [{ type: 'text', text: typeof data === 'string' ? data : JSON.stringify(data, null, 2) }] };
+  return {
+    content: [
+      { type: 'text', text: typeof data === 'string' ? data : JSON.stringify(data, null, 2) },
+    ],
+  };
 }
 
 function failure(message: string): McpToolResult {

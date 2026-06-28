@@ -14,9 +14,7 @@ test.describe('Tasks', () => {
   });
 
   test('new task button is visible', async ({ page }) => {
-    await expect(
-      page.getByRole('button', { name: /new task|add task|create/i })
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: /new task|add task|create/i })).toBeVisible();
   });
 
   test('create task dialog opens', async ({ page }) => {

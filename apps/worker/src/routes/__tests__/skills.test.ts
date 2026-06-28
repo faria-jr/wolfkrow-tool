@@ -11,7 +11,6 @@ import { Skill } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-
 const { skills, fakeSkillRepo } = vi.hoisted(() => {
   const skills = new Map<string, Skill>();
   const fakeSkillRepo = {

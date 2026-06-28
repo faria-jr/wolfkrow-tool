@@ -53,10 +53,14 @@ export async function verifyToken(
   publicKey: CryptoKey,
   issuer = 'wolfkrow'
 ): Promise<AuthTokenPayload> {
-  const { payload } = await jwtVerify(token, await createLocalJWKSet({ keys: [await exportJWK(publicKey)] }), {
-    issuer,
-    audience: 'wolfkrow-worker',
-  });
+  const { payload } = await jwtVerify(
+    token,
+    await createLocalJWKSet({ keys: [await exportJWK(publicKey)] }),
+    {
+      issuer,
+      audience: 'wolfkrow-worker',
+    }
+  );
   return {
     sub: payload.sub as string,
     userId: payload.userId as string,

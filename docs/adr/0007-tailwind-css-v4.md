@@ -8,6 +8,7 @@
 O LionClaw v3 já usa Tailwind CSS v4. Decisão mantida para o Wolfkrow Tool.
 
 Tailwind v4 traz:
+
 - CSS-first config (`@theme` direto no CSS)
 - Container queries nativas
 - Variants custom simplificados
@@ -20,7 +21,7 @@ Tailwind v4 traz:
 
 ```css
 /* apps/web/app/globals.css */
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   --color-background: #0a0a0a;
@@ -28,16 +29,20 @@ Tailwind v4 traz:
   --color-primary: #f59e0b;
   --color-primary-foreground: #18181b;
   /* ... */
-  
-  --font-sans: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
-  
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
   --radius: 0.5rem;
 }
 
 @layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }
 ```
 
@@ -118,7 +123,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 ```tsx
 // apps/web/app/layout.tsx
 <html lang="pt-BR" suppressHydrationWarning>
-  <body className={cn('min-h-screen bg-background font-sans antialiased')}>
+  <body className={cn('bg-background min-h-screen font-sans antialiased')}>
     <ThemeProvider>{children}</ThemeProvider>
   </body>
 </html>

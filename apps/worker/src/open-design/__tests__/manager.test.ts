@@ -33,7 +33,15 @@ describe('buildOpenDesignSpawnPlan', () => {
   it('runs tools-dev with web+daemon ports and embed env', () => {
     const plan = buildOpenDesignSpawnPlan({ webPort: 7460, daemonPort: 7461, dataDir: '/tmp/od' });
     expect(plan.command).toBe(process.execPath);
-    expect(plan.args).toEqual(['tools/dev/bin/tools-dev.mjs', 'run', 'web', '--web-port', '7460', '--daemon-port', '7461']);
+    expect(plan.args).toEqual([
+      'tools/dev/bin/tools-dev.mjs',
+      'run',
+      'web',
+      '--web-port',
+      '7460',
+      '--daemon-port',
+      '7461',
+    ]);
     expect(plan.env['OD_DATA_DIR']).toBe('/tmp/od');
     expect(plan.env['OD_EMBED_HOST']).toBe('wolfkrow');
   });
@@ -45,7 +53,9 @@ describe('OpenDesignSidecarManager — state machine', () => {
 
   beforeEach(() => {
     proc = makeFakeProc();
-    manager = new OpenDesignSidecarManager().withSpawn((_: SpawnPlan) => proc as unknown as ChildProcess);
+    manager = new OpenDesignSidecarManager().withSpawn(
+      (_: SpawnPlan) => proc as unknown as ChildProcess
+    );
   });
 
   it('goes starting→running when Web: and Daemon: URLs appear on stdout', () => {
@@ -62,12 +72,18 @@ describe('OpenDesignSidecarManager — state machine', () => {
     proc.stdout.emit('data', Buffer.from('  ➜  Daemon: http://127.0.0.1:7461/\n'));
     expect(manager.getState().status).toBe('running');
     expect(manager.getState().daemonUrl).toBe('http://127.0.0.1:7461/');
-    expect(ready).toHaveBeenCalledWith({ webUrl: 'http://127.0.0.1:7460/', daemonUrl: 'http://127.0.0.1:7461/' });
+    expect(ready).toHaveBeenCalledWith({
+      webUrl: 'http://127.0.0.1:7460/',
+      daemonUrl: 'http://127.0.0.1:7461/',
+    });
   });
 
   it('stop kills the process and clears URLs', () => {
     manager.start();
-    proc.stdout.emit('data', Buffer.from('Web: http://127.0.0.1:7460/\nDaemon: http://127.0.0.1:7461/\n'));
+    proc.stdout.emit(
+      'data',
+      Buffer.from('Web: http://127.0.0.1:7460/\nDaemon: http://127.0.0.1:7461/\n')
+    );
     expect(manager.getState().status).toBe('running');
 
     manager.stop();
@@ -86,13 +102,19 @@ describe('OpenDesignSidecarManager — state machine', () => {
 
   it('transitions to crashed on unexpected exit after running', () => {
     manager.start();
-    proc.stdout.emit('data', Buffer.from('Web: http://127.0.0.1:7460/\nDaemon: http://127.0.0.1:7461/\n'));
+    proc.stdout.emit(
+      'data',
+      Buffer.from('Web: http://127.0.0.1:7460/\nDaemon: http://127.0.0.1:7461/\n')
+    );
     expect(manager.getState().status).toBe('running');
 
     // Suppress the auto-restart timer (not under test here).
     manager.stop();
     manager.start();
-    proc.stdout.emit('data', Buffer.from('Web: http://127.0.0.1:7460/\nDaemon: http://127.0.0.1:7461/\n'));
+    proc.stdout.emit(
+      'data',
+      Buffer.from('Web: http://127.0.0.1:7460/\nDaemon: http://127.0.0.1:7461/\n')
+    );
 
     const states: string[] = [];
     manager.on('state', (s) => states.push(s.status));

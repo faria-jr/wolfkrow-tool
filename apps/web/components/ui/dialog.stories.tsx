@@ -34,7 +34,7 @@ export const Default: Story = {
             Make changes to your profile here. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4 text-sm text-muted-foreground">
+        <div className="text-muted-foreground grid gap-4 py-4 text-sm">
           Update your account settings below.
         </div>
         <DialogFooter>

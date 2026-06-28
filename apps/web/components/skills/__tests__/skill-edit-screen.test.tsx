@@ -31,8 +31,10 @@ function setupFetch(opts: { notFound?: boolean } = {}) {
     const url = String(input);
     calls.push([url, init]);
     if (opts.notFound) return mockJsonResponse({ error: 'Skill not found' }, 404);
-    if (url.includes('/api/skills/') && (init?.method ?? 'GET') === 'GET') return mockJsonResponse({ skill: skillFixture });
-    if (url.includes('/api/skills/') && init?.method === 'PUT') return mockJsonResponse({ skill: skillFixture });
+    if (url.includes('/api/skills/') && (init?.method ?? 'GET') === 'GET')
+      return mockJsonResponse({ skill: skillFixture });
+    if (url.includes('/api/skills/') && init?.method === 'PUT')
+      return mockJsonResponse({ skill: skillFixture });
     return mockJsonResponse({});
   }) as unknown as typeof fetch;
   return calls;
@@ -55,18 +57,24 @@ describe('SkillEditScreen (EPIC 1.2)', () => {
     await waitFor(() => {
       expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe('pdf');
     });
-    expect((screen.getByLabelText(/skill content/i) as HTMLTextAreaElement).value).toContain('Use OCR');
+    expect((screen.getByLabelText(/skill content/i) as HTMLTextAreaElement).value).toContain(
+      'Use OCR'
+    );
   });
 
   it('saves changes with PUT and returns to skills list', async () => {
     const calls = setupFetch();
     render(<SkillEditScreen skillId="s-1" />);
-    await waitFor(() => expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe('pdf'));
+    await waitFor(() =>
+      expect((screen.getByLabelText(/name/i) as HTMLInputElement).value).toBe('pdf')
+    );
 
     await userEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
-      const putCall = calls.find(([url, init]) => url === '/api/skills/s-1' && init?.method === 'PUT');
+      const putCall = calls.find(
+        ([url, init]) => url === '/api/skills/s-1' && init?.method === 'PUT'
+      );
       expect(putCall).toBeTruthy();
     });
     expect(push).toHaveBeenCalledWith('/skills');

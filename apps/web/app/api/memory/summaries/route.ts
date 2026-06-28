@@ -21,7 +21,10 @@ export async function POST(req: Request) {
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = validateBody(CreateDailySummaryRequestBodySchema, await req.json().catch(() => null));
+  const body = validateBody(
+    CreateDailySummaryRequestBodySchema,
+    await req.json().catch(() => null)
+  );
   if (body instanceof Response) return body;
   const date = body.date ?? new Date().toISOString().slice(0, 10);
 

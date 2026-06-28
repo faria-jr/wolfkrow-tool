@@ -26,7 +26,7 @@ module.exports = async function notarize({ appBundleId, appPath }) {
 
   execSync(
     `xcrun notarytool submit "${appPath}" --apple-id "${APPLE_ID}" --password "${APPLE_ID_PASSWORD}" --team-id "${APPLE_TEAM_ID}" --wait`,
-    { stdio: 'inherit' },
+    { stdio: 'inherit' }
   );
 
   execSync(`xcrun stapler staple "${appPath}"`, { stdio: 'inherit' });

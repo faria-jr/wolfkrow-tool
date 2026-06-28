@@ -65,10 +65,27 @@ describe('CommandPalette', () => {
     // Navigate through each route-bearing entry and assert the pushed URL is
     // a known live route (not e.g. /agents/new which has no page).
     const routeEntries = [
-      'Chat', 'Agents', 'Skills', 'MCP Servers', 'Knowledge', 'Graph', 'Tasks',
-      'Scheduler', 'Harness', 'Pipeline', 'Security Audit',
-      'Memory', 'Rules', 'Vault', 'Channels', 'Permissions', 'Settings', 'Usage', 'Logs',
-      'New agent', 'New provider',
+      'Chat',
+      'Agents',
+      'Skills',
+      'MCP Servers',
+      'Knowledge',
+      'Graph',
+      'Tasks',
+      'Scheduler',
+      'Harness',
+      'Pipeline',
+      'Security Audit',
+      'Memory',
+      'Rules',
+      'Vault',
+      'Channels',
+      'Permissions',
+      'Settings',
+      'Usage',
+      'Logs',
+      'New agent',
+      'New provider',
     ];
 
     for (const label of routeEntries) {

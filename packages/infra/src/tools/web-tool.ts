@@ -31,7 +31,7 @@ export class WebTool implements ToolExecutor {
   private async runFetch(
     input: Record<string, unknown>,
     ctx: ToolExecutionContext,
-    callId: string,
+    callId: string
   ): Promise<ToolResult> {
     const url = String(input['url'] ?? '');
     if (!url) return ToolResult.error(callId, 'url is required for fetch operation');
@@ -43,7 +43,7 @@ export class WebTool implements ToolExecutor {
   private async runSearch(
     input: Record<string, unknown>,
     ctx: ToolExecutionContext,
-    callId: string,
+    callId: string
   ): Promise<ToolResult> {
     const query = String(input['query'] ?? '');
     if (!query) return ToolResult.error(callId, 'query is required for search operation');
@@ -54,7 +54,10 @@ export class WebTool implements ToolExecutor {
 
   /** Shared fetch with the Wolfkrow user-agent and abort-signal forwarding (P1-6). */
   private async fetchText(url: string, ctx: ToolExecutionContext): Promise<string> {
-    const resp = await fetch(url, { headers: { 'User-Agent': 'Wolfkrow/1.0' }, ...(ctx.signal ? { signal: ctx.signal } : {}) });
+    const resp = await fetch(url, {
+      headers: { 'User-Agent': 'Wolfkrow/1.0' },
+      ...(ctx.signal ? { signal: ctx.signal } : {}),
+    });
     return resp.text();
   }
 }

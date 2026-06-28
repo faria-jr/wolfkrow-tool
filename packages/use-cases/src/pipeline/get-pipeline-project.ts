@@ -1,8 +1,12 @@
 import type { PipelineProject, PipelineProjectRepo } from '@wolfkrow/domain';
 import { NotFoundError } from '@wolfkrow/domain';
 
-export interface GetPipelineProjectInput { projectId: string; }
-export interface GetPipelineProjectOutput { project: PipelineProject; }
+export interface GetPipelineProjectInput {
+  projectId: string;
+}
+export interface GetPipelineProjectOutput {
+  project: PipelineProject;
+}
 
 export class GetPipelineProjectUseCase {
   constructor(private readonly repo: PipelineProjectRepo) {}

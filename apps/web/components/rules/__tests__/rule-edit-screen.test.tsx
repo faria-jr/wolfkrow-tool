@@ -38,7 +38,9 @@ describe('RuleEditScreen (EPIC 1.3)', () => {
 
     render(<RuleEditScreen ruleId="r1" />);
 
-    await waitFor(() => expect((screen.getByLabelText(/title/i) as HTMLInputElement).value).toBe('Always polite'));
+    await waitFor(() =>
+      expect((screen.getByLabelText(/title/i) as HTMLInputElement).value).toBe('Always polite')
+    );
     expect((screen.getByLabelText(/rule body/i) as HTMLTextAreaElement).value).toBe('be nice');
     expect(screen.getByRole('tab', { name: /preview/i })).toBeInTheDocument();
   });
@@ -55,7 +57,10 @@ describe('RuleEditScreen (EPIC 1.3)', () => {
     await userEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/rules/r1', expect.objectContaining({ method: 'PATCH' }));
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/rules/r1',
+        expect.objectContaining({ method: 'PATCH' })
+      );
     });
     expect(push).toHaveBeenCalledWith('/rules');
   });
@@ -70,7 +75,10 @@ describe('RuleEditScreen (EPIC 1.3)', () => {
     await userEvent.click(screen.getByRole('button', { name: /create rule/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/rules', expect.objectContaining({ method: 'POST' }));
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/rules',
+        expect.objectContaining({ method: 'POST' })
+      );
     });
     expect(push).toHaveBeenCalledWith('/rules');
   });

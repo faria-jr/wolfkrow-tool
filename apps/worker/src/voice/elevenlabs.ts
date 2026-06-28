@@ -7,7 +7,10 @@ import type { TtsOptions, TtsProvider } from './types';
 const DEFAULT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Rachel
 
 export class ElevenLabsTtsProvider implements TtsProvider {
-  constructor(private readonly apiKey: string, private readonly defaultVoiceId: string = DEFAULT_VOICE_ID) {}
+  constructor(
+    private readonly apiKey: string,
+    private readonly defaultVoiceId: string = DEFAULT_VOICE_ID
+  ) {}
 
   async synthesize(text: string, options?: TtsOptions): Promise<Buffer> {
     const voiceId = options?.voice ?? this.defaultVoiceId;
@@ -18,7 +21,7 @@ export class ElevenLabsTtsProvider implements TtsProvider {
       headers: {
         'xi-api-key': this.apiKey,
         'Content-Type': 'application/json',
-        'Accept': 'audio/mpeg',
+        Accept: 'audio/mpeg',
       },
       body: JSON.stringify({
         text,
@@ -40,7 +43,7 @@ export class ElevenLabsTtsProvider implements TtsProvider {
       headers: {
         'xi-api-key': this.apiKey,
         'Content-Type': 'application/json',
-        'Accept': 'audio/mpeg',
+        Accept: 'audio/mpeg',
       },
       body: JSON.stringify({
         text,

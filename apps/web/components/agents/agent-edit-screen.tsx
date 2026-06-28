@@ -16,7 +16,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 
-interface Props { agentId: string; }
+interface Props {
+  agentId: string;
+}
 
 async function fetchAgent(agentId: string): Promise<AgentData> {
   const res = await fetch(`/api/agents/${agentId}`, { credentials: 'include' });
@@ -63,7 +65,7 @@ async function saveAgent(agentId: string, values: AgentFormValues): Promise<void
 
 function LoadingState() {
   return (
-    <div className="flex items-center gap-2 text-muted-foreground">
+    <div className="text-muted-foreground flex items-center gap-2">
       <Loader2 className="h-4 w-4 animate-spin" />
       Loading agent…
     </div>
@@ -79,12 +81,26 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
-function EditActions({ saving, onCancel, onSubmit }: { saving: boolean; onCancel: () => void; onSubmit: () => void }) {
+function EditActions({
+  saving,
+  onCancel,
+  onSubmit,
+}: {
+  saving: boolean;
+  onCancel: () => void;
+  onSubmit: () => void;
+}) {
   return (
-    <div className="flex justify-end gap-2 border-t border-border pt-4">
-      <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>Cancel</Button>
+    <div className="border-border flex justify-end gap-2 border-t pt-4">
+      <Button type="button" variant="outline" onClick={onCancel} disabled={saving}>
+        Cancel
+      </Button>
       <Button type="submit" disabled={saving} onClick={onSubmit}>
-        {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+        {saving ? (
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        ) : (
+          <Save className="mr-2 h-4 w-4" />
+        )}
         {saving ? 'Saving…' : 'Save changes'}
       </Button>
     </div>
@@ -118,7 +134,9 @@ export function AgentEditScreen({ agentId }: Props) {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [agentId, form]);
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -141,7 +159,11 @@ export function AgentEditScreen({ agentId }: Props) {
     <Form {...form}>
       <form onSubmit={onSubmit} className="space-y-6">
         <AgentFormBody control={form.control} />
-        <EditActions saving={saving} onCancel={() => router.push('/agents')} onSubmit={() => onSubmit()} />
+        <EditActions
+          saving={saving}
+          onCancel={() => router.push('/agents')}
+          onSubmit={() => onSubmit()}
+        />
       </form>
     </Form>
   );

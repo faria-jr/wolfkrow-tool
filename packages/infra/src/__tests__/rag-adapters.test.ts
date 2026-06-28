@@ -18,7 +18,12 @@ describe('CohereReranker', () => {
   it('returns rerank hits from the API', async () => {
     vi.stubGlobal(
       'fetch',
-      mockFetch({ results: [{ index: 1, relevance_score: 0.9 }, { index: 0, relevance_score: 0.4 }] }),
+      mockFetch({
+        results: [
+          { index: 1, relevance_score: 0.9 },
+          { index: 0, relevance_score: 0.4 },
+        ],
+      })
     );
     const r = new CohereReranker('key');
     const hits = await r.rerank('q', ['a', 'b'], 2);
@@ -58,10 +63,7 @@ describe('NoOpReranker', () => {
 
 describe('AnthropicHyde', () => {
   it('returns the generated hypothetical text', async () => {
-    vi.stubGlobal(
-      'fetch',
-      mockFetch({ content: [{ type: 'text', text: 'hypothetical doc' }] }),
-    );
+    vi.stubGlobal('fetch', mockFetch({ content: [{ type: 'text', text: 'hypothetical doc' }] }));
     const h = new AnthropicHyde('key');
     expect(await h.generate('query')).toBe('hypothetical doc');
   });

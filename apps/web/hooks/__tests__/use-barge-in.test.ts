@@ -31,6 +31,8 @@ describe('useBargeIn', () => {
 
   it('trigger does nothing when never armed', () => {
     const { result } = renderHook(() => useBargeIn());
-    expect(() => act(() => void (result.current.arm as unknown as { trigger: () => void }).trigger())).not.toThrow();
+    expect(() =>
+      act(() => void (result.current.arm as unknown as { trigger: () => void }).trigger())
+    ).not.toThrow();
   });
 });

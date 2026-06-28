@@ -6,7 +6,9 @@ const mockKeytar = vi.hoisted(() => ({ getPassword: vi.fn() }));
 vi.mock('keytar', () => ({ default: mockKeytar }));
 
 describe('getProviderApiKey', () => {
-  beforeEach(() => { mockKeytar.getPassword.mockReset(); });
+  beforeEach(() => {
+    mockKeytar.getPassword.mockReset();
+  });
 
   it('returns empty string for mock provider without calling keytar', async () => {
     await expect(getProviderApiKey('mock')).resolves.toBe('');
@@ -27,7 +29,7 @@ describe('getProviderApiKey', () => {
   it('throws with clear message when key missing', async () => {
     mockKeytar.getPassword.mockResolvedValue(null);
     await expect(getProviderApiKey('anthropic')).rejects.toThrow(
-      'Missing API key in keychain: wolfkrow/anthropic-api-key',
+      'Missing API key in keychain: wolfkrow/anthropic-api-key'
     );
   });
 
@@ -57,7 +59,9 @@ describe('getProviderApiKey', () => {
 });
 
 describe('getSecret', () => {
-  beforeEach(() => { mockKeytar.getPassword.mockReset(); });
+  beforeEach(() => {
+    mockKeytar.getPassword.mockReset();
+  });
 
   it('returns the stored secret for an account name', async () => {
     mockKeytar.getPassword.mockResolvedValue('bot-token-123');

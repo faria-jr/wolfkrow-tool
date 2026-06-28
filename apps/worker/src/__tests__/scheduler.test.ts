@@ -29,9 +29,7 @@ function createMockRepository(
   };
 }
 
-function createMockExecutor(
-  overrides: Partial<TaskExecutor> = {}
-): TaskExecutor {
+function createMockExecutor(overrides: Partial<TaskExecutor> = {}): TaskExecutor {
   return {
     execute: vi.fn().mockResolvedValue({ status: 'validated' as const }),
     ...overrides,
@@ -94,7 +92,10 @@ describe('Scheduler', () => {
       'run-1',
       expect.objectContaining({ status: 'validated' })
     );
-    expect(repository.updateNextRun).toHaveBeenCalledWith('task-1', new Date('2024-01-02T00:00:00.000Z'));
+    expect(repository.updateNextRun).toHaveBeenCalledWith(
+      'task-1',
+      new Date('2024-01-02T00:00:00.000Z')
+    );
   });
 
   it('records failure when executor throws', async () => {

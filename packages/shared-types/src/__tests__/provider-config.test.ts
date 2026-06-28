@@ -39,19 +39,17 @@ describe('ProviderConfigResponseSchema', () => {
 
   it('rejects invalid protocol', () => {
     expect(() =>
-      ProviderConfigResponseSchema.parse({ ...validProvider, protocol: 'custom' }),
+      ProviderConfigResponseSchema.parse({ ...validProvider, protocol: 'custom' })
     ).toThrow();
   });
 
   it('rejects empty models array', () => {
-    expect(() =>
-      ProviderConfigResponseSchema.parse({ ...validProvider, models: [] }),
-    ).toThrow();
+    expect(() => ProviderConfigResponseSchema.parse({ ...validProvider, models: [] })).toThrow();
   });
 
   it('rejects malformed baseUrl', () => {
     expect(() =>
-      ProviderConfigResponseSchema.parse({ ...validProvider, baseUrl: 'not-a-url' }),
+      ProviderConfigResponseSchema.parse({ ...validProvider, baseUrl: 'not-a-url' })
     ).toThrow();
   });
 });

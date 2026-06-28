@@ -113,9 +113,7 @@ async function createAgent(args: Record<string, unknown>): Promise<McpToolResult
 async function deleteAgent(args: Record<string, unknown>): Promise<McpToolResult> {
   const id = String(args['id'] ?? '');
   if (!id) return failure('delete_agent requires an "id" argument');
-  return text(
-    await webRequest(`/api/agents/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-  );
+  return text(await webRequest(`/api/agents/${encodeURIComponent(id)}`, { method: 'DELETE' }));
 }
 
 export const handlers: McpHandlers = {

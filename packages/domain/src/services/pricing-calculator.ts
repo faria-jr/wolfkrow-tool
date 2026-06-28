@@ -9,8 +9,8 @@ export interface TokenUsage {
 
 export interface PricingTier {
   model: string;
-  inputPer1k: number;   // USD
-  outputPer1k: number;  // USD
+  inputPer1k: number; // USD
+  outputPer1k: number; // USD
   cacheReadPer1k?: number;
   cacheWritePer1k?: number;
 }

@@ -6,8 +6,14 @@ import { PipelineView } from '../pipeline-view';
 
 function makeProject() {
   return {
-    id: 'p1', userId: 'user-1', name: 'Proj', description: 'd',
-    currentStage: 'discovery', status: 'pending', metrics: { totalTokens: 0, phasesCompleted: 0 }, createdAt: '2024-01-01',
+    id: 'p1',
+    userId: 'user-1',
+    name: 'Proj',
+    description: 'd',
+    currentStage: 'discovery',
+    status: 'pending',
+    metrics: { totalTokens: 0, phasesCompleted: 0 },
+    createdAt: '2024-01-01',
   };
 }
 
@@ -43,14 +49,20 @@ describe('PipelineView', () => {
   it('sends projectPath when creating a pipeline project', async () => {
     render(<PipelineView />);
     await userEvent.type(screen.getByPlaceholderText('Project name'), 'New pipeline');
-    await userEvent.type(screen.getByPlaceholderText('Project path (e.g. /Users/me/my-repo)'), '/tmp/repo');
+    await userEvent.type(
+      screen.getByPlaceholderText('Project path (e.g. /Users/me/my-repo)'),
+      '/tmp/repo'
+    );
     await userEvent.click(screen.getByRole('button', { name: 'New Pipeline' }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/pipeline/projects', expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ name: 'New pipeline', description: '', projectPath: '/tmp/repo' }),
-      }));
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/pipeline/projects',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ name: 'New pipeline', description: '', projectPath: '/tmp/repo' }),
+        })
+      );
     });
   });
 

@@ -18,6 +18,7 @@ O projeto tem 4 apps distintas (web, worker, sidecar, wrapper) + 8 packages comp
 **Turborepo + pnpm workspaces** como sistema de monorepo.
 
 Estrutura:
+
 ```
 wolfkrow-tool/
 ├── apps/
@@ -90,6 +91,7 @@ wolfkrow-tool/
 ## Configuração
 
 ### `pnpm-workspace.yaml`
+
 ```yaml
 packages:
   - 'apps/*'
@@ -98,6 +100,7 @@ packages:
 ```
 
 ### `turbo.json`
+
 ```json
 {
   "$schema": "https://turbo.build/schema.json",

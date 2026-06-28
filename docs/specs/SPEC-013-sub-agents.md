@@ -37,8 +37,12 @@ export class Agent {
     return new Agent({ ...input, id: Id.generate() });
   }
 
-  buildPrompt(context: PromptContext): Prompt { /* compose system + skills + rules */ }
-  duplicate(newName: string): Agent { return Agent.create({ ...this.props, name: newName }); }
+  buildPrompt(context: PromptContext): Prompt {
+    /* compose system + skills + rules */
+  }
+  duplicate(newName: string): Agent {
+    return Agent.create({ ...this.props, name: newName });
+  }
 }
 ```
 

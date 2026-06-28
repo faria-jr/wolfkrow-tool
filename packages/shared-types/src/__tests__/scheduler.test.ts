@@ -21,7 +21,7 @@ describe('scheduler schemas', () => {
       'ScheduleStatusSchema accepts %s',
       (v) => {
         expect(ScheduleStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('ScheduleStatusSchema rejects invalid', () => {
       expect(() => ScheduleStatusSchema.parse('nope')).toThrow();
@@ -31,7 +31,7 @@ describe('scheduler schemas', () => {
       'RunReviewStatusSchema accepts %s',
       (v) => {
         expect(RunReviewStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('RunReviewStatusSchema rejects invalid', () => {
       expect(() => RunReviewStatusSchema.parse('nope')).toThrow();
@@ -63,13 +63,11 @@ describe('scheduler schemas', () => {
           agentId: uuid,
           lastRunAt: ts,
           nextRunAt: ts,
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects empty cronExpression', () => {
-      expect(() =>
-        ScheduledTaskSchema.parse({ ...valid, cronExpression: '' }),
-      ).toThrow();
+      expect(() => ScheduledTaskSchema.parse({ ...valid, cronExpression: '' })).toThrow();
     });
     it('rejects missing prompt', () => {
       const { prompt: _omit, ...rest } = valid;
@@ -92,7 +90,7 @@ describe('scheduler schemas', () => {
         CreateScheduledTaskInputSchema.parse({
           cronExpression: '0 * * * *',
           prompt: 'p',
-        }),
+        })
       ).toThrow();
     });
   });
@@ -102,9 +100,7 @@ describe('scheduler schemas', () => {
       expect(UpdateScheduledTaskInputSchema.parse({})).toEqual({});
     });
     it('rejects empty cronExpression when provided', () => {
-      expect(() =>
-        UpdateScheduledTaskInputSchema.parse({ cronExpression: '' }),
-      ).toThrow();
+      expect(() => UpdateScheduledTaskInputSchema.parse({ cronExpression: '' })).toThrow();
     });
   });
 
@@ -128,26 +124,20 @@ describe('scheduler schemas', () => {
           error: 'err',
           reviewNote: 'note',
           reviewedAt: ts,
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects invalid status', () => {
-      expect(() =>
-        TaskRunSchema.parse({ ...valid, status: 'nope' }),
-      ).toThrow();
+      expect(() => TaskRunSchema.parse({ ...valid, status: 'nope' })).toThrow();
     });
   });
 
   describe('ReviewTaskRunRequestBodySchema', () => {
     it.each(['validated', 'rejected'] as const)('accepts verdict %s', (verdict) => {
-      expect(() =>
-        ReviewTaskRunRequestBodySchema.parse({ verdict }),
-      ).not.toThrow();
+      expect(() => ReviewTaskRunRequestBodySchema.parse({ verdict })).not.toThrow();
     });
     it('rejects invalid verdict', () => {
-      expect(() =>
-        ReviewTaskRunRequestBodySchema.parse({ verdict: 'nope' }),
-      ).toThrow();
+      expect(() => ReviewTaskRunRequestBodySchema.parse({ verdict: 'nope' })).toThrow();
     });
     it('rejects missing verdict', () => {
       expect(() => ReviewTaskRunRequestBodySchema.parse({})).toThrow();
@@ -161,7 +151,7 @@ describe('scheduler schemas', () => {
           name: 'T',
           cronExpression: '0 * * * *',
           prompt: 'p',
-        }),
+        })
       ).not.toThrow();
     });
     it('accepts optional fields', () => {
@@ -173,7 +163,7 @@ describe('scheduler schemas', () => {
           description: 'd',
           agentId: uuid,
           tags: ['a'],
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects missing prompt', () => {
@@ -181,7 +171,7 @@ describe('scheduler schemas', () => {
         CreateScheduledTaskRequestBodySchema.parse({
           name: 'T',
           cronExpression: '0 * * * *',
-        }),
+        })
       ).toThrow();
     });
   });
@@ -191,9 +181,7 @@ describe('scheduler schemas', () => {
       expect(UpdateScheduledTaskRequestBodySchema.parse({})).toEqual({});
     });
     it('rejects bad agentId when provided', () => {
-      expect(() =>
-        UpdateScheduledTaskRequestBodySchema.parse({ agentId: 'nope' }),
-      ).toThrow();
+      expect(() => UpdateScheduledTaskRequestBodySchema.parse({ agentId: 'nope' })).toThrow();
     });
   });
 });

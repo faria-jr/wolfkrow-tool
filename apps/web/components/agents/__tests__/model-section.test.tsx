@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import { useForm } from 'react-hook-form';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-
 import type { ProviderDTO } from '../model-section';
 import { ModelSection } from '../model-section';
 import { agentSchema, type AgentFormValues } from '../schema';
@@ -86,7 +85,13 @@ const customProviders: ProviderDTO[] = [
   },
 ];
 
-function Wrapper({ providers, runtime }: { providers?: ProviderDTO[]; runtime?: AgentFormValues['runtime'] }) {
+function Wrapper({
+  providers,
+  runtime,
+}: {
+  providers?: ProviderDTO[];
+  runtime?: AgentFormValues['runtime'];
+}) {
   const form = useForm<AgentFormValues>({
     resolver: zodResolver(agentSchema),
     defaultValues: { ...defaultValues, ...(runtime ? { runtime } : {}) },

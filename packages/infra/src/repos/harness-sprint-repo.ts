@@ -34,26 +34,41 @@ export class DrizzleHarnessSprintRepo implements HarnessSprintRepo {
   }
 
   async findByProjectId(projectId: string): Promise<HarnessSprint[]> {
-    const rows = this.db.select().from(harnessSprints).where(eq(harnessSprints.projectId, projectId)).all();
+    const rows = this.db
+      .select()
+      .from(harnessSprints)
+      .where(eq(harnessSprints.projectId, projectId))
+      .all();
     return rows.map(toEntity);
   }
 
   async save(sprint: HarnessSprint): Promise<HarnessSprint> {
     const p = sprint.toProps();
-    this.db.insert(harnessSprints).values({
-      id: p.id, projectId: p.projectId, number: p.number, name: p.name,
-      description: p.description ?? null, status: p.status,
-      features: p.features as unknown[],
-      startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-      metrics: asJsonField(p.metrics),
-    }).onConflictDoUpdate({
-      target: harnessSprints.id,
-      set: {
-        status: p.status, features: p.features as unknown[],
-        startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
+    this.db
+      .insert(harnessSprints)
+      .values({
+        id: p.id,
+        projectId: p.projectId,
+        number: p.number,
+        name: p.name,
+        description: p.description ?? null,
+        status: p.status,
+        features: p.features as unknown[],
+        startedAt: p.startedAt ?? null,
+        completedAt: p.completedAt ?? null,
         metrics: asJsonField(p.metrics),
-      },
-    }).run();
+      })
+      .onConflictDoUpdate({
+        target: harnessSprints.id,
+        set: {
+          status: p.status,
+          features: p.features as unknown[],
+          startedAt: p.startedAt ?? null,
+          completedAt: p.completedAt ?? null,
+          metrics: asJsonField(p.metrics),
+        },
+      })
+      .run();
     return sprint;
   }
 }

@@ -26,7 +26,9 @@ describe('ChatMessage', () => {
   });
 
   it('assistant message has data-role=assistant', () => {
-    const { container } = render(<ChatMessage message={msg({ role: 'assistant', content: 'Reply' })} />);
+    const { container } = render(
+      <ChatMessage message={msg({ role: 'assistant', content: 'Reply' })} />
+    );
     expect(container.querySelector('[data-role="assistant"]')).toBeTruthy();
   });
 
@@ -35,40 +37,46 @@ describe('ChatMessage', () => {
       <ChatMessage
         message={msg({
           role: 'assistant',
-          toolCalls: [{ id: 'tc1', name: 'web_search', input: {}, status: 'done', output: 'found results' }],
+          toolCalls: [
+            { id: 'tc1', name: 'web_search', input: {}, status: 'done', output: 'found results' },
+          ],
         })}
-      />,
+      />
     );
     expect(screen.getByText('web_search')).toBeTruthy();
   });
 
   it('does not render tool calls section when empty', () => {
-    const { container } = render(<ChatMessage message={msg({ role: 'assistant', toolCalls: [] })} />);
+    const { container } = render(
+      <ChatMessage message={msg({ role: 'assistant', toolCalls: [] })} />
+    );
     expect(container.querySelector('[role="article"]')).toBeNull();
   });
 
   it('renders bold markdown in assistant messages (#36)', () => {
-    const { container } = render(<ChatMessage message={msg({ role: 'assistant', content: '**bold text**' })} />);
+    const { container } = render(
+      <ChatMessage message={msg({ role: 'assistant', content: '**bold text**' })} />
+    );
     expect(container.querySelector('strong')).toBeTruthy();
   });
 
   it('renders code block in assistant messages (#36)', () => {
     const { container } = render(
-      <ChatMessage message={msg({ role: 'assistant', content: '```\ncode here\n```' })} />,
+      <ChatMessage message={msg({ role: 'assistant', content: '```\ncode here\n```' })} />
     );
     expect(container.querySelector('pre')).toBeTruthy();
   });
 
   it('renders inline code in assistant messages (#36)', () => {
     const { container } = render(
-      <ChatMessage message={msg({ role: 'assistant', content: 'Use `code` inline' })} />,
+      <ChatMessage message={msg({ role: 'assistant', content: 'Use `code` inline' })} />
     );
     expect(container.querySelector('code')).toBeTruthy();
   });
 
   it('user message renders as plain text, not markdown (#36)', () => {
     const { container } = render(
-      <ChatMessage message={msg({ role: 'user', content: '**not bold**' })} />,
+      <ChatMessage message={msg({ role: 'user', content: '**not bold**' })} />
     );
     expect(container.querySelector('strong')).toBeNull();
   });

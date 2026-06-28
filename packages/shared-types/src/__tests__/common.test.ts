@@ -188,14 +188,12 @@ describe('common primitive schemas', () => {
     });
     it('rejects missing hasMore', () => {
       const schema = PaginatedSchema(ShortStringSchema);
-      expect(() =>
-        schema.parse({ items: [], total: 0, limit: 10, offset: 0 }),
-      ).toThrow();
+      expect(() => schema.parse({ items: [], total: 0, limit: 10, offset: 0 })).toThrow();
     });
     it('rejects items not matching the item schema', () => {
       const schema = PaginatedSchema(PositiveIntSchema);
       expect(() =>
-        schema.parse({ items: ['not-a-number'], total: 1, limit: 10, offset: 0, hasMore: false }),
+        schema.parse({ items: ['not-a-number'], total: 1, limit: 10, offset: 0, hasMore: false })
       ).toThrow();
     });
   });
@@ -212,18 +210,15 @@ describe('common primitive schemas', () => {
       'RuntimeSchema accepts %s',
       (v) => {
         expect(RuntimeSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('RuntimeSchema rejects invalid', () => {
       expect(() => RuntimeSchema.parse('nope')).toThrow();
     });
 
-    it.each(['harness', 'workflow', 'enrich', 'custom'] as const)(
-      'SquadSchema accepts %s',
-      (v) => {
-        expect(SquadSchema.parse(v)).toBe(v);
-      },
-    );
+    it.each(['harness', 'workflow', 'enrich', 'custom'] as const)('SquadSchema accepts %s', (v) => {
+      expect(SquadSchema.parse(v)).toBe(v);
+    });
     it('SquadSchema rejects invalid', () => {
       expect(() => SquadSchema.parse('nope')).toThrow();
     });

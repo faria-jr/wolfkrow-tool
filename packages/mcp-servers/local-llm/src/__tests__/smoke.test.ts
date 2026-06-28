@@ -1,7 +1,6 @@
 import { handleRpcMessage } from '@wolfkrow/mcp-shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-
 import { handlers } from '../index';
 
 afterEach(() => {
@@ -31,12 +30,17 @@ describe('local-llm MCP server smoke tests', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ models: [{ name: 'llama3.2:3b' }] }),
-      }),
+      })
     );
 
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'list_models', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: { name: 'list_models', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     expect(vi.mocked(fetch)).toHaveBeenCalledWith('http://localhost:11434/api/tags');
@@ -48,7 +52,7 @@ describe('local-llm MCP server smoke tests', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ message: { role: 'assistant', content: 'hi' } }),
-      }),
+      })
     );
 
     const res = await handleRpcMessage(
@@ -61,7 +65,7 @@ describe('local-llm MCP server smoke tests', () => {
           arguments: { model: 'llama3.2:3b', messages: [{ role: 'user', content: 'hi' }] },
         },
       },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     const fetchCall = vi.mocked(fetch).mock.calls[0];
@@ -70,8 +74,13 @@ describe('local-llm MCP server smoke tests', () => {
 
   it('show_model requires name argument', async () => {
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'show_model', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'tools/call',
+        params: { name: 'show_model', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
@@ -79,7 +88,7 @@ describe('local-llm MCP server smoke tests', () => {
   it('unknown tool returns isError result', async () => {
     const res = await handleRpcMessage(
       { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'nope', arguments: {} } },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
@@ -91,11 +100,16 @@ describe('local-llm MCP server smoke tests', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ models: [] }),
-      }),
+      })
     );
     await handleRpcMessage(
-      { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'list_models', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 7,
+        method: 'tools/call',
+        params: { name: 'list_models', arguments: {} },
+      },
+      handlers
     );
     expect(vi.mocked(fetch)).toHaveBeenCalledWith('http://remote-ollama:9999/api/tags');
   });

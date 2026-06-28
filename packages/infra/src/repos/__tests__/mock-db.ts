@@ -39,7 +39,7 @@ export function mockDb(terminalReturn: unknown[] = []): {
     {},
     {
       get: () => start,
-    },
+    }
   ) as Record<string, (...args: unknown[]) => MockChain>;
 
   return { db, chain: proxy };

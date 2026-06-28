@@ -30,7 +30,7 @@ describe('mcp schemas', () => {
       'accepts %s',
       (v) => {
         expect(MCPStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('rejects invalid', () => {
       expect(() => MCPStatusSchema.parse('nope')).toThrow();
@@ -55,9 +55,7 @@ describe('mcp schemas', () => {
       expect(parsed.visibility).toBe('always');
     });
     it('accepts optional userId', () => {
-      expect(() =>
-        MCPServerSchema.parse({ ...valid, userId: uuid }),
-      ).not.toThrow();
+      expect(() => MCPServerSchema.parse({ ...valid, userId: uuid })).not.toThrow();
     });
     it('rejects missing command', () => {
       const { command: _omit, ...rest } = valid;
@@ -90,9 +88,7 @@ describe('mcp schemas', () => {
       expect(UpdateMCPServerInputSchema.parse({})).toEqual({});
     });
     it('rejects bad visibility when provided', () => {
-      expect(() =>
-        UpdateMCPServerInputSchema.parse({ visibility: 'nope' }),
-      ).toThrow();
+      expect(() => UpdateMCPServerInputSchema.parse({ visibility: 'nope' })).toThrow();
     });
   });
 
@@ -108,7 +104,7 @@ describe('mcp schemas', () => {
     });
     it('accepts optional inputSchema', () => {
       expect(() =>
-        MCPToolSchema.parse({ ...valid, inputSchema: { type: 'object' } }),
+        MCPToolSchema.parse({ ...valid, inputSchema: { type: 'object' } })
       ).not.toThrow();
     });
     it('rejects missing name', () => {
@@ -129,13 +125,11 @@ describe('mcp schemas', () => {
           pid: 1234,
           uptime: 60,
           lastError: 'err',
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects invalid status', () => {
-      expect(() =>
-        MCPRuntimeStatusSchema.parse({ ...valid, status: 'nope' }),
-      ).toThrow();
+      expect(() => MCPRuntimeStatusSchema.parse({ ...valid, status: 'nope' })).toThrow();
     });
   });
 
@@ -150,22 +144,16 @@ describe('mcp schemas', () => {
       expect(parsed.isActive).toBe(false);
     });
     it('rejects missing name', () => {
-      expect(() =>
-        CreateMcpServerRequestBodySchema.parse({ command: 'npx' }),
-      ).toThrow();
+      expect(() => CreateMcpServerRequestBodySchema.parse({ command: 'npx' })).toThrow();
     });
   });
 
   describe('UpdateMcpServerRequestBodySchema (refine)', () => {
     it('accepts when isActive is provided', () => {
-      expect(() =>
-        UpdateMcpServerRequestBodySchema.parse({ isActive: true }),
-      ).not.toThrow();
+      expect(() => UpdateMcpServerRequestBodySchema.parse({ isActive: true })).not.toThrow();
     });
     it('accepts when visibility is provided', () => {
-      expect(() =>
-        UpdateMcpServerRequestBodySchema.parse({ visibility: 'always' }),
-      ).not.toThrow();
+      expect(() => UpdateMcpServerRequestBodySchema.parse({ visibility: 'always' })).not.toThrow();
     });
     it('accepts editable custom server fields', () => {
       const parsed = UpdateMcpServerRequestBodySchema.parse({

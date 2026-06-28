@@ -40,12 +40,23 @@ export function ExportForm({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex flex-col gap-3 rounded border p-4">
       <h3 className="font-semibold">Export encrypted backup</h3>
-      <p className="text-xs text-muted-foreground">All secrets will be encrypted with AES-256-GCM using the passphrase you choose.</p>
-      <Input type="password" placeholder="Passphrase" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} />
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <p className="text-muted-foreground text-xs">
+        All secrets will be encrypted with AES-256-GCM using the passphrase you choose.
+      </p>
+      <Input
+        type="password"
+        placeholder="Passphrase"
+        value={passphrase}
+        onChange={(e) => setPassphrase(e.target.value)}
+      />
+      {error && <p className="text-destructive text-sm">{error}</p>}
       <div className="flex gap-2">
-        <Button size="sm" disabled={busy || !passphrase} onClick={() => void handleExport()}>{busy ? 'Exporting…' : 'Download backup'}</Button>
-        <Button size="sm" variant="outline" onClick={onDone}>Cancel</Button>
+        <Button size="sm" disabled={busy || !passphrase} onClick={() => void handleExport()}>
+          {busy ? 'Exporting…' : 'Download backup'}
+        </Button>
+        <Button size="sm" variant="outline" onClick={onDone}>
+          Cancel
+        </Button>
       </div>
     </div>
   );
@@ -84,15 +95,34 @@ export function ImportForm({ onDone }: { onDone: () => void }) {
   return (
     <div className="flex flex-col gap-3 rounded border p-4">
       <h3 className="font-semibold">Import from backup</h3>
-      <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".json"
+        className="hidden"
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+      />
       <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
         {file ? file.name : 'Choose backup file…'}
       </Button>
-      <Input type="password" placeholder="Passphrase" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} />
-      {error && <p className="text-sm text-destructive">{error}</p>}
+      <Input
+        type="password"
+        placeholder="Passphrase"
+        value={passphrase}
+        onChange={(e) => setPassphrase(e.target.value)}
+      />
+      {error && <p className="text-destructive text-sm">{error}</p>}
       <div className="flex gap-2">
-        <Button size="sm" disabled={busy || !file || !passphrase} onClick={() => void handleImport()}>{busy ? 'Importing…' : 'Import'}</Button>
-        <Button size="sm" variant="outline" onClick={onDone}>Cancel</Button>
+        <Button
+          size="sm"
+          disabled={busy || !file || !passphrase}
+          onClick={() => void handleImport()}
+        >
+          {busy ? 'Importing…' : 'Import'}
+        </Button>
+        <Button size="sm" variant="outline" onClick={onDone}>
+          Cancel
+        </Button>
       </div>
     </div>
   );

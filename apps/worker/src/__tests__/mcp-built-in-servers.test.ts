@@ -55,6 +55,6 @@ describe.skipIf(!allBuilt)('built-in MCP servers (FIX-006)', () => {
         await manager.stop(name);
       }
     },
-    15000,
+    15000
   );
 });

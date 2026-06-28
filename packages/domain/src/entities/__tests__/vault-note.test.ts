@@ -63,7 +63,9 @@ describe('VaultNote', () => {
   });
 
   it('throws on invalid kind', () => {
-    expect(() => VaultNote.create({ ...baseProps, kind: 'unknown' as never })).toThrow(/invalid kind/);
+    expect(() => VaultNote.create({ ...baseProps, kind: 'unknown' as never })).toThrow(
+      /invalid kind/
+    );
   });
 
   it('toJSON returns plain object', () => {

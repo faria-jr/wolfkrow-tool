@@ -31,7 +31,14 @@ describe('Message', () => {
       content: 'reply',
       createdAt,
     });
-    expect(msg.toProps()).toEqual({ id: 'm1', sessionId: 's1', userId: 'u1', role: 'assistant', content: 'reply', createdAt });
+    expect(msg.toProps()).toEqual({
+      id: 'm1',
+      sessionId: 's1',
+      userId: 'u1',
+      role: 'assistant',
+      content: 'reply',
+      createdAt,
+    });
   });
 
   it('supports all roles', () => {
@@ -61,7 +68,12 @@ describe('ChatSession', () => {
 
   it('addMessage appends and is immutable', () => {
     const session = ChatSession.create(base);
-    const msg = Message.create({ sessionId: session.id, userId: 'u1', role: 'user', content: 'hi' });
+    const msg = Message.create({
+      sessionId: session.id,
+      userId: 'u1',
+      role: 'user',
+      content: 'hi',
+    });
     const updated = session.addMessage(msg);
     expect(updated.messages).toHaveLength(1);
     expect(updated.messages[0]).toBe(msg);
@@ -71,7 +83,12 @@ describe('ChatSession', () => {
   it('messageCount reflects messages array', () => {
     let session = ChatSession.create(base);
     expect(session.messageCount).toBe(0);
-    const msg = Message.create({ sessionId: session.id, userId: 'u1', role: 'user', content: 'hi' });
+    const msg = Message.create({
+      sessionId: session.id,
+      userId: 'u1',
+      role: 'user',
+      content: 'hi',
+    });
     session = session.addMessage(msg);
     expect(session.messageCount).toBe(1);
   });
@@ -93,7 +110,12 @@ describe('ChatSession', () => {
 
   it('withMessages replaces message list', () => {
     const session = ChatSession.create(base);
-    const msg = Message.create({ sessionId: session.id, userId: 'u1', role: 'user', content: 'hi' });
+    const msg = Message.create({
+      sessionId: session.id,
+      userId: 'u1',
+      role: 'user',
+      content: 'hi',
+    });
     const updated = session.withMessages([msg]);
     expect(updated.messages).toHaveLength(1);
     expect(session.messages).toHaveLength(0);
@@ -101,7 +123,17 @@ describe('ChatSession', () => {
 
   it('fromProps → toProps roundtrip', () => {
     const now = new Date('2024-01-01');
-    const session = ChatSession.fromProps({ id: 's1', userId: 'u1', agentId: 'a1', title: 'Test', archived: false, messages: [], createdAt: now, updatedAt: now, lastActivity: now });
+    const session = ChatSession.fromProps({
+      id: 's1',
+      userId: 'u1',
+      agentId: 'a1',
+      title: 'Test',
+      archived: false,
+      messages: [],
+      createdAt: now,
+      updatedAt: now,
+      lastActivity: now,
+    });
     const props = session.toProps();
     expect(props.id).toBe('s1');
     expect(props.title).toBe('Test');
@@ -133,7 +165,9 @@ describe('TokenEstimator', () => {
   });
 
   it('exceedsThreshold returns true when over limit', () => {
-    const msgs = [Message.create({ sessionId: 's1', userId: 'u1', role: 'user', content: 'a'.repeat(400) })];
+    const msgs = [
+      Message.create({ sessionId: 's1', userId: 'u1', role: 'user', content: 'a'.repeat(400) }),
+    ];
     expect(estimator.exceedsThreshold(msgs, 50)).toBe(true);
     expect(estimator.exceedsThreshold(msgs, 200)).toBe(false);
   });

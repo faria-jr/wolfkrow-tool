@@ -9,7 +9,7 @@ import { pipelinePhases } from '../db/schema/pipeline';
 import { fromJson, asJsonField } from './json-field';
 
 type DbRow = typeof pipelinePhases.$inferSelect;
-type PhaseDbStage = typeof pipelinePhases.$inferInsert['stage'];
+type PhaseDbStage = (typeof pipelinePhases.$inferInsert)['stage'];
 
 function toEntity(row: DbRow): PipelinePhase {
   return PipelinePhase.fromProps({
@@ -33,25 +33,39 @@ export class DrizzlePipelinePhaseRepo implements PipelinePhaseRepo {
   }
 
   async findByProjectId(projectId: string): Promise<PipelinePhase[]> {
-    const rows = this.db.select().from(pipelinePhases).where(eq(pipelinePhases.projectId, projectId)).all();
+    const rows = this.db
+      .select()
+      .from(pipelinePhases)
+      .where(eq(pipelinePhases.projectId, projectId))
+      .all();
     return rows.map(toEntity);
   }
 
   async save(phase: PipelinePhase): Promise<PipelinePhase> {
     const p = phase.toProps();
-    this.db.insert(pipelinePhases).values({
-      id: p.id, projectId: p.projectId, stage: p.stage as PhaseDbStage, status: p.status,
-      artifactPath: p.artifactPath ?? null,
-      startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
-      metrics: asJsonField(p.metrics),
-    }).onConflictDoUpdate({
-      target: pipelinePhases.id,
-      set: {
-        status: p.status, artifactPath: p.artifactPath ?? null,
-        startedAt: p.startedAt ?? null, completedAt: p.completedAt ?? null,
+    this.db
+      .insert(pipelinePhases)
+      .values({
+        id: p.id,
+        projectId: p.projectId,
+        stage: p.stage as PhaseDbStage,
+        status: p.status,
+        artifactPath: p.artifactPath ?? null,
+        startedAt: p.startedAt ?? null,
+        completedAt: p.completedAt ?? null,
         metrics: asJsonField(p.metrics),
-      },
-    }).run();
+      })
+      .onConflictDoUpdate({
+        target: pipelinePhases.id,
+        set: {
+          status: p.status,
+          artifactPath: p.artifactPath ?? null,
+          startedAt: p.startedAt ?? null,
+          completedAt: p.completedAt ?? null,
+          metrics: asJsonField(p.metrics),
+        },
+      })
+      .run();
     return phase;
   }
 }

@@ -12,6 +12,7 @@
 Sistema de autenticação single-user com password + TOTP opcional + auto-lock em idle/visibility change.
 
 ### Objetivos
+
 - Password forte (bcryptjs, 12 rounds)
 - TOTP 2FA opcional (otplib)
 - JWT em cookies HttpOnly (XSS-proof)
@@ -20,6 +21,7 @@ Sistema de autenticação single-user com password + TOTP opcional + auto-lock e
 - Failed attempts lockout (5 tentativas → 5min)
 
 ### Não-Objetivos
+
 - Multi-user (single-user only)
 - OAuth providers (v1.0 não tem)
 - WebAuthn/Passkeys (v2.0)
@@ -56,11 +58,13 @@ Sistema de autenticação single-user com password + TOTP opcional + auto-lock e
 ## 3. Requisitos Não-Funcionais
 
 ### Performance
+
 - Login <500ms (P95)
 - TOTP verification <100ms
 - Lock check <50ms (debounced 30s)
 
 ### Segurança
+
 - Password nunca armazenado em plaintext
 - JWT assinado com ES256 + chave P-256 local, validado pelo Worker via JWKS
 - Cookies HttpOnly + SameSite=Lax
@@ -69,6 +73,7 @@ Sistema de autenticação single-user com password + TOTP opcional + auto-lock e
 - Audit log de todas tentativas (success/fail)
 
 ### Usabilidade
+
 - Lock screen claro ("Sua sessão foi bloqueada")
 - Password input com show/hide toggle
 - TOTP input aceita código de 6 dígitos (com auto-submit)
@@ -132,8 +137,8 @@ import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
-  passwordHash: text('password_hash').notNull(),  // bcrypt
-  totpSecret: text('totp_secret'),                // null = TOTP disabled
+  passwordHash: text('password_hash').notNull(), // bcrypt
+  totpSecret: text('totp_secret'), // null = TOTP disabled
   totpEnabled: integer('totp_enabled', { mode: 'boolean' }).default(false),
   failedAttempts: integer('failed_attempts').default(0),
   lockedUntil: integer('locked_until', { mode: 'timestamp' }),
@@ -146,8 +151,17 @@ export const authAuditLog = sqliteTable('auth_audit_log', {
   id: text('id').primaryKey(),
   userId: text('user_id').references(() => users.id),
   action: text('action', {
-    enum: ['login.success', 'login.fail', 'totp.success', 'totp.fail',
-           'logout', 'lock', 'unlock', 'totp.enable', 'totp.disable'],
+    enum: [
+      'login.success',
+      'login.fail',
+      'totp.success',
+      'totp.fail',
+      'logout',
+      'lock',
+      'unlock',
+      'totp.enable',
+      'totp.disable',
+    ],
   }).notNull(),
   ip: text('ip'),
   userAgent: text('user_agent'),
@@ -169,16 +183,19 @@ export const TotpInputSchema = z.object({
   code: z.string().regex(/^\d{6}$/),
 });
 
-export const SetupPasswordInputSchema = z.object({
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Za-z]/, 'Must contain at least one letter')
-    .regex(/\d/, 'Must contain at least one number'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
+export const SetupPasswordInputSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Za-z]/, 'Must contain at least one letter')
+      .regex(/\d/, 'Must contain at least one number'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 export const EnableTotpInputSchema = z.object({
   code: z.string().regex(/^\d{6}$/),
@@ -279,6 +296,7 @@ export const EnableTotpInputSchema = z.object({
 ## 8. Testes
 
 ### Unit Tests
+
 - `SetupPassword.execute()`: validates password strength
 - `AuthenticateUser.execute()`: returns user + sets session
 - `VerifyTotp.execute()`: verifies TOTP code
@@ -286,12 +304,14 @@ export const EnableTotpInputSchema = z.object({
 - bcrypt hashing + comparison
 
 ### Integration Tests
+
 - Full login flow: password → TOTP → JWT cookie
 - Failed attempts increment counter
 - Lockout after 5 fails
 - Lock screen unlock
 
 ### E2E Tests (Playwright)
+
 - First-time setup wizard
 - Login with password
 - Login with password + TOTP
@@ -303,14 +323,14 @@ export const EnableTotpInputSchema = z.object({
 
 ## 9. Riscos
 
-| Risco | Mitigação |
-|---|---|
-| Password forgotten → data inaccessible | Single-user: documented "reset = wipe data" procedure |
-| TOTP device lost | Backup codes (10 single-use codes generated at TOTP setup) |
-| Brute force attack | Rate limiting + lockout + audit log |
-| JWT secret leaked | Auto-rotate secret, force re-login |
-| Session hijacking | HttpOnly + Secure + SameSite cookies |
-| CSRF attack | SameSite=Lax + CSRF token |
+| Risco                                  | Mitigação                                                  |
+| -------------------------------------- | ---------------------------------------------------------- |
+| Password forgotten → data inaccessible | Single-user: documented "reset = wipe data" procedure      |
+| TOTP device lost                       | Backup codes (10 single-use codes generated at TOTP setup) |
+| Brute force attack                     | Rate limiting + lockout + audit log                        |
+| JWT secret leaked                      | Auto-rotate secret, force re-login                         |
+| Session hijacking                      | HttpOnly + Secure + SameSite cookies                       |
+| CSRF attack                            | SameSite=Lax + CSRF token                                  |
 
 ---
 

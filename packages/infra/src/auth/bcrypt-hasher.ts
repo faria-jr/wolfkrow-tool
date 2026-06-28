@@ -2,7 +2,6 @@ import type { PlainPassword } from '@wolfkrow/domain';
 import { PasswordHash, type PasswordHasher } from '@wolfkrow/domain';
 import bcrypt from 'bcryptjs';
 
-
 /**
  * PasswordHasher via bcrypt (bcryptjs — pure JS, sem binding nativo; adequado
  * ao desktop single-user). Implementa o port do domínio.

@@ -73,7 +73,9 @@ describe('DrizzleAgentRepo', () => {
   });
 
   it('findById maps provider and runtime claude-compat', async () => {
-    const { db } = mockDb([createAgentRow({ runtime: 'claude-compat', provider: 'zai', model: 'glm-4.7' })]);
+    const { db } = mockDb([
+      createAgentRow({ runtime: 'claude-compat', provider: 'zai', model: 'glm-4.7' }),
+    ]);
     const repo = new DrizzleAgentRepo(db as never);
     const result = await repo.findById(agentId);
     expect(result?.runtime).toBe('claude-compat');
@@ -90,7 +92,10 @@ describe('DrizzleAgentRepo', () => {
   });
 
   it('findActiveByUserId filters active agents', async () => {
-    const { db } = mockDb([createAgentRow({ isActive: 1 }), createAgentRow({ id: 'a2', isActive: 0 })]);
+    const { db } = mockDb([
+      createAgentRow({ isActive: 1 }),
+      createAgentRow({ id: 'a2', isActive: 0 }),
+    ]);
     const repo = new DrizzleAgentRepo(db as never);
     const results = await repo.findActiveByUserId(userId);
     expect(results).toHaveLength(1);

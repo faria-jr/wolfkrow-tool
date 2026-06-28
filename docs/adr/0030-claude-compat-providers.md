@@ -29,12 +29,12 @@ No Wolfkrow, o provider `claude-compat.ts` existente usava o SDK OpenAI apontand
 
 ## Presets
 
-| ID | Nome | Base URL | Conta keytar |
-|---|---|---|---|
-| `zai` | Z.ai (GLM) | `https://api.z.ai/api/anthropic` | `zai-api-key` |
-| `minimax` | MiniMax TokenPlan | `https://api.minimax.io/anthropic` | `minimax-api-key` |
-| `moonshot` | Moonshot (Kimi) | `https://api.moonshot.cn/anthropic` | `moonshot-api-key` |
-| `qwen` | Qwen (DashScope) | `https://dashscope.aliyuncs.com/compatible-mode/anthropic` | `qwen-api-key` |
+| ID         | Nome              | Base URL                                                   | Conta keytar       |
+| ---------- | ----------------- | ---------------------------------------------------------- | ------------------ |
+| `zai`      | Z.ai (GLM)        | `https://api.z.ai/api/anthropic`                           | `zai-api-key`      |
+| `minimax`  | MiniMax TokenPlan | `https://api.minimax.io/anthropic`                         | `minimax-api-key`  |
+| `moonshot` | Moonshot (Kimi)   | `https://api.moonshot.cn/anthropic`                        | `moonshot-api-key` |
+| `qwen`     | Qwen (DashScope)  | `https://dashscope.aliyuncs.com/compatible-mode/anthropic` | `qwen-api-key`     |
 
 ## Consequences
 

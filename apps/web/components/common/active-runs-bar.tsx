@@ -37,12 +37,14 @@ async function fetchActiveRuns(): Promise<ActiveRun[]> {
   const runs: ActiveRun[] = [];
   if (hRes?.ok) {
     for (const p of (await hRes.json()) as Array<{ id: string; name: string; status: string }>) {
-      if (isActive(p.status)) runs.push({ id: p.id, name: p.name, status: p.status, href: '/harness' });
+      if (isActive(p.status))
+        runs.push({ id: p.id, name: p.name, status: p.status, href: '/harness' });
     }
   }
   if (pRes?.ok) {
     for (const p of (await pRes.json()) as Array<{ id: string; name: string; status: string }>) {
-      if (isActive(p.status)) runs.push({ id: p.id, name: p.name, status: p.status, href: '/pipeline' });
+      if (isActive(p.status))
+        runs.push({ id: p.id, name: p.name, status: p.status, href: '/pipeline' });
     }
   }
   return runs;
@@ -61,15 +63,17 @@ export function ActiveRunsBar() {
 
   useEffect(() => {
     void load();
-    const id = setInterval(() => { void load(); }, POLL_MS);
+    const id = setInterval(() => {
+      void load();
+    }, POLL_MS);
     return () => clearInterval(id);
   }, [load]);
 
   if (runs.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-3 border-t bg-muted/40 px-4 py-1.5 text-xs">
-      <span className="flex shrink-0 items-center gap-1 font-medium text-muted-foreground">
+    <div className="bg-muted/40 flex items-center gap-3 border-t px-4 py-1.5 text-xs">
+      <span className="text-muted-foreground flex shrink-0 items-center gap-1 font-medium">
         <Activity className="h-3.5 w-3.5" /> Active ({runs.length})
       </span>
       <div className="flex flex-1 items-center gap-2 overflow-x-auto">
@@ -77,7 +81,7 @@ export function ActiveRunsBar() {
           <Link
             key={run.id}
             href={run.href}
-            className="flex shrink-0 items-center gap-1.5 rounded border bg-card px-2 py-0.5 hover:bg-muted"
+            className="bg-card hover:bg-muted flex shrink-0 items-center gap-1.5 rounded border px-2 py-0.5"
           >
             <span className="max-w-32 truncate">{run.name}</span>
             <StatusBadge status={run.status} className="px-1.5 py-0 text-xs" />

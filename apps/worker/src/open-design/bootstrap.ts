@@ -33,7 +33,10 @@ export interface BootstrapResult {
 
 /** Sanitize a Wolfkrow id into an OD-safe project id segment. */
 export function sanitizeOdProjectId(wolfkrowProjectId: string): string {
-  const slug = wolfkrowProjectId.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const slug = wolfkrowProjectId
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
   return `wolfkrow-${slug || 'project'}`;
 }
 
@@ -44,7 +47,7 @@ export function buildStudioUrl(webUrl: string, odProjectId: string): string {
 
 export async function bootstrapDesignSession(
   client: OpenDesignClient,
-  input: BootstrapInput,
+  input: BootstrapInput
 ): Promise<BootstrapResult> {
   const prompt = buildDesignBriefPrompt({
     projectName: input.name,

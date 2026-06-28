@@ -32,7 +32,7 @@ export class WhisperSttProvider implements SttProvider {
 
   private async transcribeLocal(
     audioBuffer: Buffer,
-    binPath: string,
+    binPath: string
   ): Promise<Omit<SttResult, 'durationMs'> | null> {
     const tmpAudio = join(tmpdir(), `whisper-${Date.now()}.wav`);
     try {
@@ -58,16 +58,20 @@ export class WhisperSttProvider implements SttProvider {
       });
 
       let stdout = '';
-      proc.stdout.on('data', (chunk: Buffer) => { stdout += chunk.toString(); });
+      proc.stdout.on('data', (chunk: Buffer) => {
+        stdout += chunk.toString();
+      });
 
-      proc.on('close', (code) => { resolve(code === 0 ? stdout : null); });
+      proc.on('close', (code) => {
+        resolve(code === 0 ? stdout : null);
+      });
     });
   }
 
   private async transcribeApi(
     audioBuffer: Buffer,
     mimeType: string,
-    t0: number,
+    t0: number
   ): Promise<SttResult> {
     const blob = new Blob([new Uint8Array(audioBuffer)], { type: mimeType });
     const form = new FormData();

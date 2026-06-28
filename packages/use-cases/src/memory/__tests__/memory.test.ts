@@ -3,7 +3,8 @@ import type {
   EmbeddingPort,
   MemorySearchResult,
   SemanticMemoryRepo,
- DailySummary} from '@wolfkrow/domain';
+  DailySummary,
+} from '@wolfkrow/domain';
 import { NotFoundError, SemanticMemory } from '@wolfkrow/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -20,7 +21,9 @@ import {
 class InMemoryMemoryRepo implements SemanticMemoryRepo {
   readonly store = new Map<string, SemanticMemory>();
 
-  async findById(id: string): Promise<SemanticMemory | null> { return this.store.get(id) ?? null; }
+  async findById(id: string): Promise<SemanticMemory | null> {
+    return this.store.get(id) ?? null;
+  }
   async findByUserId(userId: string): Promise<SemanticMemory[]> {
     return [...this.store.values()].filter((m) => m.userId === userId);
   }
@@ -28,21 +31,35 @@ class InMemoryMemoryRepo implements SemanticMemoryRepo {
     this.store.set(memory.id, memory);
     return memory;
   }
-  async delete(id: string): Promise<void> { this.store.delete(id); }
-  async deleteByUserId(userId: string): Promise<void> {
-    [...this.store.entries()].filter(([, m]) => m.userId === userId).forEach(([k]) => this.store.delete(k));
+  async delete(id: string): Promise<void> {
+    this.store.delete(id);
   }
-  async vectorSearch(_embedding: number[], userId: string, limit: number): Promise<MemorySearchResult[]> {
-    return [...this.store.values()].filter((m) => m.userId === userId).slice(0, limit)
+  async deleteByUserId(userId: string): Promise<void> {
+    [...this.store.entries()]
+      .filter(([, m]) => m.userId === userId)
+      .forEach(([k]) => this.store.delete(k));
+  }
+  async vectorSearch(
+    _embedding: number[],
+    userId: string,
+    limit: number
+  ): Promise<MemorySearchResult[]> {
+    return [...this.store.values()]
+      .filter((m) => m.userId === userId)
+      .slice(0, limit)
       .map((memory, i) => ({ memory, distance: i * 0.1 }));
   }
   async hybridSearch(
     embedding: number[],
     userId: string,
-    limit: number,
+    limit: number
   ): Promise<{ memory: SemanticMemory; score: number; vectorDistance?: number }[]> {
     const results = await this.vectorSearch(embedding, userId, limit);
-    return results.map((r) => ({ memory: r.memory, score: 1 - r.distance, vectorDistance: r.distance }));
+    return results.map((r) => ({
+      memory: r.memory,
+      score: 1 - r.distance,
+      vectorDistance: r.distance,
+    }));
   }
 }
 
@@ -62,8 +79,12 @@ class InMemoryDailySummaryRepo implements DailySummaryRepo {
 
 class FakeEmbedder implements EmbeddingPort {
   readonly dimensions = 4;
-  async embed(_text: string): Promise<number[]> { return [0.1, 0.2, 0.3, 0.4]; }
-  async embedBatch(texts: string[]): Promise<number[][]> { return texts.map(() => [0.1, 0.2, 0.3, 0.4]); }
+  async embed(_text: string): Promise<number[]> {
+    return [0.1, 0.2, 0.3, 0.4];
+  }
+  async embedBatch(texts: string[]): Promise<number[][]> {
+    return texts.map(() => [0.1, 0.2, 0.3, 0.4]);
+  }
 }
 
 // ── AddMemoryUseCase ─────────────────────────────────────────────────────────
@@ -109,10 +130,16 @@ describe('SearchMemoryUseCase', () => {
   beforeEach(async () => {
     repo = new InMemoryMemoryRepo();
     embedder = new FakeEmbedder();
-    await repo.save(SemanticMemory.create({
-      userId: 'u1', content: 'I prefer dark mode.', source: 'user',
-      importance: 80, embedding: [0.1, 0.2, 0.3, 0.4], metadata: {},
-    }));
+    await repo.save(
+      SemanticMemory.create({
+        userId: 'u1',
+        content: 'I prefer dark mode.',
+        source: 'user',
+        importance: 80,
+        embedding: [0.1, 0.2, 0.3, 0.4],
+        metadata: {},
+      })
+    );
   });
 
   it('returns relevant memories', async () => {
@@ -136,9 +163,36 @@ describe('ListMemoriesUseCase', () => {
 
   beforeEach(async () => {
     repo = new InMemoryMemoryRepo();
-    await repo.save(SemanticMemory.create({ userId: 'u1', content: 'a', source: 'user', importance: 50, embedding: undefined, metadata: {} }));
-    await repo.save(SemanticMemory.create({ userId: 'u1', content: 'b', source: 'agent', importance: 70, embedding: undefined, metadata: {} }));
-    await repo.save(SemanticMemory.create({ userId: 'u2', content: 'c', source: 'user', importance: 60, embedding: undefined, metadata: {} }));
+    await repo.save(
+      SemanticMemory.create({
+        userId: 'u1',
+        content: 'a',
+        source: 'user',
+        importance: 50,
+        embedding: undefined,
+        metadata: {},
+      })
+    );
+    await repo.save(
+      SemanticMemory.create({
+        userId: 'u1',
+        content: 'b',
+        source: 'agent',
+        importance: 70,
+        embedding: undefined,
+        metadata: {},
+      })
+    );
+    await repo.save(
+      SemanticMemory.create({
+        userId: 'u2',
+        content: 'c',
+        source: 'user',
+        importance: 60,
+        embedding: undefined,
+        metadata: {},
+      })
+    );
   });
 
   it('lists memories for user', async () => {
@@ -161,7 +215,16 @@ describe('DeleteMemoryUseCase', () => {
 
   beforeEach(async () => {
     repo = new InMemoryMemoryRepo();
-    await repo.save(SemanticMemory.create({ userId: 'u1', content: 'to delete', source: 'user', importance: 50, embedding: undefined, metadata: {} }));
+    await repo.save(
+      SemanticMemory.create({
+        userId: 'u1',
+        content: 'to delete',
+        source: 'user',
+        importance: 50,
+        embedding: undefined,
+        metadata: {},
+      })
+    );
   });
 
   it('removes memory', async () => {

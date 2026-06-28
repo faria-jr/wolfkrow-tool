@@ -63,7 +63,9 @@ describe('mgraph notes CRUD', () => {
 
   it('POST /mgraph/notes rejects an invalid kind → 400', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/mgraph/notes', headers: BEARER,
+      method: 'POST',
+      url: '/mgraph/notes',
+      headers: BEARER,
       payload: { path: 'x', kind: 'bogus', title: 't', body: 'b' },
     });
     expect(res.statusCode).toBe(400);
@@ -71,7 +73,9 @@ describe('mgraph notes CRUD', () => {
 
   it('GET /mgraph/notes/:path reads the note back', async () => {
     const res = await app.inject({
-      method: 'GET', url: '/mgraph/notes/entities%2Facme', headers: BEARER,
+      method: 'GET',
+      url: '/mgraph/notes/entities%2Facme',
+      headers: BEARER,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json() as { title: string };
@@ -80,14 +84,18 @@ describe('mgraph notes CRUD', () => {
 
   it('GET /mgraph/notes/:path returns 404 for a missing note', async () => {
     const res = await app.inject({
-      method: 'GET', url: '/mgraph/notes/notes/does-not-exist', headers: BEARER,
+      method: 'GET',
+      url: '/mgraph/notes/notes/does-not-exist',
+      headers: BEARER,
     });
     expect(res.statusCode).toBe(404);
   });
 
   it('PATCH /mgraph/notes/:path updates the note body/title', async () => {
     const res = await app.inject({
-      method: 'PATCH', url: '/mgraph/notes/entities%2Facme', headers: BEARER,
+      method: 'PATCH',
+      url: '/mgraph/notes/entities%2Facme',
+      headers: BEARER,
       payload: { body: 'Updated body', title: 'Acme Corp' },
     });
     expect(res.statusCode).toBe(200);
@@ -98,7 +106,9 @@ describe('mgraph notes CRUD', () => {
 
   it('DELETE /mgraph/notes/:path removes the note', async () => {
     const res = await app.inject({
-      method: 'DELETE', url: '/mgraph/notes/entities%2Facme', headers: BEARER,
+      method: 'DELETE',
+      url: '/mgraph/notes/entities%2Facme',
+      headers: BEARER,
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true });
@@ -129,7 +139,11 @@ describe('mgraph graph / search / stats', () => {
 
   it('GET /mgraph/search forwards a kind filter when provided', async () => {
     // Exercises the `kind !== undefined` spread branch in searchHandler.
-    const res = await app.inject({ method: 'GET', url: '/mgraph/search?q=acme&kind=entity', headers: BEARER });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/mgraph/search?q=acme&kind=entity',
+      headers: BEARER,
+    });
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.json())).toBe(true);
   });
@@ -141,7 +155,9 @@ describe('mgraph notes — error mapping', () => {
     // An empty path segment after joining produces an invalid vault path that
     // the engine rejects, exercising the catch → 400 branch.
     const res = await app.inject({
-      method: 'POST', url: '/mgraph/notes', headers: BEARER,
+      method: 'POST',
+      url: '/mgraph/notes',
+      headers: BEARER,
       payload: { path: '../escape', kind: 'entity', title: 't', body: 'b' },
     });
     expect(res.statusCode).toBe(400);
@@ -152,7 +168,9 @@ describe('mgraph notes — error mapping', () => {
   it('PATCH /mgraph/notes/:path returns 400 when updating a missing note path', async () => {
     // updateNote on a never-created path triggers the error branch.
     const res = await app.inject({
-      method: 'PATCH', url: '/mgraph/notes/never%2Fcreated', headers: BEARER,
+      method: 'PATCH',
+      url: '/mgraph/notes/never%2Fcreated',
+      headers: BEARER,
       payload: { body: 'x' },
     });
     expect([400, 404]).toContain(res.statusCode);

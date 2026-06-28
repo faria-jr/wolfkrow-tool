@@ -95,6 +95,7 @@ pnpm format
 ```
 
 Key conventions:
+
 - TypeScript strict mode (no `any`)
 - Max 50 lines per function (ESLint enforced)
 - Max 4 parameters per function
@@ -107,6 +108,7 @@ See [AGENT.md](./AGENT.md) for detailed guidelines.
 ## Testing
 
 We aim for:
+
 - Domain layer: ≥95% coverage
 - Use cases: ≥90% coverage
 - Infrastructure: ≥85% coverage
@@ -131,6 +133,7 @@ pnpm test:e2e      # Playwright E2E
 See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for the full picture.
 
 Key principles:
+
 - **Clean Architecture**: 4 isolated layers
 - **TDD**: Test-first development
 - **SOLID**: Single responsibility, Open/Closed, etc
@@ -158,6 +161,7 @@ pnpm init
 See [IMPLEMENTATION_PLAN.md](./docs/IMPLEMENTATION_PLAN.md) for release milestones.
 
 For each release:
+
 1. Update version in `package.json`
 2. Update CHANGELOG.md
 3. Create git tag `vX.Y.Z`

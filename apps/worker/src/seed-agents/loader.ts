@@ -13,6 +13,6 @@ export async function loadSeedAgents(dir: string): Promise<SeedAgent[]> {
       const raw = await readFile(file, 'utf-8');
       const parsed = parseYaml(raw) as unknown;
       return SeedAgentSchema.parse(parsed);
-    }),
+    })
   );
 }

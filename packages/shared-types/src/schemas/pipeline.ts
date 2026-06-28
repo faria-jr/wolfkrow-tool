@@ -17,6 +17,8 @@ export const PipelineStageSchema = z.enum([
   'spec_build',
   'spec_validate',
   'approval',
+  'design',
+  'design_lock',
   'implementation',
   'completed',
 ]);

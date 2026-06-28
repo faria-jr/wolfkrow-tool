@@ -1,6 +1,5 @@
 'use client';
 
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BUILT_IN_PROVIDERS } from '@wolfkrow/domain/services';
 import { useState } from 'react';
@@ -39,7 +38,9 @@ const BUILT_IN_IDS = new Set(BUILT_IN_PROVIDERS.map((p) => p.id));
 
 export function ProviderList() {
   const qc = useQueryClient();
-  const [modal, setModal] = useState<{ open: boolean; initial?: Partial<ProviderFormValues> }>({ open: false });
+  const [modal, setModal] = useState<{ open: boolean; initial?: Partial<ProviderFormValues> }>({
+    open: false,
+  });
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const { data: providers = [], isLoading } = useQuery({
@@ -49,18 +50,24 @@ export function ProviderList() {
 
   const saveMut = useMutation({
     mutationFn: saveProvider,
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['providers'] }); setModal({ open: false }); },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['providers'] });
+      setModal({ open: false });
+    },
   });
 
   const deleteMut = useMutation({
     mutationFn: deleteProvider,
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['providers'] }); setConfirmDeleteId(null); },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['providers'] });
+      setConfirmDeleteId(null);
+    },
   });
 
   if (isLoading) return <p className="text-muted-foreground text-sm">Loading providers…</p>;
 
   const confirmProvider = confirmDeleteId
-    ? providers.find((p) => p.id === confirmDeleteId) ?? null
+    ? (providers.find((p) => p.id === confirmDeleteId) ?? null)
     : null;
 
   return (
@@ -92,17 +99,23 @@ export function ProviderList() {
   );
 }
 
-function ProviderMutationErrors({ saveError, deleteError }: { saveError: Error | null; deleteError: Error | null }) {
+function ProviderMutationErrors({
+  saveError,
+  deleteError,
+}: {
+  saveError: Error | null;
+  deleteError: Error | null;
+}) {
   if (!saveError && !deleteError) return null;
   return (
     <>
       {saveError && (
-        <div className="rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="border-destructive bg-destructive/10 text-destructive rounded border p-3 text-sm">
           Save failed: {saveError.message}
         </div>
       )}
       {deleteError && (
-        <div className="rounded border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="border-destructive bg-destructive/10 text-destructive rounded border p-3 text-sm">
           Delete failed: {deleteError.message}
         </div>
       )}

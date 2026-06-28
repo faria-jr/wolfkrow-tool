@@ -99,7 +99,9 @@ describe('telegram POST /pair', () => {
   it('ignores a spoofed userId in the body and pairs as the session user (IDOR)', async () => {
     fakeBridge.generatePairingCode.mockReturnValueOnce('PAIR-SPOOF');
     const res = await app.inject({
-      method: 'POST', url: '/pair', payload: { userId: 'victim' },
+      method: 'POST',
+      url: '/pair',
+      payload: { userId: 'victim' },
     });
     expect(res.statusCode).toBe(200);
     // The pairing code is minted for the authenticated user (u1), NOT 'victim'.

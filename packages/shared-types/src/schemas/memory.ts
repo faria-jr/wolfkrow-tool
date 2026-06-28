@@ -130,6 +130,4 @@ export const CreateDailySummaryRequestBodySchema = z.object({
   content: z.string().max(10_000).optional(),
 });
 
-export type CreateDailySummaryRequestBody = z.infer<
-  typeof CreateDailySummaryRequestBodySchema
->;
+export type CreateDailySummaryRequestBody = z.infer<typeof CreateDailySummaryRequestBodySchema>;

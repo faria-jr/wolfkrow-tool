@@ -15,14 +15,7 @@ import { BUILT_IN_MCP_SERVERS } from '../seed/built-in-mcps';
 import { loadBuiltInSkills } from '../seed/skill-loader';
 
 import { getDb, closeDb } from './client';
-import {
-  channels,
-  mcpServers,
-  secretsMetadata,
-  settings,
-  skills,
-  users,
-} from './schema';
+import { channels, mcpServers, secretsMetadata, settings, skills, users } from './schema';
 
 const logger = createLogger('db:seed');
 

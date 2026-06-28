@@ -6,22 +6,22 @@
  */
 
 export interface McpToolRecord {
- id: string;
- mcpServerId: string;
- name: string;
- description: string | undefined;
- inputSchema: Record<string, unknown> | undefined;
- lastSynced: Date;
+  id: string;
+  mcpServerId: string;
+  name: string;
+  description: string | undefined;
+  inputSchema: Record<string, unknown> | undefined;
+  lastSynced: Date;
 }
 
 export interface McpToolInput {
- name: string;
- description?: string;
- inputSchema?: Record<string, unknown>;
+  name: string;
+  description?: string;
+  inputSchema?: Record<string, unknown>;
 }
 
 export interface McpToolRegistryRepo {
- upsertMany(serverId: string, tools: McpToolInput[]): void;
- findByServerId(serverId: string): McpToolRecord[];
- deleteByServerId(serverId: string): void;
+  upsertMany(serverId: string, tools: McpToolInput[]): void;
+  findByServerId(serverId: string): McpToolRecord[];
+  deleteByServerId(serverId: string): void;
 }

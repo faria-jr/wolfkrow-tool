@@ -19,10 +19,10 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   const { id } = await params;
   const repos = getRepos();
-  await new DeleteDocumentUseCase(
-    repos.knowledgeDoc,
-    repos.knowledgeChunk,
-  ).execute({ documentId: id, userId: session.userId });
+  await new DeleteDocumentUseCase(repos.knowledgeDoc, repos.knowledgeChunk).execute({
+    documentId: id,
+    userId: session.userId,
+  });
 
   return Response.json({ deleted: true });
 }

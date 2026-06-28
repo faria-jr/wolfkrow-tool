@@ -27,13 +27,13 @@ export function useAgents() {
     queryKey: ['agents'],
     queryFn: fetchAgents,
     staleTime: 5 * 60 * 1000, // 5min
-    gcTime: 30 * 60 * 1000,  // 30min
+    gcTime: 30 * 60 * 1000, // 30min
   });
 }
 
 export function useCreateAgent() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: createAgent,
     onMutate: async (newAgent) => {
@@ -139,21 +139,22 @@ export default function RootLayout({ children }) {
 
 ## Estratégias por Tipo de Data
 
-| Tipo | staleTime | gcTime | refetchOnWindowFocus |
-|---|---|---|---|
-| Agents list | 5min | 30min | false |
-| Skills list | 5min | 30min | false |
-| Sessions | 30s | 5min | true |
-| Messages | 0 (sempre fresh) | 5min | true |
-| Knowledge docs | 5min | 30min | false |
-| Scheduler tasks | 1min | 10min | true |
-| Pipeline projects | 30s | 5min | true |
-| Vault secrets | 0 (sempre fresh) | 1min | false |
-| Usage stats | 1min | 10min | true |
+| Tipo              | staleTime        | gcTime | refetchOnWindowFocus |
+| ----------------- | ---------------- | ------ | -------------------- |
+| Agents list       | 5min             | 30min  | false                |
+| Skills list       | 5min             | 30min  | false                |
+| Sessions          | 30s              | 5min   | true                 |
+| Messages          | 0 (sempre fresh) | 5min   | true                 |
+| Knowledge docs    | 5min             | 30min  | false                |
+| Scheduler tasks   | 1min             | 10min  | true                 |
+| Pipeline projects | 30s              | 5min   | true                 |
+| Vault secrets     | 0 (sempre fresh) | 1min   | false                |
+| Usage stats       | 1min             | 10min  | true                 |
 
 ## SSE Integration
 
 Para streaming data (chat, pipeline), TanStack Query não é ideal. Usar:
+
 - **EventSource API direto** + Zustand store
 - OU **TanStack Query com streamedQuery** (experimental)
 

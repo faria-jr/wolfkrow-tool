@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface ProviderOption {
   id: string;
@@ -29,7 +37,11 @@ export function useProviders(): UseProvidersResult {
       const res = await fetch('/api/providers');
       if (!res.ok) return;
       const data = (await res.json()) as ProviderOption[];
-      setProviders(Array.isArray(data) ? data.filter((p) => Array.isArray(p.models) && p.models.length > 0) : []);
+      setProviders(
+        Array.isArray(data)
+          ? data.filter((p) => Array.isArray(p.models) && p.models.length > 0)
+          : []
+      );
     } catch {
       // leave providers empty — picker falls back to the current model
     } finally {
@@ -37,7 +49,9 @@ export function useProviders(): UseProvidersResult {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
   return { providers, loading };
 }
 
@@ -50,7 +64,7 @@ export function ModelPicker({ value, onChange }: ModelPickerProps) {
   const { providers } = useProviders();
   if (providers.length === 0) {
     // No providers configured (or still loading) — show the active model read-only.
-    return <span className="text-xs text-muted-foreground tabular-nums">{value}</span>;
+    return <span className="text-muted-foreground text-xs tabular-nums">{value}</span>;
   }
   return (
     <Select value={value} onValueChange={onChange}>
@@ -62,7 +76,9 @@ export function ModelPicker({ value, onChange }: ModelPickerProps) {
           <SelectGroup key={p.id}>
             <SelectLabel className="text-xs">{p.displayName}</SelectLabel>
             {p.models.map((m) => (
-              <SelectItem key={`${p.id}:${m}`} value={m} className="text-xs">{m}</SelectItem>
+              <SelectItem key={`${p.id}:${m}`} value={m} className="text-xs">
+                {m}
+              </SelectItem>
             ))}
           </SelectGroup>
         ))}

@@ -14,7 +14,10 @@ import type {
   StreamChunk,
 } from './types';
 
-type OAIChunk = { choices: Array<{ delta?: { content?: string | null } }>; usage: { prompt_tokens: number; completion_tokens: number } | null };
+type OAIChunk = {
+  choices: Array<{ delta?: { content?: string | null } }>;
+  usage: { prompt_tokens: number; completion_tokens: number } | null;
+};
 
 function toOpenAIMessages(options: CompletionOptions): OpenAI.Chat.ChatCompletionMessageParam[] {
   const msgs: OpenAI.Chat.ChatCompletionMessageParam[] = [];
@@ -30,7 +33,12 @@ function toStreamChunks(chunk: OAIChunk): StreamChunk[] {
   const delta = chunk.choices[0]?.delta?.content ?? '';
   if (delta) results.push({ delta });
   if (chunk.usage) {
-    results.push({ delta: '', done: true, inputTokens: chunk.usage.prompt_tokens, outputTokens: chunk.usage.completion_tokens });
+    results.push({
+      delta: '',
+      done: true,
+      inputTokens: chunk.usage.prompt_tokens,
+      outputTokens: chunk.usage.completion_tokens,
+    });
   }
   return results;
 }
@@ -46,7 +54,7 @@ export abstract class OpenAIBaseProvider implements AIProvider {
 
   async *query(options: CompletionOptions): AsyncIterable<StreamChunk> {
     await this.ensureSsrfSafe();
-    const stream = await this.client.chat.completions.create(
+    const stream = (await this.client.chat.completions.create(
       {
         model: options.model,
         messages: toOpenAIMessages(options),
@@ -55,8 +63,8 @@ export abstract class OpenAIBaseProvider implements AIProvider {
         stream: true,
         stream_options: { include_usage: true },
       },
-      { signal: options.signal },
-    ) as AsyncIterable<OAIChunk>;
+      { signal: options.signal }
+    )) as AsyncIterable<OAIChunk>;
 
     let usageEmitted = false;
     for await (const chunk of stream) {

@@ -9,53 +9,53 @@
  */
 
 export interface UsageRecord {
- id: string;
- userId: string;
- source: string;
- model: string;
- inputTokens: number;
- outputTokens: number;
- cacheReadTokens: number;
- cacheWriteTokens: number;
- cost: number; // USD cents
- sessionId: string | undefined;
- agentId: string | undefined;
- runtime: 'cloud' | 'local';
- timestamp: Date;
+  id: string;
+  userId: string;
+  source: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  cost: number; // USD cents
+  sessionId: string | undefined;
+  agentId: string | undefined;
+  runtime: 'cloud' | 'local';
+  timestamp: Date;
 }
 
 export interface UsageRecordInput {
- userId: string;
- source: string;
- model: string;
- inputTokens: number;
- outputTokens: number;
- cacheReadTokens: number;
- cacheWriteTokens: number;
- cost: number; // USD cents
- sessionId?: string;
- agentId?: string;
- runtime: 'cloud' | 'local';
- timestamp: Date;
+  userId: string;
+  source: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  cost: number; // USD cents
+  sessionId?: string;
+  agentId?: string;
+  runtime: 'cloud' | 'local';
+  timestamp: Date;
 }
 
 export interface UsageFilter {
- userId: string;
- from?: Date;
- to?: Date;
- source?: string;
- agentId?: string;
+  userId: string;
+  from?: Date;
+  to?: Date;
+  source?: string;
+  agentId?: string;
 }
 
 export interface UsageCostFilter {
- userId: string;
- from?: Date;
- to?: Date;
- agentId?: string;
+  userId: string;
+  from?: Date;
+  to?: Date;
+  agentId?: string;
 }
 
 export interface UsageRepo {
- insert(record: UsageRecordInput): void;
- findMany(filter: UsageFilter): UsageRecord[];
- totalCostCents(filter: UsageCostFilter): number;
+  insert(record: UsageRecordInput): void;
+  findMany(filter: UsageFilter): UsageRecord[];
+  totalCostCents(filter: UsageCostFilter): number;
 }

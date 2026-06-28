@@ -20,7 +20,14 @@ interface Props {
   onCancel: () => void;
 }
 
-export function ConfirmDialog({ open, title, description, confirmLabel = 'Confirm', onConfirm, onCancel }: Props) {
+export function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel = 'Confirm',
+  onConfirm,
+  onCancel,
+}: Props) {
   return (
     <AlertDialog open={open}>
       <AlertDialogContent>

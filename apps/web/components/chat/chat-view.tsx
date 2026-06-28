@@ -10,6 +10,7 @@ import { AttachmentDropzone } from './attachment-dropzone';
 import { useChatSession } from './chat-hooks';
 import type { DisplayMessage } from './chat-message';
 import { ConfirmDialog } from './confirm-dialog';
+import { HumanQuestionDialog } from './human-question-dialog';
 import { ModelPicker } from './model-picker';
 import { StreamIndicator } from './stream-indicator';
 
@@ -25,10 +26,10 @@ import { useVoiceConversation } from '@/hooks/use-voice-conversation';
  * eager bundle. Loaded on first render of the transcript with a skeleton
  * placeholder while the chunk resolves.
  */
-const ChatMessage = dynamic(
-  () => import('./chat-message').then((m) => m.ChatMessage),
-  { ssr: false, loading: () => <Skeleton className="h-16 w-full" /> },
-);
+const ChatMessage = dynamic(() => import('./chat-message').then((m) => m.ChatMessage), {
+  ssr: false,
+  loading: () => <Skeleton className="h-16 w-full" />,
+});
 
 type RowData = { messages: DisplayMessage[] };
 
@@ -41,33 +42,68 @@ function voiceMessageToDisplay(msg: VoiceConversationMessage): DisplayMessage {
   return { id: crypto.randomUUID(), role: msg.role, content: msg.text, createdAt: new Date() };
 }
 
-interface ChatHeaderProps { title: string; model: string; onModelChange: (m: string) => void; onClear: () => void; }
+interface ChatHeaderProps {
+  title: string;
+  model: string;
+  onModelChange: (m: string) => void;
+  onClear: () => void;
+}
 function ChatHeader({ title, model, onModelChange, onClear }: ChatHeaderProps) {
   return (
     <header className="flex h-14 items-center justify-between border-b px-6">
       <div className="min-w-0">
         <h1 className="truncate text-lg font-semibold">{title}</h1>
-        <p className="text-xs text-muted-foreground">Multi-SDK AI conversation</p>
+        <p className="text-muted-foreground text-xs">Multi-SDK AI conversation</p>
       </div>
       <div className="flex items-center gap-3">
         <ModelPicker value={model} onChange={onModelChange} />
-        <Button onClick={onClear} variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive text-xs">Clear</Button>
+        <Button
+          onClick={onClear}
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-destructive text-xs"
+        >
+          Clear
+        </Button>
       </div>
     </header>
   );
 }
 
-interface ChatInputProps { value: string; onChange: (v: string) => void; onSend: () => void; onStop: () => void; disabled: boolean; }
+interface ChatInputProps {
+  value: string;
+  onChange: (v: string) => void;
+  onSend: () => void;
+  onStop: () => void;
+  disabled: boolean;
+}
 function ChatInput({ value, onChange, onSend, onStop, disabled }: ChatInputProps) {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); }
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      onSend();
+    }
   };
   return (
     <div className="flex gap-2">
-      <Textarea value={value} onChange={(e) => onChange(e.target.value)} onKeyDown={handleKeyDown} placeholder="Message (Enter to send, Shift+Enter for newline)" className="min-h-11 max-h-32 resize-none" disabled={disabled} aria-label="Chat input" />
-      {disabled
-        ? <Button onClick={onStop} aria-label="Stop" variant="destructive">Stop</Button>
-        : <Button onClick={onSend} disabled={!value.trim()} aria-label="Send">Send</Button>}
+      <Textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder="Message (Enter to send, Shift+Enter for newline)"
+        className="max-h-32 min-h-11 resize-none"
+        disabled={disabled}
+        aria-label="Chat input"
+      />
+      {disabled ? (
+        <Button onClick={onStop} aria-label="Stop" variant="destructive">
+          Stop
+        </Button>
+      ) : (
+        <Button onClick={onSend} disabled={!value.trim()} aria-label="Send">
+          Send
+        </Button>
+      )}
     </div>
   );
 }
@@ -101,10 +137,21 @@ function estimateRowHeight(message: DisplayMessage): number {
 }
 
 function itemSizeGetter(messages: DisplayMessage[]) {
-  return (index: number) => estimateRowHeight(messages[index] ?? { id: '', role: 'user', content: '', createdAt: new Date() });
+  return (index: number) =>
+    estimateRowHeight(
+      messages[index] ?? { id: '', role: 'user', content: '', createdAt: new Date() }
+    );
 }
 
-function MessageRow({ index, style, data }: { index: number; style: React.CSSProperties; data: RowData }) {
+function MessageRow({
+  index,
+  style,
+  data,
+}: {
+  index: number;
+  style: React.CSSProperties;
+  data: RowData;
+}) {
   const message = data.messages[index];
   if (!message) return null;
   return (
@@ -132,7 +179,7 @@ function ChatTranscript({ messages, isStreaming, bottomRef }: ChatTranscriptProp
   return (
     <div ref={containerRef} className="min-h-0 flex-1 overflow-hidden p-4">
       {messages.length === 0 ? (
-        <p className="text-center text-sm text-muted-foreground mt-8">Start a conversation</p>
+        <p className="text-muted-foreground mt-8 text-center text-sm">Start a conversation</p>
       ) : (
         <VariableSizeList
           ref={listRef}
@@ -163,19 +210,47 @@ interface ChatFooterProps {
   onAttach: (items: AttachmentData[]) => void;
   onRemoveAttachment: (idx: number) => void;
 }
-function ChatFooter({ input, onInputChange, onSend, onStop, disabled, voice, pendingAttachments, onAttach, onRemoveAttachment }: ChatFooterProps) {
+function ChatFooter({
+  input,
+  onInputChange,
+  onSend,
+  onStop,
+  disabled,
+  voice,
+  pendingAttachments,
+  onAttach,
+  onRemoveAttachment,
+}: ChatFooterProps) {
   const [attachError, setAttachError] = useState<string | null>(null);
-  const toggleVoice = () => { if (voice.state === 'idle') void voice.start(); else voice.stop(); };
+  const toggleVoice = () => {
+    if (voice.state === 'idle') void voice.start();
+    else voice.stop();
+  };
   return (
     <div className="border-t p-4">
-      {voice.error && <p role="alert" className="mb-2 text-sm text-destructive">{voice.error}</p>}
-      {attachError && <p role="alert" className="mb-2 text-sm text-destructive">{attachError}</p>}
+      {voice.error && (
+        <p role="alert" className="text-destructive mb-2 text-sm">
+          {voice.error}
+        </p>
+      )}
+      {attachError && (
+        <p role="alert" className="text-destructive mb-2 text-sm">
+          {attachError}
+        </p>
+      )}
       {pendingAttachments.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2" data-testid="attachment-previews">
           {pendingAttachments.map((att, i) => (
-            <span key={i} className="flex items-center gap-1 rounded bg-muted px-2 py-1 text-xs">
+            <span key={i} className="bg-muted flex items-center gap-1 rounded px-2 py-1 text-xs">
               {att.filename}
-              <button type="button" aria-label={`Remove ${att.filename}`} onClick={() => onRemoveAttachment(i)} className="ml-1 hover:text-destructive">×</button>
+              <button
+                type="button"
+                aria-label={`Remove ${att.filename}`}
+                onClick={() => onRemoveAttachment(i)}
+                className="hover:text-destructive ml-1"
+              >
+                ×
+              </button>
             </span>
           ))}
         </div>
@@ -183,11 +258,20 @@ function ChatFooter({ input, onInputChange, onSend, onStop, disabled, voice, pen
       <div className="flex items-end gap-3">
         <VoiceOrb state={voice.state} onClick={toggleVoice} />
         <div className="flex-1">
-          <ChatInput value={input} onChange={onInputChange} onSend={onSend} onStop={onStop} disabled={disabled} />
+          <ChatInput
+            value={input}
+            onChange={onInputChange}
+            onSend={onSend}
+            onStop={onStop}
+            disabled={disabled}
+          />
         </div>
         <AttachmentDropzone
           disabled={disabled}
-          onAttach={(items) => { setAttachError(null); onAttach(items); }}
+          onAttach={(items) => {
+            setAttachError(null);
+            onAttach(items);
+          }}
           onError={(msg) => setAttachError(msg)}
         />
       </div>
@@ -195,7 +279,10 @@ function ChatFooter({ input, onInputChange, onSend, onStop, disabled, voice, pen
   );
 }
 
-interface Props { model?: string; sessionId?: string; }
+interface Props {
+  model?: string;
+  sessionId?: string;
+}
 
 const MODEL_STORAGE_KEY = 'wolfkrow.chat.model.v1';
 
@@ -209,30 +296,75 @@ export function ChatView({ model: initialModel = DEFAULT_CHAT_MODEL, sessionId }
   // reopening chat keeps the last-used model. useChatStream depends on `model`,
   // so the next send uses the newly selected model.
   const [model, setModel] = useState(() => readPersistedModel(initialModel));
-  useEffect(() => { if (typeof window !== 'undefined') window.localStorage.setItem(MODEL_STORAGE_KEY, model); }, [model]);
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.localStorage.setItem(MODEL_STORAGE_KEY, model);
+  }, [model]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const {
-    messages, input, setInput, isStreaming, sessionTitle,
-    send, stop, clear, appendMessage, bottomRef,
-    pendingAttachments, setPendingAttachments, pendingPermission, resolvePermission,
+    messages,
+    input,
+    setInput,
+    isStreaming,
+    sessionTitle,
+    send,
+    stop,
+    clear,
+    appendMessage,
+    bottomRef,
+    pendingAttachments,
+    setPendingAttachments,
+    pendingPermission,
+    resolvePermission,
+    pendingQuestion,
+    answerQuestion,
+    dismissQuestion,
   } = useChatSession(model, sessionId);
-  const voice = useVoiceConversation({ onMessage: (msg) => appendMessage(voiceMessageToDisplay(msg)) });
-  const handleClearConfirm = () => { clear(); setConfirmOpen(false); };
-  const handleAttach = useCallback((items: AttachmentData[]) => {
-    setPendingAttachments((prev) => [...prev, ...items]);
-  }, [setPendingAttachments]);
-  const handleRemoveAttachment = useCallback((idx: number) => {
-    setPendingAttachments((prev) => prev.filter((_, i) => i !== idx));
-  }, [setPendingAttachments]);
+  const voice = useVoiceConversation({
+    onMessage: (msg) => appendMessage(voiceMessageToDisplay(msg)),
+  });
+  const handleClearConfirm = () => {
+    clear();
+    setConfirmOpen(false);
+  };
+  const handleAttach = useCallback(
+    (items: AttachmentData[]) => {
+      setPendingAttachments((prev) => [...prev, ...items]);
+    },
+    [setPendingAttachments]
+  );
+  const handleRemoveAttachment = useCallback(
+    (idx: number) => {
+      setPendingAttachments((prev) => prev.filter((_, i) => i !== idx));
+    },
+    [setPendingAttachments]
+  );
   return (
     <div className="flex h-full flex-col">
-      <ChatHeader title={sessionTitle} model={model} onModelChange={setModel} onClear={() => setConfirmOpen(true)} />
+      <ChatHeader
+        title={sessionTitle}
+        model={model}
+        onModelChange={setModel}
+        onClear={() => setConfirmOpen(true)}
+      />
       <ChatTranscript messages={messages} isStreaming={isStreaming} bottomRef={bottomRef} />
       <ChatFooter
-        input={input} onInputChange={setInput} onSend={send} onStop={stop} disabled={isStreaming}
-        voice={voice} pendingAttachments={pendingAttachments} onAttach={handleAttach} onRemoveAttachment={handleRemoveAttachment}
+        input={input}
+        onInputChange={setInput}
+        onSend={send}
+        onStop={stop}
+        disabled={isStreaming}
+        voice={voice}
+        pendingAttachments={pendingAttachments}
+        onAttach={handleAttach}
+        onRemoveAttachment={handleRemoveAttachment}
       />
-      <ConfirmDialog open={confirmOpen} title="Clear chat?" description="All messages will be removed." onConfirm={handleClearConfirm} onCancel={() => setConfirmOpen(false)} />
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Clear chat?"
+        description="All messages will be removed."
+        onConfirm={handleClearConfirm}
+        onCancel={() => setConfirmOpen(false)}
+      />
       {pendingPermission && (
         <ConfirmDialog
           open={true}
@@ -242,6 +374,11 @@ export function ChatView({ model: initialModel = DEFAULT_CHAT_MODEL, sessionId }
           onCancel={() => resolvePermission(pendingPermission.callId, false)}
         />
       )}
+      <HumanQuestionDialog
+        question={pendingQuestion}
+        onAnswer={(questionId, answer) => answerQuestion(questionId, answer)}
+        onDismiss={dismissQuestion}
+      />
     </div>
   );
 }

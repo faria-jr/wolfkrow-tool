@@ -28,7 +28,7 @@ class WolfkrowWrapper {
   private workerProcess?: ChildProcess;
   private mainWindow?: BrowserWindow;
   private tray?: Tray;
-  
+
   async start() {
     await this.spawnServices();
     await this.waitForServer();
@@ -37,7 +37,7 @@ class WolfkrowWrapper {
     this.registerHotkeys();
     this.setupAutoLaunch();
   }
-  
+
   // ... implementação completa
 }
 
@@ -82,6 +82,7 @@ app.on('before-quit', () => wrapper.quit());
 ### 4.1 Systray
 
 Menu items:
+
 - **Abrir Wolfkrow** → show window
 - **Chat Rápido** → show + navigate /chat
 - **Bloquear** → send lock event to renderer
@@ -93,6 +94,7 @@ Click on tray icon: toggle window visibility.
 ### 4.2 Global Hotkey
 
 `CommandOrControl+Shift+Space` (configurable in v1.1):
+
 - Toggle window visibility
 - If shown + focused: hide
 - If hidden or not focused: show + focus + send "focus-chat-input" IPC
@@ -114,9 +116,7 @@ Configurable in Settings (default: enabled).
 // File picker for upload
 const result = await dialog.showOpenDialog({
   properties: ['openFile', 'multiSelections'],
-  filters: [
-    { name: 'Documents', extensions: ['pdf', 'docx', 'csv', 'xlsx', 'md'] },
-  ],
+  filters: [{ name: 'Documents', extensions: ['pdf', 'docx', 'csv', 'xlsx', 'md'] }],
 });
 ```
 
@@ -135,12 +135,14 @@ new Notification({
 ## 5. IPC Bridge (limited)
 
 Wrapper → Renderer:
+
 - `navigate` (string: path)
 - `lock-app`
 - `focus-chat-input`
 - `show-notification` (string: title, string: body)
 
 Renderer → Wrapper:
+
 - `quit`
 - `hide`
 - `open-external` (string: url)
@@ -217,25 +219,29 @@ autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
 autoUpdater.on('update-available', (info) => {
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Update available',
-    message: `Version ${info.version} is available.`,
-    buttons: ['Download', 'Later'],
-  }).then((result) => {
-    if (result.response === 0) autoUpdater.downloadUpdate();
-  });
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: 'Update available',
+      message: `Version ${info.version} is available.`,
+      buttons: ['Download', 'Later'],
+    })
+    .then((result) => {
+      if (result.response === 0) autoUpdater.downloadUpdate();
+    });
 });
 
 autoUpdater.on('update-downloaded', () => {
-  dialog.showMessageBox({
-    type: 'info',
-    title: 'Update ready',
-    message: 'Restart to apply update.',
-    buttons: ['Restart', 'Later'],
-  }).then((result) => {
-    if (result.response === 0) autoUpdater.quitAndInstall();
-  });
+  dialog
+    .showMessageBox({
+      type: 'info',
+      title: 'Update ready',
+      message: 'Restart to apply update.',
+      buttons: ['Restart', 'Later'],
+    })
+    .then((result) => {
+      if (result.response === 0) autoUpdater.quitAndInstall();
+    });
 });
 
 setInterval(() => autoUpdater.checkForUpdates(), 60 * 60 * 1000); // hourly
@@ -259,17 +265,20 @@ pnpm dist:linux       # AppImage
 ## 9. Testes
 
 ### Unit
+
 - Spawn services
 - Health check wait
 - Window lifecycle
 - Hotkey registration
 
 ### Integration
+
 - Full boot sequence
 - Graceful shutdown
 - Auto-update flow
 
 ### E2E (Playwright + Electron)
+
 - Click tray → window opens
 - Press hotkey → window toggles
 - Quit → processes killed cleanly

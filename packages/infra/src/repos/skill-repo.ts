@@ -39,7 +39,11 @@ export class DrizzleSkillRepo implements SkillRepo {
     const now = new Date();
     const row = this.toInsertRow(skill, now);
     const updateSet = this.toUpdateSet(skill, now);
-    this.db.insert(skills).values(row).onConflictDoUpdate({ target: skills.id, set: updateSet }).run();
+    this.db
+      .insert(skills)
+      .values(row)
+      .onConflictDoUpdate({ target: skills.id, set: updateSet })
+      .run();
     return skill;
   }
 

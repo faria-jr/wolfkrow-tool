@@ -48,7 +48,9 @@ describe('AgentFormModal', () => {
   });
 
   it('renders edit title when agent provided', () => {
-    renderWithQuery(<AgentFormModal open onClose={onClose} onSubmit={onSubmit} agent={defaultAgent} />);
+    renderWithQuery(
+      <AgentFormModal open onClose={onClose} onSubmit={onSubmit} agent={defaultAgent} />
+    );
     expect(screen.getByText(/edit agent/i)).toBeTruthy();
   });
 
@@ -58,7 +60,9 @@ describe('AgentFormModal', () => {
   });
 
   it('pre-fills name from agent prop', () => {
-    renderWithQuery(<AgentFormModal open onClose={onClose} onSubmit={onSubmit} agent={defaultAgent} />);
+    renderWithQuery(
+      <AgentFormModal open onClose={onClose} onSubmit={onSubmit} agent={defaultAgent} />
+    );
     const nameInput = screen.getByLabelText(/name/i) as HTMLInputElement;
     expect(nameInput.value).toBe('test-agent');
   });

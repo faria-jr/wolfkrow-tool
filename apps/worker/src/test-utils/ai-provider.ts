@@ -6,9 +6,7 @@
 
 import type { AIProvider, AIProviderFactory } from '@wolfkrow/infra';
 
-export function createTestAIProviderFactory(
-  provider: AIProvider
-): AIProviderFactory {
+export function createTestAIProviderFactory(provider: AIProvider): AIProviderFactory {
   return {
     create() {
       return provider;

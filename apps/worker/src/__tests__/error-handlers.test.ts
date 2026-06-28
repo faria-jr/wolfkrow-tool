@@ -1,4 +1,3 @@
-
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 import { installGlobalErrorHandlers } from '../error-handlers';
@@ -37,7 +36,15 @@ describe('installGlobalErrorHandlers (FIX-020)', () => {
   });
 
   function makeLogger(): Logger {
-    return { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(), child: vi.fn() } as unknown as Logger;
+    return {
+      error: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      trace: vi.fn(),
+      fatal: vi.fn(),
+      child: vi.fn(),
+    } as unknown as Logger;
   }
 
   it('registers unhandledRejection and uncaughtException listeners', () => {

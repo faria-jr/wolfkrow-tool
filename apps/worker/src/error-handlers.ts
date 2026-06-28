@@ -18,13 +18,13 @@ import type { Logger } from './logger';
  * boot. Each event gets a dedicated handler bound to the provided logger.
  */
 export function installGlobalErrorHandlers(logger: Logger): void {
- process.on('unhandledRejection', (reason) => {
- logger.error({ reason }, 'Unhandled promise rejection — exiting');
- process.exit(1);
- });
+  process.on('unhandledRejection', (reason) => {
+    logger.error({ reason }, 'Unhandled promise rejection — exiting');
+    process.exit(1);
+  });
 
- process.on('uncaughtException', (err) => {
- logger.error({ err }, 'Uncaught exception — exiting');
- process.exit(1);
- });
+  process.on('uncaughtException', (err) => {
+    logger.error({ err }, 'Uncaught exception — exiting');
+    process.exit(1);
+  });
 }

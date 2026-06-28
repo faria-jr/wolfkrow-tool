@@ -144,7 +144,7 @@ function SessionFormFields({
           onChange={(e) => onModelChange(e.target.value)}
           placeholder="agent model slug"
         />
-        <p className="text-xs text-muted-foreground">
+        <p className="text-muted-foreground text-xs">
           Enter the exact model slug the agent CLI accepts.
         </p>
       </div>
@@ -190,7 +190,7 @@ function SessionConfigCard({
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-sm">
-          <PenTool className="size-4 text-primary" />
+          <PenTool className="text-primary size-4" />
           Design session
         </CardTitle>
       </CardHeader>
@@ -203,7 +203,11 @@ function SessionConfigCard({
           onModelChange={onModelChange}
           onDesignSystemChange={onDesignSystemChange}
         />
-        {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+        {error && (
+          <p className="text-destructive text-sm" role="alert">
+            {error}
+          </p>
+        )}
         <Button className="w-full" disabled={!canSubmit} onClick={onSubmit}>
           {submitting ? (
             <>
@@ -244,7 +248,12 @@ export function SessionConfigView({
     setError(null);
     try {
       const submitError = await submitBootstrap({
-        wolfkrowProjectId, name, specContent, agentId, model: model.trim(), designSystemId,
+        wolfkrowProjectId,
+        name,
+        specContent,
+        agentId,
+        model: model.trim(),
+        designSystemId,
         onStudioUrl,
       });
       if (submitError) setError(submitError);

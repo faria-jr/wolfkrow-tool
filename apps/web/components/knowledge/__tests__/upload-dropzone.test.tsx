@@ -31,7 +31,10 @@ describe('UploadDropZone', () => {
   });
 
   it('shows error when upload fails', async () => {
-    fetchMock.mockResolvedValue({ ok: false, json: async () => ({ error: 'Too big' }) } as Response);
+    fetchMock.mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: 'Too big' }),
+    } as Response);
     render(<UploadDropZone onUploaded={vi.fn()} />);
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     await userEvent.upload(input, new File(['d'], 't.txt', { type: 'text/plain' }));

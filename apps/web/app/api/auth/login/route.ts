@@ -58,7 +58,11 @@ export async function POST(request: NextRequest) {
 
   let result;
   try {
-    result = await new LoginUseCase(getRepos().user, getAdapters().hasher, new LockoutPolicy()).execute({ password: passwordOrErr });
+    result = await new LoginUseCase(
+      getRepos().user,
+      getAdapters().hasher,
+      new LockoutPolicy()
+    ).execute({ password: passwordOrErr });
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       audit.log({ userId: undefined, action: 'login.fail', ip, userAgent: ua });
@@ -82,7 +86,7 @@ export async function POST(request: NextRequest) {
  */
 async function buildLoginResponse(
   result: LoginOutput,
-  client: { ip: string; ua: string | undefined },
+  client: { ip: string; ua: string | undefined }
 ): Promise<Response> {
   if (result.status === 'locked') {
     audit.log({ userId: undefined, action: 'login.fail', ip: client.ip, userAgent: client.ua });
@@ -103,7 +107,12 @@ async function buildLoginResponse(
   }
 
   await setSessionCookie(result.userId);
-  audit.log({ userId: result.userId, action: 'login.success', ip: client.ip, userAgent: client.ua });
+  audit.log({
+    userId: result.userId,
+    action: 'login.success',
+    ip: client.ip,
+    userAgent: client.ua,
+  });
   const validated = validateBody(LoginResponseSchema, {
     status: 'success' as const,
     userId: result.userId,

@@ -1,10 +1,10 @@
-
 import type { ChatSession } from '../entities/chat-session';
 import type { Message } from '../entities/message';
 
 import type { Repository } from './index';
 
 export interface ChatSessionRepo extends Repository<ChatSession, string> {
+  findAll(): Promise<ChatSession[]>;
   findByUserId(userId: string): Promise<ChatSession[]>;
 }
 

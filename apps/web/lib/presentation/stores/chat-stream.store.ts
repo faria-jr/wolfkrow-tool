@@ -40,7 +40,8 @@ export const useChatStreamStore = create<ChatStreamState>()(
 
       stop: () => set({ isStreaming: false }, false, 'stream/stop'),
 
-      clear: () => set({ chunks: [], currentSessionId: null, isStreaming: false }, false, 'stream/clear'),
+      clear: () =>
+        set({ chunks: [], currentSessionId: null, isStreaming: false }, false, 'stream/clear'),
     }),
     { name: 'chat-stream' }
   )

@@ -9,7 +9,13 @@ import { buildProviderFormValues, resolveProviderId } from './provider-form-help
 import { providerFormSchema, type ProviderFormValues } from './schema';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Form } from '@/components/ui/form';
 
 interface Props {
@@ -36,7 +42,12 @@ export function ProviderFormModal({ open, initial, onSave, onClose }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
+    >
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Edit Provider' : 'Provider Configuration'}</DialogTitle>
@@ -45,7 +56,9 @@ export function ProviderFormModal({ open, initial, onSave, onClose }: Props) {
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <ProviderFormFields form={form} isEditing={isEditing} hasApiKey={hasApiKey} />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
               <Button type="submit">Save</Button>
             </DialogFooter>
           </form>

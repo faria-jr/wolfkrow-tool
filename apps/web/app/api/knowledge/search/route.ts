@@ -18,10 +18,7 @@ export async function POST(request: Request) {
   const body = validateBody(SearchQuerySchema, await request.json().catch(() => null));
   if (body instanceof Response) return body;
 
-  const uc = new SearchKnowledgeUseCase(
-    getRepos().knowledgeChunk,
-    getAdapters().embedder,
-  );
+  const uc = new SearchKnowledgeUseCase(getRepos().knowledgeChunk, getAdapters().embedder);
 
   const result = await uc.execute({
     userId: session.userId,

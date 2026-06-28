@@ -11,7 +11,6 @@ import type { AIStreamChunk } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-
 const fakeStream = vi.hoisted(() => vi.fn());
 
 vi.mock('../../orchestrator', () => ({
@@ -114,7 +113,10 @@ describe('chat POST /send — SSE stream', () => {
     }));
 
     const res = await app.inject({
-      method: 'POST', url: '/send', headers: BEARER, payload: { message: 'boom' },
+      method: 'POST',
+      url: '/send',
+      headers: BEARER,
+      payload: { message: 'boom' },
     });
     expect(res.statusCode).toBe(200);
     const raw = await collectSse(res);
@@ -132,7 +134,10 @@ describe('chat POST /send — SSE chunk-type branches', () => {
       yield { done: true };
     });
     const res = await app.inject({
-      method: 'POST', url: '/send', headers: BEARER, payload: { message: 'run ls' },
+      method: 'POST',
+      url: '/send',
+      headers: BEARER,
+      payload: { message: 'run ls' },
     });
     expect(res.statusCode).toBe(200);
     const raw = await collectSse(res);
@@ -148,7 +153,10 @@ describe('chat POST /send — SSE chunk-type branches', () => {
       yield { done: true };
     });
     const res = await app.inject({
-      method: 'POST', url: '/send', headers: BEARER, payload: { message: 'rm' },
+      method: 'POST',
+      url: '/send',
+      headers: BEARER,
+      payload: { message: 'rm' },
     });
     expect(res.statusCode).toBe(200);
     const raw = await collectSse(res);

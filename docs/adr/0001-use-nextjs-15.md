@@ -18,6 +18,7 @@ O LionClaw é single-user, single-machine, mas tem várias features que dependem
 **Usar Next.js 15 como framework principal** para frontend + API gateway, com Worker Node.js separado para background tasks.
 
 Arquitetura final:
+
 - `apps/web/` → Next.js 15 (UI + Route Handlers + Server Components + Server Actions)
 - `apps/worker/` → Node.js long-running (MCPs, scheduler, Telegram, voice, dreaming)
 - `apps/wrapper/` → Electron mínimo (~300 linhas: systray + hotkey + auto-launch)

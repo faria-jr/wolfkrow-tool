@@ -36,6 +36,10 @@ We use ADRs to document significant architectural decisions. See [README.md](./R
 - [ADR-0031](./0031-defer-higgsfield-blotato.md) — Defer Higgsfield + Blotato MCPs to v2
 - [ADR-0032](./0032-remove-knowledge-benchmark.md) — Remove knowledge benchmark from v1.0
 - [ADR-0033](./0033-mgraph-structured-vault-out-of-scope-v1.md) — Structured mgraph vault (ROAM-like) out of scope for v1.0
+- [ADR-0034](./0034-server-side-run-control.md) — Server-side run control (abort/pause/resume) for long-running workflows
+- [ADR-0035](./0035-skills-override-fork.md) — Skills override — fork built-in into user-scoped copy (preserve base)
+- [ADR-0036](./0036-runevent-persisted-timeline.md) — RunEvent — persisted event timeline for console restore
+- [ADR-0037](./0037-shared-workspace-over-per-user-ownership.md) — Shared workspace replaces per-user ownership (MVP default)
 
 ## Process
 

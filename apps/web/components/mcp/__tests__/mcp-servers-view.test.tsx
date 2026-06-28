@@ -9,10 +9,20 @@ vi.mock('next/navigation', () => ({ useRouter: vi.fn() }));
 
 function makeServer() {
   return {
-    id: 's1', userId: 'u1', name: 'filesystem', description: 'fs',
-    command: 'npx', args: ['server'], env: {}, isActive: true, isBuiltIn: false,
-    visibility: 'always' as const, healthCheck: null, metadata: null,
-    createdAt: '2024-01-01', updatedAt: '2024-01-01',
+    id: 's1',
+    userId: 'u1',
+    name: 'filesystem',
+    description: 'fs',
+    command: 'npx',
+    args: ['server'],
+    env: {},
+    isActive: true,
+    isBuiltIn: false,
+    visibility: 'always' as const,
+    healthCheck: null,
+    metadata: null,
+    createdAt: '2024-01-01',
+    updatedAt: '2024-01-01',
   };
 }
 
@@ -83,7 +93,11 @@ describe('McpServersView', () => {
     });
     vi.stubGlobal('fetch', fetchMock);
     render(<McpServersView />);
-    await waitFor(() => expect(screen.getByRole('heading', { name: /failed to load mcp servers/i })).toBeInTheDocument());
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { name: /failed to load mcp servers/i })
+      ).toBeInTheDocument()
+    );
     await userEvent.click(screen.getByRole('button', { name: /try again/i }));
     await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(4));
   });

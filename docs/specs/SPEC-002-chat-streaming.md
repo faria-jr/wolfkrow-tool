@@ -12,9 +12,10 @@
 Chat conversacional multi-SDK (4 providers) com streaming SSE de tokens, tool calls inline, e metadata em tempo real.
 
 ### Objetivos
+
 - Streaming SSE <500ms TTFT (Time To First Token)
 - 4 SDKs: Claude Agent, Claude-compat, Codex, Lion-SDK
-- Tool calls renderizados inline (Read, Bash, Web*, etc)
+- Tool calls renderizados inline (Read, Bash, Web\*, etc)
 - Cancel/abort support
 - Multi-session support
 - Markdown rendering com syntax highlighting
@@ -195,7 +196,9 @@ export const chatSessions = sqliteTable('chat_sessions', {
 
 export const chatMessages = sqliteTable('chat_messages', {
   id: text('id').primaryKey(),
-  sessionId: text('session_id').notNull().references(() => chatSessions.id, { onDelete: 'cascade' }),
+  sessionId: text('session_id')
+    .notNull()
+    .references(() => chatSessions.id, { onDelete: 'cascade' }),
   role: text('role', { enum: ['user', 'assistant', 'system', 'tool'] }).notNull(),
   content: text('content').notNull(),
   attachments: text('attachments', { mode: 'json' }).$type<string[]>().default([]),
@@ -206,7 +209,9 @@ export const chatMessages = sqliteTable('chat_messages', {
 
 export const chatAttachments = sqliteTable('chat_attachments', {
   id: text('id').primaryKey(),
-  messageId: text('message_id').notNull().references(() => chatMessages.id, { onDelete: 'cascade' }),
+  messageId: text('message_id')
+    .notNull()
+    .references(() => chatMessages.id, { onDelete: 'cascade' }),
   filename: text('filename').notNull(),
   mimeType: text('mime_type').notNull(),
   size: integer('size').notNull(),
@@ -224,7 +229,7 @@ export const chatAttachments = sqliteTable('chat_attachments', {
 export interface AIProvider {
   readonly id: string;
   readonly displayName: string;
-  
+
   query(prompt: Prompt, options: QueryOptions): AsyncIterable<StreamChunk>;
   countTokens(text: string): Promise<number>;
   estimateCost(usage: TokenUsage): number;
@@ -253,17 +258,17 @@ export interface QueryOptions {
 export class ClaudeAgentSDKProvider implements AIProvider {
   readonly id = 'claude-agent-sdk';
   readonly displayName = 'Claude Agent SDK';
-  
+
   constructor(private config: ClaudeConfig) {}
-  
+
   async *query(prompt: Prompt, options: QueryOptions): AsyncIterable<StreamChunk> {
     const sdk = new ClaudeAgentSDK({ apiKey: this.config.apiKey });
-    
+
     for await (const event of sdk.query(prompt, { signal: options.signal })) {
       yield this.translate(event);
     }
   }
-  
+
   private translate(event: ClaudeEvent): StreamChunk {
     // Map Claude events to our StreamChunk format
     switch (event.type) {
@@ -279,7 +284,7 @@ export class ClaudeAgentSDKProvider implements AIProvider {
       // ... etc
     }
   }
-  
+
   // ... countTokens, estimateCost
 }
 ```
@@ -328,17 +333,17 @@ export function ChatMessage({ message, streaming }: { message: ChatMessage; stre
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeHighlight]}
           components={{
-            pre: CodeBlock,  // Custom with copy button
+            pre: CodeBlock, // Custom with copy button
             // ... tool calls rendered inline
           }}
         >
           {message.content}
         </ReactMarkdown>
-        
+
         {message.toolCalls?.map((tool) => (
           <ToolCallCard key={tool.id} tool={tool} />
         ))}
-        
+
         {streaming && <span className="animate-pulse">▊</span>}
       </div>
     </div>
@@ -350,25 +355,27 @@ export function ChatMessage({ message, streaming }: { message: ChatMessage; stre
 
 ## 8. Performance Targets
 
-| Metric | Target | Measurement |
-|---|---|---|
-| TTFT | <500ms (P95) | Prometheus metrics |
-| Total latency | <5s for 100 tokens | End-to-end timing |
-| SSE reconnection | <2s | Auto-reconnect |
-| Message rendering | <16ms per message (60fps) | React DevTools |
-| Memory usage | <100MB for 1000 messages | Browser DevTools |
+| Metric            | Target                    | Measurement        |
+| ----------------- | ------------------------- | ------------------ |
+| TTFT              | <500ms (P95)              | Prometheus metrics |
+| Total latency     | <5s for 100 tokens        | End-to-end timing  |
+| SSE reconnection  | <2s                       | Auto-reconnect     |
+| Message rendering | <16ms per message (60fps) | React DevTools     |
+| Memory usage      | <100MB for 1000 messages  | Browser DevTools   |
 
 ---
 
 ## 9. Testes
 
 ### Unit
+
 - `SendMessage.execute()`: happy path + error cases
 - `Message.fromRow()`: Drizzle row → Message
 - Token counting per provider
 - Cost estimation per provider
 
 ### Integration
+
 - Full flow: send → stream → save → display
 - Cancel mid-stream
 - Reconnect after disconnect
@@ -376,6 +383,7 @@ export function ChatMessage({ message, streaming }: { message: ChatMessage; stre
 - Attachment upload + processing
 
 ### E2E
+
 - User sends message → response streamed
 - User cancels mid-stream
 - User creates new session
@@ -386,12 +394,12 @@ export function ChatMessage({ message, streaming }: { message: ChatMessage; stre
 
 ## 10. Riscos
 
-| Risco | Mitigação |
-|---|---|
-| SSE bloqueado por firewall | Fallback long-polling |
-| Provider rate limit | Exponential backoff + queue |
-| Long-running generation | Timeout 5min, can resume |
-| Tool call loop infinito | Max iterations + timeout |
-| Context overflow | Auto-compaction on threshold |
-| Attachments grandes (>10MB) | Streaming upload + size limit |
-| Multiple tabs SSE | Tab leader pattern (BroadcastChannel) |
+| Risco                       | Mitigação                             |
+| --------------------------- | ------------------------------------- |
+| SSE bloqueado por firewall  | Fallback long-polling                 |
+| Provider rate limit         | Exponential backoff + queue           |
+| Long-running generation     | Timeout 5min, can resume              |
+| Tool call loop infinito     | Max iterations + timeout              |
+| Context overflow            | Auto-compaction on threshold          |
+| Attachments grandes (>10MB) | Streaming upload + size limit         |
+| Multiple tabs SSE           | Tab leader pattern (BroadcastChannel) |

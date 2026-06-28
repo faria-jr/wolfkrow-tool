@@ -7,7 +7,10 @@ export const metadata = { title: 'Knowledge — Wolfkrow' };
 export default function KnowledgePage() {
   return (
     <PageShell variant="narrow">
-      <PageHeader title="Knowledge" description="Upload documents and search them with semantic + keyword search." />
+      <PageHeader
+        title="Knowledge"
+        description="Upload documents and search them with semantic + keyword search."
+      />
       <PageContent>
         <KnowledgeView />
       </PageContent>

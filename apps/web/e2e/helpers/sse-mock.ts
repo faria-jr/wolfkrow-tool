@@ -20,9 +20,16 @@ const WEB_BASE = process.env['BASE_URL'] ?? 'http://localhost:3000';
 
 function sseEncode(events: ReadonlyArray<Record<string, unknown>>): string {
   return events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join('');
-}export interface MockChatOptions {
+}
+export interface MockChatOptions {
   deltas?: readonly string[];
-  toolCall?: { id: string; name: string; input: Record<string, unknown>; prompt: string; output?: string };
+  toolCall?: {
+    id: string;
+    name: string;
+    input: Record<string, unknown>;
+    prompt: string;
+    output?: string;
+  };
   finalUsage?: { inputTokens: number; outputTokens: number };
   delayMsPerDelta?: number;
   failWith?: string;
@@ -54,8 +61,18 @@ export async function mockChatStream(page: Page, opts: MockChatOptions = {}): Pr
     }
 
     if (opts.toolCall) {
-      events.push({ type: 'tool_call', id: opts.toolCall.id, name: opts.toolCall.name, input: opts.toolCall.input });
-      events.push({ type: 'tool_result', callId: opts.toolCall.id, output: opts.toolCall.output ?? '', isError: false });
+      events.push({
+        type: 'tool_call',
+        id: opts.toolCall.id,
+        name: opts.toolCall.name,
+        input: opts.toolCall.input,
+      });
+      events.push({
+        type: 'tool_result',
+        callId: opts.toolCall.id,
+        output: opts.toolCall.output ?? '',
+        isError: false,
+      });
     }
 
     events.push({
@@ -67,7 +84,11 @@ export async function mockChatStream(page: Page, opts: MockChatOptions = {}): Pr
     await new Promise((r) => setTimeout(r, delay));
     await route.fulfill({
       status: 200,
-      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' },
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
       body: chunks,
     });
   });
@@ -75,11 +96,18 @@ export async function mockChatStream(page: Page, opts: MockChatOptions = {}): Pr
 
 export async function mockToolPermissionResolve(page: Page, approve = true): Promise<void> {
   await page.route(`${WORKER_URL}/chat/permission`, async (route: Route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ resolved: approve }) });
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ resolved: approve }),
+    });
   });
 }
 
-export async function mockChatSessions(page: Page, sessions: ReadonlyArray<{ id: string; title?: string }> = []): Promise<void> {
+export async function mockChatSessions(
+  page: Page,
+  sessions: ReadonlyArray<{ id: string; title?: string }> = []
+): Promise<void> {
   const data = sessions.map((s, i) => ({
     id: s.id,
     title: s.title ?? `Session ${i + 1}`,
@@ -88,35 +116,70 @@ export async function mockChatSessions(page: Page, sessions: ReadonlyArray<{ id:
   }));
   await page.route(`${WEB_BASE}/api/chat/sessions`, async (route: Route) => {
     if (route.request().method() === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(data),
+      });
     } else if (route.request().method() === 'POST') {
       const id = `sess-${Math.random().toString(36).slice(2, 10)}`;
-      const body = { id, title: 'New Chat', lastActivity: new Date().toISOString(), archived: false };
-      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(body) });
+      const body = {
+        id,
+        title: 'New Chat',
+        lastActivity: new Date().toISOString(),
+        archived: false,
+      };
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify(body),
+      });
     } else {
       await route.continue();
     }
   });
 }
 
-export async function mockProviders(page: Page, providers: ReadonlyArray<Record<string, unknown>>): Promise<void> {
+export async function mockProviders(
+  page: Page,
+  providers: ReadonlyArray<Record<string, unknown>>
+): Promise<void> {
   await page.route(`${WEB_BASE}/api/providers`, async (route: Route) => {
     if (route.request().method() === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(providers) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(providers),
+      });
     } else {
-      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true }),
+      });
     }
   });
 }
 
-export async function mockVault(page: Page, secrets: ReadonlyArray<Record<string, unknown>> = []): Promise<void> {
+export async function mockVault(
+  page: Page,
+  secrets: ReadonlyArray<Record<string, unknown>> = []
+): Promise<void> {
   await page.route(`${WEB_BASE}/api/vault`, async (route: Route) => {
     if (route.request().method() === 'GET') {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ secrets }) });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ secrets }),
+      });
     } else if (route.request().method() === 'POST') {
       const body = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
       const next = { id: `sec-${Date.now()}`, ...body };
-      await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ ok: true, secret: next }) });
+      await route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ ok: true, secret: next }),
+      });
     } else {
       await route.continue();
     }

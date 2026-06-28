@@ -29,12 +29,15 @@ interface DropZoneContentProps {
 function DropZoneContent({ error, uploading, onSelectFiles }: DropZoneContentProps) {
   return (
     <>
-      <Upload className="mb-3 h-10 w-10 text-muted-foreground" />
+      <Upload className="text-muted-foreground mb-3 h-10 w-10" />
       <p className="mb-1 text-sm font-medium">Drag files here or click to browse</p>
-      <p className="mb-4 text-xs text-muted-foreground">PDF, DOCX, CSV, XLSX, MD, TXT — up to 50MB each</p>
+      <p className="text-muted-foreground mb-4 text-xs">
+        PDF, DOCX, CSV, XLSX, MD, TXT — up to 50MB each
+      </p>
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4 shrink-0" />{error}
+        <div className="bg-destructive/10 text-destructive mb-4 flex items-center gap-2 rounded-md px-3 py-2 text-sm">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
         </div>
       )}
       <Button variant="outline" disabled={uploading} onClick={onSelectFiles}>
@@ -69,7 +72,9 @@ export function UploadDropZone({ onUploaded }: Props) {
       });
 
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({ error: 'Upload failed' }))) as { error?: string };
+        const data = (await res.json().catch(() => ({ error: 'Upload failed' }))) as {
+          error?: string;
+        };
         setError(data.error ?? 'Upload failed');
         hasError = true;
       }
@@ -89,15 +94,31 @@ export function UploadDropZone({ onUploaded }: Props) {
     <div
       className={cn(
         'flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 text-center transition-colors',
-        dragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50',
+        dragging
+          ? 'border-primary bg-primary/5'
+          : 'border-muted-foreground/25 hover:border-primary/50'
       )}
-      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
     >
-      <DropZoneContent error={error} uploading={uploading} onSelectFiles={() => inputRef.current?.click()} />
-      <input ref={inputRef} type="file" multiple accept={ACCEPTED} className="hidden"
-        onChange={(e) => { if (e.target.files) void uploadFiles(e.target.files); }}
+      <DropZoneContent
+        error={error}
+        uploading={uploading}
+        onSelectFiles={() => inputRef.current?.click()}
+      />
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={ACCEPTED}
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files) void uploadFiles(e.target.files);
+        }}
       />
     </div>
   );

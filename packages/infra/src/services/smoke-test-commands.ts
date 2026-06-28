@@ -2,11 +2,7 @@ import { spawn } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type {
-  SmokeTestLint,
-  SmokeTestTests,
-  SmokeTestTypecheck,
-} from './smoke-test-runner';
+import type { SmokeTestLint, SmokeTestTests, SmokeTestTypecheck } from './smoke-test-runner';
 
 const TYPE_CHECK_TIMEOUT_MS = 120_000;
 const LINT_TIMEOUT_MS = 120_000;
@@ -37,7 +33,7 @@ function spawnCommand(
   cmd: string,
   args: string[],
   cwd: string,
-  timeoutMs: number,
+  timeoutMs: number
 ): Promise<SpawnResult> {
   return new Promise((resolveP) => {
     let output = '';
@@ -84,7 +80,7 @@ export async function runTypecheck(projectPath: string): Promise<SmokeTestTypech
       'npx',
       ['tsc', '--noEmit'],
       projectPath,
-      TYPE_CHECK_TIMEOUT_MS,
+      TYPE_CHECK_TIMEOUT_MS
     );
     const matches = output.match(/error TS\d+:/g);
     return {
@@ -108,7 +104,7 @@ export async function runLint(projectPath: string): Promise<SmokeTestLint> {
       'npm',
       ['run', 'lint'],
       projectPath,
-      LINT_TIMEOUT_MS,
+      LINT_TIMEOUT_MS
     );
     const truncated = truncate(output, MAX_OUTPUT_BYTES);
     const errMatch = truncated.match(/(\d+)\s+(?:error|errors)/i);
@@ -132,12 +128,7 @@ export async function runTests(projectPath: string): Promise<SmokeTestTests> {
     if (!scripts['test']) {
       return { available: false, passed: 0, failed: 0, output: '' };
     }
-    const first = await spawnCommand(
-      'npm',
-      ['test', '--', '--run'],
-      projectPath,
-      TEST_TIMEOUT_MS,
-    );
+    const first = await spawnCommand('npm', ['test', '--', '--run'], projectPath, TEST_TIMEOUT_MS);
     let finalOutput = first.output;
     if (first.exitCode !== 0 && /unknown\s+option|unrecognized/i.test(first.output)) {
       const second = await spawnCommand('npm', ['test'], projectPath, TEST_TIMEOUT_MS);

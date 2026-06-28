@@ -46,7 +46,7 @@ export interface FileEntry {
 export class OpenDesignClient {
   constructor(
     private readonly baseUrl: string,
-    private readonly timeoutMs = DEFAULT_TIMEOUT_MS,
+    private readonly timeoutMs = DEFAULT_TIMEOUT_MS
   ) {}
 
   async health(): Promise<{ ok: boolean; version: string }> {
@@ -67,13 +67,18 @@ export class OpenDesignClient {
   }
 
   async getProjectFiles(id: string): Promise<FileEntry[]> {
-    const r = await this.getJson<{ files: FileEntry[] }>(`/api/projects/${encodeURIComponent(id)}/files`);
+    const r = await this.getJson<{ files: FileEntry[] }>(
+      `/api/projects/${encodeURIComponent(id)}/files`
+    );
     return r.files ?? [];
   }
 
   async getProjectFile(id: string, filePath: string): Promise<string> {
-    const res = await this.fetch(`/api/projects/${encodeURIComponent(id)}/files/${encodeURI(filePath)}`);
-    if (!res.ok) throw new Error(`open-design getProjectFile ${filePath} failed: HTTP ${res.status}`);
+    const res = await this.fetch(
+      `/api/projects/${encodeURIComponent(id)}/files/${encodeURI(filePath)}`
+    );
+    if (!res.ok)
+      throw new Error(`open-design getProjectFile ${filePath} failed: HTTP ${res.status}`);
     return res.text();
   }
 

@@ -1,10 +1,4 @@
-export const VAULT_KINDS = [
-  'entity',
-  'meeting',
-  'decision',
-  'project',
-  'reference',
-] as const;
+export const VAULT_KINDS = ['entity', 'meeting', 'decision', 'project', 'reference'] as const;
 export type VaultKind = (typeof VAULT_KINDS)[number];
 
 export interface VaultNoteProps {
@@ -32,16 +26,36 @@ export class VaultNote {
     return new VaultNote(props);
   }
 
-  get id(): string | undefined { return this.props.id; }
-  get path(): string { return this.props.path; }
-  get kind(): VaultKind { return this.props.kind; }
-  get title(): string { return this.props.title; }
-  get tags(): readonly string[] { return this.props.tags; }
-  get body(): string { return this.props.body; }
-  get source(): string | undefined { return this.props.source; }
-  get createdAt(): Date { return this.props.createdAt ?? new Date(); }
-  get updatedAt(): Date { return this.props.updatedAt ?? this.createdAt; }
-  get wikilinks(): readonly string[] { return this.props.wikilinks ?? []; }
+  get id(): string | undefined {
+    return this.props.id;
+  }
+  get path(): string {
+    return this.props.path;
+  }
+  get kind(): VaultKind {
+    return this.props.kind;
+  }
+  get title(): string {
+    return this.props.title;
+  }
+  get tags(): readonly string[] {
+    return this.props.tags;
+  }
+  get body(): string {
+    return this.props.body;
+  }
+  get source(): string | undefined {
+    return this.props.source;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt ?? new Date();
+  }
+  get updatedAt(): Date {
+    return this.props.updatedAt ?? this.createdAt;
+  }
+  get wikilinks(): readonly string[] {
+    return this.props.wikilinks ?? [];
+  }
 
   toJSON(): VaultNoteProps {
     return { ...this.props };

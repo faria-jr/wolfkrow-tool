@@ -53,11 +53,7 @@ export class DrizzleToolPermissionRepo {
         updatedAt: now,
       })
       .onConflictDoUpdate({
-        target: [
-          toolPermissions.userId,
-          toolPermissions.agentId,
-          toolPermissions.tool,
-        ],
+        target: [toolPermissions.userId, toolPermissions.agentId, toolPermissions.tool],
         set: {
           decision: input.decision,
           updatedAt: now,
@@ -67,11 +63,7 @@ export class DrizzleToolPermissionRepo {
   }
 
   /** Load the decision for a (userId, agentId, tool) triple, or null. */
-  findDecision(
-    userId: string,
-    agentId: string,
-    tool: string,
-  ): ToolPermissionDecision | null {
+  findDecision(userId: string, agentId: string, tool: string): ToolPermissionDecision | null {
     const rows = this.db
       .select({ decision: toolPermissions.decision })
       .from(toolPermissions)
@@ -79,8 +71,8 @@ export class DrizzleToolPermissionRepo {
         and(
           eq(toolPermissions.userId, userId),
           eq(toolPermissions.agentId, agentId),
-          eq(toolPermissions.tool, tool),
-        ),
+          eq(toolPermissions.tool, tool)
+        )
       )
       .all();
     const row = rows[0];
@@ -127,7 +119,7 @@ export class DrizzleToolPermissionRepo {
       .where(
         agentId !== undefined
           ? and(eq(toolPermissions.userId, userId), eq(toolPermissions.agentId, agentId))
-          : eq(toolPermissions.userId, userId),
+          : eq(toolPermissions.userId, userId)
       )
       .all();
     return rows.map((r) => ({
@@ -151,8 +143,8 @@ export class DrizzleToolPermissionRepo {
         and(
           eq(toolPermissions.userId, userId),
           eq(toolPermissions.agentId, agentId),
-          eq(toolPermissions.tool, tool),
-        ),
+          eq(toolPermissions.tool, tool)
+        )
       )
       .run();
     return result.changes;

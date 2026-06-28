@@ -67,10 +67,7 @@ describe('DrizzleKnowledgeChunkRepo search', () => {
 
   it('vectorSearch respects the limit', async () => {
     const repo = makeRepo();
-    await repo.saveMany([
-      chunk('a', 'alpha', [1, 0, 0]),
-      chunk('b', 'beta', [0.9, 0.1, 0]),
-    ]);
+    await repo.saveMany([chunk('a', 'alpha', [1, 0, 0]), chunk('b', 'beta', [0.9, 0.1, 0])]);
     const results = await repo.vectorSearch([1, 0, 0], 1);
     expect(results).toHaveLength(1);
     expect(results[0]!.chunk.id).toBe('a');

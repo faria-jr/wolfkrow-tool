@@ -36,12 +36,20 @@ export interface KnowledgeChunkRepo {
   saveMany(chunks: KnowledgeChunk[]): Promise<KnowledgeChunk[]>;
   findByDocumentId(documentId: string): Promise<KnowledgeChunk[]>;
   deleteByDocumentId(documentId: string): Promise<void>;
-  vectorSearch(embedding: number[], limit: number, documentIds?: string[]): Promise<ChunkSearchResult[]>;
-  keywordSearch(query: string, limit: number, documentIds?: string[]): Promise<KeywordSearchResult[]>;
+  vectorSearch(
+    embedding: number[],
+    limit: number,
+    documentIds?: string[]
+  ): Promise<ChunkSearchResult[]>;
+  keywordSearch(
+    query: string,
+    limit: number,
+    documentIds?: string[]
+  ): Promise<KeywordSearchResult[]>;
   hybridSearch(
     query: string,
     embedding: number[],
     limit: number,
-    documentIds?: string[],
+    documentIds?: string[]
   ): Promise<HybridChunkSearchResult[]>;
 }

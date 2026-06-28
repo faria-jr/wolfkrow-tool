@@ -9,10 +9,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // D3 is client-only (lazy inside GraphCanvas too) — keep the wrapper out of
 // the initial bundle for non-/graph routes.
-const GraphView = dynamic(
-  () => import('@/components/graph/graph-view').then((m) => m.GraphView),
-  { ssr: false, loading: () => <Skeleton className="h-full w-full" /> },
-);
+const GraphView = dynamic(() => import('@/components/graph/graph-view').then((m) => m.GraphView), {
+  ssr: false,
+  loading: () => <Skeleton className="h-full w-full" />,
+});
 
 export default function GraphPage() {
   return (

@@ -21,7 +21,7 @@ describe('knowledge schemas', () => {
       'DocumentStatusSchema accepts %s',
       (v) => {
         expect(DocumentStatusSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('DocumentStatusSchema rejects invalid', () => {
       expect(() => DocumentStatusSchema.parse('nope')).toThrow();
@@ -31,7 +31,7 @@ describe('knowledge schemas', () => {
       'ChunkSourceTypeSchema accepts %s',
       (v) => {
         expect(ChunkSourceTypeSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('ChunkSourceTypeSchema rejects invalid', () => {
       expect(() => ChunkSourceTypeSchema.parse('nope')).toThrow();
@@ -41,7 +41,7 @@ describe('knowledge schemas', () => {
       'EmbeddingModelSchema accepts %s',
       (v) => {
         expect(EmbeddingModelSchema.parse(v)).toBe(v);
-      },
+      }
     );
     it('EmbeddingModelSchema rejects invalid', () => {
       expect(() => EmbeddingModelSchema.parse('nope')).toThrow();
@@ -54,9 +54,7 @@ describe('knowledge schemas', () => {
       expect(parsed.tags).toEqual([]);
     });
     it('rejects non-positive pageCount when provided', () => {
-      expect(() =>
-        KnowledgeDocumentMetadataSchema.parse({ pageCount: 0 }),
-      ).toThrow();
+      expect(() => KnowledgeDocumentMetadataSchema.parse({ pageCount: 0 })).toThrow();
     });
   });
 
@@ -81,7 +79,7 @@ describe('knowledge schemas', () => {
           ...valid,
           error: 'fail',
           embeddingModel: 'voyage-3',
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects non-positive size', () => {
@@ -98,21 +96,17 @@ describe('knowledge schemas', () => {
   describe('ChunkMetadataSchema', () => {
     it('accepts valid metadata with required position + sourceType', () => {
       expect(() =>
-        ChunkMetadataSchema.parse({ position: 0, sourceType: 'paragraph' }),
+        ChunkMetadataSchema.parse({ position: 0, sourceType: 'paragraph' })
       ).not.toThrow();
     });
     it('rejects missing position', () => {
       expect(() => ChunkMetadataSchema.parse({ sourceType: 'code' })).toThrow();
     });
     it('rejects negative position', () => {
-      expect(() =>
-        ChunkMetadataSchema.parse({ position: -1, sourceType: 'code' }),
-      ).toThrow();
+      expect(() => ChunkMetadataSchema.parse({ position: -1, sourceType: 'code' })).toThrow();
     });
     it('rejects invalid sourceType', () => {
-      expect(() =>
-        ChunkMetadataSchema.parse({ position: 0, sourceType: 'nope' }),
-      ).toThrow();
+      expect(() => ChunkMetadataSchema.parse({ position: 0, sourceType: 'nope' })).toThrow();
     });
   });
 
@@ -129,9 +123,7 @@ describe('knowledge schemas', () => {
       expect(() => KnowledgeChunkSchema.parse(valid)).not.toThrow();
     });
     it('accepts optional embedding', () => {
-      expect(() =>
-        KnowledgeChunkSchema.parse({ ...valid, embedding: [0.1, 0.2] }),
-      ).not.toThrow();
+      expect(() => KnowledgeChunkSchema.parse({ ...valid, embedding: [0.1, 0.2] })).not.toThrow();
     });
     it('rejects empty content', () => {
       expect(() => KnowledgeChunkSchema.parse({ ...valid, content: '' })).toThrow();
@@ -150,16 +142,14 @@ describe('knowledge schemas', () => {
           query: 'q',
           documentIds: [uuid],
           tags: ['a'],
-        }),
+        })
       ).not.toThrow();
     });
     it('rejects empty query', () => {
       expect(() => SearchQuerySchema.parse({ query: '' })).toThrow();
     });
     it('rejects semanticWeight out of [0,1]', () => {
-      expect(() =>
-        SearchQuerySchema.parse({ query: 'q', semanticWeight: 1.5 }),
-      ).toThrow();
+      expect(() => SearchQuerySchema.parse({ query: 'q', semanticWeight: 1.5 })).toThrow();
     });
     it('rejects limit over 100', () => {
       expect(() => SearchQuerySchema.parse({ query: 'q', limit: 101 })).toThrow();
@@ -176,14 +166,10 @@ describe('knowledge schemas', () => {
       createdAt: ts,
     };
     it('accepts a valid result', () => {
-      expect(() =>
-        SearchResultSchema.parse({ chunk, score: 0.9 }),
-      ).not.toThrow();
+      expect(() => SearchResultSchema.parse({ chunk, score: 0.9 })).not.toThrow();
     });
     it('rejects score out of [0,1]', () => {
-      expect(() =>
-        SearchResultSchema.parse({ chunk, score: 1.5 }),
-      ).toThrow();
+      expect(() => SearchResultSchema.parse({ chunk, score: 1.5 })).toThrow();
     });
   });
 });

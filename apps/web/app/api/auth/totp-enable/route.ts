@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
     audit.log({ userId: session.userId, action: 'totp.enable', ip, userAgent: ua });
     return Response.json({ enabled: true });
   } catch (error) {
-    if (error instanceof UnauthorizedError) return Response.json({ error: 'Invalid TOTP code' }, { status: 401 });
+    if (error instanceof UnauthorizedError)
+      return Response.json({ error: 'Invalid TOTP code' }, { status: 401 });
     throw error;
   }
 }

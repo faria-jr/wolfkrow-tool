@@ -8,7 +8,10 @@ export interface ValidatorAgent {
 }
 
 export interface EnricherAgent {
-  enrich(input: { specContent: string; validatorOutput: string }): Promise<{ output: string; tokens: number }>;
+  enrich(input: {
+    specContent: string;
+    validatorOutput: string;
+  }): Promise<{ output: string; tokens: number }>;
 }
 
 // ── CreateEnrichSession ───────────────────────────────────────────────────────
@@ -19,12 +22,21 @@ export interface EnricherAgent {
  * as a separate parameter to `execute`, so a client cannot spoof another user's
  * identity by sending `userId` in the request body.
  */
-export interface CreateEnrichSessionInput { specPath: string; validatorAgentId?: string; enricherAgentId?: string; }
-export interface CreateEnrichSessionOutput { session: EnrichSession; }
+export interface CreateEnrichSessionInput {
+  specPath: string;
+  validatorAgentId?: string;
+  enricherAgentId?: string;
+}
+export interface CreateEnrichSessionOutput {
+  session: EnrichSession;
+}
 
 export class CreateEnrichSessionUseCase {
   constructor(private readonly repo: EnrichSessionRepo) {}
-  async execute(userId: string, input: CreateEnrichSessionInput): Promise<CreateEnrichSessionOutput> {
+  async execute(
+    userId: string,
+    input: CreateEnrichSessionInput
+  ): Promise<CreateEnrichSessionOutput> {
     const session = await this.repo.save(EnrichSessionEntity.create({ userId, ...input }));
     return { session };
   }
@@ -53,9 +65,15 @@ export class ListEnrichSessionsUseCase {
 // ── RunValidator ──────────────────────────────────────────────────────────────
 
 export class RunValidatorUseCase {
-  constructor(private readonly repo: EnrichSessionRepo, private readonly agent: ValidatorAgent) {}
+  constructor(
+    private readonly repo: EnrichSessionRepo,
+    private readonly agent: ValidatorAgent
+  ) {}
 
-  async execute(input: { sessionId: string; specContent: string }): Promise<{ session: EnrichSession; output: string }> {
+  async execute(input: {
+    sessionId: string;
+    specContent: string;
+  }): Promise<{ session: EnrichSession; output: string }> {
     const session = await this.repo.findById(input.sessionId);
     if (!session) throw new NotFoundError('EnrichSession', input.sessionId);
 
@@ -70,15 +88,25 @@ export class RunValidatorUseCase {
 // ── RunEnricher ───────────────────────────────────────────────────────────────
 
 export class RunEnricherUseCase {
-  constructor(private readonly repo: EnrichSessionRepo, private readonly agent: EnricherAgent) {}
+  constructor(
+    private readonly repo: EnrichSessionRepo,
+    private readonly agent: EnricherAgent
+  ) {}
 
-  async execute(input: { sessionId: string; specContent: string; validatorOutput: string }): Promise<{ session: EnrichSession; output: string }> {
+  async execute(input: {
+    sessionId: string;
+    specContent: string;
+    validatorOutput: string;
+  }): Promise<{ session: EnrichSession; output: string }> {
     const session = await this.repo.findById(input.sessionId);
     if (!session) throw new NotFoundError('EnrichSession', input.sessionId);
 
     const t0 = Date.now();
     const started = await this.repo.save(session.startEnricher());
-    const result = await this.agent.enrich({ specContent: input.specContent, validatorOutput: input.validatorOutput });
+    const result = await this.agent.enrich({
+      specContent: input.specContent,
+      validatorOutput: input.validatorOutput,
+    });
     const updated = await this.repo.save(started.completeEnricher(result.tokens, Date.now() - t0));
     return { session: updated, output: result.output };
   }
@@ -90,7 +118,8 @@ export class CancelEnrichSessionUseCase {
   constructor(private readonly repo: EnrichSessionRepo) {}
   async execute(input: { sessionId: string; userId: string }): Promise<void> {
     const session = await this.repo.findById(input.sessionId);
-    if (!session || session.userId !== input.userId) throw new NotFoundError('EnrichSession', input.sessionId);
+    if (!session || session.userId !== input.userId)
+      throw new NotFoundError('EnrichSession', input.sessionId);
     await this.repo.save(session.cancel());
   }
 }

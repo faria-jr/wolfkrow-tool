@@ -25,11 +25,13 @@ Remover o knowledge benchmark de v1.0. A feature está marcada como `⛔ removid
 ## Consequences
 
 **Positivo:**
+
 - Reduz escopo de v1.0 em ~2 semanas de trabalho de engenharia.
 - Evita complexidade de manter datasets de ground truth.
 - Foco em features de produto com valor direto ao usuário.
 
 **Negativo:**
+
 - Sem métrica objetiva de qualidade de retrieval para CI.
 - Degradações de recall só serão detectadas por feedback subjetivo do usuário.
 

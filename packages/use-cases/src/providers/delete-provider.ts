@@ -3,7 +3,10 @@ import type { ProviderConfigRepo } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
-export interface DeleteProviderInput { userId: string; id: string; }
+export interface DeleteProviderInput {
+  userId: string;
+  id: string;
+}
 
 const BUILT_IN_IDS: ReadonlySet<string> = new Set(BUILT_IN_PROVIDERS.map((p) => p.id));
 

@@ -3,8 +3,13 @@ import { NotFoundError } from '@wolfkrow/domain';
 
 import type { UseCase } from '../use-case';
 
-export interface GetSkillInput { id: string; userId: string; }
-export interface GetSkillOutput { skill: Skill; }
+export interface GetSkillInput {
+  id: string;
+  userId: string;
+}
+export interface GetSkillOutput {
+  skill: Skill;
+}
 
 export class GetSkillUseCase implements UseCase<GetSkillInput, GetSkillOutput> {
   constructor(private readonly repo: SkillRepo) {}

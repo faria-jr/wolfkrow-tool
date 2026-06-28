@@ -24,7 +24,11 @@ beforeEach(async () => {
 
 afterEach(async () => {
   delete process.env['WOLFKROW_ALLOWED_PROJECT_ROOTS'];
-  await Promise.allSettled([rm(root, { recursive: true, force: true }), rm(allowedRoot, { recursive: true, force: true }), rm(outsideRoot, { recursive: true, force: true })]);
+  await Promise.allSettled([
+    rm(root, { recursive: true, force: true }),
+    rm(allowedRoot, { recursive: true, force: true }),
+    rm(outsideRoot, { recursive: true, force: true }),
+  ]);
 });
 
 describe('validateProjectPath', () => {

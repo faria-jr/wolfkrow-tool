@@ -1,7 +1,6 @@
 import { Agent, type AgentRepo } from '@wolfkrow/domain';
 import { describe, expect, it } from 'vitest';
 
-
 import { loadSeedAgents } from './loader';
 import { seedAgentId, seedAgents } from './seeder';
 

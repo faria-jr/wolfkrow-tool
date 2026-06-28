@@ -13,7 +13,9 @@ export const settings = sqliteTable('settings', {
     .notNull()
     .unique()
     .references(() => users.id, { onDelete: 'cascade' }),
-  theme: text('theme', { enum: ['light', 'dark', 'system'] }).notNull().default('system'),
+  theme: text('theme', { enum: ['light', 'dark', 'system'] })
+    .notNull()
+    .default('system'),
   orchestrator: metadata(),
   voice: metadata(),
   stt: metadata(),

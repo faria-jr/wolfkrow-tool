@@ -9,14 +9,18 @@ import { PricingCalculatorCard } from '@/components/usage/pricing-calculator-car
 
 // recharts is heavy — lazy-load the charts so the /usage route owns the cost
 // instead of every route.
-const UsageCharts = dynamic(
-  () => import('@/components/usage/usage-charts').then((m) => m.UsageCharts),
+const UsageCharts = dynamic(() =>
+  import('@/components/usage/usage-charts').then((m) => m.UsageCharts)
 );
 
 export default function UsagePage() {
   return (
     <PageShell>
-      <PageHeader title="Usage" description="Token analytics and cost tracking" icon={<BarChart3 className="h-6 w-6" />} />
+      <PageHeader
+        title="Usage"
+        description="Token analytics and cost tracking"
+        icon={<BarChart3 className="h-6 w-6" />}
+      />
       <PageContent className="space-y-4">
         <BudgetBanner />
         <BudgetSettings />

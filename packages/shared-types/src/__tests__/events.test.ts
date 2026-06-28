@@ -82,9 +82,7 @@ describe('ChatStreamChunkSchema', () => {
   });
 
   it('rejects unknown event type', () => {
-    expect(() =>
-      ChatStreamChunkSchema.parse({ type: 'unknown', timestamp: new Date() })
-    ).toThrow();
+    expect(() => ChatStreamChunkSchema.parse({ type: 'unknown', timestamp: new Date() })).toThrow();
   });
 
   it('auto-fills timestamp if missing', () => {

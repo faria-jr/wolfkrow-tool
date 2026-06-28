@@ -37,7 +37,7 @@ function formatMs(ms: number): string {
 
 function Header() {
   return (
-    <div className="grid grid-cols-4 gap-2 border-b pb-1 text-xs font-medium text-muted-foreground">
+    <div className="text-muted-foreground grid grid-cols-4 gap-2 border-b pb-1 text-xs font-medium">
       <span>Round</span>
       <span className="text-right">Coder tok</span>
       <span className="text-right">Evaluator tok</span>
@@ -64,9 +64,15 @@ export function SprintMetricsTable({ sprintId }: SprintMetricsTableProps) {
     let cancelled = false;
     void fetch(`/api/harness/sprints/${sprintId}/rounds`)
       .then((r) => (r.ok ? r.json() : []))
-      .then((data: RoundData[]) => { if (!cancelled) setRounds(data); })
-      .catch(() => { if (!cancelled) setRounds([]); });
-    return () => { cancelled = true; };
+      .then((data: RoundData[]) => {
+        if (!cancelled) setRounds(data);
+      })
+      .catch(() => {
+        if (!cancelled) setRounds([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [sprintId]);
 
   if (!rounds || rounds.length === 0) return null;
@@ -77,7 +83,7 @@ export function SprintMetricsTable({ sprintId }: SprintMetricsTableProps) {
       evaluator: acc.evaluator + r.metrics.evaluatorTokens,
       duration: acc.duration + r.metrics.durationMs,
     }),
-    { coder: 0, evaluator: 0, duration: 0 },
+    { coder: 0, evaluator: 0, duration: 0 }
   );
 
   return (
@@ -87,7 +93,9 @@ export function SprintMetricsTable({ sprintId }: SprintMetricsTableProps) {
       </CardHeader>
       <CardContent>
         <Header />
-        {rounds.map((round) => <Row key={round.roundNumber} round={round} />)}
+        {rounds.map((round) => (
+          <Row key={round.roundNumber} round={round} />
+        ))}
         <div className="mt-1 grid grid-cols-4 gap-2 border-t pt-1 text-xs font-semibold tabular-nums">
           <span>Total</span>
           <span className="text-right">{totals.coder.toLocaleString()}</span>

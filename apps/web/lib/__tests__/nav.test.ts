@@ -17,7 +17,12 @@ describe('nav config', () => {
 
   it('keeps the Tools group (design/terminal/enrich/profiler) for palette parity', () => {
     const tools = NAV_GROUPS.find((g) => g.label === 'Tools');
-    expect(tools?.items.map((i) => i.url)).toEqual(['/design', '/terminal', '/enrich', '/profiler']);
+    expect(tools?.items.map((i) => i.url)).toEqual([
+      '/design',
+      '/terminal',
+      '/enrich',
+      '/profiler',
+    ]);
   });
 
   it('Graph and MCP Servers use distinct icons', () => {

@@ -32,10 +32,6 @@ export function SkillCreateScreen() {
   };
 
   return (
-    <SkillEditor
-      onSave={save}
-      onCancel={() => router.push('/skills')}
-      saveLabel="Create skill"
-    />
+    <SkillEditor onSave={save} onCancel={() => router.push('/skills')} saveLabel="Create skill" />
   );
 }

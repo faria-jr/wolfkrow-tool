@@ -30,10 +30,7 @@ test.describe('Settings hub navigation', () => {
 
     for (const href of hubLinks) {
       const response = await authedPage.goto(href);
-      expect(
-        response?.status(),
-        `expected ${href} to resolve (not 404)`,
-      ).not.toBe(404);
+      expect(response?.status(), `expected ${href} to resolve (not 404)`).not.toBe(404);
       // Sanity: ensure we did not land on a Next.js not-found page.
       await expect(authedPage.getByText(/not found|this page could not be found/i)).toHaveCount(0);
       await authedPage.goto('/settings');
@@ -50,7 +47,7 @@ test.describe('Settings hub navigation', () => {
       .evaluateAll((els) => els.map((el) => (el as HTMLAnchorElement).getAttribute('href') ?? ''));
 
     const deadSettingsRoutes = hubLinks.filter(
-      (href) => href.startsWith('/settings/') && href !== '/settings/providers',
+      (href) => href.startsWith('/settings/') && href !== '/settings/providers'
     );
     expect(deadSettingsRoutes, 'only /settings/providers is a real settings sub-route').toEqual([]);
   });

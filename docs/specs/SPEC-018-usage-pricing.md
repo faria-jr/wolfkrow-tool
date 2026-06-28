@@ -30,8 +30,7 @@ export class PricingCalculator {
   cost(model: ModelId, usage: TokenUsage): Money {
     const tier = this.table.tierFor(model); // throws if unknown
     return Money.of(
-      tier.inputPer1k * usage.inputTokens / 1000 +
-      tier.outputPer1k * usage.outputTokens / 1000
+      (tier.inputPer1k * usage.inputTokens) / 1000 + (tier.outputPer1k * usage.outputTokens) / 1000
     );
   }
 }

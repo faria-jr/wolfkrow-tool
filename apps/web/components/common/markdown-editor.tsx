@@ -14,7 +14,9 @@ import { Textarea } from '@/components/ui/textarea';
  * raw string. ReactMarkdown is lazy-loaded (keeps the heavy dep out of the
  * eager bundle, matching chat-message); remark-gfm is a Pluggable (static import).
  */
-const ReactMarkdown = dynamic(() => import('react-markdown').then((m) => m.default), { ssr: false });
+const ReactMarkdown = dynamic(() => import('react-markdown').then((m) => m.default), {
+  ssr: false,
+});
 
 export interface MarkdownEditorProps {
   value: string;
@@ -26,7 +28,14 @@ export interface MarkdownEditorProps {
   label?: string;
 }
 
-export function MarkdownEditor({ value, onChange, disabled, rows = 16, placeholder, label = 'Markdown content' }: MarkdownEditorProps) {
+export function MarkdownEditor({
+  value,
+  onChange,
+  disabled,
+  rows = 16,
+  placeholder,
+  label = 'Markdown content',
+}: MarkdownEditorProps) {
   const [tab, setTab] = useState('edit');
   return (
     <Tabs value={tab} onValueChange={setTab}>
@@ -47,9 +56,11 @@ export function MarkdownEditor({ value, onChange, disabled, rows = 16, placehold
       </TabsContent>
       <TabsContent value="preview">
         <div className="prose prose-sm dark:prose-invert min-h-48 rounded-md border p-4">
-          {value.trim()
-            ? <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
-            : <span className="text-muted-foreground">No content yet.</span>}
+          {value.trim() ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+          ) : (
+            <span className="text-muted-foreground">No content yet.</span>
+          )}
         </div>
       </TabsContent>
     </Tabs>

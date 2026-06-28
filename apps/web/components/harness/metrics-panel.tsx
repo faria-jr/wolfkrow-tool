@@ -13,8 +13,8 @@ interface ProjectMetrics {
 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded border bg-card px-3 py-2 text-center">
-      <p className="text-xs text-muted-foreground">{label}</p>
+    <div className="bg-card rounded border px-3 py-2 text-center">
+      <p className="text-muted-foreground text-xs">{label}</p>
       <p className="mt-0.5 text-base font-semibold tabular-nums">{value}</p>
     </div>
   );
@@ -47,7 +47,10 @@ export function MetricsPanel({ metrics: m }: MetricsPanelProps) {
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-3 gap-2">
-          <KpiCard label="Tokens" value={m.totalTokens > 0 ? m.totalTokens.toLocaleString() : '—'} />
+          <KpiCard
+            label="Tokens"
+            value={m.totalTokens > 0 ? m.totalTokens.toLocaleString() : '—'}
+          />
           <KpiCard label="Cost" value={formatCost(m.totalCost)} />
           <KpiCard label="Rounds" value={m.roundCount > 0 ? String(m.roundCount) : '—'} />
           <KpiCard label="Features passed" value={passRate(m)} />

@@ -13,7 +13,14 @@ function makeProject(overrides: Partial<Record<string, unknown>> = {}) {
     specPath: '/spec.md',
     status: 'planning',
     config: { maxRoundsPerFeature: 5, coderModel: 'm', plannerModel: 'm' },
-    metrics: { totalTokens: 100, totalCost: 1, roundCount: 0, featuresPassed: 0, featuresTotal: 0, totalDurationMs: 0 },
+    metrics: {
+      totalTokens: 100,
+      totalCost: 1,
+      roundCount: 0,
+      featuresPassed: 0,
+      featuresTotal: 0,
+      totalDurationMs: 0,
+    },
     createdAt: '2024-01-01',
     ...overrides,
   };

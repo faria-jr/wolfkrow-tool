@@ -50,10 +50,10 @@ export function GoogleOAuthPanel({ configuredServers }: Props) {
   return (
     <div className="rounded-lg border p-4">
       <h3 className="mb-1 font-semibold">Google OAuth Tokens</h3>
-      <p className="mb-4 text-xs text-muted-foreground">
+      <p className="text-muted-foreground mb-4 text-xs">
         Google MCP servers require OAuth access tokens. Obtain tokens via{' '}
-        <code className="rounded bg-muted px-1">gcloud auth print-access-token</code>{' '}
-        or the Google OAuth Playground, then save them below.
+        <code className="bg-muted rounded px-1">gcloud auth print-access-token</code> or the Google
+        OAuth Playground, then save them below.
       </p>
       <div className="flex flex-col gap-3">
         {relevant.map((svc) => (
@@ -97,17 +97,24 @@ function ServiceTokenRow({ service }: { service: GoogleService }) {
           type="password"
           placeholder={`Paste ${service.label} access token`}
           value={token}
-          onChange={(e) => { setToken(e.target.value); setStatus('idle'); }}
+          onChange={(e) => {
+            setToken(e.target.value);
+            setStatus('idle');
+          }}
           className="flex-1 font-mono text-xs"
         />
-        <Button size="sm" disabled={!token.trim() || status === 'saving'} onClick={() => void save()}>
+        <Button
+          size="sm"
+          disabled={!token.trim() || status === 'saving'}
+          onClick={() => void save()}
+        >
           {status === 'saving' ? 'Saving…' : status === 'saved' ? 'Saved ✓' : 'Save'}
         </Button>
       </div>
-      <p className="pl-32 text-xs text-muted-foreground">
-        Scope: <code className="rounded bg-muted px-1">{service.scopeHint}</code>
+      <p className="text-muted-foreground pl-32 text-xs">
+        Scope: <code className="bg-muted rounded px-1">{service.scopeHint}</code>
       </p>
-      {status === 'error' && <p className="pl-32 text-xs text-destructive">Failed to save token</p>}
+      {status === 'error' && <p className="text-destructive pl-32 text-xs">Failed to save token</p>}
     </div>
   );
 }

@@ -64,11 +64,11 @@ function useGraphNeighborhood(selected: GraphNode | null) {
   return { neighborhood, loading };
 }
 
-/** Owns all graph state + server interactions for the Graph page. */
-export function useGraphData(): GraphData {
-  const { nodes, edges, loading, reload } = useGraphSnapshot();
-  const [selected, setSelected] = useState<GraphNode | null>(null);
-  const { neighborhood, loading: loadingNeighborhood } = useGraphNeighborhood(selected);
+/** Ingest + delete mutations for the Graph page (toast feedback + reload). */
+function useGraphMutations(
+  reload: () => Promise<void>,
+  clearSelection: () => void
+) {
   const [text, setText] = useState('');
   const [ingesting, setIngesting] = useState(false);
 
@@ -78,7 +78,9 @@ export function useGraphData(): GraphData {
     setIngesting(true);
     try {
       const { entityCount, edgeCount } = await postIngest(trimmed);
-      toast.success('Graph updated', { description: `${entityCount} entities · ${edgeCount} edges` });
+      toast.success('Graph updated', {
+        description: `${entityCount} entities · ${edgeCount} edges`,
+      });
       setText('');
       await reload();
     } catch (err) {
@@ -94,14 +96,25 @@ export function useGraphData(): GraphData {
         const status = await deleteNode(node.id);
         if (status !== 200 && status !== 404) throw new Error(`delete failed (${status})`);
         toast.success('Node deleted');
-        setSelected(null);
+        clearSelection();
         await reload();
       } catch (err) {
         toast.error('Delete failed', { description: (err as Error).message });
       }
     },
-    [reload],
+    [reload, clearSelection]
   );
+
+  return { text, setText, ingesting, ingest, remove };
+}
+
+/** Owns all graph state + server interactions for the Graph page. */
+export function useGraphData(): GraphData {
+  const { nodes, edges, loading, reload } = useGraphSnapshot();
+  const [selected, setSelected] = useState<GraphNode | null>(null);
+  const { neighborhood, loading: loadingNeighborhood } = useGraphNeighborhood(selected);
+  const clearSelection = useCallback(() => setSelected(null), []);
+  const { text, setText, ingesting, ingest, remove } = useGraphMutations(reload, clearSelection);
 
   return {
     nodes,

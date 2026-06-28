@@ -36,7 +36,7 @@ function makeAgent(userId: string): Agent {
 
 const MIGRATIONS_FOLDER = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../../../drizzle',
+  '../../../drizzle'
 );
 
 function makeDb() {
@@ -46,7 +46,7 @@ function makeDb() {
   const db = drizzle(sqlite, { schema });
   migrate(db, { migrationsFolder: MIGRATIONS_FOLDER });
   sqlite.exec(
-    `INSERT INTO users (id, password_hash, role, totp_enabled, failed_attempts, created_at, updated_at) VALUES ('user-1', 'x', 'owner', 0, 0, 0, 0)`,
+    `INSERT INTO users (id, password_hash, role, totp_enabled, failed_attempts, created_at, updated_at) VALUES ('user-1', 'x', 'owner', 0, 0, 0, 0)`
   );
   return { db, dbPath, sqlite };
 }
@@ -66,11 +66,18 @@ describe('chat_sessions.agent_id FK (integration)', () => {
     sqlite = s;
 
     const repo = new DrizzleChatSessionRepo(db);
-    const session = ChatSession.create({ userId: 'user-1', agentId: undefined, title: 'No agent', archived: false });
+    const session = ChatSession.create({
+      userId: 'user-1',
+      agentId: undefined,
+      title: 'No agent',
+      archived: false,
+    });
     const saved = await repo.save(session);
     expect(saved.id).toBe(session.id);
 
-    const row = sqlite.prepare('SELECT agent_id FROM chat_sessions WHERE id = ?').get(session.id) as { agent_id: null | string };
+    const row = sqlite
+      .prepare('SELECT agent_id FROM chat_sessions WHERE id = ?')
+      .get(session.id) as { agent_id: null | string };
     expect(row.agent_id).toBeNull();
   });
 
@@ -84,10 +91,17 @@ describe('chat_sessions.agent_id FK (integration)', () => {
     await agentRepo.save(agent);
 
     const repo = new DrizzleChatSessionRepo(db);
-    const session = ChatSession.create({ userId: 'user-1', agentId: agent.id, title: 'With agent', archived: false });
+    const session = ChatSession.create({
+      userId: 'user-1',
+      agentId: agent.id,
+      title: 'With agent',
+      archived: false,
+    });
     await repo.save(session);
 
-    const row = sqlite.prepare('SELECT agent_id FROM chat_sessions WHERE id = ?').get(session.id) as { agent_id: null | string };
+    const row = sqlite
+      .prepare('SELECT agent_id FROM chat_sessions WHERE id = ?')
+      .get(session.id) as { agent_id: null | string };
     expect(row.agent_id).toBe(agent.id);
   });
 
@@ -101,12 +115,19 @@ describe('chat_sessions.agent_id FK (integration)', () => {
     await agentRepo.save(agent);
 
     const repo = new DrizzleChatSessionRepo(db);
-    const session = ChatSession.create({ userId: 'user-1', agentId: agent.id, title: 'With agent', archived: false });
+    const session = ChatSession.create({
+      userId: 'user-1',
+      agentId: agent.id,
+      title: 'With agent',
+      archived: false,
+    });
     await repo.save(session);
 
     await agentRepo.delete(agent.id);
 
-    const row = sqlite.prepare('SELECT agent_id FROM chat_sessions WHERE id = ?').get(session.id) as { agent_id: null | string };
+    const row = sqlite
+      .prepare('SELECT agent_id FROM chat_sessions WHERE id = ?')
+      .get(session.id) as { agent_id: null | string };
     expect(row.agent_id).toBeNull();
   });
 });

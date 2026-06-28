@@ -1,7 +1,6 @@
 import { handleRpcMessage } from '@wolfkrow/mcp-shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-
 import { handlers } from '../index';
 
 afterEach(() => {
@@ -33,11 +32,16 @@ describe('elevenlabs MCP server smoke tests', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ voices: [{ voice_id: 'vid', name: 'Rachel' }] }),
-      }),
+      })
     );
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'list_voices', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: { name: 'list_voices', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('/v1/voices');
@@ -51,11 +55,12 @@ describe('elevenlabs MCP server smoke tests', () => {
       vi.fn().mockResolvedValue({
         ok: true,
         headers: { get: (h: string) => (h === 'content-type' ? 'audio/mpeg' : null) },
-        arrayBuffer: async () => audioBytes.buffer.slice(
-          audioBytes.byteOffset,
-          audioBytes.byteOffset + audioBytes.byteLength,
-        ),
-      }),
+        arrayBuffer: async () =>
+          audioBytes.buffer.slice(
+            audioBytes.byteOffset,
+            audioBytes.byteOffset + audioBytes.byteLength
+          ),
+      })
     );
     const res = await handleRpcMessage(
       {
@@ -67,7 +72,7 @@ describe('elevenlabs MCP server smoke tests', () => {
           arguments: { text: 'hello world', voice_id: 'vid' },
         },
       },
-      handlers,
+      handlers
     );
     expect(res?.result).toMatchObject({ content: expect.any(Array) });
     const text = (res?.result as { content: { text: string }[] }).content[0]?.text ?? '{}';
@@ -79,8 +84,13 @@ describe('elevenlabs MCP server smoke tests', () => {
   it('text_to_speech requires text', async () => {
     process.env['ELEVENLABS_API_KEY'] = 'k';
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 5, method: 'tools/call', params: { name: 'text_to_speech', arguments: { voice_id: 'vid' } } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'tools/call',
+        params: { name: 'text_to_speech', arguments: { voice_id: 'vid' } },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
@@ -88,16 +98,26 @@ describe('elevenlabs MCP server smoke tests', () => {
   it('text_to_speech requires voice_id when env not set', async () => {
     process.env['ELEVENLABS_API_KEY'] = 'k';
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 6, method: 'tools/call', params: { name: 'text_to_speech', arguments: { text: 'hi' } } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 6,
+        method: 'tools/call',
+        params: { name: 'text_to_speech', arguments: { text: 'hi' } },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });
 
   it('returns isError when api key missing', async () => {
     const res = await handleRpcMessage(
-      { jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'list_voices', arguments: {} } },
-      handlers,
+      {
+        jsonrpc: '2.0',
+        id: 7,
+        method: 'tools/call',
+        params: { name: 'list_voices', arguments: {} },
+      },
+      handlers
     );
     expect(res?.result).toMatchObject({ isError: true });
   });

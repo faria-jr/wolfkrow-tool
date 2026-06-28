@@ -44,13 +44,13 @@ function useDistinctOptions(findings: Finding[]) {
   const severities = useMemo(
     () =>
       Array.from(new Set(findings.map((f) => f.severity))).sort(
-        (a, b) => SEVERITY_ORDER.indexOf(a) - SEVERITY_ORDER.indexOf(b),
+        (a, b) => SEVERITY_ORDER.indexOf(a) - SEVERITY_ORDER.indexOf(b)
       ),
-    [findings],
+    [findings]
   );
   const dimensions = useMemo(
     () => Array.from(new Set(findings.map((f) => f.dimension))).sort(),
-    [findings],
+    [findings]
   );
   return { severities, dimensions };
 }
@@ -107,7 +107,7 @@ function FindingsFilterBar({
 /** Column header row — sticky above the virtualized body. */
 function FindingsHeader() {
   return (
-    <div role="row" className="flex w-full bg-muted">
+    <div role="row" className="bg-muted flex w-full">
       <div role="columnheader" className="w-32 shrink-0 px-4 py-2 text-left text-xs font-semibold">
         Severity
       </div>
@@ -136,8 +136,7 @@ interface RowProps {
  * the callback referentially stable across renders.
  */
 const FindingRow = memo(function FindingRow({ finding, onSelect }: RowProps) {
-  const location =
-    finding.line !== undefined ? `${finding.file}:${finding.line}` : finding.file;
+  const location = finding.line !== undefined ? `${finding.file}:${finding.line}` : finding.file;
   return (
     <div
       role="row"
@@ -191,7 +190,11 @@ function FindingsTableBody({ findings, onSelect }: FindingsTableBodyProps) {
 }
 
 export function FindingsTable({ findings }: FindingsTableProps) {
-  const [filters, setFiltersState] = useState<Filters>({ severity: '', dimension: '', fileQuery: '' });
+  const [filters, setFiltersState] = useState<Filters>({
+    severity: '',
+    dimension: '',
+    fileQuery: '',
+  });
   const setFilters = (next: Partial<Filters>) => setFiltersState((prev) => ({ ...prev, ...next }));
   const { severities, dimensions } = useDistinctOptions(findings);
 

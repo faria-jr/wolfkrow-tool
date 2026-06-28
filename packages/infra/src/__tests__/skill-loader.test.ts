@@ -42,7 +42,7 @@ isBuiltIn: true
 
 # PDF Skill
 
-Use pypdf.`,
+Use pypdf.`
     );
     const loaded = await loadBuiltInSkills(workDir);
     expect(loaded).toHaveLength(1);
@@ -64,7 +64,7 @@ name: minimal
 description: Bare minimum.
 ---
 
-body`,
+body`
     );
     const loaded = await loadBuiltInSkills(workDir);
     expect(loaded[0]?.skill.isBuiltIn).toBe(true);
@@ -79,7 +79,7 @@ body`,
 name: no-tags
 description: without tags
 ---
-content`,
+content`
     );
     const loaded = await loadBuiltInSkills(workDir);
     expect(loaded[0]?.skill.tags).toEqual([]);
@@ -92,7 +92,7 @@ content`,
 name: second
 description: second skill
 ---
-body 2`,
+body 2`
     );
     await writeFile(
       join(workDir, 'first.md'),
@@ -100,7 +100,7 @@ body 2`,
 name: first
 description: first skill
 ---
-body 1`,
+body 1`
     );
     const loaded = await loadBuiltInSkills(workDir);
     expect(loaded).toHaveLength(2);
@@ -121,7 +121,7 @@ body 1`,
       `---
 description: missing name
 ---
-body`,
+body`
     );
     const results = await loadBuiltInSkills(workDir);
     expect(results.map((r) => r.name)).not.toContain('no-name');
@@ -133,7 +133,7 @@ body`,
       `---
 name: no-desc
 ---
-body`,
+body`
     );
     const results = await loadBuiltInSkills(workDir);
     expect(results.map((r) => r.name)).not.toContain('no-desc');
@@ -147,7 +147,7 @@ name: with-author
 description: with author field
 author: Wolfkrow Team
 ---
-body`,
+body`
     );
     const loaded = await loadBuiltInSkills(workDir);
     expect(loaded[0]?.skill.author).toBe('Wolfkrow Team');

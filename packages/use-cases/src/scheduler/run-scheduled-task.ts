@@ -2,7 +2,13 @@ import type { ScheduledTaskRepo, TaskRunRepo } from '@wolfkrow/domain';
 import { NotFoundError, TaskRun } from '@wolfkrow/domain';
 
 export interface TaskExecutor {
-  execute(task: { id: string; name: string; prompt: string; agentId: string | undefined; requiresReview?: boolean }): Promise<{
+  execute(task: {
+    id: string;
+    name: string;
+    prompt: string;
+    agentId: string | undefined;
+    requiresReview?: boolean;
+  }): Promise<{
     status: 'awaiting_review' | 'validated' | 'rejected';
     output?: Record<string, unknown>;
     error?: string;
@@ -21,7 +27,7 @@ export class RunScheduledTaskUseCase {
   constructor(
     private readonly taskRepo: ScheduledTaskRepo,
     private readonly runRepo: TaskRunRepo,
-    private readonly executor: TaskExecutor,
+    private readonly executor: TaskExecutor
   ) {}
 
   async execute(input: RunScheduledTaskInput): Promise<RunScheduledTaskOutput> {
@@ -32,7 +38,10 @@ export class RunScheduledTaskUseCase {
 
     try {
       const result = await this.executor.execute({
-        id: task.id, name: task.name, prompt: task.prompt, agentId: task.agentId,
+        id: task.id,
+        name: task.name,
+        prompt: task.prompt,
+        agentId: task.agentId,
         requiresReview: task.tags.includes('requires-review'),
       });
 
@@ -40,7 +49,7 @@ export class RunScheduledTaskUseCase {
         run.complete(result.status, {
           ...(result.output !== undefined ? { output: result.output } : {}),
           ...(result.error !== undefined ? { error: result.error } : {}),
-        }),
+        })
       );
 
       const now = new Date();

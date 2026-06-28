@@ -11,18 +11,32 @@ import { fromJson, asJsonField } from './json-field';
 type DbRow = typeof pipelineProjects.$inferSelect;
 type PipelineProjectRow = typeof pipelineProjects.$inferInsert;
 
-const EMPTY_METRICS: PipelineMetrics = { totalTokens: 0, totalCost: 0, phasesCompleted: 0, durationMs: 0 };
+const EMPTY_METRICS: PipelineMetrics = {
+  totalTokens: 0,
+  totalCost: 0,
+  phasesCompleted: 0,
+  durationMs: 0,
+};
 
 function toRow(p: ReturnType<PipelineProject['toProps']>): PipelineProjectRow {
   return {
-    id: p.id, userId: p.userId, name: p.name, description: p.description ?? null,
-    currentStage: p.currentStage, status: p.status,
-    discoveryNotes: p.discoveryNotes ?? null, specPath: p.specPath ?? null,
-    prdPath: p.prdPath ?? null, approvalNotes: p.approvalNotes ?? null,
-    specEdits: p.specEdits ?? null, projectPath: p.projectPath ?? null,
+    id: p.id,
+    userId: p.userId,
+    name: p.name,
+    description: p.description ?? null,
+    currentStage: p.currentStage,
+    status: p.status,
+    discoveryNotes: p.discoveryNotes ?? null,
+    specPath: p.specPath ?? null,
+    prdPath: p.prdPath ?? null,
+    approvalNotes: p.approvalNotes ?? null,
+    specEdits: p.specEdits ?? null,
+    projectPath: p.projectPath ?? null,
     harnessProjectId: p.harnessProjectId ?? null,
     metrics: asJsonField(p.metrics),
-    createdAt: p.createdAt, updatedAt: p.updatedAt, completedAt: p.completedAt ?? null,
+    createdAt: p.createdAt,
+    updatedAt: p.updatedAt,
+    completedAt: p.completedAt ?? null,
   };
 }
 
@@ -56,15 +70,26 @@ export class DrizzlePipelineProjectRepo implements PipelineProjectRepo {
     return rows[0] ? toEntity(rows[0]) : null;
   }
 
+  async findAll(): Promise<PipelineProject[]> {
+    const rows = this.db.select().from(pipelineProjects).all();
+    return rows.map(toEntity);
+  }
+
   async findByUserId(userId: string): Promise<PipelineProject[]> {
-    const rows = this.db.select().from(pipelineProjects).where(eq(pipelineProjects.userId, userId)).all();
+    const rows = this.db
+      .select()
+      .from(pipelineProjects)
+      .where(eq(pipelineProjects.userId, userId))
+      .all();
     return rows.map(toEntity);
   }
 
   async save(project: PipelineProject): Promise<PipelineProject> {
     const row = toRow(project.toProps());
     const { id: _id, userId: _userId, createdAt: _createdAt, ...settable } = row;
-    this.db.insert(pipelineProjects).values(row)
+    this.db
+      .insert(pipelineProjects)
+      .values(row)
       .onConflictDoUpdate({ target: pipelineProjects.id, set: settable })
       .run();
     return project;

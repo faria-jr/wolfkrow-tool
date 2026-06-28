@@ -16,12 +16,17 @@ export interface SkillProps {
   updatedAt: Date;
 }
 
-export type SkillCreateInput = Omit<SkillProps, 'id' | 'version' | 'author' | 'createdAt' | 'updatedAt'> & {
+export type SkillCreateInput = Omit<
+  SkillProps,
+  'id' | 'version' | 'author' | 'createdAt' | 'updatedAt'
+> & {
   version?: string;
   author?: string;
 };
 
-export type SkillUpdateInput = Partial<Pick<SkillCreateInput, 'name' | 'description' | 'content' | 'tags' | 'version'>>;
+export type SkillUpdateInput = Partial<
+  Pick<SkillCreateInput, 'name' | 'description' | 'content' | 'tags' | 'version'>
+>;
 
 interface ParsedFrontmatter {
   name?: unknown;
@@ -35,7 +40,12 @@ interface ParsedFrontmatter {
 function applyMetaField(meta: ParsedFrontmatter, key: string, val: string): void {
   if (key === 'tags') {
     const captured = /^\[([^\]]*)\]$/.exec(val)?.[1] ?? '';
-    meta.tags = captured ? captured.split(',').map((s) => s.trim()).filter(Boolean) : [];
+    meta.tags = captured
+      ? captured
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
   } else if (key === 'isBuiltIn') {
     meta.isBuiltIn = val === 'true';
   } else if (key) {
@@ -45,7 +55,8 @@ function applyMetaField(meta: ParsedFrontmatter, key: string, val: string): void
 
 function parseFrontmatter(raw: string): { meta: ParsedFrontmatter; body: string } {
   const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/.exec(raw.trimStart());
-  if (!match?.[1]) throw new ValidationError('content', 'Missing or invalid frontmatter (expected --- block)');
+  if (!match?.[1])
+    throw new ValidationError('content', 'Missing or invalid frontmatter (expected --- block)');
   const body = (match[2] ?? '').trim();
   const meta: ParsedFrontmatter = {};
   for (const line of match[1].split('\n')) {
@@ -92,7 +103,8 @@ export class Skill {
     const name = String(meta.name ?? '');
     const description = String(meta.description ?? '');
     if (!meta.name) throw new ValidationError('name', 'Skill name is required in frontmatter');
-    if (!meta.description) throw new ValidationError('description', 'Skill description is required in frontmatter');
+    if (!meta.description)
+      throw new ValidationError('description', 'Skill description is required in frontmatter');
     assertName(name);
     const now = new Date();
     return new Skill({

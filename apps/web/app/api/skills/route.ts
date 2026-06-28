@@ -12,7 +12,9 @@ export async function GET() {
   const session = await getSession(cookieStore.get('session')?.value);
   if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { skills } = await new ListSkillsUseCase(getRepos().skill).execute({ userId: session.userId });
+  const { skills } = await new ListSkillsUseCase(getRepos().skill).execute({
+    userId: session.userId,
+  });
   return Response.json({ skills: skills.map((s: Skill) => s.toProps()) });
 }
 

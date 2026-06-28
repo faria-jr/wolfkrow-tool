@@ -24,7 +24,7 @@ export interface EvaluateRoundOutput {
 export class EvaluateRoundUseCase {
   constructor(
     private readonly roundRepo: HarnessRoundRepo,
-    private readonly evaluator: EvaluatorAgent,
+    private readonly evaluator: EvaluatorAgent
   ) {}
 
   async execute(input: EvaluateRoundInput): Promise<EvaluateRoundOutput> {
@@ -38,7 +38,7 @@ export class EvaluateRoundUseCase {
     });
 
     const completed = await this.roundRepo.save(
-      round.complete(result.passed ? 'passed' : 'failed', result.feedback, result.tokens),
+      round.complete(result.passed ? 'passed' : 'failed', result.feedback, result.tokens)
     );
 
     return { round: completed, passed: result.passed };

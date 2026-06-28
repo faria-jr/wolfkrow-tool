@@ -13,8 +13,10 @@ describe('BootstrappingView', () => {
   it('highlights the current stage and marks earlier ones as done', () => {
     const { container } = render(<BootstrappingView stage="od-project" />);
     // The current stage (by label) is marked aria-current="step".
-    expect(screen.getByText('Creating Open Design project').closest('li'))
-      .toHaveAttribute('aria-current', 'step');
+    expect(screen.getByText('Creating Open Design project').closest('li')).toHaveAttribute(
+      'aria-current',
+      'step'
+    );
     // An earlier stage shows a "done" status badge.
     expect(screen.getAllByText('done').length).toBeGreaterThan(0);
     // The running stage shows a "running" status badge.

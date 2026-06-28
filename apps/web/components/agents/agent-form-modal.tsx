@@ -9,7 +9,13 @@ import { agentDefaults, agentSchema } from './schema';
 import type { AgentFormValues } from './schema';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Form } from '@/components/ui/form';
 
 export interface AgentData {
@@ -61,7 +67,10 @@ function buildDefaultValues(agent?: AgentData): AgentFormValues {
 }
 
 export function AgentFormModal({ open, onClose, onSubmit, agent, loading }: Props) {
-  const form = useForm<AgentFormValues>({ resolver: zodResolver(agentSchema), defaultValues: buildDefaultValues(agent) });
+  const form = useForm<AgentFormValues>({
+    resolver: zodResolver(agentSchema),
+    defaultValues: buildDefaultValues(agent),
+  });
 
   // Reset form values when the agent prop changes (switching between
   // new/edit or between different agents). Without this, useForm keeps the
@@ -71,7 +80,12 @@ export function AgentFormModal({ open, onClose, onSubmit, agent, loading }: Prop
   }, [agent, form]);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{agent ? 'Edit agent' : 'New agent'}</DialogTitle>
@@ -80,8 +94,12 @@ export function AgentFormModal({ open, onClose, onSubmit, agent, loading }: Prop
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <AgentFormBody control={form.control} />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" disabled={loading}>{loading ? 'Saving…' : 'Save'}</Button>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? 'Saving…' : 'Save'}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

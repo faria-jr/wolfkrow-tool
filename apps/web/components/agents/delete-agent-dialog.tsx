@@ -1,6 +1,15 @@
 'use client';
 
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Props {
   open: boolean;
@@ -12,7 +21,12 @@ interface Props {
 
 export function DeleteAgentDialog({ open, agentName, onClose, onConfirm, loading }: Props) {
   return (
-    <AlertDialog open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete agent</AlertDialogTitle>
@@ -22,7 +36,11 @@ export function DeleteAgentDialog({ open, agentName, onClose, onConfirm, loading
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={loading} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogAction
+            onClick={onConfirm}
+            disabled={loading}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
             {loading ? 'Deleting…' : 'Delete'}
           </AlertDialogAction>
         </AlertDialogFooter>

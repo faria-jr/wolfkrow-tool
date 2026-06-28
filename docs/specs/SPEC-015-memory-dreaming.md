@@ -53,8 +53,12 @@ CompactSession (resume turns antigos, persiste log) · ConsolidateMemory · Gene
 // apps/worker/src/dreaming/gate.ts
 export class DreamingGate {
   constructor(private idleMs = 5 * 60_000) {}
-  onActivity() { this.lastActivity = Date.now(); }
-  isIdle(now = Date.now()) { return now - this.lastActivity >= this.idleMs; }
+  onActivity() {
+    this.lastActivity = Date.now();
+  }
+  isIdle(now = Date.now()) {
+    return now - this.lastActivity >= this.idleMs;
+  }
 }
 ```
 

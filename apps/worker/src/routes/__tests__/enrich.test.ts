@@ -11,7 +11,6 @@ import { EnrichSession } from '@wolfkrow/domain';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { describe, beforeAll, afterAll, it, expect, vi } from 'vitest';
 
-
 const { sessions, fakeEnrichRepo } = vi.hoisted(() => {
   const sessions = new Map<string, EnrichSession>();
   const fakeEnrichRepo = {
@@ -59,7 +58,8 @@ afterAll(async () => {
 describe('enrich POST /sessions — create', () => {
   it('creates an enrich session and returns its props', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/sessions',
+      method: 'POST',
+      url: '/sessions',
       payload: { specPath: '/tmp/spec.md' },
     });
     expect(res.statusCode).toBe(200);
@@ -75,7 +75,8 @@ describe('enrich POST /sessions — create', () => {
 
   it('accepts optional validatorAgentId + enricherAgentId', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/sessions',
+      method: 'POST',
+      url: '/sessions',
       payload: { specPath: '/tmp/x.md', validatorAgentId: 'v1', enricherAgentId: 'e1' },
     });
     expect(res.statusCode).toBe(200);
@@ -87,7 +88,8 @@ describe('enrich POST /sessions — userId derived from session (IDOR)', () => {
     // Authenticated user (u1) sends userId: 'victim' in the body to try to
     // create a session owned by 'victim'. The session MUST be owned by u1.
     const res = await app.inject({
-      method: 'POST', url: '/sessions',
+      method: 'POST',
+      url: '/sessions',
       payload: { userId: 'victim', specPath: '/tmp/spoof.md' },
     });
     expect(res.statusCode).toBe(200);
@@ -133,28 +135,39 @@ describe('enrich DELETE /sessions/:id — cancel', () => {
     sessions.set(other.id, other);
     // Authenticated user is u1; the session belongs to someone-else → 404, and
     // a spoofed ?userId=someone-else query is ignored (userId from session).
-    const res = await app.inject({ method: 'DELETE', url: `/sessions/${other.id}?userId=someone-else` });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: `/sessions/${other.id}?userId=someone-else`,
+    });
     expect(res.statusCode).toBe(404);
   });
 });
 
 describe('enrich validate/enrich — 404 on missing session', () => {
   it('validate returns 404 when the session does not exist', async () => {
-    const res = await app.inject({ method: 'POST', url: '/sessions/unknown/validate', payload: {} });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/sessions/unknown/validate',
+      payload: {},
+    });
     expect(res.statusCode).toBe(404);
   });
 
   it('enrich rejects a body missing validatorOutput → 400', async () => {
     const existing = [...sessions.values()].find((s) => s.userId === 'someone-else')!;
     const res = await app.inject({
-      method: 'POST', url: `/sessions/${existing.id}/enrich`, payload: {},
+      method: 'POST',
+      url: `/sessions/${existing.id}/enrich`,
+      payload: {},
     });
     expect(res.statusCode).toBe(400);
   });
 
   it('enrich returns 404 when the session does not exist', async () => {
     const res = await app.inject({
-      method: 'POST', url: '/sessions/unknown/enrich', payload: { validatorOutput: 'feedback' },
+      method: 'POST',
+      url: '/sessions/unknown/enrich',
+      payload: { validatorOutput: 'feedback' },
     });
     expect(res.statusCode).toBe(404);
   });
@@ -169,7 +182,8 @@ describe('enrich routes — authentication required', () => {
     await enrichRoutes(a as unknown as AuthFastifyInstance);
     await a.ready();
     const res = await a.inject({
-      method: 'POST', url: '/sessions',
+      method: 'POST',
+      url: '/sessions',
       payload: { specPath: '/tmp/s.md' },
     });
     expect(res.statusCode).toBe(401);
