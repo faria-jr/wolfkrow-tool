@@ -8,7 +8,6 @@ import type { ArtifactPayload, PendingHumanQuestion, PendingPermission, SseCallb
 import { streamSse } from './sse';
 import type { ToolCall } from './tool-call-inline';
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:4000';
 
 export function deriveTitle(text: string): string {
   const t = text.trim();
@@ -94,7 +93,7 @@ export function useToolPermission() {
   const onPermission = useCallback((p: PendingPermission) => setPendingPermission(p), []);
   const resolvePermission = useCallback(async (callId: string, approved: boolean) => {
     setPendingPermission(null);
-    await fetch(`${WORKER_URL}/chat/permission`, {
+    await fetch('/api/chat/permission', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -112,7 +111,7 @@ export function useHumanQuestion() {
    *  conversation naturally). */
   const resolveQuestion = useCallback(async (questionId: string, answer: string) => {
     setPendingQuestion(null);
-    await fetch(`${WORKER_URL}/chat/human-question`, {
+    await fetch('/api/chat/human-question', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -176,7 +175,7 @@ export function useChatStream({ model, sessionId, state, onPermission, onHumanQu
       try {
         const body: Record<string, unknown> = { message: text, model, sessionId };
         if (attachments.length) body['attachments'] = attachments;
-        await streamSse(`${WORKER_URL}/chat/send`, body, ac.signal, callbacks);
+        await streamSse('/api/chat/send', body, ac.signal, callbacks);
       } catch (err) {
         if (err instanceof Error && err.name !== 'AbortError')
           state.appendText('[Error: could not connect to AI]');

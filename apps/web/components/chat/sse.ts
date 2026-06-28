@@ -95,7 +95,7 @@ const EVENT_DISPATCHERS: Record<
     }),
   artifact: (ev, cb) => cb.onArtifact?.((ev as Extract<SSEEvent, { type: 'artifact' }>).artifact),
   done: () => undefined,
-  error: () => undefined,
+  error: (ev, cb) => cb.onText(`[Error: ${(ev as Extract<SSEEvent, { type: 'error' }>).message}]`),
 };
 
 function dispatchSseEvent(ev: SSEEvent, cb: SseCallbacks): void {
